@@ -22,7 +22,7 @@ final class UpdateChecker: ObservableObject {
 
     private let latestJsonURL = "https://www.lifedever.com/PasteMemo/latest.json"
     private let repoOwner = "lifedever"
-    private let repoName = "PasteMemo"
+    private let repoName = "PasteMemo-site"
     private let giteeRepo = "lifedever/pastememo"
 
     private var downloadTask: URLSessionDownloadTask?
@@ -347,7 +347,7 @@ final class UpdateChecker: ObservableObject {
         let response = alert.runModal()
         switch response {
         case .alertFirstButtonReturn:
-            NSWorkspace.shared.open(URL(string: "https://github.com/lifedever/PasteMemo/releases")!)
+            NSWorkspace.shared.open(URL(string: "https://github.com/lifedever/PasteMemo-site/releases")!)
         case .alertSecondButtonReturn:
             NSWorkspace.shared.open(URL(string: "https://gitee.com/lifedever/pastememo/releases")!)
         default:
