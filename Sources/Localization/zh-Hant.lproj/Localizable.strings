@@ -1,0 +1,620 @@
+/* App */
+"app.name" = "PasteMemo";
+
+/* Menu */
+"menu.checkForUpdates" = "檢查更新…";
+"menu.github" = "GitHub";
+"menu.reportIssue" = "回報問題";
+"menu.upgrade" = "升級到 Pro";
+
+/* Search */
+"search.placeholder" = "搜尋剪貼簿歷史…";
+
+/* Empty State */
+"empty.title" = "暫無記錄";
+"empty.message" = "複製內容即可開始使用";
+"empty.hint" = "使用 ⌘C 複製文字、圖片或檔案";
+"empty.quickHint" = "複製內容即可開始使用";
+"empty.noResults" = "沒有找到匹配內容";
+"guide.shortcut" = "按下 %@ 隨時開啟快捷貼上";
+"guide.doubleClick" = "雙擊貼上，單擊選取";
+"guide.pin" = "右鍵可置頂重要條目";
+
+/* Actions */
+"action.favorite" = "收藏";
+"action.unfavorite" = "取消收藏";
+"action.pin" = "置頂";
+"action.unpin" = "取消置頂";
+"action.delete" = "刪除";
+"action.clearAll" = "清空全部";
+"action.aiCopy" = "AI 友善複製";
+
+/* Content Types */
+"type.text" = "文字";
+"type.link" = "連結";
+"type.image" = "圖片";
+"type.code" = "程式碼";
+"type.color" = "顏色";
+"type.file" = "檔案";
+"type.other" = "其他";
+"type.email" = "Email";
+"type.phone" = "電話";
+"phone.call" = "撥打";
+"phone.message" = "簡訊";
+"phone.copy" = "複製";
+"type.video" = "影片";
+"type.audio" = "音訊";
+"type.document" = "文件";
+"type.archive" = "壓縮檔";
+"type.application" = "應用程式";
+"detail.openInFinder" = "在 Finder 中顯示";
+
+/* Filter */
+"filter.all" = "全部";
+"filter.special" = "特殊";
+"filter.favorites" = "收藏";
+"filter.pinned" = "置頂";
+
+/* Time */
+"time.now" = "剛剛";
+"time.pinned" = "置頂";
+"time.today" = "今天";
+"time.yesterday" = "昨天";
+"time.thisWeek" = "本週";
+"time.thisMonth" = "本月";
+"time.older" = "更早";
+"time.minutes" = "%d分鐘前";
+"time.hours" = "%d小時前";
+"time.days" = "%d天前";
+"time.weeks" = "%d週前";
+"time.months" = "%d月前";
+"time.years" = "%d年前";
+
+/* Settings */
+"settings.general" = "一般";
+"settings.update" = "更新";
+"settings.about" = "關於";
+"settings.appearance" = "外觀";
+"settings.theme" = "主題";
+"settings.theme.system" = "跟隨系統";
+"settings.theme.light" = "淺色";
+"settings.theme.dark" = "深色";
+"settings.language" = "語言";
+"settings.language.restart_title" = "需要重新啟動";
+"settings.language.restart_message" = "語言更改需要重新啟動應用才能完全生效。";
+"settings.language.restart_now" = "立即重新啟動";
+"settings.language.restart_later" = "稍後";
+"settings.launchAtLogin" = "開機啟動";
+"settings.currentVersion" = "目前版本";
+"settings.features" = "功能";
+"settings.shortcuts" = "快捷鍵";
+"settings.quickPanelShortcut" = "快捷貼上";
+"settings.managerShortcut" = "Open Manager";
+"settings.shortcut.none" = "未設定";
+"settings.shortcut.clickToRecord" = "點擊錄入";
+"settings.shortcut.pressKey" = "請按快捷鍵…";
+"settings.paste" = "貼上";
+"settings.addNewLine" = "貼上後自動換行";
+"settings.history" = "歷史記錄";
+"settings.retentionDays" = "保留時長";
+"settings.retentionDays.forever" = "永久";
+"settings.retentionDays.days" = "%d 天";
+"settings.display" = "顯示";
+"settings.behavior" = "行為";
+"settings.preferences" = "偏好";
+"settings.showLinkURL" = "連結顯示原始網址而非頁面標題";
+"settings.webPreview" = "網頁預覽";
+
+/* Pro */
+"pro.title" = "升級到 PasteMemo Pro";
+"pro.description" = "解鎖無限歷史記錄、智慧分組、iCloud 同步等功能。";
+"pro.enterKey" = "輸入授權金鑰";
+"pro.activate" = "啟用";
+"pro.activated" = "授權已啟用";
+"pro.deactivate" = "停用授權";
+"pro.invalidKey" = "無效的授權金鑰";
+"pro.features" = "Pro 功能";
+"pro.beta.desc" = "PasteMemo 目前處於測試階段，Pro 功能將在後續版本中上線，敬請期待！";
+"pro.feature.unlimited" = "無限歷史記錄";
+"pro.feature.favorites" = "無限收藏";
+"pro.feature.smartGroup" = "智慧分組";
+"pro.feature.icloud" = "自動備份";
+"pro.feature.themes" = "自訂主題";
+"pro.feature.rules" = "剪貼簿規則";
+"pro.feature.relay" = "接力模式";
+"pro.feature.customCategory" = "自訂分類";
+"pro.feature.ignoreApps" = "忽略特定應用程式";
+"pro.feature.automation" = "剪貼簿自動化";
+
+/* Menu */
+"menu.manager" = "開啟管理器";
+
+/* Detail */
+"detail.select" = "選擇一筆記錄";
+"detail.selectHint" = "點擊左側條目檢視詳情";
+"detail.info" = "詳細資訊";
+"detail.type" = "類型";
+"detail.source" = "來源應用";
+"detail.created" = "建立時間";
+"detail.group" = "分組";
+"detail.lastUsed" = "最近使用";
+"detail.chars" = "字元數";
+"detail.lines" = "行數";
+"detail.words" = "詞數";
+"detail.dimensions" = "尺寸";
+"detail.size" = "大小";
+"detail.format" = "格式";
+"detail.fileCount" = "檔案數";
+"detail.host" = "網域";
+"detail.url" = "連結";
+"detail.aiPreview" = "AI 友善預覽";
+"detail.location" = "位置";
+"detail.linkTitle" = "標題";
+"detail.language" = "語言";
+"detail.openInBrowser" = "在瀏覽器中開啟";
+"detail.preview_failed" = "無法載入預覽";
+"detail.multiSelected" = "已選取 %d 筆記錄";
+"action.deleteSelected" = "刪除 %d 筆記錄";
+"action.deleteSelected.confirm" = "Delete %d items?";
+"file.multiTitle" = "等%d個檔案";
+
+/* Filter */
+"filter.types" = "依類型";
+"filter.apps" = "依應用";
+"filter.groups" = "分組";
+"filter.other" = "其他";
+
+/* Actions */
+"action.paste" = "貼上";
+"action.cancel" = "取消";
+"action.confirm" = "確定";
+"action.assignGroup" = "歸入分組";
+"action.newGroup" = "新建分組…";
+"action.editGroup" = "編輯分組…";
+"action.deleteGroup" = "刪除分組";
+"action.deleteGroupConfirm" = "確定要刪除分組「%@」嗎？分組內的條目不會被刪除。";
+"action.removeFromGroup" = "移出分組";
+"action.changeIcon" = "修改圖示…";
+"action.clearConfirm" = "將刪除所有未置頂的條目。";
+"action.copy" = "複製";
+"action.copied" = "已複製到剪貼簿";
+
+/* Stats */
+"stats.total" = "總記錄數";
+"stats.clips" = "筆記錄";
+
+/* Menu */
+"menu.openMain" = "開啟主視窗";
+"menu.quickPanel" = "快捷貼上";
+"menu.pause" = "暫停監聽";
+"menu.resume" = "恢復監聽";
+"menu.settings" = "設定";
+"menu.quit" = "結束 %@";
+
+/* Quick Panel */
+"quick.search" = "搜尋剪貼簿歷史…";
+"quick.recent" = "最近";
+"quick.selectHint" = "選擇一筆記錄預覽";
+"quick.pasteTo" = "貼上到 %@";
+"quick.actions" = "操作";
+"quick.navigate" = "導覽";
+"quick.pasteAction" = "貼上";
+"quick.close" = "關閉";
+"quick.pasteNewLine" = "貼上+換行";
+"quick.pastePath" = "貼上路徑";
+"quick.pasteName" = "貼上檔名";
+"quick.saveToFolder" = "貼上檔案";
+"quick.switchType" = "類型";
+"quick.delete" = "刪除";
+"quick.openLink" = "開啟";
+"quick.preview" = "預覽";
+"quick.commandPalette" = "快捷操作";
+"quick.pasteImage" = "貼上圖片";
+"settings.showGuide" = "顯示新手引導";
+
+/* Onboarding */
+"accessibility.lost.title" = "需要輔助使用權限";
+"accessibility.lost.message" = "應用程式更新後，macOS 要求重新授權輔助使用功能。請前往系統設定，先將 PasteMemo 從輔助使用列表中刪除（選取後點減號），再點加號重新加入即可。";
+"accessibility.lost.later" = "稍後";
+"onboarding.back" = "上一步";
+"onboarding.next" = "下一步";
+"onboarding.done" = "開始使用";
+"onboarding.welcome.title" = "歡迎使用 PasteMemo";
+"onboarding.welcome.desc" = "一款常駐選單列的智慧剪貼簿管理器。自動儲存你複製的一切，支援即時搜尋。";
+"onboarding.accessibility.title" = "開啟輔助使用權限";
+"onboarding.accessibility.desc" = "PasteMemo 需要輔助使用權限才能將內容貼上到其他應用程式。點擊下方按鈕在系統設定中授權。";
+"onboarding.accessibility.grant" = "開啟輔助使用設定";
+"onboarding.accessibility.granted" = "已取得權限";
+"onboarding.accessibility.hint" = "授權後此頁面將自動更新。";
+"onboarding.shortcut.title" = "快捷貼上";
+"onboarding.shortcut.desc" = "在任意應用程式中按下快捷鍵，開啟快速貼上面板。搜尋剪貼簿歷史，一鍵貼上。";
+"onboarding.shortcut.current" = "點擊修改快捷鍵";
+
+/* About */
+/* Help */
+"menu.newGroup" = "新建分組…";
+"menu.newSmartGroup" = "新建智慧分組…";
+"menu.help" = "PasteMemo 說明";
+"help.title" = "PasteMemo 說明";
+"help.subtitle" = "快速瞭解剪貼簿管理器的使用方法。";
+"help.close" = "知道了";
+"help.shortcuts" = "快捷鍵";
+"help.shortcut.quickPaste" = "開啟快捷貼上面板";
+"help.shortcut.paste" = "貼上選取項目";
+"help.shortcut.switchType" = "依內容類型篩選";
+"help.shortcut.navigate" = "上下瀏覽條目";
+"help.shortcut.cmdEnter" = "貼上路徑 / 貼上檔案 / 貼上圖片";
+"help.shortcut.preview" = "預覽 / 開啟連結";
+"help.shortcut.delete" = "刪除條目";
+"help.shortcut.close" = "關閉面板";
+"help.actions" = "快捷貼上操作";
+"help.action.paste" = "按 Enter 或雙擊，直接貼上到目前應用程式";
+"help.action.openLink" = "連結類型可直接在預設瀏覽器中開啟";
+"help.action.pastePath" = "檔案類型：⌘↵ 貼上檔案路徑";
+"help.action.saveToFolder" = "文字/圖片類型：⌘↵ 貼上為檔案到 Finder";
+"help.action.pasteImage" = "含圖片的條目：⌘↵ 貼上為圖片檔案";
+"help.action.pin" = "右鍵置頂條目，始終固定在列表最上方";
+"help.tips" = "使用技巧";
+"help.tip.doubleClick" = "雙擊貼上，單擊選取預覽";
+"help.tip.rightClick" = "右鍵選單可以置頂、刪除條目";
+"help.tip.menuBar" = "點擊選單列圖示可快速存取歷史和設定";
+"help.tip.search" = "在搜尋框輸入關鍵字，即時檢索所有記錄";
+"onboarding.helpHint" = "你可以隨時透過選單 說明 → PasteMemo 說明 查看";
+
+"about.description" = "macOS 智慧剪貼簿管理工具";
+"about.website" = "官網";
+"about.sponsor" = "支持作者";
+
+/* Update */
+"update.available.title" = "新版本的 PasteMemo 已經發佈";
+"update.available.message" = "PasteMemo %@ 可供下載，您目前的版本是 %@。要現在下載嗎？";
+"update.skip" = "跳過這個版本";
+"update.remind_later" = "稍後提醒我";
+"update.install" = "安裝更新";
+"update.downloading" = "正在下載更新...";
+"update.ready" = "可以開始安裝了";
+"update.install_restart" = "安裝並重新啟動應用";
+"update.cancel" = "取消";
+"update.check_failed" = "檢查更新失敗";
+"update.check_failed.hint" = "無法取得最新版本資訊，請檢查網路連線後重試，或前往以下頁面手動下載：";
+"update.check_failed.github" = "GitHub 下載";
+"update.check_failed.gitee" = "Gitee 下載";
+"update.check_failed.cancel" = "取消";
+"update.no_updates" = "已是最新版本！";
+"update.no_updates.message" = "PasteMemo %@ 是目前最新版本。";
+"update.download_error" = "下載失敗";
+"update.dmg_error" = "更新失敗";
+"update.dmg_error.message" = "下載的磁碟映像檔已損毀，請重新下載更新。";
+
+/* Ignored Apps */
+"settings.ignoredApps" = "忽略的應用程式";
+"settings.ignoredApps.add" = "新增應用程式";
+"settings.ignoredApps.empty" = "暫無忽略的應用程式";
+"settings.ignoredApps.remove" = "移除";
+"settings.ignoredApps.selectApp" = "選擇要忽略的應用程式";
+"settings.ignoredApps.running" = "執行中的應用程式";
+"settings.ignoredApps.browse" = "瀏覽應用程式…";
+
+/* Sensitive Content */
+"sensitive.masked" = "••••••••";
+"sensitive.reveal" = "顯示";
+"sensitive.hide" = "隱藏";
+"sensitive.markSensitive" = "標記為敏感";
+"sensitive.unmarkSensitive" = "取消敏感標記";
+
+/* Data Import/Export */
+"dataPorter.section" = "資料";
+"dataPorter.export" = "匯出資料";
+"dataPorter.import" = "匯入資料";
+"dataPorter.encrypt" = "加密匯出";
+"dataPorter.password" = "密碼";
+"dataPorter.confirmPassword" = "確認密碼";
+"dataPorter.passwordMismatch" = "兩次密碼不一致";
+"dataPorter.enterPassword" = "輸入密碼以解密";
+"dataPorter.exportSuccess" = "匯出成功";
+"dataPorter.importSuccess" = "匯入成功";
+"dataPorter.wrongPassword" = "密碼錯誤";
+
+/* Dev Tools */
+"devTools.importFromRelease" = "Import Data from Release";
+"devTools.importFromRelease.confirm" = "Import from Release?";
+"devTools.importFromRelease.confirmMessage" = "This will overwrite all data in the Dev version. This action cannot be undone.";
+"devTools.importFromRelease.releaseRunning" = "Please quit the release version of PasteMemo before importing.";
+"devTools.importFromRelease.noData" = "No release version data found.";
+
+/* Rich Text / Plain Text */
+"action.pasteAsPlainText" = "純文字貼上";
+
+/* Text Editing */
+"action.edit" = "編輯";
+"action.save" = "儲存";
+
+/* Multi-select */
+"action.merge" = "合併";
+"action.mergeCopy" = "複製";
+"quick.multiSelected" = "已選取 %d 筆";
+"quick.batchPaste" = "批次貼上";
+
+/* Privacy */
+"settings.privacy" = "隱私";
+"settings.privacy.sensitive" = "敏感內容";
+"settings.privacy.sensitiveDetection" = "自動偵測敏感內容";
+"settings.privacy.sensitiveHint" = "自動遮罩複製到剪貼簿的密碼、API 金鑰、Token 等敏感資料。";
+
+/* Automation */
+"settings.automation" = "自動化";
+"settings.automation.enabled" = "啟用自動化規則";
+"settings.automation.ruleCount" = "%d 條規則（%d 條啟用）";
+"settings.automation.manage" = "管理自動化規則...";
+"settings.automation.hint" = "All matching rules are executed in order. Drag to reorder.";
+"settings.automation.auto" = "自動";
+"settings.automation.manual" = "手動";
+"settings.automation.proRequired" = "自動化規則為 Pro 專屬功能";
+"automation.builtIn.cleanTracking" = "清理連結追蹤參數";
+"automation.builtIn.lowercaseEmail" = "電子郵件自動轉小寫";
+"automation.builtIn.removeBlankLines" = "去除多餘空行";
+
+/* Onboarding - Privacy Apps */
+"onboarding.privacy.title" = "隱私保護";
+"onboarding.privacy.desc" = "PasteMemo 偵測到你的 Mac 上安裝了以下密碼管理器或安全應用，建議將它們加入忽略列表以保護你的敏感資料。";
+"onboarding.privacy.none" = "未偵測到密碼管理器或安全應用";
+
+/* Onboarding - Preferences */
+"onboarding.preferences.title" = "偏好設定";
+"onboarding.preferences.desc" = "設定你偏好的行為方式，之後隨時可以在設定中修改。";
+
+"sensitive.optionHint" = "按住 ⌥ Option 快速查看";
+
+"sensitive.peek" = "快速查看";
+
+/* Accessibility Steps */
+"accessibility.step1" = "開啟 系統設定 → 隱私與安全性 → 輔助使用";
+"accessibility.step2" = "找到 PasteMemo，先將其刪除（選取後點減號）";
+"accessibility.step3" = "點擊加號重新加入 PasteMemo";
+
+/* Accessibility Steps (rich text parts) */
+"accessibility.step1.prefix" = "開啟";
+"accessibility.step1.path" = "系統設定 → 隱私與安全性 → 輔助使用";
+"accessibility.step2.prefix" = "找到";
+"accessibility.step2.suffix" = "，先將其刪除";
+"accessibility.step3.text" = "重新加入 PasteMemo";
+
+"accessibility.step2.find" = "找到";
+"accessibility.step2.delete" = "刪除";
+"accessibility.step3.add" = "點擊";
+
+"accessibility.step3.readd" = "重新加入";
+
+"accessibility.step2.pre" = "先將其";
+"accessibility.step2.separator" = "，";
+
+"filter.sensitive" = "敏感";
+
+"settings.clearData" = "清空資料";
+
+"settings.sound" = "音效";
+"settings.sound.enabled" = "操作音效";
+"settings.sound.copy" = "複製音效";
+"settings.sound.paste" = "貼上音效";
+"settings.sound.section.custom" = "自定義";
+"settings.sound.section.system" = "系統";
+
+/* Backup */
+"backup.section" = "自動備份";
+"backup.enable" = "啟用自動備份";
+"backup.frequency" = "備份頻率";
+"backup.maxSlots" = "備份數量";
+"backup.destination" = "備份方式";
+"backup.frequency.sixHours" = "每 6 小時";
+"backup.frequency.daily" = "每天";
+"backup.frequency.threeDays" = "每 3 天";
+"backup.frequency.weekly" = "每週";
+"backup.frequency.monthly" = "每月";
+"backup.path" = "備份路徑";
+"backup.lastBackup" = "上次備份";
+"backup.backupNow" = "立即備份";
+"backup.restore" = "從備份還原…";
+"backup.success" = "備份成功。";
+"backup.restore.title" = "從備份還原";
+"backup.restore.empty" = "暫無可用備份。";
+"backup.restore.merge" = "合併（保留現有資料）";
+"backup.restore.overwrite" = "覆蓋（取代所有資料）";
+"backup.restore.confirm" = "確認還原";
+"backup.restore.confirmMerge" = "備份資料將與現有資料合併，重複項目將被跳過。";
+"backup.restore.confirmOverwrite" = "所有現有資料將被備份資料取代，此操作無法復原。";
+"backup.restore.success" = "還原完成。";
+"backup.webdav.url" = "伺服器位址";
+"backup.webdav.username" = "使用者名稱";
+"backup.webdav.password" = "密碼";
+"backup.webdav.test" = "測試連線";
+"backup.destination.local" = "本機";
+"backup.changePath" = "更改…";
+"backup.webdav.testSuccess" = "連線成功。";
+"backup.webdav.testFailed" = "連線失敗。";
+
+// 接力模式
+// 命令面板
+"cmd.title" = "快捷操作";
+"cmd.paste" = "貼上";
+"cmd.pasteAsPlainText" = "純文字貼上";
+"cmd.copy" = "複製";
+"cmd.pin" = "置頂 / 取消置頂";
+"cmd.toggleSensitive" = "標記 / 取消敏感";
+"cmd.delete" = "刪除";
+"cmd.openLink" = "開啟連結";
+"cmd.pasteAsFile" = "貼上為檔案";
+"cmd.pastePath" = "貼上路徑";
+"cmd.andNewLine" = "並換行";
+"cmd.transform" = "轉換";
+
+"relay.title" = "接力模式";
+"relay.tab" = "接力";
+"relay.exit" = "退出";
+"relay.close" = "關閉";
+"relay.exitRelay" = "退出接力";
+"relay.startRelay" = "開啟接力";
+"relay.pause" = "暫停接力";
+"relay.resume" = "繼續接力";
+"relay.paused" = "接力已暫停";
+"relay.emptyHint" = "複製內容自動加入佇列";
+"relay.quickPastePaused" = "接力模式下快捷貼上已暫停";
+"relay.alert.title" = "接力模式已開啟";
+"relay.alert.message" = "快捷貼上已暫停，複製的內容將自動加入接力佇列。
+
+使用 %@ 逐條貼上佇列內容。";
+"relay.alert.ok" = "知道了";
+"relay.alert.dontShowAgain" = "不再提示";
+"relay.settings.pasteKey" = "接力貼上快捷鍵";
+"relay.settings.pasteKeyNote" = "部分應用（終端機、Emacs）可能使用相同快捷鍵，如有衝突請自訂。";
+"relay.settings.pauseToChange" = "請先暫停或退出接力模式再修改快捷鍵。";
+"relay.settings.resetAlert" = "重新顯示開啟提示";
+"relay.settings.description" = "接力模式可以連續複製多條內容，然後按順序逐條貼上。適合從網頁複製一批使用者名稱，再切到 Excel 逐行貼上的場景。";
+"relay.settings.shortcuts" = "快捷鍵";
+"relay.settings.operations" = "操作說明";
+"relay.settings.op.paste" = "貼上下一條";
+"relay.settings.op.skip" = "跳過當前條";
+"relay.settings.op.previous" = "回退上一條";
+"relay.autoExit.short" = "結束後自動退出";
+"relay.autoExit" = "佇列清空後自動退出";
+"relay.previous" = "上一條";
+"relay.skip" = "跳過";
+"relay.delete" = "刪除";
+"relay.split" = "拆分";
+"relay.addToQueue" = "加入接力佇列";
+"relay.splitAndRelay" = "拆分並接力";
+"relay.split.title" = "拆分為佇列";
+"relay.split.delimiter" = "分隔符";
+"relay.split.customPlaceholder" = "輸入分隔符...";
+"relay.split.confirm" = "拆分";
+"relay.split.preview" = "將拆分為 %d 條";
+"relay.split.noResult" = "未找到分隔符";
+"relay.delimiter.newline" = "換行";
+"relay.delimiter.comma" = "逗號 (,)";
+"relay.delimiter.chineseComma" = "頓號 (、)";
+"relay.delimiter.custom" = "自訂";
+"onboarding.skip" = "跳過";
+"onboarding.relay.title" = "接力模式";
+"onboarding.relay.desc" = "連續複製多條內容，然後按順序逐條貼上，適合批次錄入資料的場景。";
+"onboarding.relay.feature1" = "多選條目或連續複製，自動構建貼上佇列";
+"onboarding.relay.feature2" = "按分隔符拆分文字，快速建立佇列";
+"onboarding.relay.feature3" = "按 Ctrl+V 逐條貼上（可在設定中自訂）";
+"help.relay" = "接力模式";
+"help.relay.open" = "透過工具列按鈕或選單列開啟";
+"help.relay.paste" = "Ctrl+V 貼上下一條（可在設定中自訂）";
+"help.relay.skip" = "點擊接力視窗中的跳過按鈕跳過當前條目";
+"help.relay.previous" = "點擊接力視窗中的上一條按鈕回退";
+"help.relay.split" = "懸停點擊剪刀圖示，或右鍵選單拆分條目";
+"help.relay.pauseResume" = "接力視窗中的暫停 / 繼續按鈕";
+"help.relay.exit" = "點擊關閉按鈕或按 Esc 退出接力模式";
+"about.help" = "使用說明";
+
+/* 缺失的鍵 - 操作 */
+"cmd.showInFinder" = "在 Finder 中顯示";
+"cmd.copyAs" = "複製為 %@";
+"relay.reverse" = "顛倒順序";
+"relay.editItem" = "編輯內容";
+"quickPanel.pin" = "固定視窗";
+"quickPanel.unpin" = "取消固定";
+
+/* 缺失的鍵 - 設定 */
+"settings.doubleTap" = "雙擊按鍵喚起";
+"settings.doubleTap.modifier" = "雙擊修飾鍵";
+
+/* 缺失的鍵 - 清空資料 */
+"settings.clearData.1month" = "刪除 1 個月前";
+"settings.clearData.3months" = "刪除 3 個月前";
+"settings.clearData.6months" = "刪除 6 個月前";
+"settings.clearData.1year" = "刪除 1 年前";
+"settings.clearData.all" = "刪除全部";
+"settings.clearData.result" = "已刪除 %d 筆記錄";
+
+/* 缺失的鍵 - 備份 */
+"backup.nextBackup" = "下次備份";
+
+/* 缺失的鍵 - 自動化管理視窗 */
+"automation.window.title" = "自動化規則";
+"automation.section.builtIn" = "內建規則";
+"automation.section.custom" = "我的規則";
+"automation.section.empty" = "（空）";
+"automation.editor.selectRule" = "選擇一條規則進行編輯";
+"automation.rule.name" = "名稱";
+"automation.rule.enabled" = "啟用";
+"automation.rule.triggerMode" = "觸發模式";
+"automation.rule.triggerMode.automatic" = "自動觸發";
+"automation.rule.triggerMode.manual" = "僅手動觸發";
+"automation.rule.notifyBeforeApply" = "觸發時彈窗確認";
+"automation.rule.newName" = "新規則";
+"automation.condition.title" = "當滿足以下條件";
+"automation.condition.add" = "+ 新增條件";
+"automation.condition.contentType" = "內容類型是";
+"automation.condition.regexMatch" = "內容符合正規表達式";
+"automation.condition.containsText" = "內容包含";
+"automation.condition.sourceApp" = "來源應用程式是";
+"automation.action.title" = "執行以下動作（依序）";
+"automation.action.add" = "+ 新增動作";
+"automation.action.lowercased" = "轉小寫";
+"automation.action.uppercased" = "轉大寫";
+"automation.action.trimWhitespace" = "去除首尾空白";
+"automation.action.removeBlankLines" = "去除多餘空行";
+"automation.action.stripRichText" = "轉純文字";
+"automation.action.assignGroup" = "歸入分組";
+"automation.action.assignGroup.placeholder" = "請輸入分組名";
+"automation.action.urlEncode" = "URL 編碼";
+"automation.action.urlDecode" = "URL 解碼";
+"automation.action.removeQueryParams" = "刪除 URL 參數";
+"automation.action.regexReplace" = "正規表達式替換";
+"automation.action.regexReplace.to" = "替換為";
+"automation.action.addPrefix" = "新增前綴";
+"automation.action.addSuffix" = "新增後綴";
+"automation.action.removeQueryParams.placeholder" = "請輸入參數名稱，以逗號分隔";
+"automation.action.regexReplace.placeholder" = "請輸入正規表達式";
+"automation.action.regexReplace.to.placeholder" = "請輸入替換內容";
+"automation.action.addPrefix.placeholder" = "請輸入前綴文字";
+"automation.action.addSuffix.placeholder" = "請輸入後綴文字";
+"automation.preview" = "測試規則";
+"automation.preview.input" = "貼上或輸入內容以測試規則…";
+"automation.preview.output" = "結果預覽";
+"automation.preview.notMatched" = "條件未匹配";
+
+/* Automation Confirm */
+"automation.confirm.title" = "自動化規則觸發";
+"automation.confirm.matched" = "規則「%@」已匹配";
+"automation.confirm.apply" = "套用";
+"automation.confirm.keep" = "保留原文";
+"automation.confirm.original" = "原文：";
+"automation.confirm.processed" = "處理後：";
+"automation.action.delete" = "刪除規則";
+"automation.action.section.text" = "文字處理";
+"automation.action.section.url" = "URL 處理";
+"automation.action.section.advanced" = "進階";
+"automation.action.section.clipboard" = "Clipboard";
+"automation.action.markSensitive" = "Mark as Sensitive";
+"automation.action.pin" = "Pin";
+"automation.action.skipCapture" = "Skip Capture";
+"automation.rule.notifyOnTrigger" = "Send notification on trigger";
+"automation.notification.title" = "Automation";
+"automation.applied" = "Automation applied";
+"automation.validation.incomplete" = "Cannot enable rule";
+"automation.validation.incompleteMessage" = "Please add at least one condition and one action before enabling.";
+"automation.delete.confirm" = "Delete Rule?";
+"automation.delete.confirmMessage" = "This action cannot be undone.";
+"automation.notification.permissionDenied" = "Notifications Not Allowed";
+"automation.notification.permissionDeniedMessage" = "Please allow notifications for PasteMemo in System Settings.";
+"automation.notification.openSettings" = "Open Settings";
+"automation.condition.sourceApp.select" = "選擇應用程式";
+"automation.condition.sourceApp.add" = "新增應用程式";
+"automation.condition.sourceApp.empty" = "暫無已選應用程式";
+"automation.editor.definition" = "規則定義";
+"automation.editor.settings" = "設定";
+"automation.editor.save" = "儲存";
+"automation.editor.cancel" = "取消";
+"automation.editor.edit" = "編輯";
+"automation.condition.empty" = "暫無條件";
+"automation.condition.title.prefix" = "當滿足以下";
+"automation.condition.logic.all" = "全部";
+"automation.condition.logic.any" = "任一";
+"automation.condition.title.suffix" = "條件";
+"automation.condition.regexMatch.placeholder" = "請輸入正規表達式";
+"automation.condition.containsText.placeholder" = "請輸入文字內容";
+"automation.action.empty" = "暫無動作";
+"quick.pasteToApp" = "貼上到 %@";

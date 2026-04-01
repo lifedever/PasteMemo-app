@@ -1,0 +1,632 @@
+/* App */
+"app.name" = "PasteMemo";
+
+/* Menu */
+"menu.checkForUpdates" = "Periksa Pembaruan…";
+"menu.github" = "GitHub";
+"menu.reportIssue" = "Laporkan Masalah";
+"menu.upgrade" = "Upgrade ke Pro";
+
+/* Search */
+"search.placeholder" = "Cari riwayat papan klip…";
+
+/* Empty State */
+"empty.title" = "Tidak Ada Klip";
+"empty.message" = "Salin sesuatu untuk memulai";
+"empty.hint" = "Gunakan ⌘C untuk menyalin teks, gambar, atau file";
+"empty.quickHint" = "Salin sesuatu untuk memulai";
+"guide.shortcut" = "Tekan %@ untuk membuka Tempel Cepat di mana saja";
+"guide.doubleClick" = "Klik dua kali untuk menempel, klik sekali untuk memilih";
+"guide.pin" = "Klik kanan untuk menyematkan klip penting";
+
+/* Actions */
+"action.favorite" = "Favorit";
+"action.unfavorite" = "Hapus Favorit";
+"action.pin" = "Sematkan";
+"action.unpin" = "Lepas Sematan";
+"action.delete" = "Hapus";
+"action.clearAll" = "Hapus Semua";
+"action.aiCopy" = "Salin untuk AI";
+
+/* Content Types */
+"type.text" = "Teks";
+"type.link" = "Tautan";
+"type.image" = "Gambar";
+"type.code" = "Kode";
+"type.color" = "Warna";
+"type.file" = "File";
+"type.other" = "Lainnya";
+"type.email" = "Email";
+"type.phone" = "Telepon";
+"phone.call" = "Panggil";
+"phone.message" = "Pesan";
+"phone.copy" = "Salin";
+"type.video" = "Video";
+"type.audio" = "Audio";
+"type.document" = "Dokumen";
+"type.archive" = "Arsip";
+"type.application" = "Aplikasi";
+"detail.openInFinder" = "Tampilkan di Finder";
+
+/* Filter */
+"filter.all" = "Semua";
+"filter.special" = "Khusus";
+"filter.favorites" = "Favorit";
+"filter.pinned" = "Disematkan";
+
+/* Time */
+"time.now" = "baru saja";
+"time.pinned" = "Disematkan";
+"time.today" = "Hari Ini";
+"time.yesterday" = "Kemarin";
+"time.thisWeek" = "Minggu Ini";
+"time.thisMonth" = "Bulan Ini";
+"time.older" = "Lebih Lama";
+"time.minutes" = "%d mnt lalu";
+"time.hours" = "%d jam lalu";
+"time.days" = "%d hr lalu";
+"time.weeks" = "%d mgg lalu";
+"time.months" = "%d bln lalu";
+"time.years" = "%d thn lalu";
+
+/* Settings */
+"settings.general" = "Umum";
+"settings.update" = "Pembaruan";
+"settings.about" = "Tentang";
+"settings.appearance" = "Tampilan";
+"settings.theme" = "Tema";
+"settings.theme.system" = "Sistem";
+"settings.theme.light" = "Terang";
+"settings.theme.dark" = "Gelap";
+"settings.language" = "Bahasa";
+"settings.language.restart_title" = "Perlu Mulai Ulang";
+"settings.language.restart_message" = "Aplikasi perlu dimulai ulang agar perubahan bahasa sepenuhnya berlaku.";
+"settings.language.restart_now" = "Mulai Ulang Sekarang";
+"settings.language.restart_later" = "Nanti";
+"settings.launchAtLogin" = "Jalankan saat Login";
+"settings.currentVersion" = "Versi Saat Ini";
+"settings.features" = "Fitur";
+"settings.shortcuts" = "Pintasan";
+"settings.quickPanelShortcut" = "Tempel Cepat";
+"settings.managerShortcut" = "Open Manager";
+"settings.shortcut.none" = "Belum diatur";
+"settings.shortcut.clickToRecord" = "Klik untuk merekam";
+"settings.shortcut.pressKey" = "Tekan pintasan…";
+"settings.paste" = "Tempel";
+"settings.addNewLine" = "Tambah baris baru setelah tempel";
+"settings.history" = "Riwayat";
+"settings.retentionDays" = "Simpan Riwayat";
+"settings.retentionDays.forever" = "Selamanya";
+"settings.retentionDays.days" = "%d hari";
+"settings.display" = "Tampilan";
+"settings.behavior" = "Perilaku";
+"settings.preferences" = "Preferensi";
+"settings.showLinkURL" = "Tampilkan URL alih-alih judul halaman untuk tautan";
+"settings.webPreview" = "Pratinjau web";
+
+/* Pro */
+"pro.title" = "Upgrade ke PasteMemo Pro";
+"pro.description" = "Buka riwayat tak terbatas, pengelompokan cerdas, sinkronisasi iCloud, dan lainnya.";
+"pro.enterKey" = "Masukkan Kunci Lisensi";
+"pro.activate" = "Aktifkan";
+"pro.activated" = "Lisensi diaktifkan";
+"pro.deactivate" = "Nonaktifkan Lisensi";
+"pro.invalidKey" = "Kunci lisensi tidak valid";
+"pro.features" = "Fitur Pro";
+"pro.beta.desc" = "PasteMemo saat ini dalam tahap beta. Fitur Pro direncanakan untuk rilis mendatang — nantikan!";
+"pro.feature.unlimited" = "Riwayat tak terbatas";
+"pro.feature.favorites" = "Favorit tak terbatas";
+"pro.feature.smartGroup" = "Pengelompokan cerdas";
+"pro.feature.icloud" = "Pencadangan otomatis";
+"pro.feature.themes" = "Tema kustom";
+"pro.feature.rules" = "Aturan papan klip";
+"pro.feature.relay" = "Mode relay";
+"pro.feature.customCategory" = "Kategori kustom";
+"pro.feature.ignoreApps" = "Abaikan aplikasi tertentu";
+"pro.feature.automation" = "Otomatisasi papan klip";
+
+/* Menu */
+"menu.manager" = "Buka Pengelola";
+
+/* Detail */
+"detail.select" = "Pilih Item";
+"detail.selectHint" = "Klik item di sebelah kiri untuk melihat detail";
+"detail.info" = "Informasi";
+"detail.type" = "Tipe";
+"detail.source" = "Aplikasi Sumber";
+"detail.created" = "Dibuat";
+"detail.group" = "Grup";
+"detail.lastUsed" = "Terakhir Digunakan";
+"detail.chars" = "Karakter";
+"detail.lines" = "Baris";
+"detail.words" = "Kata";
+"detail.dimensions" = "Dimensi";
+"detail.size" = "Ukuran";
+"detail.format" = "Format";
+"detail.fileCount" = "File";
+"detail.host" = "Host";
+"detail.url" = "URL";
+"detail.aiPreview" = "Pratinjau untuk AI";
+"detail.location" = "Lokasi";
+"detail.linkTitle" = "Judul";
+"detail.language" = "Bahasa";
+"detail.openInBrowser" = "Buka di Browser";
+"detail.preview_failed" = "Gagal memuat pratinjau";
+"detail.multiSelected" = "%d item dipilih";
+"action.deleteSelected" = "Hapus %d item";
+"action.deleteSelected.confirm" = "Delete %d items?";
+"file.multiTitle" = " dan %d file";
+
+/* Filter */
+"filter.types" = "Berdasarkan Tipe";
+"filter.apps" = "Berdasarkan Aplikasi";
+"filter.groups" = "Grup";
+"filter.other" = "Lainnya";
+
+/* Actions */
+"action.paste" = "Tempel";
+"action.cancel" = "Batal";
+"action.confirm" = "OK";
+"action.assignGroup" = "Tetapkan ke Grup";
+"action.newGroup" = "Grup Baru…";
+"action.editGroup" = "Edit Grup…";
+"action.deleteGroup" = "Hapus Grup";
+"action.deleteGroupConfirm" = "Yakin ingin menghapus grup \"%@\"? Item dalam grup tidak akan dihapus.";
+"action.removeFromGroup" = "Hapus dari Grup";
+"action.changeIcon" = "Ubah Ikon…";
+"action.clearConfirm" = "Ini akan menghapus semua item kecuali yang disematkan.";
+"action.copy" = "Salin";
+"action.copied" = "Disalin ke papan klip";
+
+/* Stats */
+"stats.total" = "Total Klip";
+"stats.clips" = "klip";
+
+/* Menu */
+"menu.openMain" = "Buka Jendela Utama";
+"menu.quickPanel" = "Tempel Cepat";
+"menu.pause" = "Jeda Pemantauan";
+"menu.resume" = "Lanjutkan Pemantauan";
+"menu.settings" = "Pengaturan";
+"menu.quit" = "Keluar %@";
+
+/* Quick Panel */
+"quick.search" = "Ketik untuk mencari klip…";
+"quick.recent" = "Terbaru";
+"quick.selectHint" = "Pilih item untuk pratinjau";
+"quick.pasteTo" = "Tempel ke %@";
+"quick.actions" = "Tindakan";
+"quick.navigate" = "Navigasi";
+"quick.pasteAction" = "Tempel";
+"quick.close" = "Tutup";
+"quick.pasteNewLine" = "Tempel + Enter";
+"quick.pastePath" = "Tempel Path";
+"quick.pasteName" = "Tempel Nama";
+"quick.saveToFolder" = "Tempel File";
+"quick.switchType" = "Tipe";
+"quick.delete" = "Hapus";
+"quick.openLink" = "Buka";
+"quick.preview" = "Pratinjau";
+"quick.pasteImage" = "Tempel Gambar";
+"settings.showGuide" = "Tampilkan Panduan Awal";
+
+/* Onboarding */
+"accessibility.lost.title" = "Izin Aksesibilitas Diperlukan";
+"accessibility.lost.message" = "Setelah pembaruan aplikasi, macOS memerlukan otorisasi ulang. Buka Pengaturan Sistem, hapus PasteMemo dari daftar Aksesibilitas terlebih dahulu (pilih dan klik minus), lalu klik plus untuk menambahkannya kembali.";
+"accessibility.lost.later" = "Nanti";
+"onboarding.back" = "Kembali";
+"onboarding.next" = "Lanjut";
+"onboarding.done" = "Mulai";
+"onboarding.welcome.title" = "Selamat Datang di PasteMemo";
+"onboarding.welcome.desc" = "Pengelola papan klip cerdas yang berada di bar menu. Semua yang Anda salin otomatis tersimpan dan langsung bisa dicari.";
+"onboarding.accessibility.title" = "Aktifkan Aksesibilitas";
+"onboarding.accessibility.desc" = "PasteMemo memerlukan izin Aksesibilitas untuk menempelkan konten ke aplikasi lain. Klik tombol di bawah untuk memberikan akses di Pengaturan Sistem.";
+"onboarding.accessibility.grant" = "Buka Pengaturan Aksesibilitas";
+"onboarding.accessibility.granted" = "Izin diberikan";
+"onboarding.accessibility.hint" = "Setelah memberikan izin, halaman ini akan diperbarui secara otomatis.";
+"onboarding.shortcut.title" = "Pintasan Tempel Cepat";
+"onboarding.shortcut.desc" = "Tekan pintasan di mana saja untuk membuka panel Tempel Cepat. Cari riwayat papan klip dan tempel dengan satu klik.";
+"onboarding.shortcut.current" = "Klik untuk mengubah pintasan";
+
+/* About */
+/* Help */
+"menu.newGroup" = "Grup Baru…";
+"menu.newSmartGroup" = "Grup Pintar Baru…";
+"menu.help" = "Bantuan PasteMemo";
+"help.title" = "Bantuan PasteMemo";
+"help.subtitle" = "Panduan singkat untuk memaksimalkan papan klip Anda.";
+"help.close" = "Mengerti";
+"help.shortcuts" = "Pintasan Keyboard";
+"help.shortcut.quickPaste" = "Buka panel Tempel Cepat";
+"help.shortcut.paste" = "Tempel item yang dipilih";
+"help.shortcut.switchType" = "Filter berdasarkan tipe konten";
+"help.shortcut.navigate" = "Navigasi item";
+"help.shortcut.cmdEnter" = "Tempel path / Tempel file / Tempel gambar";
+"help.shortcut.preview" = "Pratinjau / Buka tautan";
+"help.shortcut.delete" = "Hapus item";
+"help.shortcut.close" = "Tutup panel";
+"help.actions" = "Tindakan Tempel Cepat";
+"help.action.paste" = "Tekan Enter atau klik dua kali untuk menempel ke aplikasi aktif";
+"help.action.openLink" = "Tautan dapat dibuka langsung di browser default";
+"help.action.pastePath" = "Item file: ⌘↵ menempelkan path file";
+"help.action.saveToFolder" = "Item teks/gambar: ⌘↵ menempel sebagai file ke Finder";
+"help.action.pasteImage" = "Item dengan gambar: ⌘↵ menempel sebagai file gambar";
+"help.action.pin" = "Klik kanan untuk menyematkan item — tetap di atas secara permanen";
+"help.tips" = "Tips";
+"help.tip.doubleClick" = "Klik dua kali untuk menempel, klik sekali untuk memilih dan pratinjau";
+"help.tip.rightClick" = "Klik kanan untuk tindakan lainnya: sematkan, hapus";
+"help.tip.menuBar" = "Klik ikon bar menu untuk mengakses riwayat dan pengaturan";
+"help.tip.search" = "Ketik di kotak pencarian untuk menemukan klip apa pun secara instan";
+"onboarding.helpHint" = "Anda dapat melihat bantuan kapan saja dari menu: Bantuan → Bantuan PasteMemo";
+
+"about.description" = "Pengelola papan klip cerdas untuk macOS";
+"about.website" = "Situs Web";
+"about.sponsor" = "Dukung Pengembang";
+
+/* Update */
+"update.available.title" = "Versi baru PasteMemo tersedia!";
+"update.available.message" = "PasteMemo %@ tersedia — Anda memiliki %@. Ingin mengunduhnya sekarang?";
+"update.skip" = "Lewati Versi Ini";
+"update.remind_later" = "Ingatkan Nanti";
+"update.install" = "Pasang Pembaruan";
+"update.downloading" = "Mengunduh pembaruan...";
+"update.ready" = "Siap dipasang";
+"update.install_restart" = "Pasang dan Mulai Ulang";
+"update.cancel" = "Batal";
+"update.check_failed" = "Gagal Memeriksa Pembaruan";
+"update.check_failed.hint" = "Tidak dapat mengambil info versi terbaru. Periksa koneksi jaringan Anda dan coba lagi, atau unduh secara manual dari:";
+"update.check_failed.github" = "Unduh dari GitHub";
+"update.check_failed.gitee" = "Unduh dari Gitee";
+"update.check_failed.cancel" = "Batal";
+"update.no_updates" = "Anda sudah menggunakan versi terbaru!";
+"update.no_updates.message" = "PasteMemo %@ adalah versi terbaru.";
+"update.download_error" = "Unduhan Gagal";
+"update.dmg_error" = "Pembaruan Gagal";
+"update.dmg_error.message" = "Image disk yang diunduh rusak. Silakan coba unduh pembaruan lagi.";
+
+/* Ignored Apps */
+"settings.ignoredApps" = "Aplikasi yang Diabaikan";
+"settings.ignoredApps.add" = "Tambah Aplikasi";
+"settings.ignoredApps.empty" = "Tidak ada aplikasi yang diabaikan";
+"settings.ignoredApps.remove" = "Hapus";
+"settings.ignoredApps.selectApp" = "Pilih Aplikasi untuk Diabaikan";
+"settings.ignoredApps.running" = "Aplikasi yang Berjalan";
+"settings.ignoredApps.browse" = "Telusuri Aplikasi…";
+
+/* Sensitive Content */
+"sensitive.masked" = "••••••••";
+"sensitive.reveal" = "Tampilkan";
+"sensitive.hide" = "Sembunyikan";
+"sensitive.markSensitive" = "Tandai sebagai Sensitif";
+"sensitive.unmarkSensitive" = "Hapus Tanda Sensitif";
+
+/* Data Import/Export */
+"dataPorter.section" = "Data";
+"dataPorter.export" = "Ekspor Data";
+"dataPorter.import" = "Impor Data";
+"dataPorter.encrypt" = "Enkripsi ekspor";
+"dataPorter.password" = "Kata Sandi";
+"dataPorter.confirmPassword" = "Konfirmasi Kata Sandi";
+"dataPorter.passwordMismatch" = "Kata sandi tidak cocok";
+"dataPorter.enterPassword" = "Masukkan kata sandi untuk dekripsi";
+"dataPorter.exportSuccess" = "Ekspor berhasil";
+"dataPorter.importSuccess" = "Impor berhasil";
+"dataPorter.wrongPassword" = "Kata sandi salah";
+
+/* Dev Tools */
+"devTools.importFromRelease" = "Import Data from Release";
+"devTools.importFromRelease.confirm" = "Import from Release?";
+"devTools.importFromRelease.confirmMessage" = "This will overwrite all data in the Dev version. This action cannot be undone.";
+"devTools.importFromRelease.releaseRunning" = "Please quit the release version of PasteMemo before importing.";
+"devTools.importFromRelease.noData" = "No release version data found.";
+
+/* Rich Text / Plain Text */
+"action.pasteAsPlainText" = "Teks Biasa";
+
+/* Text Editing */
+"action.edit" = "Edit";
+"action.save" = "Simpan";
+
+/* Multi-select */
+"action.merge" = "Gabung";
+"action.mergeCopy" = "Salin";
+"quick.multiSelected" = "%d item dipilih";
+"quick.batchPaste" = "Tempel Massal";
+
+/* Privacy */
+"settings.privacy" = "Privasi";
+"settings.privacy.sensitive" = "Konten Sensitif";
+"settings.privacy.sensitiveDetection" = "Deteksi otomatis konten sensitif";
+"settings.privacy.sensitiveHint" = "Secara otomatis menyembunyikan kata sandi, kunci API, token, dan data sensitif lainnya yang disalin ke papan klip.";
+
+/* Automation */
+"settings.automation" = "Otomatisasi";
+"settings.automation.enabled" = "Aktifkan aturan otomatisasi";
+"settings.automation.ruleCount" = "%d aturan (%d aktif)";
+"settings.automation.manage" = "Kelola Aturan Otomatisasi...";
+"settings.automation.hint" = "All matching rules are executed in order. Drag to reorder.";
+"settings.automation.auto" = "Otomatis";
+"settings.automation.manual" = "Manual";
+"settings.automation.proRequired" = "Aturan otomatisasi adalah fitur Pro";
+"automation.builtIn.cleanTracking" = "Bersihkan parameter pelacakan tautan";
+"automation.builtIn.lowercaseEmail" = "Ubah email ke huruf kecil";
+"automation.builtIn.removeBlankLines" = "Hapus baris kosong berlebihan";
+
+/* Onboarding - Privacy Apps */
+"onboarding.privacy.title" = "Perlindungan Privasi";
+"onboarding.privacy.desc" = "PasteMemo mendeteksi pengelola kata sandi dan aplikasi keamanan berikut di Mac Anda. Kami menyarankan untuk mengabaikan aktivitas papan klip mereka untuk melindungi data sensitif Anda.";
+"onboarding.privacy.none" = "Tidak ada pengelola kata sandi atau aplikasi keamanan terdeteksi";
+
+/* Onboarding - Preferences */
+"onboarding.preferences.title" = "Preferensi";
+"onboarding.preferences.desc" = "Atur perilaku yang Anda inginkan. Anda dapat mengubahnya kapan saja di Pengaturan.";
+
+"sensitive.optionHint" = "Tahan ⌥ Option untuk mengintip";
+
+"sensitive.peek" = "Intip";
+
+/* Accessibility Steps */
+"accessibility.step1" = "Buka Pengaturan Sistem → Privasi & Keamanan → Aksesibilitas";
+"accessibility.step2" = "Temukan PasteMemo, hapus terlebih dahulu (pilih dan klik minus)";
+"accessibility.step3" = "Klik plus untuk menambahkan PasteMemo kembali";
+
+/* Accessibility Steps (rich text parts) */
+"accessibility.step1.prefix" = "Buka";
+"accessibility.step1.path" = "Pengaturan Sistem → Privasi & Keamanan → Aksesibilitas";
+"accessibility.step2.prefix" = "Temukan";
+"accessibility.step2.suffix" = ", hapus terlebih dahulu";
+"accessibility.step3.text" = "Klik untuk menambahkan PasteMemo kembali";
+
+"accessibility.step2.find" = "Temukan";
+"accessibility.step2.delete" = "hapus";
+"accessibility.step3.add" = "Klik";
+
+"accessibility.step3.readd" = "tambahkan kembali";
+
+"accessibility.step2.pre" = "terlebih dahulu";
+"accessibility.step2.separator" = ", ";
+
+"filter.sensitive" = "Sensitif";
+
+"settings.clearData" = "Hapus Semua Data";
+
+"settings.sound" = "Suara";
+"settings.sound.enabled" = "Efek suara";
+"settings.sound.copy" = "Suara salin";
+"settings.sound.paste" = "Suara tempel";
+"settings.sound.section.custom" = "Kustom";
+"settings.sound.section.system" = "Sistem";
+
+/* Backup */
+"backup.section" = "Pencadangan Otomatis";
+"backup.enable" = "Aktifkan pencadangan otomatis";
+"backup.frequency" = "Frekuensi pencadangan";
+"backup.maxSlots" = "Jumlah cadangan";
+"backup.destination" = "Metode pencadangan";
+"backup.frequency.sixHours" = "Setiap 6 jam";
+"backup.frequency.daily" = "Harian";
+"backup.frequency.threeDays" = "Setiap 3 hari";
+"backup.frequency.weekly" = "Mingguan";
+"backup.frequency.monthly" = "Bulanan";
+"backup.path" = "Jalur cadangan";
+"backup.lastBackup" = "Cadangan terakhir";
+"backup.backupNow" = "Cadangkan sekarang";
+"backup.restore" = "Pulihkan…";
+"backup.success" = "Pencadangan berhasil.";
+"backup.restore.title" = "Pulihkan dari cadangan";
+"backup.restore.empty" = "Tidak ada cadangan tersedia.";
+"backup.restore.merge" = "Gabung (pertahankan data yang ada)";
+"backup.restore.overwrite" = "Timpa (ganti semua)";
+"backup.restore.confirm" = "Konfirmasi pemulihan";
+"backup.restore.confirmMerge" = "Data cadangan akan digabung dengan data yang ada. Duplikat akan dilewati.";
+"backup.restore.confirmOverwrite" = "Semua data yang ada akan diganti dengan data cadangan. Tindakan ini tidak dapat dibatalkan.";
+"backup.restore.success" = "Pemulihan selesai.";
+"backup.webdav.url" = "URL server";
+"backup.webdav.username" = "Nama pengguna";
+"backup.webdav.password" = "Kata sandi";
+"backup.webdav.test" = "Tes koneksi";
+"backup.destination.local" = "Lokal";
+"backup.changePath" = "Ubah…";
+"backup.webdav.testSuccess" = "Koneksi berhasil.";
+"backup.webdav.testFailed" = "Koneksi gagal.";
+
+// Relay Mode
+"relay.title" = "Mode Relay";
+"relay.exit" = "Keluar";
+"relay.close" = "Tutup";
+"relay.autoExit" = "Keluar otomatis saat antrian kosong";
+"relay.previous" = "Sebelumnya";
+"relay.skip" = "Lewati";
+"relay.delete" = "Hapus";
+"relay.split" = "Bagi";
+"relay.addToQueue" = "Tambahkan ke antrian relay";
+"relay.splitAndRelay" = "Bagi & relay";
+"relay.split.title" = "Bagi ke antrian";
+"relay.split.delimiter" = "Pemisah";
+"relay.split.customPlaceholder" = "Masukkan pemisah...";
+"relay.split.confirm" = "Bagi";
+"relay.split.preview" = "Akan dibagi menjadi %d item";
+"relay.split.noResult" = "Pemisah tidak ditemukan";
+"relay.delimiter.newline" = "Baris baru";
+"relay.delimiter.comma" = "Koma (,)";
+"relay.delimiter.chineseComma" = "Koma Cina (、)";
+"relay.delimiter.custom" = "Kustom";
+"relay.exitRelay" = "Keluar relay";
+"relay.autoExit.short" = "Keluar otomatis saat selesai";
+"relay.startRelay" = "Mulai relay";
+"relay.pause" = "Jeda";
+"relay.resume" = "Lanjutkan";
+"relay.paused" = "Dijeda";
+"relay.emptyHint" = "Salin konten untuk menambahkan ke antrian";
+"relay.quickPastePaused" = "Tempel cepat dijeda selama mode relay";
+"relay.alert.title" = "Mode Relay diaktifkan";
+"relay.alert.message" = "Tempel cepat dijeda. Konten yang disalin akan ditambahkan ke antrian relay.
+
+Gunakan %@ untuk menempel satu per satu.";
+"relay.alert.ok" = "Mengerti";
+"relay.alert.dontShowAgain" = "Jangan tampilkan lagi";
+"relay.settings.pasteKey" = "Pintasan tempel relay";
+"relay.settings.pasteKeyNote" = "Beberapa aplikasi (Terminal, Emacs) mungkin menggunakan pintasan yang sama.";
+"relay.settings.resetAlert" = "Tampilkan tip aktivasi lagi";
+"relay.settings.description" = "Mode relay memungkinkan Anda menyalin beberapa item dan menempelkannya satu per satu. Ideal untuk menyalin daftar nama dari halaman web dan menempelkannya baris per baris di Excel.";
+"relay.settings.shortcuts" = "Pintasan";
+"relay.settings.operations" = "Operasi";
+"relay.settings.op.paste" = "Tempel item berikutnya";
+"relay.settings.op.skip" = "Lewati item saat ini";
+"relay.settings.op.previous" = "Kembali ke sebelumnya";
+"relay.settings.pauseToChange" = "Jeda atau keluar dari mode relay untuk mengubah pintasan.";
+"onboarding.relay.title" = "Mode Relay";
+"onboarding.relay.desc" = "Salin beberapa item, lalu tempel satu per satu secara berurutan — cocok untuk entri data massal.";
+"onboarding.relay.feature1" = "Pilih beberapa item atau salin terus-menerus untuk membuat antrian";
+"onboarding.relay.feature2" = "Bagi teks berdasarkan pemisah untuk membuat antrian dengan cepat";
+"onboarding.relay.feature3" = "Tekan Ctrl+V untuk menempel satu per satu (dapat disesuaikan)";
+
+/* Missing Keys - Empty State */
+"empty.noResults" = "Tidak ada item yang cocok";
+
+/* Missing Keys - Actions */
+"cmd.showInFinder" = "Tampilkan di Finder";
+"cmd.copyAs" = "Salin sebagai %@";
+"relay.reverse" = "Balik Urutan";
+"relay.editItem" = "Edit Konten";
+"quickPanel.pin" = "Sematkan Jendela";
+"quickPanel.unpin" = "Lepas Sematan Jendela";
+
+/* Missing Keys - Settings */
+"settings.doubleTap" = "Ketuk dua kali untuk membuka";
+"settings.doubleTap.modifier" = "Tombol Modifier Ketuk Dua Kali";
+
+/* Missing Keys - Quick Panel */
+"quick.commandPalette" = "Tindakan Cepat";
+
+/* Missing Keys - Onboarding */
+"onboarding.skip" = "Lewati";
+
+/* Missing Keys - About */
+"about.help" = "Bantuan";
+
+/* Missing Keys - Help - Relay */
+"help.relay" = "Mode Relay";
+"help.relay.open" = "Buka melalui tombol toolbar atau bar menu";
+"help.relay.paste" = "Ctrl+V untuk menempel item berikutnya (dapat disesuaikan di Pengaturan)";
+"help.relay.skip" = "Klik tombol Lewati di jendela relay untuk melewati item saat ini";
+"help.relay.previous" = "Klik tombol Sebelumnya di jendela relay untuk kembali";
+"help.relay.split" = "Arahkan kursor dan klik ikon gunting, atau klik kanan untuk membagi item";
+"help.relay.pauseResume" = "Tombol Jeda / Lanjutkan di jendela relay";
+"help.relay.exit" = "Tombol Tutup atau Esc untuk keluar dari mode relay";
+
+/* Missing Keys - Clear Data */
+"settings.clearData.1month" = "Lebih dari 1 bulan";
+"settings.clearData.3months" = "Lebih dari 3 bulan";
+"settings.clearData.6months" = "Lebih dari 6 bulan";
+"settings.clearData.1year" = "Lebih dari 1 tahun";
+"settings.clearData.all" = "Hapus semua";
+"settings.clearData.result" = "%d item dihapus";
+
+/* Missing Keys - Backup */
+"backup.nextBackup" = "Cadangan berikutnya";
+
+/* Missing Keys - Command Palette */
+"cmd.title" = "Tindakan Cepat";
+"cmd.paste" = "Tempel";
+"cmd.pasteAsPlainText" = "Tempel sebagai Teks Biasa";
+"cmd.copy" = "Salin";
+"cmd.pin" = "Sematkan / Lepas Sematan";
+"cmd.toggleSensitive" = "Alihkan Sensitif";
+"cmd.delete" = "Hapus";
+"cmd.openLink" = "Buka Tautan";
+"cmd.pasteAsFile" = "Tempel sebagai File";
+"cmd.pastePath" = "Tempel Path";
+"cmd.andNewLine" = " + Baris Baru";
+"cmd.transform" = "Transformasi";
+
+/* Missing Keys - Relay */
+"relay.tab" = "Relay";
+
+/* Missing Keys - Automation Manager Window */
+"automation.window.title" = "Aturan Otomatisasi";
+"automation.section.builtIn" = "Aturan Bawaan";
+"automation.section.custom" = "Aturan Saya";
+"automation.section.empty" = "(kosong)";
+"automation.editor.selectRule" = "Pilih aturan untuk diedit";
+"automation.rule.name" = "Nama";
+"automation.rule.enabled" = "Aktif";
+"automation.rule.triggerMode" = "Pemicu";
+"automation.rule.triggerMode.automatic" = "Otomatis";
+"automation.rule.triggerMode.manual" = "Hanya manual";
+"automation.rule.notifyBeforeApply" = "Konfirmasi sebelum menerapkan";
+"automation.rule.newName" = "Aturan Baru";
+"automation.condition.title" = "Kondisi";
+"automation.condition.add" = "+ Tambah Kondisi";
+"automation.condition.contentType" = "Tipe konten adalah";
+"automation.condition.regexMatch" = "Konten cocok dengan regex";
+"automation.condition.containsText" = "Konten mengandung";
+"automation.condition.sourceApp" = "Aplikasi sumber adalah";
+"automation.action.title" = "Tindakan (berurutan)";
+"automation.action.add" = "+ Tambah Tindakan";
+"automation.action.lowercased" = "Huruf kecil";
+"automation.action.uppercased" = "Huruf besar";
+"automation.action.trimWhitespace" = "Hapus spasi";
+"automation.action.removeBlankLines" = "Hapus baris kosong";
+"automation.action.stripRichText" = "Hapus format teks";
+"automation.action.assignGroup" = "Tetapkan ke Grup";
+"automation.action.assignGroup.placeholder" = "Masukkan nama grup";
+"automation.action.urlEncode" = "Encode URL";
+"automation.action.urlDecode" = "Decode URL";
+"automation.action.removeQueryParams" = "Hapus parameter URL";
+"automation.action.regexReplace" = "Ganti dengan regex";
+"automation.action.regexReplace.to" = "Ganti dengan";
+"automation.action.addPrefix" = "Tambah awalan";
+"automation.action.addSuffix" = "Tambah akhiran";
+"automation.action.removeQueryParams.placeholder" = "Masukkan nama parameter, pisahkan dengan koma";
+"automation.action.regexReplace.placeholder" = "Masukkan pola regex";
+"automation.action.regexReplace.to.placeholder" = "Masukkan teks pengganti";
+"automation.action.addPrefix.placeholder" = "Masukkan teks awalan";
+"automation.action.addSuffix.placeholder" = "Masukkan teks akhiran";
+"automation.preview" = "Uji Aturan";
+"automation.preview.input" = "Tempel atau ketik konten untuk menguji aturan…";
+"automation.preview.output" = "Pratinjau Hasil";
+"automation.preview.notMatched" = "Kondisi tidak cocok";
+
+/* Automation Confirm */
+"automation.confirm.title" = "Aturan Otomatisasi Terpicu";
+"automation.confirm.matched" = "Aturan \"%@\" cocok";
+"automation.confirm.apply" = "Terapkan";
+"automation.confirm.keep" = "Pertahankan Asli";
+"automation.confirm.original" = "Asli:";
+"automation.confirm.processed" = "Diproses:";
+"automation.action.delete" = "Hapus aturan";
+"automation.action.section.text" = "Teks";
+"automation.action.section.url" = "URL";
+"automation.action.section.advanced" = "Lanjutan";
+"automation.action.section.clipboard" = "Clipboard";
+"automation.action.markSensitive" = "Mark as Sensitive";
+"automation.action.pin" = "Pin";
+"automation.action.skipCapture" = "Skip Capture";
+"automation.rule.notifyOnTrigger" = "Send notification on trigger";
+"automation.notification.title" = "Automation";
+"automation.applied" = "Automation applied";
+"automation.validation.incomplete" = "Cannot enable rule";
+"automation.validation.incompleteMessage" = "Please add at least one condition and one action before enabling.";
+"automation.delete.confirm" = "Delete Rule?";
+"automation.delete.confirmMessage" = "This action cannot be undone.";
+"automation.notification.permissionDenied" = "Notifications Not Allowed";
+"automation.notification.permissionDeniedMessage" = "Please allow notifications for PasteMemo in System Settings.";
+"automation.notification.openSettings" = "Open Settings";
+"automation.condition.sourceApp.select" = "Pilih Aplikasi";
+"automation.condition.sourceApp.add" = "Tambah Aplikasi";
+"automation.condition.sourceApp.empty" = "Belum ada aplikasi dipilih";
+"automation.editor.definition" = "Definisi Aturan";
+"automation.editor.settings" = "Pengaturan";
+"automation.editor.save" = "Simpan";
+"automation.editor.cancel" = "Batal";
+"automation.editor.edit" = "Edit";
+"automation.condition.empty" = "Tidak ada kondisi";
+"automation.condition.title.prefix" = "Ketika";
+"automation.condition.logic.all" = "semua";
+"automation.condition.logic.any" = "salah satu";
+"automation.condition.title.suffix" = "kondisi terpenuhi";
+"automation.condition.regexMatch.placeholder" = "Masukkan pola regex";
+"automation.condition.containsText.placeholder" = "Masukkan konten teks";
+"automation.action.empty" = "Tidak ada tindakan";
+"quick.pasteToApp" = "Tempel ke %@";

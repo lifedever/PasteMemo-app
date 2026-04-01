@@ -1,0 +1,786 @@
+import AppKit
+import SwiftUI
+import SwiftData
+
+private let CLIPBOARD_POLL_INTERVAL: TimeInterval = 0.5
+private let PASTE_SIMULATION_DELAY: Duration = .milliseconds(30)
+private let V_KEY_CODE: UInt16 = 0x09
+
+@MainActor
+final class ClipboardManager: ObservableObject {
+    static let shared = ClipboardManager()
+
+    var lastChangeCount: Int = 0
+    private var timer: Timer?
+    var modelContainer: ModelContainer?
+    @Published var isPaused = false
+
+    // Track app switches to determine the real source app
+    private var appBeforeSwitch: (name: String?, bundleID: String?) = (nil, nil)
+    private var lastSwitchTime: Date = .distantPast
+    private var appSwitchObserver: Any?
+    private static let APP_SWITCH_THRESHOLD: TimeInterval = 1.0
+
+    private init() {}
+
+    // MARK: - Monitoring
+
+    func startMonitoring() {
+        lastChangeCount = NSPasteboard.general.changeCount
+        startAppSwitchTracking()
+        timer = Timer.scheduledTimer(withTimeInterval: CLIPBOARD_POLL_INTERVAL, repeats: true) { [weak self] _ in
+            Task { @MainActor in
+                self?.checkClipboard()
+            }
+        }
+    }
+
+    func stopMonitoring() {
+        timer?.invalidate()
+        timer = nil
+        if let observer = appSwitchObserver {
+            NSWorkspace.shared.notificationCenter.removeObserver(observer)
+            appSwitchObserver = nil
+        }
+    }
+
+    private func startAppSwitchTracking() {
+        guard appSwitchObserver == nil else { return }
+        appBeforeSwitch = frontmostAppInfo()
+        appSwitchObserver = NSWorkspace.shared.notificationCenter.addObserver(
+            forName: NSWorkspace.didActivateApplicationNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                let current = self.frontmostAppInfo()
+                let currentBundleID = current.bundleID ?? ""
+                let previousBundleID = self.appBeforeSwitch.bundleID ?? ""
+                if currentBundleID != previousBundleID {
+                    self.lastSwitchTime = Date()
+                }
+                self.appBeforeSwitch = current
+            }
+        }
+    }
+
+    func togglePause() {
+        isPaused.toggle()
+        if isPaused {
+            stopMonitoring()
+        } else {
+            startMonitoring()
+        }
+    }
+
+    private func checkClipboard() {
+        let pasteboard = NSPasteboard.general
+        guard pasteboard.changeCount != lastChangeCount else { return }
+        lastChangeCount = pasteboard.changeCount
+        captureAndSave()
+    }
+
+    // MARK: - Capture
+
+    private func captureAndSave() {
+        guard let container = modelContainer else { return }
+        // If an app switch happened very recently, the copy likely came from the previous app
+        let appInfo: (name: String?, bundleID: String?)
+        if Date().timeIntervalSince(lastSwitchTime) < Self.APP_SWITCH_THRESHOLD,
+           appBeforeSwitch.bundleID != nil {
+            appInfo = appBeforeSwitch
+        } else {
+            appInfo = frontmostAppInfo()
+        }
+        if let bundleID = appInfo.bundleID, IgnoredAppsManager.shared.isIgnored(bundleID) { return }
+        guard let newItem = captureCurrentClipboard(sourceApp: appInfo.name) else { return }
+        newItem.sourceAppBundleID = appInfo.bundleID
+
+        newItem.isSensitive = SensitiveDetector.isSensitive(
+            content: newItem.content, sourceAppBundleID: appInfo.bundleID, contentType: newItem.contentType
+        )
+
+        let context = container.mainContext
+
+        // Apply automation rules (text-based content only)
+        if newItem.contentType.isMergeable {
+            let result = AutomationEngine.shared.process(
+                content: newItem.content,
+                contentType: newItem.contentType,
+                sourceApp: appInfo.bundleID,
+                context: context
+            )
+            switch result {
+            case .unchanged:
+                break
+            case .applied(let processed, _, let actions):
+                if actions.contains(.skipCapture) { return }
+                applyAutomationActions(actions, processed: processed, to: newItem, context: context)
+            case .pendingConfirmation(let processed, let ruleName, _, let actions):
+                let accepted = showAutomationConfirmation(
+                    ruleName: ruleName, original: newItem.content, processed: processed
+                )
+                if accepted {
+                    if actions.contains(.skipCapture) { return }
+                    applyAutomationActions(actions, processed: processed, to: newItem, context: context)
+                }
+            }
+        }
+
+        if isDuplicate(newItem, in: context) { return }
+
+        context.insert(newItem)
+        cleanExpiredItems(in: context)
+        try? context.save()
+
+        SoundManager.playCopy()
+
+        if newItem.contentType == .link {
+            let item = newItem
+            Task {
+                let metadata = await LinkMetadataFetcher.shared.fetchMetadata(urlString: item.content)
+                await MainActor.run {
+                    if let title = metadata.title { item.linkTitle = title }
+                    if let favicon = metadata.faviconData { item.faviconData = favicon }
+                    try? context.save()
+                }
+            }
+        }
+    }
+
+    func captureCurrentClipboard(sourceApp: String? = nil) -> ClipItem? {
+        let pasteboard = NSPasteboard.general
+
+        // File URLs (copied files/folders from Finder)
+        if let fileURLs = pasteboard.readObjects(forClasses: [NSURL.self], options: [.urlReadingFileURLsOnly: true]) as? [URL],
+           !fileURLs.isEmpty {
+            let paths = fileURLs.map(\.path)
+            let content = paths.joined(separator: "\n")
+            let fileType = detectFileType(paths)
+            // For image files, also load thumbnail data for preview
+            var imageData: Data?
+            if fileType == .image, paths.count == 1,
+               let data = try? Data(contentsOf: fileURLs[0]),
+               NSImage(data: data) != nil {
+                imageData = data
+            }
+            return ClipItem(content: content, contentType: fileType, imageData: imageData, sourceApp: sourceApp)
+        }
+
+        // Check what's available
+        let imageData = pasteboard.data(forType: .png) ?? pasteboard.data(forType: .tiff)
+        let textContent = pasteboard.string(forType: .string)?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let hasText = textContent != nil && !textContent!.isEmpty
+        let hasImage = imageData != nil
+
+        // Capture rich text data (RTF or HTML) for text-containing items
+        let richText = captureRichTextData(from: pasteboard)
+
+        // Both text and image (e.g. Excel, rich content) → text as primary, image as preview
+        if hasText, hasImage {
+            let content = textContent!
+            let detected = detectContentType(content)
+            return ClipItem(
+                content: content, contentType: detected.type, imageData: imageData,
+                sourceApp: sourceApp, codeLanguage: detected.language,
+                richTextData: richText.data, richTextType: richText.type
+            )
+        }
+
+        // Image only (screenshots, copy image)
+        if hasImage {
+            return ClipItem(content: "[Image]", contentType: .image, imageData: imageData, sourceApp: sourceApp)
+        }
+
+        // Text only
+        guard let content = textContent, !content.isEmpty else { return nil }
+        let detected = detectContentType(content)
+        return ClipItem(
+            content: content, contentType: detected.type,
+            sourceApp: sourceApp, codeLanguage: detected.language,
+            richTextData: richText.data, richTextType: richText.type
+        )
+    }
+
+    private func captureRichTextData(from pasteboard: NSPasteboard) -> (data: Data?, type: String?) {
+        if let rtfData = pasteboard.data(forType: .rtf) {
+            return (rtfData, "rtf")
+        }
+        if let htmlData = pasteboard.data(forType: .html) {
+            return (htmlData, "html")
+        }
+        return (nil, nil)
+    }
+
+    private static let VIDEO_EXTENSIONS: Set<String> = [
+        "mp4", "mov", "avi", "mkv", "wmv", "flv", "webm", "m4v", "mpg", "mpeg", "3gp"
+    ]
+
+    private static let IMAGE_EXTENSIONS: Set<String> = [
+        "png", "jpg", "jpeg", "gif", "bmp", "tiff", "tif", "webp", "heic", "heif", "svg", "ico"
+    ]
+
+    private static let AUDIO_EXTENSIONS: Set<String> = [
+        "mp3", "wav", "aac", "flac", "m4a", "ogg", "wma", "aiff", "alac", "opus"
+    ]
+
+    private static let DOCUMENT_EXTENSIONS: Set<String> = [
+        "pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx",
+        "pages", "numbers", "keynote", "rtf", "rtfd",
+        "csv", "tsv", "txt", "md", "markdown",
+        "odt", "ods", "odp", "epub"
+    ]
+
+    private static let ARCHIVE_EXTENSIONS: Set<String> = [
+        "zip", "rar", "7z", "tar", "gz", "bz2", "xz",
+        "tgz", "tbz2", "zst", "lz", "lzma", "cab", "iso", "dmg"
+    ]
+
+    private static let APPLICATION_EXTENSIONS: Set<String> = [
+        "app", "pkg", "mpkg", "exe", "msi", "deb", "rpm", "apk", "ipa"
+    ]
+
+    private func detectFileType(_ paths: [String]) -> ClipContentType {
+        let extensions = paths.compactMap { URL(fileURLWithPath: $0).pathExtension.lowercased() }
+        let isDir = paths.count == 1 && {
+            var isDirectory: ObjCBool = false
+            FileManager.default.fileExists(atPath: paths[0], isDirectory: &isDirectory)
+            return isDirectory.boolValue
+        }()
+        // .app bundles are directories
+        if isDir, extensions.first == "app" { return .application }
+        if extensions.allSatisfy({ Self.VIDEO_EXTENSIONS.contains($0) }) { return .video }
+        if extensions.allSatisfy({ Self.AUDIO_EXTENSIONS.contains($0) }) { return .audio }
+        if extensions.allSatisfy({ Self.IMAGE_EXTENSIONS.contains($0) }) { return .image }
+        if extensions.allSatisfy({ Self.DOCUMENT_EXTENSIONS.contains($0) }) { return .document }
+        if extensions.allSatisfy({ Self.ARCHIVE_EXTENSIONS.contains($0) }) { return .archive }
+        if extensions.allSatisfy({ Self.APPLICATION_EXTENSIONS.contains($0) }) { return .application }
+        return .file
+    }
+
+    private func isDuplicate(_ newItem: ClipItem, in context: ModelContext) -> Bool {
+        let descriptor = FetchDescriptor<ClipItem>(sortBy: [SortDescriptor(\.createdAt, order: .reverse)])
+        guard let latest = try? context.fetch(descriptor).first else { return false }
+        guard latest.content == newItem.content, latest.contentType == newItem.contentType else { return false }
+        // Different image data means edited image, not a duplicate
+        if latest.contentType == .image, latest.imageData != newItem.imageData { return false }
+        // Different rich text data means different format, not a duplicate
+        return latest.richTextData == newItem.richTextData
+    }
+
+    private func cleanExpiredItems(in context: ModelContext) {
+        guard let cutoff = ProManager.shared.retentionCutoffDate else { return }
+
+        let descriptor = FetchDescriptor<ClipItem>()
+        guard let allItems = try? context.fetch(descriptor) else { return }
+
+        var hasGroupedItems = false
+        for item in allItems where item.createdAt < cutoff {
+            if item.groupName != nil { hasGroupedItems = true }
+            context.delete(item)
+        }
+        if hasGroupedItems {
+            try? context.save()
+            recalculateAllGroupCounts(context: context)
+        }
+    }
+
+    // MARK: - Content Detection
+
+    struct DetectedContent {
+        let type: ClipContentType
+        let language: String?
+    }
+
+    func detectContentType(_ content: String) -> DetectedContent {
+        let trimmed = content.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        if isPhone(trimmed) { return DetectedContent(type: .phone, language: nil) }
+        if isColor(trimmed) { return DetectedContent(type: .color, language: nil) }
+        if isURL(trimmed) { return DetectedContent(type: .link, language: nil) }
+        if isFilePath(trimmed) { return DetectedContent(type: .file, language: nil) }
+        if let lang = CodeDetector.detectLanguage(trimmed) {
+            return DetectedContent(type: .code, language: lang.rawValue)
+        }
+
+        return DetectedContent(type: .text, language: nil)
+    }
+
+    private func isPhone(_ text: String) -> Bool {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        // Chinese mobile: 1xx xxxx xxxx (with optional spaces/dashes)
+        if trimmed.range(of: #"^1\d[\d\s\-]{9,13}$"#, options: .regularExpression) != nil {
+            let digits = trimmed.filter(\.isNumber)
+            if digits.count == 11 { return true }
+        }
+        // Chinese landline: (0xx) xxxx-xxxx or 0xx-xxxx-xxxx
+        if trimmed.range(of: #"^[\(]?0\d{2,3}[\)]?[\s\-]?\d{7,8}$"#, options: .regularExpression) != nil {
+            return true
+        }
+        // International: +xx xxx... (7-15 digits total)
+        if trimmed.range(of: #"^\+\d[\d\s\-\(\)]{6,19}$"#, options: .regularExpression) != nil {
+            let digits = trimmed.filter(\.isNumber)
+            if (7...15).contains(digits.count) { return true }
+        }
+        return false
+    }
+
+    private func isColor(_ text: String) -> Bool {
+        // #RGB, #RRGGBB, #RRGGBBAA
+        if text.range(of: #"^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$"#, options: .regularExpression) != nil {
+            return true
+        }
+        // rgb(r,g,b) / rgba(r,g,b,a)
+        if text.range(of: #"^rgba?\(\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*\d{1,3}"#, options: .regularExpression) != nil {
+            return true
+        }
+        // hsl(h,s%,l%) / hsla(h,s%,l%,a)
+        if text.range(of: #"^hsla?\(\s*\d{1,3}\s*,"#, options: .regularExpression) != nil {
+            return true
+        }
+        return false
+    }
+
+    private func isURL(_ text: String) -> Bool {
+        guard !text.contains("\n") else { return false }
+        // Full URL: https://example.com
+        if text.range(of: #"^https?://\S+$"#, options: .regularExpression) != nil,
+           let url = URL(string: text), url.host != nil {
+            return true
+        }
+        // Bare domain: example.com, sub.example.com/path
+        if text.range(of: #"^[a-zA-Z0-9]([a-zA-Z0-9-]*\.)+[a-zA-Z]{2,}(/\S*)?$"#, options: .regularExpression) != nil {
+            return true
+        }
+        return false
+    }
+
+    private func isFilePath(_ text: String) -> Bool {
+        guard text.hasPrefix("/") || text.hasPrefix("~") else { return false }
+        let lines = text.components(separatedBy: .newlines).filter { !$0.isEmpty }
+        guard lines.allSatisfy({ $0.hasPrefix("/") || $0.hasPrefix("~") }) else { return false }
+        // At least one path must actually exist on disk
+        return lines.contains { line in
+            let expanded = NSString(string: line).expandingTildeInPath
+            return FileManager.default.fileExists(atPath: expanded)
+        }
+    }
+
+    // MARK: - Paste
+
+    func paste(_ item: ClipItem) {
+        writeToPasteboard(item)
+        lastChangeCount = NSPasteboard.general.changeCount
+        SoundManager.playPaste()
+
+        Task { @MainActor in
+            try? await Task.sleep(for: PASTE_SIMULATION_DELAY)
+            simulateCommandV()
+        }
+    }
+
+    func writeToPasteboard(_ item: ClipItem) {
+        let pasteboard = NSPasteboard.general
+        pasteboard.clearContents()
+
+        switch item.contentType {
+        case .image:
+            // File-based images: write file URLs first (writeObjects clears pasteboard)
+            if item.content != "[Image]" {
+                writeFilePathsToPasteboard(pasteboard, content: item.content)
+            }
+            // Write as NSImage — system provides PNG/TIFF lazily on demand
+            if let data = item.imageData, let image = NSImage(data: data) {
+                pasteboard.writeObjects([image])
+            } else if let data = item.imageData {
+                pasteboard.setData(data, forType: .png)
+            }
+        case .file, .video, .audio, .document, .archive, .application:
+            writeFilePathsToPasteboard(pasteboard, content: item.content)
+        default:
+            pasteboard.setString(item.content, forType: .string)
+            if let rtfData = item.richTextData {
+                if item.richTextType == "html" {
+                    pasteboard.setData(rtfData, forType: .html)
+                } else {
+                    pasteboard.setData(rtfData, forType: .rtf)
+                }
+            }
+        }
+        lastChangeCount = NSPasteboard.general.changeCount
+    }
+
+    func writeFileURLsToPasteboard(_ pasteboard: NSPasteboard, paths: [String]) {
+        // Use both modern writeObjects and legacy NSFilenamesPboardType for max compatibility
+        let urls = paths.map { URL(fileURLWithPath: $0) as NSURL }
+        pasteboard.writeObjects(urls)
+        let pboardType = NSPasteboard.PasteboardType("NSFilenamesPboardType")
+        pasteboard.setPropertyList(paths, forType: pboardType)
+    }
+
+    private func writeFilePathsToPasteboard(_ pasteboard: NSPasteboard, content: String) {
+        let paths = content.components(separatedBy: "\n").filter { !$0.isEmpty }
+        writeFileURLsToPasteboard(pasteboard, paths: paths)
+    }
+
+    /// Paste multiple items in display order via sequential Cmd+V operations.
+    /// Consecutive file items are merged into one paste; each text/image gets its own paste to preserve formatting.
+    /// Apps that don't handle rich text paste well — downgrade to plain text for merging.
+    private static let PLAIN_TEXT_ONLY_APPS: Set<String> = [
+        // IM
+        "com.tencent.xinWeChat",          // WeChat
+        "com.tencent.qq",                 // QQ
+        "com.alibaba.DingTalkMac",        // DingTalk
+        "com.electron.lark",              // Feishu/Lark
+        "com.apple.iChat",               // Messages
+        "com.microsoft.teams2",           // Teams
+        "com.tinyspeck.slackmacgap",      // Slack
+        "ru.keepcoder.Telegram",          // Telegram
+        "com.discord.Discord",            // Discord
+        // Terminal
+        "com.apple.Terminal",
+        "com.googlecode.iterm2",          // iTerm2
+        "dev.warp.Warp-Stable",           // Warp
+        // Code editors / IDEs
+        "com.sublimetext.4",              // Sublime Text
+        "com.sublimetext.3",
+        "com.microsoft.VSCode",           // VS Code
+        "com.jetbrains.intellij",         // IntelliJ IDEA
+        "com.jetbrains.intellij.ce",
+        "com.jetbrains.WebStorm",
+        "com.jetbrains.pycharm",
+        "com.jetbrains.pycharm.ce",
+        "com.jetbrains.goland",
+        "com.jetbrains.CLion",
+        "com.jetbrains.PhpStorm",
+        "com.jetbrains.rubymine",
+        "com.jetbrains.rider",
+        "com.jetbrains.AppCode",
+        "com.jetbrains.fleet",
+        "dev.zed.Zed",                    // Zed
+        "com.panic.Nova",                 // Nova
+        "com.barebones.bbedit",           // BBEdit
+        "abnerworks.Typora",              // Typora
+        "com.cursor.Cursor",              // Cursor
+    ]
+
+    private func shouldDowngradeRichText(targetApp: NSRunningApplication?) -> Bool {
+        guard let bundleID = targetApp?.bundleIdentifier else { return false }
+        return Self.PLAIN_TEXT_ONLY_APPS.contains(bundleID)
+    }
+
+    func pasteMultiple(_ items: [ClipItem], forceNewLine: Bool = false, targetApp: NSRunningApplication? = nil) {
+        let downgrade = shouldDowngradeRichText(targetApp: targetApp)
+        let groups = buildPasteGroups(items, downgradeRichText: downgrade)
+
+        SoundManager.playPaste()
+        Task { @MainActor in
+            for (index, group) in groups.enumerated() {
+                if index > 0 {
+                    try? await Task.sleep(for: .milliseconds(150))
+                }
+
+                let pasteboard = NSPasteboard.general
+                pasteboard.clearContents()
+
+                switch group {
+                case .files(let paths):
+                    writeFileURLsToPasteboard(pasteboard, paths: paths)
+                case .text(let content, let rtfData, let rtfType):
+                    pasteboard.setString(content, forType: .string)
+                    if let rtfData {
+                        let type: NSPasteboard.PasteboardType = rtfType == "html" ? .html : .rtf
+                        pasteboard.setData(rtfData, forType: type)
+                    }
+                case .image(let data):
+                    pasteboard.setData(data, forType: .png)
+                    pasteboard.setData(data, forType: .tiff)
+                }
+
+                lastChangeCount = pasteboard.changeCount
+                try? await Task.sleep(for: PASTE_SIMULATION_DELAY)
+                simulateCommandV()
+            }
+            if forceNewLine {
+                try? await Task.sleep(for: .milliseconds(100))
+                simulateReturn()
+            }
+        }
+    }
+
+    private enum PasteGroup {
+        case files([String])
+        case text(String, richTextData: Data?, richTextType: String?)
+        case image(Data)
+    }
+
+    /// Group consecutive same-type items: files merge; texts and images each get their own group to preserve formatting.
+    private func buildPasteGroups(_ items: [ClipItem], downgradeRichText: Bool = false) -> [PasteGroup] {
+        var groups: [PasteGroup] = []
+        for item in items {
+            if isFileBasedContent(item) {
+                let paths = item.content.components(separatedBy: "\n").filter { !$0.isEmpty }
+                if case .files = groups.last {
+                    if case .files(let existing) = groups.last {
+                        groups[groups.count - 1] = .files(existing + paths)
+                    }
+                } else {
+                    groups.append(.files(paths))
+                }
+            } else if item.contentType == .image, item.content == "[Image]", let data = item.imageData {
+                groups.append(.image(data))
+            } else if item.richTextData != nil, !downgradeRichText {
+                // Rich text: separate group to preserve formatting
+                groups.append(.text(item.content, richTextData: item.richTextData, richTextType: item.richTextType))
+            } else {
+                // Plain text: merge consecutive plain texts
+                if case .text(let existing, nil, nil) = groups.last {
+                    groups[groups.count - 1] = .text(existing + "\n" + item.content, richTextData: nil, richTextType: nil)
+                } else {
+                    groups.append(.text(item.content, richTextData: nil, richTextType: nil))
+                }
+            }
+        }
+        return groups
+    }
+
+    private func isFileBasedContent(_ item: ClipItem) -> Bool {
+        item.contentType.isFileBased && !(item.contentType == .image && item.content == "[Image]")
+    }
+
+    func pasteMultipleAsPlainText(_ items: [ClipItem]) {
+        let merged = items.map(\.content).joined(separator: "\n")
+        let pasteboard = NSPasteboard.general
+        pasteboard.clearContents()
+        pasteboard.setString(merged, forType: .string)
+        lastChangeCount = pasteboard.changeCount
+
+        Task { @MainActor in
+            try? await Task.sleep(for: PASTE_SIMULATION_DELAY)
+            simulateCommandV()
+        }
+    }
+
+    func pasteAsPlainText(_ item: ClipItem) {
+        let pasteboard = NSPasteboard.general
+        pasteboard.clearContents()
+        pasteboard.setString(item.content, forType: .string)
+        lastChangeCount = pasteboard.changeCount
+        SoundManager.playPaste()
+
+        Task { @MainActor in
+            try? await Task.sleep(for: PASTE_SIMULATION_DELAY)
+            simulateCommandV()
+        }
+    }
+
+    func simulatePaste(forceNewLine: Bool = false) {
+        simulateCommandV()
+
+        let shouldNewLine = forceNewLine || UserDefaults.standard.bool(forKey: "addNewLineAfterPaste")
+        if shouldNewLine {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                self.simulateReturn()
+            }
+        }
+    }
+
+    private func simulateCommandV() {
+        let source = CGEventSource(stateID: .combinedSessionState)
+        source?.localEventsSuppressionInterval = 0.0
+        let keyDown = CGEvent(keyboardEventSource: source, virtualKey: V_KEY_CODE, keyDown: true)
+        let keyUp = CGEvent(keyboardEventSource: source, virtualKey: V_KEY_CODE, keyDown: false)
+        keyDown?.flags = .maskCommand
+        keyUp?.flags = .maskCommand
+        keyDown?.post(tap: .cgAnnotatedSessionEventTap)
+        keyUp?.post(tap: .cgAnnotatedSessionEventTap)
+    }
+
+    private func simulateReturn() {
+        let source = CGEventSource(stateID: .combinedSessionState)
+        source?.localEventsSuppressionInterval = 0.0
+        let returnCode: CGKeyCode = 0x24
+        let keyDown = CGEvent(keyboardEventSource: source, virtualKey: returnCode, keyDown: true)
+        let keyUp = CGEvent(keyboardEventSource: source, virtualKey: returnCode, keyDown: false)
+        keyDown?.post(tap: .cgAnnotatedSessionEventTap)
+        keyUp?.post(tap: .cgAnnotatedSessionEventTap)
+    }
+
+    func requestAccessibilityPermission() {
+        let key = "AXTrustedCheckOptionPrompt" as CFString
+        let options = [key: true] as CFDictionary
+        AXIsProcessTrustedWithOptions(options)
+    }
+
+    private func frontmostAppInfo() -> (name: String?, bundleID: String?) {
+        let app = NSWorkspace.shared.frontmostApplication
+        let bundleID = app?.bundleIdentifier ?? ""
+        // Don't show PasteMemo as source app, but still allow capture
+        let isPasteMemo = bundleID.contains("pastememo")
+        return (isPasteMemo ? nil : app?.localizedName, bundleID)
+    }
+
+    // MARK: - Finder Integration
+
+    func isFinderApp(_ app: NSRunningApplication?) -> Bool {
+        app?.bundleIdentifier == "com.apple.finder"
+    }
+
+    func getFinderSelectedFolder() -> URL? {
+        let script = """
+        tell application "Finder"
+            if (count of windows) > 0 then
+                set theSelection to selection
+                if (count of theSelection) > 0 then
+                    set firstItem to item 1 of theSelection
+                    if class of firstItem is folder then
+                        return POSIX path of (firstItem as alias)
+                    else
+                        return POSIX path of ((container of firstItem) as alias)
+                    end if
+                else
+                    return POSIX path of ((target of front window) as alias)
+                end if
+            else
+                return POSIX path of (desktop as alias)
+            end if
+        end tell
+        """
+        guard let appleScript = NSAppleScript(source: script) else { return nil }
+        var error: NSDictionary?
+        let result = appleScript.executeAndReturnError(&error)
+        guard error == nil, let path = result.stringValue else { return nil }
+        return URL(fileURLWithPath: path)
+    }
+
+    func saveImageToFolder(_ imageData: Data, folder: URL) -> URL? {
+        let timestamp = Int(Date().timeIntervalSince1970 * 1000)
+        let filename = "PasteMemo_\(timestamp).png"
+        let fileURL = folder.appendingPathComponent(filename)
+
+        do {
+            try imageData.write(to: fileURL)
+            return fileURL
+        } catch {
+            return nil
+        }
+    }
+
+    func saveTextToFolder(_ text: String, folder: URL, fileExtension: String = "txt") -> URL? {
+        let timestamp = Int(Date().timeIntervalSince1970 * 1000)
+        let filename = "PasteMemo_\(timestamp).\(fileExtension)"
+        let fileURL = folder.appendingPathComponent(filename)
+
+        do {
+            try text.write(to: fileURL, atomically: true, encoding: .utf8)
+            return fileURL
+        } catch {
+            return nil
+        }
+    }
+}
+
+// MARK: - ClipboardControllable
+
+extension ClipboardManager: ClipboardControllable {
+    func pauseMonitoring() {
+        guard !isPaused else { return }
+        isPaused = true
+        stopMonitoring()
+    }
+
+    func resumeMonitoring() {
+        guard isPaused else { return }
+        isPaused = false
+        startMonitoring()
+    }
+
+    private func applyAutomationActions(_ actions: [RuleAction], processed: String, to item: ClipItem, context: ModelContext) {
+        item.content = processed
+        item.displayTitle = ClipItem.buildTitle(content: processed, contentType: item.contentType)
+        if actions.contains(.stripRichText) {
+            item.richTextData = nil
+            item.richTextType = nil
+        }
+        if actions.contains(.markSensitive) {
+            item.isSensitive = true
+        }
+        if actions.contains(.pin) {
+            item.isPinned = true
+        }
+        applyGroupAction(actions, to: item, context: context)
+    }
+
+    private func applyGroupAction(_ actions: [RuleAction], to item: ClipItem, context: ModelContext) {
+        guard let groupAction = actions.first(where: {
+            if case .assignGroup = $0 { return true }
+            return false
+        }), case .assignGroup(let name) = groupAction, !name.isEmpty else { return }
+
+        item.groupName = name
+        upsertSmartGroup(name: name, context: context)
+    }
+
+    func upsertSmartGroup(name: String, context: ModelContext) {
+        let descriptor = FetchDescriptor<SmartGroup>(predicate: #Predicate { $0.name == name })
+        if let existing = try? context.fetch(descriptor).first {
+            existing.count += 1
+        } else {
+            let maxOrder = (try? context.fetch(FetchDescriptor<SmartGroup>()))?.map(\.sortOrder).max() ?? -1
+            let group = SmartGroup(name: name, sortOrder: maxOrder + 1)
+            group.count = 1
+            context.insert(group)
+        }
+    }
+
+    func decrementSmartGroup(name: String, context: ModelContext) {
+        let descriptor = FetchDescriptor<SmartGroup>(predicate: #Predicate { $0.name == name })
+        guard let group = try? context.fetch(descriptor).first else { return }
+        group.count = max(0, group.count - 1)
+    }
+
+    func recalculateAllGroupCounts(context: ModelContext) {
+        guard let groups = try? context.fetch(FetchDescriptor<SmartGroup>()) else { return }
+        for group in groups {
+            let name = group.name
+            let descriptor = FetchDescriptor<ClipItem>(predicate: #Predicate { $0.groupName == name })
+            group.count = (try? context.fetchCount(descriptor)) ?? 0
+        }
+        try? context.save()
+    }
+
+    private func showAutomationConfirmation(ruleName: String, original: String, processed: String) -> Bool {
+        let localizedName = ruleName.hasPrefix("automation.builtIn.") ? L10n.tr(ruleName) : ruleName
+
+        let panel = NSPanel(
+            contentRect: NSRect(x: 0, y: 0, width: 420, height: 0),
+            styleMask: [.titled, .closable, .nonactivatingPanel, .utilityWindow],
+            backing: .buffered,
+            defer: true
+        )
+        panel.title = L10n.tr("automation.confirm.title")
+        panel.level = .floating
+        panel.isFloatingPanel = true
+        panel.becomesKeyOnlyIfNeeded = false
+
+        var accepted = false
+
+        let alert = NSAlert()
+        alert.messageText = L10n.tr("automation.confirm.title")
+        alert.informativeText = L10n.tr("automation.confirm.matched", localizedName)
+            + "\n\n"
+            + L10n.tr("automation.confirm.original") + "\n" + String(original.prefix(200))
+            + "\n\n"
+            + L10n.tr("automation.confirm.processed") + "\n" + String(processed.prefix(200))
+        alert.alertStyle = .informational
+        alert.addButton(withTitle: L10n.tr("automation.confirm.apply"))
+        alert.addButton(withTitle: L10n.tr("automation.confirm.keep"))
+
+        // Bring alert to front without activating the full app
+        NSApp.activate(ignoringOtherApps: true)
+        accepted = alert.runModal() == .alertFirstButtonReturn
+
+        return accepted
+    }
+}

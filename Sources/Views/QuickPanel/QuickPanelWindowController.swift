@@ -1,0 +1,500 @@
+import AppKit
+import SwiftUI
+import SwiftData
+
+extension Notification.Name {
+    static let quickPanelDidShow = Notification.Name("quickPanelDidShow")
+}
+
+private let DEFAULT_WIDTH: CGFloat = 750
+private let DEFAULT_HEIGHT: CGFloat = 510
+private let MIN_WIDTH: CGFloat = 500
+private let MIN_HEIGHT: CGFloat = 350
+private let VERTICAL_OFFSET: CGFloat = 100
+private let SIZE_KEY = "quickPanelSize"
+private let POSITION_KEY = "quickPanelPosition"
+
+private class KeyablePanel: NSPanel {
+    override var canBecomeKey: Bool { true }
+    override var canBecomeMain: Bool { true }
+}
+
+/// Transparent view that absorbs titlebar clicks so they become background drags
+private class DragOnlyView: NSView {
+    override var mouseDownCanMoveWindow: Bool { true }
+    override func mouseDown(with event: NSEvent) {
+        // Don't call super — prevent system titlebar drag handling
+        window?.performDrag(with: event)
+    }
+}
+
+@MainActor
+final class QuickPanelWindowController {
+    static let shared = QuickPanelWindowController()
+
+    private var panel: NSPanel?
+    private var clickOutsideMonitor: Any?
+    private var deactivationObserver: Any?
+    private var resignKeyObserver: Any?
+    private(set) var previousApp: NSRunningApplication?
+    private var isWarmedUp = false
+    var isPinned = false
+    var suppressDismiss = false
+    private var snapGuide: SnapGuideWindow?
+
+    private var panelWidth: CGFloat {
+        let saved = UserDefaults.standard.double(forKey: "\(SIZE_KEY).width")
+        return saved > 0 ? max(saved, MIN_WIDTH) : DEFAULT_WIDTH
+    }
+
+    private var panelHeight: CGFloat {
+        let saved = UserDefaults.standard.double(forKey: "\(SIZE_KEY).height")
+        return saved > 0 ? max(saved, MIN_HEIGHT) : DEFAULT_HEIGHT
+    }
+
+    private init() {}
+
+    /// Call once at app launch to pre-build the panel off-screen
+    func warmUp(clipboardManager: ClipboardManager, modelContainer: ModelContainer) {
+        guard !isWarmedUp else { return }
+        let panel = buildPanel(clipboardManager: clipboardManager, modelContainer: modelContainer)
+        panel.setFrameOrigin(NSPoint(x: -10000, y: -10000))
+        panel.alphaValue = 0
+        panel.orderFrontRegardless()
+        panel.displayIfNeeded()
+        panel.orderOut(nil)
+        self.panel = panel
+        isWarmedUp = true
+    }
+
+    func show(clipboardManager: ClipboardManager, modelContainer: ModelContainer) {
+        if let existing = panel, existing.isVisible {
+            dismiss()
+            return
+        }
+
+        previousApp = NSWorkspace.shared.frontmostApplication
+
+        if !isWarmedUp {
+            warmUp(clipboardManager: clipboardManager, modelContainer: modelContainer)
+        }
+
+        guard let panel else { return }
+
+        positionPanel(panel)
+        panel.alphaValue = 1
+        panel.orderFrontRegardless()
+        panel.makeKey()
+        installClickOutsideMonitor()
+        installDeactivationObserver()
+        installMoveObserver()
+        NotificationCenter.default.post(name: .quickPanelDidShow, object: nil)
+        UsageTracker.pingIfNeeded(source: .quick)
+
+        // Bouncy scale-in effect
+        guard let contentView = panel.contentView else { return }
+        contentView.wantsLayer = true
+        let center = CGPoint(x: contentView.bounds.midX, y: contentView.bounds.midY)
+        contentView.layer?.anchorPoint = CGPoint(x: 0.5, y: 0.5)
+        contentView.layer?.position = center
+
+        let anim = CASpringAnimation(keyPath: "transform.scale")
+        anim.fromValue = 0.95
+        anim.toValue = 1.0
+        anim.damping = 28
+        anim.stiffness = 600
+        anim.mass = 0.6
+        anim.duration = anim.settlingDuration
+        contentView.layer?.add(anim, forKey: "bounceIn")
+    }
+
+    func dismiss() {
+        isPinned = false
+        removeClickOutsideMonitor()
+        removeDeactivationObserver()
+        guard let panel else {
+            HotkeyManager.shared.isQuickPanelVisible = false
+            return
+        }
+        removeMoveObserver()
+        snapGuide?.orderOut(nil)
+        savePosition(panel)
+        panel.orderOut(nil)
+        HotkeyManager.shared.isQuickPanelVisible = false
+    }
+
+    func dismissAndPaste(_ item: ClipItem, clipboardManager: ClipboardManager, addNewLine: Bool = false) {
+        let appToRestore = previousApp
+        clipboardManager.writeToPasteboard(item)
+        item.lastUsedAt = Date()
+        SoundManager.playPaste()
+
+        dismiss()
+        previousApp = nil
+
+        if let app = appToRestore {
+            app.activate()
+            clipboardManager.simulatePaste(forceNewLine: addNewLine)
+        }
+    }
+
+    var isVisible: Bool {
+        panel?.isVisible ?? false
+    }
+
+    // MARK: - Panel Construction
+
+    private func buildPanel(clipboardManager: ClipboardManager, modelContainer: ModelContainer) -> NSPanel {
+        let content = QuickPanelView()
+            .environmentObject(clipboardManager)
+            .modelContainer(modelContainer)
+
+        let hosting = NSHostingController(rootView: content.ignoresSafeArea())
+
+        let panel = KeyablePanel(
+            contentRect: NSRect(x: 0, y: 0, width: panelWidth, height: panelHeight),
+            styleMask: [.nonactivatingPanel, .titled, .borderless, .resizable, .fullSizeContentView],
+            backing: .buffered,
+            defer: false
+        )
+        panel.isFloatingPanel = true
+        panel.level = .floating
+        panel.isMovableByWindowBackground = true
+        panel.backgroundColor = .clear
+        panel.isOpaque = false
+        panel.hasShadow = true
+        panel.hidesOnDeactivate = false
+        panel.titleVisibility = .hidden
+        panel.titlebarAppearsTransparent = true
+        panel.standardWindowButton(.closeButton)?.isHidden = true
+        panel.standardWindowButton(.miniaturizeButton)?.isHidden = true
+        panel.standardWindowButton(.zoomButton)?.isHidden = true
+
+        // Cover the titlebar with a draggable view so clicks there
+        // go through isMovableByWindowBackground instead of system titlebar handling
+        let titlebarCover = NSTitlebarAccessoryViewController()
+        titlebarCover.layoutAttribute = .top
+        let coverView = DragOnlyView(frame: NSRect(x: 0, y: 0, width: 0, height: 1))
+        coverView.autoresizingMask = [.width]
+        titlebarCover.view = coverView
+        panel.addTitlebarAccessoryViewController(titlebarCover)
+
+        let container = NSView(frame: NSRect(x: 0, y: 0, width: panelWidth, height: panelHeight))
+        container.wantsLayer = true
+        container.layer?.cornerRadius = 16
+        container.layer?.masksToBounds = true
+
+        let visualEffect = NSVisualEffectView(frame: container.bounds)
+        visualEffect.material = .headerView
+        visualEffect.blendingMode = .behindWindow
+        visualEffect.state = .active
+        visualEffect.autoresizingMask = [.width, .height]
+        container.addSubview(visualEffect)
+
+        let hostingView = hosting.view
+        hostingView.translatesAutoresizingMaskIntoConstraints = false
+        container.addSubview(hostingView)
+        NSLayoutConstraint.activate([
+            hostingView.topAnchor.constraint(equalTo: container.topAnchor),
+            hostingView.bottomAnchor.constraint(equalTo: container.bottomAnchor),
+            hostingView.leadingAnchor.constraint(equalTo: container.leadingAnchor),
+            hostingView.trailingAnchor.constraint(equalTo: container.trailingAnchor),
+        ])
+        container.layoutSubtreeIfNeeded()
+
+        panel.contentView = container
+        panel.minSize = NSSize(width: MIN_WIDTH, height: MIN_HEIGHT)
+
+        // Save size when resized
+        NotificationCenter.default.addObserver(
+            forName: NSWindow.didResizeNotification,
+            object: panel,
+            queue: .main
+        ) { [weak panel] _ in
+            Task { @MainActor in
+                guard let size = panel?.frame.size else { return }
+                UserDefaults.standard.set(Double(size.width), forKey: "\(SIZE_KEY).width")
+                UserDefaults.standard.set(Double(size.height), forKey: "\(SIZE_KEY).height")
+            }
+        }
+
+        return panel
+    }
+
+    /// Position panel on the screen where the mouse is, using saved relative offset if available.
+    private func positionPanel(_ panel: NSPanel) {
+        let screen = NSScreen.screenWithMouse ?? NSScreen.main ?? NSScreen.screens.first
+        guard let screen else { return }
+        let visibleFrame = screen.visibleFrame
+
+        let hasSaved = UserDefaults.standard.object(forKey: "\(POSITION_KEY).rx") != nil
+        if hasSaved {
+            // Saved offset is relative to the screen's visible frame (0.0~1.0 ratio)
+            let rx = UserDefaults.standard.double(forKey: "\(POSITION_KEY).rx")
+            let ry = UserDefaults.standard.double(forKey: "\(POSITION_KEY).ry")
+            let x = visibleFrame.origin.x + rx * visibleFrame.width
+            let y = visibleFrame.origin.y + ry * visibleFrame.height
+            panel.setFrameOrigin(NSPoint(x: x, y: y))
+        } else {
+            centerOnScreen(panel, screen: screen)
+        }
+    }
+
+    private func centerOnScreen(_ panel: NSPanel, screen: NSScreen) {
+        let frame = screen.visibleFrame
+        let x = frame.midX - panelWidth / 2
+        let y = frame.midY - panelHeight / 2 + VERTICAL_OFFSET
+        panel.setFrameOrigin(NSPoint(x: x, y: y))
+    }
+
+    func resetPosition() {
+        UserDefaults.standard.removeObject(forKey: "\(POSITION_KEY).rx")
+        UserDefaults.standard.removeObject(forKey: "\(POSITION_KEY).ry")
+        guard let panel, panel.isVisible else { return }
+        let screen = NSScreen.screenWithMouse ?? NSScreen.main ?? NSScreen.screens.first
+        guard let screen else { return }
+        centerOnScreen(panel, screen: screen)
+    }
+
+    private func savePosition(_ panel: NSPanel) {
+        // Save position as relative offset within the screen's visible frame
+        guard let screen = NSScreen.screens.first(where: { $0.visibleFrame.intersects(panel.frame) })
+                ?? NSScreen.screenWithMouse else { return }
+        let visibleFrame = screen.visibleFrame
+        let rx = (panel.frame.origin.x - visibleFrame.origin.x) / visibleFrame.width
+        let ry = (panel.frame.origin.y - visibleFrame.origin.y) / visibleFrame.height
+        UserDefaults.standard.set(rx, forKey: "\(POSITION_KEY).rx")
+        UserDefaults.standard.set(ry, forKey: "\(POSITION_KEY).ry")
+    }
+
+    private func installClickOutsideMonitor() {
+        clickOutsideMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] _ in
+            guard let self else { return }
+            if self.isPinned || self.suppressDismiss { return }
+            if let panel = self.panel, panel.frame.contains(NSEvent.mouseLocation) { return }
+            Task { @MainActor in
+                self.dismiss()
+            }
+        }
+    }
+
+    private func removeClickOutsideMonitor() {
+        guard let monitor = clickOutsideMonitor else { return }
+        NSEvent.removeMonitor(monitor)
+        clickOutsideMonitor = nil
+    }
+
+    private func installDeactivationObserver() {
+        // App resign active (e.g. Cmd+Tab when app was active)
+        deactivationObserver = NotificationCenter.default.addObserver(
+            forName: NSApplication.didResignActiveNotification,
+            object: nil,
+            queue: nil
+        ) { [weak self] _ in
+            guard let self, !self.isPinned, !self.suppressDismiss else { return }
+            let isMouseDown = NSEvent.pressedMouseButtons != 0
+            let mouseInPanel = self.panel?.frame.contains(NSEvent.mouseLocation) ?? false
+            if isMouseDown, mouseInPanel { return }
+            Task { @MainActor in self.dismiss() }
+        }
+        // Panel lost key (e.g. another window took focus, or Cmd+Tab)
+        resignKeyObserver = NotificationCenter.default.addObserver(
+            forName: NSWindow.didResignKeyNotification,
+            object: panel,
+            queue: nil
+        ) { [weak self] _ in
+            guard let self, !self.isPinned, !self.suppressDismiss else { return }
+            let isMouseDown = NSEvent.pressedMouseButtons != 0
+            let mouseInPanel = self.panel?.frame.contains(NSEvent.mouseLocation) ?? false
+            if isMouseDown, mouseInPanel { return }
+            Task { @MainActor in self.dismiss() }
+        }
+    }
+
+    private func removeDeactivationObserver() {
+        if let obs = deactivationObserver {
+            NotificationCenter.default.removeObserver(obs)
+            deactivationObserver = nil
+        }
+        if let obs = resignKeyObserver {
+            NotificationCenter.default.removeObserver(obs)
+            resignKeyObserver = nil
+        }
+    }
+
+    // MARK: - Snap Guides
+
+    private static let SNAP_THRESHOLD: CGFloat = 20
+    private var snappedH = false
+    private var snappedV = false
+    private var moveObserver: Any?
+    private var mouseUpMonitor: Any?
+    private var globalMouseUpMonitor: Any?
+
+    private func installMoveObserver() {
+        moveObserver = NotificationCenter.default.addObserver(
+            forName: NSWindow.didMoveNotification,
+            object: panel,
+            queue: .main
+        ) { [weak self] _ in
+            self?.handleWindowMove()
+        }
+        let onMouseUp: () -> Void = { [weak self] in
+            self?.snapGuide?.orderOut(nil)
+            self?.snapToGuideIfNeeded()
+            self?.snappedH = false
+            self?.snappedV = false
+            self?.panel?.makeKey()
+        }
+        mouseUpMonitor = NSEvent.addLocalMonitorForEvents(matching: .leftMouseUp) { event in
+            onMouseUp()
+            return event
+        }
+        globalMouseUpMonitor = NSEvent.addGlobalMonitorForEvents(matching: .leftMouseUp) { _ in
+            onMouseUp()
+        }
+    }
+
+    private func removeMoveObserver() {
+        if let obs = moveObserver { NotificationCenter.default.removeObserver(obs); moveObserver = nil }
+        if let obs = mouseUpMonitor { NSEvent.removeMonitor(obs); mouseUpMonitor = nil }
+        if let obs = globalMouseUpMonitor { NSEvent.removeMonitor(obs); globalMouseUpMonitor = nil }
+    }
+
+    private func recommendedTopY(screen: NSScreen, panelHeight: CGFloat) -> CGFloat {
+        screen.visibleFrame.maxY - VERTICAL_OFFSET - panelHeight
+    }
+
+    private func handleWindowMove() {
+        guard let panel, NSEvent.pressedMouseButtons & 1 != 0 else { return }
+        guard let screen = NSScreen.screens.first(where: { $0.visibleFrame.intersects(panel.frame) })
+                ?? NSScreen.screenWithMouse else { return }
+
+        let visibleFrame = screen.visibleFrame
+        let panelFrame = panel.frame
+
+        let hDist = abs(panelFrame.midX - visibleFrame.midX)
+        let recTopY = recommendedTopY(screen: screen, panelHeight: panelFrame.height)
+        let topDist = abs(panelFrame.origin.y - recTopY)
+        let vCenterDist = abs(panelFrame.midY - visibleFrame.midY)
+        let nearTop = topDist < vCenterDist
+
+        let showH = hDist < Self.SNAP_THRESHOLD
+        let showV = (nearTop ? topDist : vCenterDist) < Self.SNAP_THRESHOLD
+
+        if showH, !snappedH { hapticFeedback(); snappedH = true }
+        if !showH { snappedH = false }
+        if showV, !snappedV { hapticFeedback(); snappedV = true }
+        if !showV { snappedV = false }
+
+        let guideTopY = visibleFrame.maxY - VERTICAL_OFFSET
+        updateSnapGuide(on: screen, horizontal: showH, verticalCenter: showV && !nearTop, recommendedTop: showV && nearTop, guideTopY: guideTopY)
+    }
+
+    private func snapToGuideIfNeeded() {
+        guard let panel else { return }
+        guard let screen = NSScreen.screens.first(where: { $0.visibleFrame.intersects(panel.frame) })
+                ?? NSScreen.screenWithMouse else { return }
+
+        let visibleFrame = screen.visibleFrame
+        let panelFrame = panel.frame
+        var origin = panelFrame.origin
+        var didSnap = false
+
+        if abs(panelFrame.midX - visibleFrame.midX) < Self.SNAP_THRESHOLD {
+            origin.x = visibleFrame.midX - panelFrame.width / 2; didSnap = true
+        }
+        let recTopY = recommendedTopY(screen: screen, panelHeight: panelFrame.height)
+        if abs(panelFrame.origin.y - recTopY) < Self.SNAP_THRESHOLD {
+            origin.y = recTopY; didSnap = true
+        } else if abs(panelFrame.midY - visibleFrame.midY) < Self.SNAP_THRESHOLD {
+            origin.y = visibleFrame.midY - panelFrame.height / 2; didSnap = true
+        }
+        if didSnap { panel.setFrameOrigin(origin) }
+    }
+
+    private func hapticFeedback() {
+        NSHapticFeedbackManager.defaultPerformer.perform(.alignment, performanceTime: .now)
+    }
+
+    private func updateSnapGuide(on screen: NSScreen, horizontal: Bool, verticalCenter: Bool, recommendedTop: Bool, guideTopY: CGFloat) {
+        if horizontal || verticalCenter || recommendedTop {
+            let guide = snapGuide ?? SnapGuideWindow(screen: screen)
+            guide.update(screen: screen, showHorizontal: horizontal, showVerticalCenter: verticalCenter, showRecommendedTop: recommendedTop, recommendedTopY: guideTopY)
+            guide.orderFront(nil)
+            snapGuide = guide
+        } else {
+            snapGuide?.orderOut(nil)
+        }
+    }
+}
+
+// MARK: - Snap Guide Overlay Window
+
+private class SnapGuideWindow: NSWindow {
+    private let guideView = SnapGuideView()
+
+    init(screen: NSScreen) {
+        super.init(
+            contentRect: screen.frame,
+            styleMask: .borderless,
+            backing: .buffered,
+            defer: false
+        )
+        self.isReleasedWhenClosed = false
+        self.isOpaque = false
+        self.backgroundColor = .clear
+        self.level = .floating + 1
+        self.ignoresMouseEvents = true
+        self.hasShadow = false
+        self.contentView = guideView
+    }
+
+    func update(screen: NSScreen, showHorizontal: Bool, showVerticalCenter: Bool, showRecommendedTop: Bool, recommendedTopY: CGFloat) {
+        setFrame(screen.frame, display: false)
+        guideView.showHorizontal = showHorizontal
+        guideView.showVerticalCenter = showVerticalCenter
+        guideView.showRecommendedTop = showRecommendedTop
+        // Convert screen coordinate to view coordinate
+        guideView.recommendedTopLocalY = recommendedTopY - screen.frame.origin.y
+        guideView.needsDisplay = true
+    }
+}
+
+private class SnapGuideView: NSView {
+    var showHorizontal = false
+    var showVerticalCenter = false
+    var showRecommendedTop = false
+    var recommendedTopLocalY: CGFloat = 0
+
+    override func draw(_ dirtyRect: NSRect) {
+        guard let ctx = NSGraphicsContext.current?.cgContext else { return }
+        let color = NSColor.gray.withAlphaComponent(0.4).cgColor
+        ctx.setStrokeColor(color)
+        ctx.setLineWidth(1.5)
+        ctx.setLineDash(phase: 0, lengths: [6, 4])
+
+        if showHorizontal {
+            ctx.move(to: CGPoint(x: bounds.midX, y: bounds.minY))
+            ctx.addLine(to: CGPoint(x: bounds.midX, y: bounds.maxY))
+            ctx.strokePath()
+        }
+        if showVerticalCenter {
+            ctx.move(to: CGPoint(x: bounds.minX, y: bounds.midY))
+            ctx.addLine(to: CGPoint(x: bounds.maxX, y: bounds.midY))
+            ctx.strokePath()
+        }
+        if showRecommendedTop {
+            ctx.move(to: CGPoint(x: bounds.minX, y: recommendedTopLocalY))
+            ctx.addLine(to: CGPoint(x: bounds.maxX, y: recommendedTopLocalY))
+            ctx.strokePath()
+        }
+    }
+}
+
+extension NSScreen {
+    static var screenWithMouse: NSScreen? {
+        let mouseLocation = NSEvent.mouseLocation
+        return screens.first { $0.frame.contains(mouseLocation) }
+    }
+}

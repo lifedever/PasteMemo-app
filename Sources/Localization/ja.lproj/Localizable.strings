@@ -1,0 +1,660 @@
+/* App */
+"app.name" = "PasteMemo";
+
+/* Menu */
+"menu.checkForUpdates" = "アップデートを確認…";
+"menu.github" = "GitHub";
+"menu.reportIssue" = "問題を報告";
+"menu.upgrade" = "Proにアップグレード";
+
+/* Search */
+"search.placeholder" = "クリップボード履歴を検索…";
+
+/* Empty State */
+"empty.title" = "クリップなし";
+"empty.message" = "何かをコピーして始めましょう";
+
+/* Actions */
+"action.favorite" = "お気に入り";
+"action.unfavorite" = "お気に入り解除";
+"action.pin" = "ピン留め";
+"action.unpin" = "ピン留め解除";
+"action.delete" = "削除";
+"action.clearAll" = "すべて削除";
+"action.aiCopy" = "AI用コピー";
+
+/* Content Types */
+"type.text" = "テキスト";
+"type.link" = "リンク";
+"type.image" = "画像";
+"type.code" = "コード";
+"type.color" = "カラー";
+
+/* Filter */
+"filter.all" = "すべて";
+"filter.special" = "特別";
+"filter.favorites" = "お気に入り";
+"filter.pinned" = "ピン留め";
+
+/* Time */
+"time.now" = "たった今";
+"time.weeks" = "%d週間前";
+"time.months" = "%dヶ月前";
+"time.years" = "%d年前";
+
+/* Settings */
+"settings.general" = "一般";
+"settings.update" = "アップデート";
+"settings.about" = "このアプリについて";
+"settings.appearance" = "外観";
+"settings.theme" = "テーマ";
+"settings.theme.system" = "システム";
+"settings.theme.light" = "ライト";
+"settings.theme.dark" = "ダーク";
+"settings.language" = "言語";
+"settings.language.restart_title" = "再起動が必要です";
+"settings.language.restart_message" = "言語の変更を完全に反映するには、アプリの再起動が必要です。";
+"settings.language.restart_now" = "今すぐ再起動";
+"settings.language.restart_later" = "後で";
+"settings.launchAtLogin" = "ログイン時に起動";
+"settings.currentVersion" = "現在のバージョン";
+
+/* Pro */
+"pro.title" = "PasteMemo Proにアップグレード";
+"pro.description" = "無制限の履歴、スマートグループ、iCloud同期などをアンロック。";
+"pro.enterKey" = "ライセンスキーを入力";
+"pro.activate" = "有効化";
+"pro.activated" = "ライセンスが有効化されました";
+"pro.deactivate" = "ライセンスを無効化";
+"pro.invalidKey" = "無効なライセンスキー";
+"pro.features" = "Pro機能";
+"pro.feature.unlimited" = "無制限の履歴";
+"pro.feature.favorites" = "無制限のお気に入り";
+"pro.feature.smartGroup" = "スマートグループ";
+"pro.feature.icloud" = "自動バックアップ";
+"pro.feature.themes" = "カスタムテーマ";
+
+/* Menu */
+"menu.manager" = "管理ツールを開く";
+
+/* Detail */
+"detail.select" = "アイテムを選択";
+"detail.selectHint" = "左のアイテムをクリックして詳細を表示";
+"detail.info" = "情報";
+"detail.type" = "種類";
+"detail.source" = "コピー元アプリ";
+"detail.created" = "作成日時";
+"detail.group" = "グループ";
+"detail.lastUsed" = "最終使用";
+"detail.chars" = "文字数";
+"detail.lines" = "行数";
+"detail.aiPreview" = "AI用プレビュー";
+"detail.language" = "言語";
+"detail.preview_failed" = "プレビューを読み込めません";
+
+/* Filter */
+"filter.types" = "種類";
+
+/* Actions */
+"action.paste" = "ペースト";
+"action.cancel" = "キャンセル";
+"action.confirm" = "OK";
+"action.assignGroup" = "グループに割り当て";
+"action.newGroup" = "新規グループ…";
+"action.editGroup" = "グループを編集…";
+"action.deleteGroup" = "グループを削除";
+"action.deleteGroupConfirm" = "グループ「%@」を削除してもよろしいですか？グループ内のアイテムは削除されません。";
+"action.removeFromGroup" = "グループから除外";
+"action.changeIcon" = "アイコンを変更…";
+"action.clearConfirm" = "お気に入りとピン留めを除くすべてのアイテムが削除されます。";
+
+/* Stats */
+"stats.total" = "クリップ合計";
+
+/* Settings */
+"settings.features" = "機能";
+"settings.shortcuts" = "ショートカット";
+"settings.quickPanelShortcut" = "クイックペースト";
+"settings.managerShortcut" = "Open Manager";
+"settings.shortcut.none" = "未設定";
+"settings.paste" = "ペースト";
+"settings.addNewLine" = "ペースト後に改行を追加";
+"settings.history" = "履歴";
+"settings.retentionDays" = "履歴の保持";
+"settings.retentionDays.forever" = "永久";
+"settings.retentionDays.days" = "%d日";
+"settings.display" = "表示";
+"settings.behavior" = "動作";
+"settings.preferences" = "環境設定";
+"settings.showLinkURL" = "リンクをページタイトルではなくURLで表示";
+"settings.webPreview" = "Webプレビュー";
+"settings.showGuide" = "ウェルカムガイドを表示";
+
+/* Pro */
+"pro.beta.desc" = "PasteMemoは現在ベータテスト中です。Pro機能は今後のリリースで提供予定です。";
+"pro.feature.rules" = "クリップボードルール";
+"pro.feature.relay" = "リレーモード";
+"pro.feature.customCategory" = "カスタムカテゴリ";
+"pro.feature.ignoreApps" = "特定アプリを除外";
+"pro.feature.automation" = "クリップボード自動化";
+
+/* Onboarding */
+"onboarding.back" = "戻る";
+"onboarding.next" = "次へ";
+"onboarding.done" = "始める";
+"onboarding.welcome.title" = "PasteMemoへようこそ";
+"onboarding.welcome.desc" = "メニューバーに常駐するスマートクリップボードマネージャー。コピーしたものを自動保存し、即座に検索できます。";
+"onboarding.accessibility.title" = "アクセシビリティを有効にする";
+"onboarding.accessibility.desc" = "PasteMemoは他のアプリにコンテンツをペーストするためにアクセシビリティ権限が必要です。";
+"onboarding.accessibility.grant" = "アクセシビリティ設定を開く";
+"onboarding.accessibility.granted" = "権限が付与されました";
+"onboarding.accessibility.hint" = "権限を付与すると、このページが自動的に更新されます。";
+"onboarding.shortcut.title" = "クイックペーストショートカット";
+"onboarding.shortcut.desc" = "どこからでもショートカットを押してクイックペーストパネルを開きます。";
+"onboarding.shortcut.current" = "クリックしてショートカットを変更";
+"onboarding.helpHint" = "ヘルプ → PasteMemo ヘルプからいつでも確認できます";
+
+/* Help */
+"menu.newGroup" = "新規グループ…";
+"menu.newSmartGroup" = "新規スマートグループ…";
+"menu.help" = "PasteMemo ヘルプ";
+"help.title" = "PasteMemo ヘルプ";
+"help.subtitle" = "クリップボードマネージャーの使い方ガイド。";
+"help.close" = "了解";
+"help.shortcuts" = "キーボードショートカット";
+"help.shortcut.quickPaste" = "クイックペーストパネルを開く";
+"help.shortcut.paste" = "選択したアイテムをペースト";
+"help.shortcut.switchType" = "コンテンツタイプでフィルタ";
+"help.shortcut.navigate" = "アイテムを移動";
+"help.shortcut.cmdEnter" = "パスをペースト / フォルダに保存 / 画像としてペースト";
+"help.shortcut.preview" = "プレビュー / リンクを開く";
+"help.shortcut.delete" = "アイテムを削除";
+"help.shortcut.close" = "パネルを閉じる";
+"help.actions" = "クイックペースト操作";
+"help.action.paste" = "Enterまたはダブルクリックで現在のアプリにペースト";
+"help.action.openLink" = "リンクはデフォルトブラウザで直接開けます";
+"help.action.pastePath" = "ファイル：⌘↵ でファイルパスをペースト";
+"help.action.saveToFolder" = "テキスト/画像：⌘↵ でファイルとしてフォルダに保存";
+"help.action.pasteImage" = "画像付きアイテム：⌘↵ で画像ファイルとしてペースト";
+"help.action.pin" = "右クリックでピン留め — 常にリストの上部に表示";
+"help.tips" = "ヒント";
+"help.tip.doubleClick" = "ダブルクリックでペースト、シングルクリックで選択・プレビュー";
+"help.tip.rightClick" = "右クリックメニュー：ピン留め、削除";
+"help.tip.menuBar" = "メニューバーアイコンから履歴と設定にアクセス";
+"help.tip.search" = "検索ボックスに入力して即座にクリップを検索";
+
+/* Update */
+"update.available.title" = "PasteMemoの新しいバージョンが利用可能です！";
+"update.available.message" = "PasteMemo %@ が利用可能です — 現在のバージョンは %@ です。今すぐダウンロードしますか？";
+"update.skip" = "このバージョンをスキップ";
+"update.remind_later" = "後で通知";
+"update.install" = "アップデートをインストール";
+"update.downloading" = "アップデートをダウンロード中...";
+"update.ready" = "インストール準備完了";
+"update.install_restart" = "インストールして再起動";
+"update.cancel" = "キャンセル";
+"update.check_failed" = "アップデートの確認に失敗しました";
+"update.check_failed.hint" = "最新バージョンの情報を取得できませんでした。ネットワーク接続を確認して再試行するか、以下のページから手動でダウンロードしてください：";
+"update.check_failed.github" = "GitHub ダウンロード";
+"update.check_failed.gitee" = "Gitee ダウンロード";
+"update.check_failed.cancel" = "キャンセル";
+"update.no_updates" = "最新版です！";
+"update.no_updates.message" = "PasteMemo %@ は最新バージョンです。";
+"update.download_error" = "ダウンロード失敗";
+"update.dmg_error" = "アップデート失敗";
+"update.dmg_error.message" = "ダウンロードしたディスクイメージが破損しています。再度ダウンロードしてください。";
+
+/* About */
+"about.description" = "macOS向けスマートクリップボードマネージャー";
+"about.sponsor" = "作者を支援";
+
+/* Ignored Apps */
+"settings.ignoredApps" = "無視するアプリ";
+"settings.ignoredApps.add" = "アプリを追加";
+"settings.ignoredApps.empty" = "無視するアプリはありません";
+"settings.ignoredApps.remove" = "削除";
+"settings.ignoredApps.selectApp" = "無視するアプリを選択";
+"settings.ignoredApps.running" = "実行中のアプリ";
+"settings.ignoredApps.browse" = "アプリケーションを参照…";
+
+/* Sensitive Content */
+"sensitive.masked" = "••••••••";
+"sensitive.reveal" = "表示";
+"sensitive.hide" = "非表示";
+"sensitive.markSensitive" = "機密としてマーク";
+"sensitive.unmarkSensitive" = "機密マークを解除";
+
+/* Data Import/Export */
+"dataPorter.section" = "データ";
+"dataPorter.export" = "データをエクスポート";
+"dataPorter.import" = "データをインポート";
+"dataPorter.encrypt" = "暗号化してエクスポート";
+"dataPorter.password" = "パスワード";
+"dataPorter.confirmPassword" = "パスワード確認";
+"dataPorter.passwordMismatch" = "パスワードが一致しません";
+"dataPorter.enterPassword" = "パスワードを入力して復号化";
+"dataPorter.exportSuccess" = "エクスポート成功";
+"dataPorter.importSuccess" = "インポート成功";
+"dataPorter.wrongPassword" = "パスワードが正しくありません";
+
+/* Dev Tools */
+"devTools.importFromRelease" = "Import Data from Release";
+"devTools.importFromRelease.confirm" = "Import from Release?";
+"devTools.importFromRelease.confirmMessage" = "This will overwrite all data in the Dev version. This action cannot be undone.";
+"devTools.importFromRelease.releaseRunning" = "Please quit the release version of PasteMemo before importing.";
+"devTools.importFromRelease.noData" = "No release version data found.";
+
+/* Rich Text / Plain Text */
+"action.pasteAsPlainText" = "プレーンテキスト";
+
+/* Text Editing */
+"action.edit" = "編集";
+"action.save" = "保存";
+
+/* Multi-select */
+"action.merge" = "結合";
+"action.mergeCopy" = "コピー";
+"quick.multiSelected" = "%d 件選択中";
+"quick.batchPaste" = "一括ペースト";
+
+/* Privacy */
+"settings.privacy" = "プライバシー";
+"settings.privacy.sensitive" = "機密コンテンツ";
+"settings.privacy.sensitiveDetection" = "機密コンテンツを自動検出";
+"settings.privacy.sensitiveHint" = "クリップボードにコピーされたパスワード、APIキー、トークンなどの機密データを自動的にマスクします。";
+
+/* Automation */
+"settings.automation" = "自動化";
+"settings.automation.enabled" = "自動化ルールを有効にする";
+"settings.automation.ruleCount" = "%d 件のルール（%d 件有効）";
+"settings.automation.manage" = "自動化ルールを管理...";
+"settings.automation.hint" = "All matching rules are executed in order. Drag to reorder.";
+"settings.automation.auto" = "自動";
+"settings.automation.manual" = "手動";
+"settings.automation.proRequired" = "自動化ルールは Pro 専用機能です";
+"automation.builtIn.cleanTracking" = "リンクのトラッキングパラメータを削除";
+"automation.builtIn.lowercaseEmail" = "メールアドレスを小文字に変換";
+"automation.builtIn.removeBlankLines" = "余分な空行を削除";
+
+/* Onboarding - Privacy Apps */
+"onboarding.privacy.title" = "プライバシー保護";
+"onboarding.privacy.desc" = "お使いの Mac に以下のパスワードマネージャーやセキュリティアプリが検出されました。機密データを保護するため、クリップボード監視の除外リストに追加することをお勧めします。";
+"onboarding.privacy.none" = "パスワードマネージャーやセキュリティアプリは検出されませんでした";
+
+/* Onboarding - Preferences */
+"onboarding.preferences.title" = "環境設定";
+"onboarding.preferences.desc" = "お好みの動作を設定してください。設定はいつでも変更できます。";
+
+"sensitive.optionHint" = "⌥ Option を押して一時表示";
+
+"sensitive.peek" = "一時表示";
+
+/* Accessibility Steps */
+"accessibility.step1" = "システム設定 → プライバシーとセキュリティ → アクセシビリティ を開く";
+"accessibility.step2" = "PasteMemo を見つけて削除（選択してマイナスをクリック）";
+"accessibility.step3" = "プラスをクリックして PasteMemo を再追加";
+
+/* Accessibility Steps (rich text parts) */
+"accessibility.step1.prefix" = "開く";
+"accessibility.step1.path" = "システム設定 → プライバシーとセキュリティ → アクセシビリティ";
+"accessibility.step2.prefix" = "見つける";
+"accessibility.step2.suffix" = "を削除";
+"accessibility.step3.text" = "PasteMemo を再追加";
+
+"accessibility.step2.find" = "見つけて";
+"accessibility.step2.delete" = "削除";
+"accessibility.step3.add" = "再追加";
+
+"accessibility.step3.readd" = "再追加";
+
+"accessibility.step2.pre" = "まず";
+"accessibility.step2.separator" = "、";
+
+"filter.sensitive" = "機密";
+
+"settings.clearData" = "データを消去";
+
+"settings.sound" = "サウンド";
+"settings.sound.enabled" = "効果音";
+"settings.sound.copy" = "コピー音";
+"settings.sound.paste" = "ペースト音";
+"settings.sound.section.custom" = "カスタム";
+"settings.sound.section.system" = "システム";
+
+/* Backup */
+"backup.section" = "自動バックアップ";
+"backup.enable" = "自動バックアップを有効化";
+"backup.frequency" = "バックアップ頻度";
+"backup.maxSlots" = "バックアップ数";
+"backup.destination" = "バックアップ方法";
+"backup.frequency.sixHours" = "6時間ごと";
+"backup.frequency.daily" = "毎日";
+"backup.frequency.threeDays" = "3日ごと";
+"backup.frequency.weekly" = "毎週";
+"backup.frequency.monthly" = "毎月";
+"backup.path" = "バックアップ先";
+"backup.lastBackup" = "前回のバックアップ";
+"backup.backupNow" = "今すぐバックアップ";
+"backup.restore" = "バックアップから復元…";
+"backup.success" = "バックアップが完了しました。";
+"backup.restore.title" = "バックアップから復元";
+"backup.restore.empty" = "利用可能なバックアップがありません。";
+"backup.restore.merge" = "マージ（既存データを保持）";
+"backup.restore.overwrite" = "上書き（すべて置換）";
+"backup.restore.confirm" = "復元の確認";
+"backup.restore.confirmMerge" = "バックアップデータが既存データとマージされます。重複はスキップされます。";
+"backup.restore.confirmOverwrite" = "すべての既存データがバックアップデータに置き換えられます。この操作は元に戻せません。";
+"backup.restore.success" = "復元が完了しました。";
+"backup.webdav.url" = "サーバーURL";
+"backup.webdav.username" = "ユーザー名";
+"backup.webdav.password" = "パスワード";
+"backup.webdav.test" = "接続テスト";
+"backup.destination.local" = "ローカル";
+"backup.changePath" = "変更…";
+"backup.webdav.testSuccess" = "接続に成功しました。";
+"backup.webdav.testFailed" = "接続に失敗しました。";
+
+// リレーモード
+// コマンドパレット
+"cmd.title" = "クイックアクション";
+"cmd.paste" = "ペースト";
+"cmd.pasteAsPlainText" = "プレーンテキストでペースト";
+"cmd.copy" = "コピー";
+"cmd.pin" = "ピン / ピン解除";
+"cmd.toggleSensitive" = "機密の切り替え";
+"cmd.delete" = "削除";
+"cmd.openLink" = "リンクを開く";
+"cmd.pasteAsFile" = "ファイルとしてペースト";
+"cmd.pastePath" = "パスをペースト";
+"cmd.andNewLine" = "＋改行";
+"cmd.transform" = "変換";
+
+"relay.title" = "リレーモード";
+"relay.tab" = "リレー";
+"relay.exit" = "終了";
+"relay.close" = "閉じる";
+"relay.exitRelay" = "リレー終了";
+"relay.startRelay" = "リレー開始";
+"relay.pause" = "一時停止";
+"relay.resume" = "再開";
+"relay.paused" = "一時停止中";
+"relay.emptyHint" = "コピーした内容がキューに追加されます";
+"relay.quickPastePaused" = "リレーモード中はクイックペーストが一時停止しています";
+"relay.alert.title" = "リレーモードが有効になりました";
+"relay.alert.message" = "クイックペーストが一時停止しました。コピーした内容はリレーキューに追加されます。
+
+%@ で1つずつペーストします。";
+"relay.alert.ok" = "了解";
+"relay.alert.dontShowAgain" = "今後表示しない";
+"relay.settings.pasteKey" = "リレーペーストショートカット";
+"relay.settings.pasteKeyNote" = "一部のアプリ（ターミナル、Emacs）が同じショートカットを使用する場合があります。競合する場合はカスタマイズしてください。";
+"relay.settings.pauseToChange" = "ショートカットを変更するにはリレーモードを一時停止または終了してください。";
+"relay.settings.resetAlert" = "起動時のヒントを再表示";
+"relay.settings.description" = "リレーモードでは複数のアイテムをコピーして順番に1つずつペーストできます。Webページから名前のリストをコピーして Excel に行ごとにペーストするのに最適です。";
+"relay.settings.shortcuts" = "ショートカット";
+"relay.settings.operations" = "操作説明";
+"relay.settings.op.paste" = "次のアイテムをペースト";
+"relay.settings.op.skip" = "現在のアイテムをスキップ";
+"relay.settings.op.previous" = "1つ前に戻る";
+"relay.autoExit.short" = "完了後に自動終了";
+"relay.autoExit" = "キューが空になったら自動終了";
+"relay.previous" = "前へ";
+"relay.skip" = "スキップ";
+"relay.delete" = "削除";
+"relay.split" = "分割";
+"relay.addToQueue" = "リレーキューに追加";
+"relay.splitAndRelay" = "分割してリレー";
+"relay.split.title" = "キューに分割";
+"relay.split.delimiter" = "区切り文字";
+"relay.split.customPlaceholder" = "区切り文字を入力...";
+"relay.split.confirm" = "分割";
+"relay.split.preview" = "%d 件に分割されます";
+"relay.split.noResult" = "区切り文字が見つかりません";
+"relay.delimiter.newline" = "改行";
+"relay.delimiter.comma" = "カンマ (,)";
+"relay.delimiter.chineseComma" = "読点 (、)";
+"relay.delimiter.custom" = "カスタム";
+"onboarding.skip" = "スキップ";
+"onboarding.relay.title" = "リレーモード";
+"onboarding.relay.desc" = "複数のアイテムを連続コピーし、順番に1つずつペースト。一括データ入力に最適です。";
+"onboarding.relay.feature1" = "複数選択または連続コピーでペーストキューを構築";
+"onboarding.relay.feature2" = "区切り文字でテキストを分割してキューを素早く作成";
+"onboarding.relay.feature3" = "Ctrl+V で1つずつペースト（設定でカスタマイズ可能）";
+"help.relay" = "リレーモード";
+"help.relay.open" = "ツールバーボタンまたはメニューバーから開く";
+"help.relay.paste" = "Ctrl+V で次のアイテムをペースト（設定でカスタマイズ可能）";
+"help.relay.skip" = "リレーウィンドウのスキップボタンで現在のアイテムをスキップ";
+"help.relay.previous" = "リレーウィンドウの前へボタンで1つ戻る";
+"help.relay.split" = "ホバーしてハサミアイコンをクリック、または右クリックで分割";
+"help.relay.pauseResume" = "リレーウィンドウの一時停止 / 再開ボタン";
+"help.relay.exit" = "閉じるボタンまたは Esc でリレーモードを終了";
+"about.help" = "ヘルプ";
+
+/* Actions - Additional */
+"action.copy" = "コピー";
+"action.copied" = "クリップボードにコピーしました";
+"action.deleteSelected" = "%d 件を削除";
+"action.deleteSelected.confirm" = "Delete %d items?";
+
+/* About - Additional */
+"about.website" = "ウェブサイト";
+
+/* Content Types - Additional */
+"type.file" = "ファイル";
+"type.other" = "その他";
+"type.email" = "Email";
+"type.phone" = "電話番号";
+"type.video" = "動画";
+"type.audio" = "オーディオ";
+"type.document" = "ドキュメント";
+"type.archive" = "アーカイブ";
+"type.application" = "アプリ";
+
+/* Phone Actions */
+"phone.call" = "電話をかける";
+"phone.message" = "メッセージ";
+"phone.copy" = "コピー";
+
+/* Detail - Additional */
+"detail.dimensions" = "サイズ";
+"detail.fileCount" = "ファイル数";
+"detail.format" = "フォーマット";
+"detail.host" = "ホスト";
+"detail.linkTitle" = "タイトル";
+"detail.location" = "場所";
+"detail.multiSelected" = "%d 件を選択中";
+"detail.openInBrowser" = "ブラウザで開く";
+"detail.size" = "サイズ";
+"detail.url" = "URL";
+"detail.words" = "単語数";
+
+/* File */
+"file.multiTitle" = " 他 %d ファイル";
+
+/* Filter - Additional */
+"filter.apps" = "アプリ別";
+"filter.groups" = "グループ";
+"filter.other" = "その他";
+
+/* Empty State - Additional */
+"empty.hint" = "⌘C でテキスト、画像、ファイルをコピー";
+"empty.noResults" = "一致する項目が見つかりません";
+"empty.quickHint" = "何かをコピーして始めましょう";
+
+/* Guide */
+"guide.doubleClick" = "ダブルクリックでペースト、シングルクリックで選択";
+"guide.pin" = "右クリックで重要なクリップをピン留め";
+"guide.shortcut" = "%@ を押していつでもクイックペーストを開く";
+
+/* Menu - Additional */
+"menu.openMain" = "メインウィンドウを開く";
+"menu.pause" = "監視を一時停止";
+"menu.quickPanel" = "クイックペースト";
+"menu.quit" = "%@ を終了";
+"menu.resume" = "監視を再開";
+"menu.settings" = "設定";
+
+/* Quick Panel */
+"quick.actions" = "アクション";
+"quick.close" = "閉じる";
+"quick.commandPalette" = "アクション";
+"quick.delete" = "削除";
+"quick.navigate" = "移動";
+"quick.openLink" = "開く";
+"quick.pasteAction" = "ペースト";
+"quick.pasteImage" = "画像をペースト";
+"quick.pasteName" = "名前をペースト";
+"quick.pasteNewLine" = "ペースト＋改行";
+"quick.pastePath" = "パスをペースト";
+"quick.pasteTo" = "%@ にペースト";
+"quick.pasteToApp" = "%@ にペースト";
+"quick.preview" = "プレビュー";
+"quick.recent" = "最近";
+"quick.saveToFolder" = "ファイルとしてペースト";
+"quick.search" = "クリップを検索…";
+"quick.selectHint" = "アイテムを選択してプレビュー";
+"quick.switchType" = "種類";
+"quickPanel.pin" = "ウィンドウをピン留め";
+"quickPanel.unpin" = "ウィンドウのピン留めを解除";
+
+/* Time - Additional */
+"time.days" = "%d日前";
+"time.hours" = "%d時間前";
+"time.minutes" = "%d分前";
+"time.older" = "それ以前";
+"time.pinned" = "ピン留め";
+"time.thisMonth" = "今月";
+"time.thisWeek" = "今週";
+"time.today" = "今日";
+"time.yesterday" = "昨日";
+
+/* Stats - Additional */
+"stats.clips" = "クリップ";
+
+/* Settings - Clear Data */
+"settings.clearData.1month" = "1ヶ月以上前";
+"settings.clearData.1year" = "1年以上前";
+"settings.clearData.3months" = "3ヶ月以上前";
+"settings.clearData.6months" = "6ヶ月以上前";
+"settings.clearData.all" = "すべて削除";
+"settings.clearData.result" = "%d 件を削除しました";
+
+/* Settings - Double Tap */
+"settings.doubleTap" = "ダブルタップで開く";
+"settings.doubleTap.modifier" = "ダブルタップ修飾キー";
+
+/* Settings - Shortcut Additional */
+"settings.shortcut.clickToRecord" = "クリックして記録";
+"settings.shortcut.pressKey" = "ショートカットを入力…";
+
+/* Relay - Additional */
+"relay.editItem" = "内容を編集";
+"relay.reverse" = "逆順にする";
+
+/* Command - Additional */
+"cmd.copyAs" = "%@ としてコピー";
+"cmd.showInFinder" = "Finderで表示";
+
+/* Accessibility - Lost Permission */
+"accessibility.lost.later" = "後で";
+"accessibility.lost.message" = "アプリのアップデート後、macOSは再認証を必要とします。システム設定を開き、まずアクセシビリティリストからPasteMemoを削除（選択してマイナスをクリック）し、次にプラスをクリックして再追加してください。";
+"accessibility.lost.title" = "アクセシビリティ権限が必要です";
+
+/* Automation Window */
+"automation.window.title" = "自動化ルール";
+"automation.section.builtIn" = "組み込みルール";
+"automation.section.custom" = "マイルール";
+"automation.section.empty" = "（空）";
+"automation.editor.selectRule" = "編集するルールを選択";
+"automation.editor.definition" = "ルール定義";
+"automation.editor.settings" = "設定";
+"automation.editor.save" = "保存";
+"automation.editor.cancel" = "キャンセル";
+"automation.editor.edit" = "編集";
+
+/* Automation Rules */
+"automation.rule.name" = "名前";
+"automation.rule.enabled" = "有効";
+"automation.rule.triggerMode" = "トリガー";
+"automation.rule.triggerMode.automatic" = "自動";
+"automation.rule.triggerMode.manual" = "手動のみ";
+"automation.rule.notifyBeforeApply" = "適用前に確認する";
+"automation.rule.newName" = "新しいルール";
+
+/* Automation Conditions */
+"automation.condition.title" = "条件";
+"automation.condition.add" = "＋ 条件を追加";
+"automation.condition.contentType" = "コンテンツの種類が";
+"automation.condition.regexMatch" = "正規表現に一致";
+"automation.condition.containsText" = "テキストを含む";
+"automation.condition.sourceApp" = "コピー元アプリが";
+"automation.condition.sourceApp.select" = "アプリを選択";
+"automation.condition.sourceApp.add" = "アプリを追加";
+"automation.condition.sourceApp.empty" = "アプリが選択されていません";
+"automation.condition.empty" = "条件なし";
+"automation.condition.title.prefix" = "以下の";
+"automation.condition.logic.all" = "すべての";
+"automation.condition.logic.any" = "いずれかの";
+"automation.condition.title.suffix" = "条件を満たした場合";
+"automation.condition.regexMatch.placeholder" = "正規表現パターンを入力";
+"automation.condition.containsText.placeholder" = "テキスト内容を入力";
+
+/* Automation Actions */
+"automation.action.title" = "アクション（順番に実行）";
+"automation.action.add" = "＋ アクションを追加";
+"automation.action.lowercased" = "小文字に変換";
+"automation.action.uppercased" = "大文字に変換";
+"automation.action.trimWhitespace" = "空白を削除";
+"automation.action.removeBlankLines" = "空行を削除";
+"automation.action.stripRichText" = "リッチテキストを除去";
+"automation.action.assignGroup" = "グループに割り当て";
+"automation.action.assignGroup.placeholder" = "グループ名を入力";
+"automation.action.urlEncode" = "URLエンコード";
+"automation.action.urlDecode" = "URLデコード";
+"automation.action.removeQueryParams" = "URLパラメータを削除";
+"automation.action.regexReplace" = "正規表現で置換";
+"automation.action.regexReplace.to" = "置換後の文字列";
+"automation.action.addPrefix" = "接頭辞を追加";
+"automation.action.addSuffix" = "接尾辞を追加";
+"automation.action.removeQueryParams.placeholder" = "パラメータ名を入力（カンマ区切り）";
+"automation.action.regexReplace.placeholder" = "正規表現パターンを入力";
+"automation.action.regexReplace.to.placeholder" = "置換テキストを入力";
+"automation.action.addPrefix.placeholder" = "接頭辞テキストを入力";
+"automation.action.addSuffix.placeholder" = "接尾辞テキストを入力";
+"automation.action.section.text" = "テキスト";
+"automation.action.section.url" = "URL";
+"automation.action.section.advanced" = "高度な設定";
+"automation.action.section.clipboard" = "Clipboard";
+"automation.action.markSensitive" = "Mark as Sensitive";
+"automation.action.pin" = "Pin";
+"automation.action.skipCapture" = "Skip Capture";
+"automation.rule.notifyOnTrigger" = "Send notification on trigger";
+"automation.notification.title" = "Automation";
+"automation.applied" = "Automation applied";
+"automation.validation.incomplete" = "Cannot enable rule";
+"automation.validation.incompleteMessage" = "Please add at least one condition and one action before enabling.";
+"automation.delete.confirm" = "Delete Rule?";
+"automation.delete.confirmMessage" = "This action cannot be undone.";
+"automation.notification.permissionDenied" = "Notifications Not Allowed";
+"automation.notification.permissionDeniedMessage" = "Please allow notifications for PasteMemo in System Settings.";
+"automation.notification.openSettings" = "Open Settings";
+"automation.action.delete" = "ルールを削除";
+"automation.action.empty" = "アクションなし";
+
+/* Automation Preview */
+"automation.preview" = "ルールをテスト";
+"automation.preview.input" = "内容をペーストまたは入力してルールをテスト…";
+"automation.preview.output" = "結果プレビュー";
+"automation.preview.notMatched" = "条件に一致しませんでした";
+
+/* Automation Confirm */
+"automation.confirm.title" = "自動化ルールがトリガーされました";
+"automation.confirm.matched" = "ルール「%@」が一致しました";
+"automation.confirm.apply" = "適用";
+"automation.confirm.keep" = "元のテキストを保持";
+"automation.confirm.original" = "元のテキスト：";
+"automation.confirm.processed" = "処理後：";
+
+/* Backup - Additional */
+"backup.nextBackup" = "次回のバックアップ";
+"detail.openInFinder" = "Finderで表示";

@@ -1,0 +1,660 @@
+/* App */
+"app.name" = "PasteMemo";
+
+/* Menu */
+"menu.checkForUpdates" = "업데이트 확인…";
+"menu.github" = "GitHub";
+"menu.reportIssue" = "문제 신고";
+"menu.upgrade" = "Pro로 업그레이드";
+
+/* Search */
+"search.placeholder" = "클립보드 기록 검색…";
+
+/* Empty State */
+"empty.title" = "클립 없음";
+"empty.message" = "무언가를 복사하여 시작하세요";
+
+/* Actions */
+"action.favorite" = "즐겨찾기";
+"action.unfavorite" = "즐겨찾기 해제";
+"action.pin" = "고정";
+"action.unpin" = "고정 해제";
+"action.delete" = "삭제";
+"action.clearAll" = "모두 삭제";
+"action.aiCopy" = "AI용 복사";
+
+/* Content Types */
+"type.text" = "텍스트";
+"type.link" = "링크";
+"type.image" = "이미지";
+"type.code" = "코드";
+"type.color" = "색상";
+
+/* Filter */
+"filter.all" = "전체";
+"filter.special" = "특별";
+"filter.favorites" = "즐겨찾기";
+"filter.pinned" = "고정됨";
+
+/* Time */
+"time.now" = "방금";
+"time.weeks" = "%d주 전";
+"time.months" = "%d개월 전";
+"time.years" = "%d년 전";
+
+/* Settings */
+"settings.general" = "일반";
+"settings.update" = "업데이트";
+"settings.about" = "정보";
+"settings.appearance" = "모양";
+"settings.theme" = "테마";
+"settings.theme.system" = "시스템";
+"settings.theme.light" = "라이트";
+"settings.theme.dark" = "다크";
+"settings.language" = "언어";
+"settings.language.restart_title" = "재시작 필요";
+"settings.language.restart_message" = "언어 변경을 완전히 적용하려면 앱을 재시작해야 합니다.";
+"settings.language.restart_now" = "지금 재시작";
+"settings.language.restart_later" = "나중에";
+"settings.launchAtLogin" = "로그인 시 실행";
+"settings.currentVersion" = "현재 버전";
+
+/* Pro */
+"pro.title" = "PasteMemo Pro로 업그레이드";
+"pro.description" = "무제한 기록, 스마트 그룹, iCloud 동기화 등을 잠금 해제하세요.";
+"pro.enterKey" = "라이선스 키 입력";
+"pro.activate" = "활성화";
+"pro.activated" = "라이선스가 활성화되었습니다";
+"pro.deactivate" = "라이선스 비활성화";
+"pro.invalidKey" = "유효하지 않은 라이선스 키";
+"pro.features" = "Pro 기능";
+"pro.feature.unlimited" = "무제한 기록";
+"pro.feature.favorites" = "무제한 즐겨찾기";
+"pro.feature.smartGroup" = "스마트 그룹";
+"pro.feature.icloud" = "자동 백업";
+"pro.feature.themes" = "맞춤 테마";
+
+/* Menu */
+"menu.manager" = "관리자 열기";
+
+/* Detail */
+"detail.select" = "항목 선택";
+"detail.selectHint" = "왼쪽 항목을 클릭하여 상세 정보를 확인하세요";
+"detail.info" = "정보";
+"detail.type" = "유형";
+"detail.source" = "원본 앱";
+"detail.created" = "생성일";
+"detail.group" = "그룹";
+"detail.lastUsed" = "마지막 사용";
+"detail.chars" = "글자 수";
+"detail.lines" = "줄 수";
+"detail.aiPreview" = "AI용 미리보기";
+"detail.language" = "언어";
+"detail.preview_failed" = "미리보기를 불러올 수 없습니다";
+
+/* Filter */
+"filter.types" = "유형";
+
+/* Actions */
+"action.paste" = "붙여넣기";
+"action.cancel" = "취소";
+"action.confirm" = "확인";
+"action.assignGroup" = "그룹에 할당";
+"action.newGroup" = "새 그룹…";
+"action.editGroup" = "그룹 편집…";
+"action.deleteGroup" = "그룹 삭제";
+"action.deleteGroupConfirm" = "그룹 \"%@\"을(를) 삭제하시겠습니까? 그룹 내 항목은 삭제되지 않습니다.";
+"action.removeFromGroup" = "그룹에서 제거";
+"action.changeIcon" = "아이콘 변경…";
+"action.clearConfirm" = "즐겨찾기와 고정된 항목을 제외한 모든 항목이 삭제됩니다.";
+
+/* Stats */
+"stats.total" = "전체 클립";
+
+/* Settings */
+"settings.features" = "기능";
+"settings.shortcuts" = "단축키";
+"settings.quickPanelShortcut" = "빠른 붙여넣기";
+"settings.managerShortcut" = "Open Manager";
+"settings.shortcut.none" = "미설정";
+"settings.paste" = "붙여넣기";
+"settings.addNewLine" = "붙여넣기 후 줄바꿈 추가";
+"settings.history" = "기록";
+"settings.retentionDays" = "기록 보관";
+"settings.retentionDays.forever" = "영구";
+"settings.retentionDays.days" = "%d일";
+"settings.display" = "표시";
+"settings.behavior" = "동작";
+"settings.preferences" = "환경설정";
+"settings.showLinkURL" = "링크를 페이지 제목 대신 URL로 표시";
+"settings.webPreview" = "웹 미리보기";
+"settings.showGuide" = "환영 가이드 표시";
+
+/* Pro */
+"pro.beta.desc" = "PasteMemo는 현재 베타 테스트 중입니다. Pro 기능은 향후 릴리스에서 제공될 예정입니다.";
+"pro.feature.rules" = "클립보드 규칙";
+"pro.feature.relay" = "릴레이 모드";
+"pro.feature.customCategory" = "맞춤 카테고리";
+"pro.feature.ignoreApps" = "특정 앱 제외";
+"pro.feature.automation" = "클립보드 자동화";
+
+/* Onboarding */
+"onboarding.back" = "이전";
+"onboarding.next" = "다음";
+"onboarding.done" = "시작하기";
+"onboarding.welcome.title" = "PasteMemo에 오신 것을 환영합니다";
+"onboarding.welcome.desc" = "메뉴 바에 상주하는 스마트 클립보드 관리자. 복사한 모든 것을 자동 저장하고 즉시 검색할 수 있습니다.";
+"onboarding.accessibility.title" = "손쉬운 사용 활성화";
+"onboarding.accessibility.desc" = "PasteMemo가 다른 앱에 콘텐츠를 붙여넣으려면 손쉬운 사용 권한이 필요합니다.";
+"onboarding.accessibility.grant" = "손쉬운 사용 설정 열기";
+"onboarding.accessibility.granted" = "권한이 부여되었습니다";
+"onboarding.accessibility.hint" = "권한을 부여하면 이 페이지가 자동으로 업데이트됩니다.";
+"onboarding.shortcut.title" = "빠른 붙여넣기 단축키";
+"onboarding.shortcut.desc" = "어디서든 단축키를 눌러 빠른 붙여넣기 패널을 열 수 있습니다.";
+"onboarding.shortcut.current" = "클릭하여 단축키 변경";
+"onboarding.helpHint" = "도움말 → PasteMemo 도움말에서 언제든지 확인할 수 있습니다";
+
+/* Help */
+"menu.newGroup" = "새 그룹…";
+"menu.newSmartGroup" = "새 스마트 그룹…";
+"menu.help" = "PasteMemo 도움말";
+"help.title" = "PasteMemo 도움말";
+"help.subtitle" = "클립보드 관리자 사용 가이드.";
+"help.close" = "확인";
+"help.shortcuts" = "키보드 단축키";
+"help.shortcut.quickPaste" = "빠른 붙여넣기 패널 열기";
+"help.shortcut.paste" = "선택한 항목 붙여넣기";
+"help.shortcut.switchType" = "콘텐츠 유형별 필터";
+"help.shortcut.navigate" = "항목 이동";
+"help.shortcut.cmdEnter" = "경로 붙여넣기 / 폴더에 저장 / 이미지로 붙여넣기";
+"help.shortcut.preview" = "미리보기 / 링크 열기";
+"help.shortcut.delete" = "항목 삭제";
+"help.shortcut.close" = "패널 닫기";
+"help.actions" = "빠른 붙여넣기 동작";
+"help.action.paste" = "Enter 또는 더블클릭으로 현재 앱에 붙여넣기";
+"help.action.openLink" = "링크는 기본 브라우저에서 바로 열 수 있습니다";
+"help.action.pastePath" = "파일: ⌘↵로 파일 경로 붙여넣기";
+"help.action.saveToFolder" = "텍스트/이미지: ⌘↵로 파일로 폴더에 저장";
+"help.action.pasteImage" = "이미지가 있는 항목: ⌘↵로 이미지 파일로 붙여넣기";
+"help.action.pin" = "우클릭으로 고정 — 항상 목록 상단에 표시";
+"help.tips" = "팁";
+"help.tip.doubleClick" = "더블클릭으로 붙여넣기, 싱글클릭으로 선택 및 미리보기";
+"help.tip.rightClick" = "우클릭 메뉴: 고정, 삭제";
+"help.tip.menuBar" = "메뉴 바 아이콘으로 기록 및 설정에 접근";
+"help.tip.search" = "검색창에 입력하여 즉시 클립 검색";
+
+/* Update */
+"update.available.title" = "PasteMemo의 새 버전을 사용할 수 있습니다!";
+"update.available.message" = "PasteMemo %@을(를) 사용할 수 있습니다 — 현재 버전은 %@입니다. 지금 다운로드하시겠습니까?";
+"update.skip" = "이 버전 건너뛰기";
+"update.remind_later" = "나중에 알림";
+"update.install" = "업데이트 설치";
+"update.downloading" = "업데이트 다운로드 중...";
+"update.ready" = "설치 준비 완료";
+"update.install_restart" = "설치 후 재시작";
+"update.cancel" = "취소";
+"update.check_failed" = "업데이트 확인 실패";
+"update.check_failed.hint" = "최신 버전 정보를 가져올 수 없습니다. 네트워크 연결을 확인하고 다시 시도하거나, 아래 페이지에서 직접 다운로드하세요:";
+"update.check_failed.github" = "GitHub 다운로드";
+"update.check_failed.gitee" = "Gitee 다운로드";
+"update.check_failed.cancel" = "취소";
+"update.no_updates" = "최신 버전입니다!";
+"update.no_updates.message" = "PasteMemo %@은(는) 최신 버전입니다.";
+"update.download_error" = "다운로드 실패";
+"update.dmg_error" = "업데이트 실패";
+"update.dmg_error.message" = "다운로드한 디스크 이미지가 손상되었습니다. 다시 다운로드해 주세요.";
+
+/* About */
+"about.description" = "macOS용 스마트 클립보드 관리자";
+"about.sponsor" = "작가 후원";
+
+/* Ignored Apps */
+"settings.ignoredApps" = "무시할 앱";
+"settings.ignoredApps.add" = "앱 추가";
+"settings.ignoredApps.empty" = "무시할 앱 없음";
+"settings.ignoredApps.remove" = "제거";
+"settings.ignoredApps.selectApp" = "무시할 앱 선택";
+"settings.ignoredApps.running" = "실행 중인 앱";
+"settings.ignoredApps.browse" = "응용 프로그램 찾아보기…";
+
+/* Sensitive Content */
+"sensitive.masked" = "••••••••";
+"sensitive.reveal" = "표시";
+"sensitive.hide" = "숨기기";
+"sensitive.markSensitive" = "민감으로 표시";
+"sensitive.unmarkSensitive" = "민감 표시 해제";
+
+/* Data Import/Export */
+"dataPorter.section" = "데이터";
+"dataPorter.export" = "데이터 내보내기";
+"dataPorter.import" = "데이터 가져오기";
+"dataPorter.encrypt" = "암호화하여 내보내기";
+"dataPorter.password" = "비밀번호";
+"dataPorter.confirmPassword" = "비밀번호 확인";
+"dataPorter.passwordMismatch" = "비밀번호가 일치하지 않습니다";
+"dataPorter.enterPassword" = "복호화할 비밀번호 입력";
+"dataPorter.exportSuccess" = "내보내기 완료";
+"dataPorter.importSuccess" = "가져오기 완료";
+"dataPorter.wrongPassword" = "비밀번호가 올바르지 않습니다";
+
+/* Dev Tools */
+"devTools.importFromRelease" = "Import Data from Release";
+"devTools.importFromRelease.confirm" = "Import from Release?";
+"devTools.importFromRelease.confirmMessage" = "This will overwrite all data in the Dev version. This action cannot be undone.";
+"devTools.importFromRelease.releaseRunning" = "Please quit the release version of PasteMemo before importing.";
+"devTools.importFromRelease.noData" = "No release version data found.";
+
+/* Rich Text / Plain Text */
+"action.pasteAsPlainText" = "일반 텍스트";
+
+/* Text Editing */
+"action.edit" = "편집";
+"action.save" = "저장";
+
+/* Multi-select */
+"action.merge" = "병합";
+"action.mergeCopy" = "복사";
+"quick.multiSelected" = "%d개 선택됨";
+"quick.batchPaste" = "일괄 붙여넣기";
+
+/* Privacy */
+"settings.privacy" = "개인정보";
+"settings.privacy.sensitive" = "민감한 콘텐츠";
+"settings.privacy.sensitiveDetection" = "민감한 콘텐츠 자동 감지";
+"settings.privacy.sensitiveHint" = "클립보드에 복사된 비밀번호, API 키, 토큰 등의 민감한 데이터를 자동으로 마스킹합니다.";
+
+/* Automation */
+"settings.automation" = "자동화";
+"settings.automation.enabled" = "자동화 규칙 활성화";
+"settings.automation.ruleCount" = "%d개의 규칙 (%d개 활성)";
+"settings.automation.manage" = "자동화 규칙 관리...";
+"settings.automation.hint" = "All matching rules are executed in order. Drag to reorder.";
+"settings.automation.auto" = "자동";
+"settings.automation.manual" = "수동";
+"settings.automation.proRequired" = "자동화 규칙은 Pro 전용 기능입니다";
+"automation.builtIn.cleanTracking" = "링크 추적 매개변수 제거";
+"automation.builtIn.lowercaseEmail" = "이메일 주소 소문자 변환";
+"automation.builtIn.removeBlankLines" = "과도한 빈 줄 제거";
+
+/* Onboarding - Privacy Apps */
+"onboarding.privacy.title" = "개인정보 보호";
+"onboarding.privacy.desc" = "Mac에서 다음 비밀번호 관리자 및 보안 앱이 감지되었습니다. 민감한 데이터를 보호하기 위해 클립보드 무시 목록에 추가하는 것을 권장합니다.";
+"onboarding.privacy.none" = "비밀번호 관리자 또는 보안 앱이 감지되지 않았습니다";
+
+/* Onboarding - Preferences */
+"onboarding.preferences.title" = "환경설정";
+"onboarding.preferences.desc" = "선호하는 동작 방식을 설정하세요. 설정에서 언제든 변경할 수 있습니다.";
+
+"sensitive.optionHint" = "⌥ Option을 눌러 미리보기";
+
+"sensitive.peek" = "미리보기";
+
+/* Accessibility Steps */
+"accessibility.step1" = "시스템 설정 → 개인 정보 보호 및 보안 → 손쉬운 사용 열기";
+"accessibility.step2" = "PasteMemo를 찾아 먼저 제거 (선택 후 마이너스 클릭)";
+"accessibility.step3" = "플러스를 클릭하여 PasteMemo 다시 추가";
+
+/* Accessibility Steps (rich text parts) */
+"accessibility.step1.prefix" = "열기";
+"accessibility.step1.path" = "시스템 설정 → 개인 정보 보호 → 손쉬운 사용";
+"accessibility.step2.prefix" = "찾기";
+"accessibility.step2.suffix" = "를 먼저 제거";
+"accessibility.step3.text" = "PasteMemo 다시 추가";
+
+"accessibility.step2.find" = "찾기";
+"accessibility.step2.delete" = "먼저 제거";
+"accessibility.step3.add" = "다시 추가";
+
+"accessibility.step3.readd" = "다시 추가";
+
+"accessibility.step2.pre" = "먼저";
+"accessibility.step2.separator" = ", ";
+
+"filter.sensitive" = "민감";
+
+"settings.clearData" = "데이터 지우기";
+
+"settings.sound" = "소리";
+"settings.sound.enabled" = "효과음";
+"settings.sound.copy" = "복사 소리";
+"settings.sound.paste" = "붙여넣기 소리";
+"settings.sound.section.custom" = "사용자 정의";
+"settings.sound.section.system" = "시스템";
+
+/* Backup */
+"backup.section" = "자동 백업";
+"backup.enable" = "자동 백업 활성화";
+"backup.frequency" = "백업 주기";
+"backup.maxSlots" = "백업 수";
+"backup.destination" = "백업 방식";
+"backup.frequency.sixHours" = "6시간마다";
+"backup.frequency.daily" = "매일";
+"backup.frequency.threeDays" = "3일마다";
+"backup.frequency.weekly" = "매주";
+"backup.frequency.monthly" = "매월";
+"backup.path" = "백업 경로";
+"backup.lastBackup" = "마지막 백업";
+"backup.backupNow" = "지금 백업";
+"backup.restore" = "백업에서 복원…";
+"backup.success" = "백업이 완료되었습니다.";
+"backup.restore.title" = "백업에서 복원";
+"backup.restore.empty" = "사용 가능한 백업이 없습니다.";
+"backup.restore.merge" = "병합 (기존 데이터 유지)";
+"backup.restore.overwrite" = "덮어쓰기 (모두 교체)";
+"backup.restore.confirm" = "복원 확인";
+"backup.restore.confirmMerge" = "백업 데이터가 기존 데이터와 병합됩니다. 중복 항목은 건너뜁니다.";
+"backup.restore.confirmOverwrite" = "모든 기존 데이터가 백업 데이터로 교체됩니다. 이 작업은 되돌릴 수 없습니다.";
+"backup.restore.success" = "복원이 완료되었습니다.";
+"backup.webdav.url" = "서버 URL";
+"backup.webdav.username" = "사용자 이름";
+"backup.webdav.password" = "비밀번호";
+"backup.webdav.test" = "연결 테스트";
+"backup.destination.local" = "로컬";
+"backup.changePath" = "변경…";
+"backup.webdav.testSuccess" = "연결 성공.";
+"backup.webdav.testFailed" = "연결 실패.";
+
+// 릴레이 모드
+// 명령 팔레트
+"cmd.title" = "빠른 작업";
+"cmd.paste" = "붙여넣기";
+"cmd.pasteAsPlainText" = "일반 텍스트로 붙여넣기";
+"cmd.copy" = "복사";
+"cmd.pin" = "고정 / 고정 해제";
+"cmd.toggleSensitive" = "민감 표시 전환";
+"cmd.delete" = "삭제";
+"cmd.openLink" = "링크 열기";
+"cmd.pasteAsFile" = "파일로 붙여넣기";
+"cmd.pastePath" = "경로 붙여넣기";
+"cmd.andNewLine" = " + 줄바꿈";
+"cmd.transform" = "변환";
+
+"relay.title" = "릴레이 모드";
+"relay.tab" = "릴레이";
+"relay.exit" = "종료";
+"relay.close" = "닫기";
+"relay.exitRelay" = "릴레이 종료";
+"relay.startRelay" = "릴레이 시작";
+"relay.pause" = "일시 정지";
+"relay.resume" = "재개";
+"relay.paused" = "일시 정지됨";
+"relay.emptyHint" = "복사한 내용이 대기열에 추가됩니다";
+"relay.quickPastePaused" = "릴레이 모드에서는 빠른 붙여넣기가 일시 정지됩니다";
+"relay.alert.title" = "릴레이 모드 활성화됨";
+"relay.alert.message" = "빠른 붙여넣기가 일시 정지되었습니다. 복사한 내용은 릴레이 대기열에 추가됩니다.
+
+%@를 눌러 하나씩 붙여넣으세요.";
+"relay.alert.ok" = "확인";
+"relay.alert.dontShowAgain" = "다시 표시하지 않기";
+"relay.settings.pasteKey" = "릴레이 붙여넣기 단축키";
+"relay.settings.pasteKeyNote" = "일부 앱(터미널, Emacs)이 같은 단축키를 사용할 수 있습니다. 충돌 시 사용자 지정하세요.";
+"relay.settings.pauseToChange" = "단축키를 변경하려면 릴레이 모드를 일시 정지하거나 종료하세요.";
+"relay.settings.resetAlert" = "활성화 팁 다시 표시";
+"relay.settings.description" = "릴레이 모드는 여러 항목을 복사한 후 순서대로 하나씩 붙여넣을 수 있습니다. 웹페이지에서 이름 목록을 복사하여 Excel에 행별로 붙여넣기에 적합합니다.";
+"relay.settings.shortcuts" = "단축키";
+"relay.settings.operations" = "작업 설명";
+"relay.settings.op.paste" = "다음 항목 붙여넣기";
+"relay.settings.op.skip" = "현재 항목 건너뛰기";
+"relay.settings.op.previous" = "이전 항목으로 돌아가기";
+"relay.autoExit.short" = "완료 후 자동 종료";
+"relay.autoExit" = "대기열이 비면 자동 종료";
+"relay.previous" = "이전";
+"relay.skip" = "건너뛰기";
+"relay.delete" = "삭제";
+"relay.split" = "분할";
+"relay.addToQueue" = "릴레이 대기열에 추가";
+"relay.splitAndRelay" = "분할 후 릴레이";
+"relay.split.title" = "대기열로 분할";
+"relay.split.delimiter" = "구분자";
+"relay.split.customPlaceholder" = "구분자 입력...";
+"relay.split.confirm" = "분할";
+"relay.split.preview" = "%d개로 분할됩니다";
+"relay.split.noResult" = "구분자를 찾을 수 없습니다";
+"relay.delimiter.newline" = "줄바꿈";
+"relay.delimiter.comma" = "쉼표 (,)";
+"relay.delimiter.chineseComma" = "모점 (、)";
+"relay.delimiter.custom" = "사용자 지정";
+"onboarding.skip" = "건너뛰기";
+"onboarding.relay.title" = "릴레이 모드";
+"onboarding.relay.desc" = "여러 항목을 연속 복사한 후 순서대로 하나씩 붙여넣기. 대량 데이터 입력에 적합합니다.";
+"onboarding.relay.feature1" = "여러 항목 선택 또는 연속 복사로 붙여넣기 대기열 구성";
+"onboarding.relay.feature2" = "구분자로 텍스트를 분할하여 빠르게 대기열 생성";
+"onboarding.relay.feature3" = "Ctrl+V로 하나씩 붙여넣기 (설정에서 사용자 지정 가능)";
+"help.relay" = "릴레이 모드";
+"help.relay.open" = "도구 모음 버튼 또는 메뉴 바에서 열기";
+"help.relay.paste" = "Ctrl+V로 다음 항목 붙여넣기 (설정에서 사용자 정의 가능)";
+"help.relay.skip" = "릴레이 창에서 건너뛰기 버튼을 클릭하여 현재 항목 건너뛰기";
+"help.relay.previous" = "릴레이 창에서 이전 버튼을 클릭하여 뒤로 이동";
+"help.relay.split" = "마우스를 올려 가위 아이콘을 클릭하거나 우클릭하여 항목 분할";
+"help.relay.pauseResume" = "릴레이 창의 일시정지 / 재개 버튼";
+"help.relay.exit" = "닫기 버튼 또는 Esc로 릴레이 모드 종료";
+"about.help" = "도움말";
+
+/* Actions - Additional */
+"action.copy" = "복사";
+"action.copied" = "클립보드에 복사됨";
+"action.deleteSelected" = "%d개 항목 삭제";
+"action.deleteSelected.confirm" = "Delete %d items?";
+
+/* About - Additional */
+"about.website" = "웹사이트";
+
+/* Content Types - Additional */
+"type.file" = "파일";
+"type.other" = "기타";
+"type.email" = "Email";
+"type.phone" = "전화번호";
+"type.video" = "동영상";
+"type.audio" = "오디오";
+"type.document" = "문서";
+"type.archive" = "아카이브";
+"type.application" = "앱";
+
+/* Phone Actions */
+"phone.call" = "전화";
+"phone.message" = "메시지";
+"phone.copy" = "복사";
+
+/* Detail - Additional */
+"detail.dimensions" = "크기";
+"detail.fileCount" = "파일 수";
+"detail.format" = "포맷";
+"detail.host" = "호스트";
+"detail.linkTitle" = "제목";
+"detail.location" = "위치";
+"detail.multiSelected" = "%d개 항목 선택됨";
+"detail.openInBrowser" = "브라우저에서 열기";
+"detail.size" = "크기";
+"detail.url" = "URL";
+"detail.words" = "단어 수";
+
+/* File */
+"file.multiTitle" = " 외 %d개 파일";
+
+/* Filter - Additional */
+"filter.apps" = "앱별";
+"filter.groups" = "그룹";
+"filter.other" = "기타";
+
+/* Empty State - Additional */
+"empty.hint" = "⌘C로 텍스트, 이미지 또는 파일을 복사하세요";
+"empty.noResults" = "일치하는 항목이 없습니다";
+"empty.quickHint" = "무언가를 복사하여 시작하세요";
+
+/* Guide */
+"guide.doubleClick" = "더블클릭으로 붙여넣기, 싱글클릭으로 선택";
+"guide.pin" = "우클릭으로 중요한 클립 고정";
+"guide.shortcut" = "%@을(를) 눌러 어디서든 빠른 붙여넣기를 열 수 있습니다";
+
+/* Menu - Additional */
+"menu.openMain" = "메인 윈도우 열기";
+"menu.pause" = "모니터링 일시 정지";
+"menu.quickPanel" = "빠른 붙여넣기";
+"menu.quit" = "%@ 종료";
+"menu.resume" = "모니터링 재개";
+"menu.settings" = "설정";
+
+/* Quick Panel */
+"quick.actions" = "작업";
+"quick.close" = "닫기";
+"quick.commandPalette" = "작업";
+"quick.delete" = "삭제";
+"quick.navigate" = "이동";
+"quick.openLink" = "열기";
+"quick.pasteAction" = "붙여넣기";
+"quick.pasteImage" = "이미지 붙여넣기";
+"quick.pasteName" = "이름 붙여넣기";
+"quick.pasteNewLine" = "붙여넣기 + Enter";
+"quick.pastePath" = "경로 붙여넣기";
+"quick.pasteTo" = "%@에 붙여넣기";
+"quick.pasteToApp" = "%@에 붙여넣기";
+"quick.preview" = "미리보기";
+"quick.recent" = "최근";
+"quick.saveToFolder" = "파일로 붙여넣기";
+"quick.search" = "클립 검색…";
+"quick.selectHint" = "미리보기할 항목을 선택하세요";
+"quick.switchType" = "유형";
+"quickPanel.pin" = "윈도우 고정";
+"quickPanel.unpin" = "윈도우 고정 해제";
+
+/* Time - Additional */
+"time.days" = "%d일 전";
+"time.hours" = "%d시간 전";
+"time.minutes" = "%d분 전";
+"time.older" = "이전";
+"time.pinned" = "고정됨";
+"time.thisMonth" = "이번 달";
+"time.thisWeek" = "이번 주";
+"time.today" = "오늘";
+"time.yesterday" = "어제";
+
+/* Stats - Additional */
+"stats.clips" = "클립";
+
+/* Settings - Clear Data */
+"settings.clearData.1month" = "1개월 이전";
+"settings.clearData.1year" = "1년 이전";
+"settings.clearData.3months" = "3개월 이전";
+"settings.clearData.6months" = "6개월 이전";
+"settings.clearData.all" = "모두 삭제";
+"settings.clearData.result" = "%d개 항목 삭제됨";
+
+/* Settings - Double Tap */
+"settings.doubleTap" = "두 번 눌러 열기";
+"settings.doubleTap.modifier" = "보조키 두 번 누르기";
+
+/* Settings - Shortcut */
+"settings.shortcut.clickToRecord" = "클릭하여 기록";
+"settings.shortcut.pressKey" = "단축키를 누르세요…";
+
+/* Relay - Additional */
+"relay.editItem" = "내용 편집";
+"relay.reverse" = "역순 정렬";
+
+/* Command - Additional */
+"cmd.copyAs" = "%@(으)로 복사";
+"cmd.showInFinder" = "Finder에서 보기";
+
+/* Accessibility - Lost Permission */
+"accessibility.lost.later" = "나중에";
+"accessibility.lost.message" = "앱 업데이트 후 macOS에서 다시 권한을 부여해야 합니다. 시스템 설정을 열고, 먼저 손쉬운 사용 목록에서 PasteMemo를 제거(선택 후 마이너스 클릭)한 다음, 플러스를 클릭하여 다시 추가하세요.";
+"accessibility.lost.title" = "손쉬운 사용 권한이 필요합니다";
+
+/* Automation Window */
+"automation.window.title" = "자동화 규칙";
+"automation.section.builtIn" = "기본 규칙";
+"automation.section.custom" = "내 규칙";
+"automation.section.empty" = "(비어 있음)";
+"automation.editor.selectRule" = "편집할 규칙을 선택하세요";
+"automation.editor.definition" = "규칙 정의";
+"automation.editor.settings" = "설정";
+"automation.editor.save" = "저장";
+"automation.editor.cancel" = "취소";
+"automation.editor.edit" = "편집";
+
+/* Automation Rule */
+"automation.rule.name" = "이름";
+"automation.rule.enabled" = "활성화";
+"automation.rule.triggerMode" = "트리거";
+"automation.rule.triggerMode.automatic" = "자동";
+"automation.rule.triggerMode.manual" = "수동만";
+"automation.rule.notifyBeforeApply" = "적용 전 확인";
+"automation.rule.newName" = "새 규칙";
+
+/* Automation Condition */
+"automation.condition.title" = "조건";
+"automation.condition.add" = "+ 조건 추가";
+"automation.condition.contentType" = "콘텐츠 유형이";
+"automation.condition.regexMatch" = "콘텐츠가 정규식과 일치";
+"automation.condition.containsText" = "콘텐츠에 포함";
+"automation.condition.sourceApp" = "원본 앱이";
+"automation.condition.sourceApp.select" = "앱 선택";
+"automation.condition.sourceApp.add" = "앱 추가";
+"automation.condition.sourceApp.empty" = "선택된 앱 없음";
+"automation.condition.empty" = "조건 없음";
+"automation.condition.title.prefix" = "다음";
+"automation.condition.logic.all" = "모든";
+"automation.condition.logic.any" = "하나의";
+"automation.condition.title.suffix" = "조건을 만족할 때";
+"automation.condition.regexMatch.placeholder" = "정규식 패턴을 입력하세요";
+"automation.condition.containsText.placeholder" = "텍스트 내용을 입력하세요";
+
+/* Automation Action */
+"automation.action.title" = "작업 (순서대로)";
+"automation.action.add" = "+ 작업 추가";
+"automation.action.lowercased" = "소문자로 변환";
+"automation.action.uppercased" = "대문자로 변환";
+"automation.action.trimWhitespace" = "공백 제거";
+"automation.action.removeBlankLines" = "빈 줄 제거";
+"automation.action.stripRichText" = "서식 제거";
+"automation.action.assignGroup" = "그룹에 할당";
+"automation.action.assignGroup.placeholder" = "그룹 이름 입력";
+"automation.action.urlEncode" = "URL 인코딩";
+"automation.action.urlDecode" = "URL 디코딩";
+"automation.action.removeQueryParams" = "URL 매개변수 제거";
+"automation.action.regexReplace" = "정규식 치환";
+"automation.action.regexReplace.to" = "치환할 내용";
+"automation.action.addPrefix" = "접두사 추가";
+"automation.action.addSuffix" = "접미사 추가";
+"automation.action.removeQueryParams.placeholder" = "매개변수 이름 입력, 쉼표로 구분";
+"automation.action.regexReplace.placeholder" = "정규식 패턴을 입력하세요";
+"automation.action.regexReplace.to.placeholder" = "치환할 텍스트를 입력하세요";
+"automation.action.addPrefix.placeholder" = "접두사 텍스트를 입력하세요";
+"automation.action.addSuffix.placeholder" = "접미사 텍스트를 입력하세요";
+"automation.action.section.text" = "텍스트";
+"automation.action.section.url" = "URL";
+"automation.action.section.advanced" = "고급";
+"automation.action.section.clipboard" = "Clipboard";
+"automation.action.markSensitive" = "Mark as Sensitive";
+"automation.action.pin" = "Pin";
+"automation.action.skipCapture" = "Skip Capture";
+"automation.rule.notifyOnTrigger" = "Send notification on trigger";
+"automation.notification.title" = "Automation";
+"automation.applied" = "Automation applied";
+"automation.validation.incomplete" = "Cannot enable rule";
+"automation.validation.incompleteMessage" = "Please add at least one condition and one action before enabling.";
+"automation.delete.confirm" = "Delete Rule?";
+"automation.delete.confirmMessage" = "This action cannot be undone.";
+"automation.notification.permissionDenied" = "Notifications Not Allowed";
+"automation.notification.permissionDeniedMessage" = "Please allow notifications for PasteMemo in System Settings.";
+"automation.notification.openSettings" = "Open Settings";
+"automation.action.delete" = "규칙 삭제";
+"automation.action.empty" = "작업 없음";
+
+/* Automation Preview */
+"automation.preview" = "규칙 테스트";
+"automation.preview.input" = "규칙을 테스트할 콘텐츠를 붙여넣거나 입력하세요…";
+"automation.preview.output" = "결과 미리보기";
+"automation.preview.notMatched" = "조건이 일치하지 않습니다";
+
+/* Automation Confirm */
+"automation.confirm.title" = "자동화 규칙이 트리거되었습니다";
+"automation.confirm.matched" = "규칙 \"%@\"이(가) 일치했습니다";
+"automation.confirm.apply" = "적용";
+"automation.confirm.keep" = "원본 유지";
+"automation.confirm.original" = "원본:";
+"automation.confirm.processed" = "처리 결과:";
+
+/* Backup - Additional */
+"backup.nextBackup" = "다음 백업";
+"detail.openInFinder" = "Finder에서 보기";
