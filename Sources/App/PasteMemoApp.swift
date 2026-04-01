@@ -154,8 +154,8 @@ struct PasteMemoApp: App {
         // Front card — full rounded rect
         let frontRect = NSRect(x: fX, y: fY, width: cardW, height: cardH)
         let front = NSBezierPath(roundedRect: frontRect, xRadius: r, yRadius: r)
-        front.lineWidth = cardStroke
-        front.stroke()
+        NSColor.black.setFill()
+        front.fill()
     }
 
     private static func frontCardCenter(in rect: NSRect) -> NSPoint {
@@ -175,10 +175,14 @@ struct PasteMemoApp: App {
         ]
         let str = NSAttributedString(string: "P", attributes: attrs)
         let s = str.size()
+        
+        NSGraphicsContext.saveGraphicsState()
+        NSGraphicsContext.current?.compositingOperation = .destinationOut
         str.draw(at: NSPoint(
             x: round(center.x - s.width / 2),
             y: round(center.y - s.height / 2)
         ))
+        NSGraphicsContext.restoreGraphicsState()
     }
 
     private static func drawPauseSymbol(in rect: NSRect) {
@@ -188,6 +192,8 @@ struct PasteMemoApp: App {
         let gap: CGFloat = 2.2
 
         NSColor.black.setFill()
+        NSGraphicsContext.saveGraphicsState()
+        NSGraphicsContext.current?.compositingOperation = .destinationOut
 
         let leftBar = NSRect(
             x: center.x - gap / 2 - barW,
@@ -202,6 +208,8 @@ struct PasteMemoApp: App {
             width: barW, height: barH
         )
         NSBezierPath(roundedRect: rightBar, xRadius: 0.5, yRadius: 0.5).fill()
+        
+        NSGraphicsContext.restoreGraphicsState()
     }
 
     private static func drawRelaySymbol(in rect: NSRect) {
@@ -215,6 +223,9 @@ struct PasteMemoApp: App {
         let left = center.x - arrowLen / 2
         let right = center.x + arrowLen / 2
         NSColor.black.setStroke()
+        
+        NSGraphicsContext.saveGraphicsState()
+        NSGraphicsContext.current?.compositingOperation = .destinationOut
 
         // → top arrow
         let topY = center.y - vGap
@@ -237,6 +248,8 @@ struct PasteMemoApp: App {
         botPath.move(to: NSPoint(x: left + headLen, y: botY + headH))
         botPath.line(to: NSPoint(x: left, y: botY))
         botPath.stroke()
+        
+        NSGraphicsContext.restoreGraphicsState()
     }
 
     static let sharedModelContainer: ModelContainer = {
