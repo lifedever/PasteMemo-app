@@ -68,13 +68,18 @@ struct QuickPanelView: View {
     private var isMultiSelected: Bool { selectedItemIDs.count > 1 }
 
     private var currentItems: [ClipItem] {
-        selectedItemIDs.compactMap { cachedItemMap[$0] }
+        guard !store.items.isEmpty else { return [] }
+        return selectedItemIDs.compactMap { cachedItemMap[$0] }.filter { !$0.isDeleted && $0.modelContext != nil }
     }
 
     private var currentItem: ClipItem? {
         guard !isMultiSelected else { return nil }
+        // store.items is cleared by deleteAndNotify before deletion — this is the
+        // only reliable signal; isDeleted is NOT safe on zombie SwiftData objects
+        guard !store.items.isEmpty else { return nil }
         guard let id = selectedItemIDs.first else { return defaultItem }
-        return cachedItemMap[id]
+        guard let item = cachedItemMap[id], !item.isDeleted, item.modelContext != nil else { return nil }
+        return item
     }
 
     private func selectItem(_ id: PersistentIdentifier) {
@@ -553,7 +558,9 @@ struct QuickPanelView: View {
                                 .id("group_\(group.group.rawValue)")
 
                             ForEach(group.items) { item in
+                                if item.isDeleted { EmptyView() } else {
                                 let itemID = item.persistentModelID
+                                let itemContentType = item.contentType
                                 let shortcutIdx = shortcutIndex(for: item)
                                 QuickClipRow(item: item, isSelected: selectedItemIDs.contains(itemID), shortcutIndex: shortcutIdx, searchText: searchText)
                                     .id(itemID)
@@ -585,7 +592,6 @@ struct QuickPanelView: View {
                                         }
                                     }
                                     .contextMenu {
-                                        if item.isDeleted { EmptyView() } else
                                         if isMultiSelected, selectedItemIDs.contains(itemID) {
                                             let items = currentItems
                                             let hasPinned = items.contains(where: \.isPinned)
@@ -630,7 +636,7 @@ struct QuickPanelView: View {
                                                 copyItemsToClipboard([item])
                                                 selectItem(itemID)
                                             }
-                                            if item.contentType.isMergeable,
+                                            if itemContentType.isMergeable,
                                                ProManager.AUTOMATION_ENABLED {
                                                 let manualRules = fetchEnabledRules()
                                                 if !manualRules.isEmpty {
@@ -666,6 +672,7 @@ struct QuickPanelView: View {
                                             }
                                         }
                                     }
+                                } // isDeleted guard
                             }
                         }
                     }

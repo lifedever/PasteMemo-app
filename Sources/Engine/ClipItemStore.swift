@@ -9,6 +9,9 @@ extension Notification.Name {
 @MainActor
 @Observable
 final class ClipItemStore {
+    /// All active store instances — used by deleteAndNotify to synchronously remove items
+    private static var activeStores = NSHashTable<AnyObject>.weakObjects()
+
     private(set) var items: [ClipItem] = []
     private(set) var hasMore = true
     private(set) var totalCount = 0
@@ -72,7 +75,10 @@ final class ClipItemStore {
     func configure(modelContext: ModelContext) {
         let isFirstTime = self.modelContext == nil
         self.modelContext = modelContext
-        if isFirstTime { observeChanges() }
+        if isFirstTime {
+            Self.activeStores.add(self)
+            observeChanges()
+        }
         if needsRefresh {
             refreshAvailableTypes()
             refreshSidebarCounts()
@@ -326,6 +332,31 @@ final class ClipItemStore {
 
     /// Post this notification after pin/sensitive/delete to trigger immediate reload
     static let itemDidUpdateNotification = Notification.Name("ClipItemStoreItemDidUpdate")
+
+    /// Remove items from store, delete from context, save, and notify.
+    /// This is the ONLY safe way to delete ClipItems — ensures store.items
+    /// is updated before context.save() triggers SwiftUI re-render.
+    static func deleteAndNotify(_ itemsToDelete: [ClipItem], from context: ModelContext) {
+        // Pause clipboard monitoring to prevent cleanExpiredItems from firing
+        // during deletion (nested RunLoops can trigger the timer's Task)
+        let wasPaused = ClipboardManager.shared.isPaused
+        if !wasPaused { ClipboardManager.shared.pauseMonitoring() }
+
+        // Remove only the deleted items from stores (avoids full-list flash).
+        let idsToDelete = Set(itemsToDelete.map(\.persistentModelID))
+        for case let store as ClipItemStore in activeStores.allObjects {
+            store.items.removeAll { idsToDelete.contains($0.persistentModelID) }
+        }
+        // Suppress observer reloads during bulk deletion
+        isBulkOperation = true
+        for item in itemsToDelete {
+            context.delete(item)
+        }
+        isBulkOperation = false
+        saveAndNotify(context)
+
+        if !wasPaused { ClipboardManager.shared.resumeMonitoring() }
+    }
 
     /// Save context then trigger immediate UI refresh across all store instances
     static func saveAndNotify(_ context: ModelContext) {

@@ -131,6 +131,8 @@
 "settings.retentionDays" = "Verlauf behalten";
 "settings.retentionDays.forever" = "Für immer";
 "settings.retentionDays.days" = "%d Tage";
+"settings.retentionDays.cleanConfirm" = "%d Einträge außerhalb des Aufbewahrungszeitraums werden gelöscht";
+"settings.retentionDays.cleanWarning" = "Dieser Vorgang kann nicht rückgängig gemacht werden. Fortfahren?";
 "settings.display" = "Anzeige";
 "settings.behavior" = "Verhalten";
 "settings.preferences" = "Einstellungen";

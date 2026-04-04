@@ -55,7 +55,7 @@ struct MainWindowView: View {
         store.items.first { $0.sourceApp == appName }?.sourceAppBundleID
     }
 
-    private var filteredItems: [ClipItem] { store.items }
+    private var filteredItems: [ClipItem] { store.items.filter { !$0.isDeleted } }
 
     var body: some View {
         NavigationSplitView {
@@ -260,9 +260,8 @@ struct MainWindowView: View {
                     predicate: #Predicate { !$0.isPinned }
                 )
                 if let items = try? modelContext.fetch(descriptor) {
-                    for item in items { modelContext.delete(item) }
+                    ClipItemStore.deleteAndNotify(items, from: modelContext)
                 }
-                try? modelContext.save()
                 ClipboardManager.shared.recalculateAllGroupCounts(context: modelContext)
             }
             Button(L10n.tr("action.cancel"), role: .cancel) {}
@@ -534,6 +533,7 @@ struct MainWindowView: View {
     @ViewBuilder
     private func mainListRow(item: ClipItem) -> some View {
         if item.isDeleted { EmptyView() } else {
+        let contentType = item.contentType
         let isSelected = selectedItems.contains(item.persistentModelID)
         ClipItemListRow(
             item: item,
@@ -612,7 +612,7 @@ struct MainWindowView: View {
                 if selectedItems.count > 1, selectedClipItems.allSatisfy({ $0.contentType.isMergeable }) {
                     Button(L10n.tr("action.merge")) { mergeSelectedItems() }
                 }
-                if item.contentType.isMergeable,
+                if contentType.isMergeable,
                    ProManager.AUTOMATION_ENABLED {
                     let rules = fetchEnabledAutomationRules()
                     if !rules.isEmpty {
@@ -1008,16 +1008,13 @@ struct MainWindowView: View {
         // Find the lowest index among deleted items for successor selection
         let firstDeletedIdx = items.firstIndex { idsToDelete.contains($0.persistentModelID) }
 
-        // Remove from store FIRST so SwiftUI stops referencing these items
-        store.removeItems(matching: idsToDelete)
-
-        for item in items where idsToDelete.contains(item.persistentModelID) {
+        let itemsToDelete = items.filter { idsToDelete.contains($0.persistentModelID) }
+        for item in itemsToDelete {
             if let groupName = item.groupName, !groupName.isEmpty {
                 ClipboardManager.shared.decrementSmartGroup(name: groupName, context: modelContext)
             }
-            modelContext.delete(item)
         }
-        ClipItemStore.saveAndNotify(modelContext)
+        ClipItemStore.deleteAndNotify(itemsToDelete, from: modelContext)
 
         // Select next item after deletion
         let remaining = items.filter { !idsToDelete.contains($0.persistentModelID) }

@@ -115,6 +115,8 @@
 "settings.retentionDays" = "保留时长";
 "settings.retentionDays.forever" = "永久";
 "settings.retentionDays.days" = "%d 天";
+"settings.retentionDays.cleanConfirm" = "将删除 %d 条超出保留期的记录";
+"settings.retentionDays.cleanWarning" = "此操作不可恢复，确定要继续吗？";
 "settings.display" = "显示";
 "settings.behavior" = "行为";
 "settings.preferences" = "偏好";

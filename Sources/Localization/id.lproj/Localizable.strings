@@ -106,6 +106,8 @@
 "settings.retentionDays" = "Simpan Riwayat";
 "settings.retentionDays.forever" = "Selamanya";
 "settings.retentionDays.days" = "%d hari";
+"settings.retentionDays.cleanConfirm" = "%d item di luar periode penyimpanan akan dihapus";
+"settings.retentionDays.cleanWarning" = "Tindakan ini tidak dapat dibatalkan. Lanjutkan?";
 "settings.display" = "Tampilan";
 "settings.behavior" = "Perilaku";
 "settings.preferences" = "Preferensi";

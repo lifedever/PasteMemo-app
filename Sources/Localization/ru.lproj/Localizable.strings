@@ -106,6 +106,8 @@
 "settings.retentionDays" = "Хранить историю";
 "settings.retentionDays.forever" = "Навсегда";
 "settings.retentionDays.days" = "%d дней";
+"settings.retentionDays.cleanConfirm" = "Будет удалено %d записей за пределами срока хранения";
+"settings.retentionDays.cleanWarning" = "Это действие нельзя отменить. Продолжить?";
 "settings.display" = "Отображение";
 "settings.behavior" = "Поведение";
 "settings.preferences" = "Настройки";

@@ -209,6 +209,7 @@ struct DataTab: View {
 
 struct PreferencesTab: View {
     @ObservedObject private var hotkeyManager = HotkeyManager.shared
+    @Environment(\.modelContext) private var modelContext
     @AppStorage("hotkeyKeyCode") private var hotkeyKeyCode = 0x09
     @AppStorage("hotkeyModifiers") private var hotkeyModifiers = cmdKey | shiftKey
     @AppStorage("managerHotkeyKeyCode") private var managerKeyCode = -1
@@ -216,6 +217,9 @@ struct PreferencesTab: View {
     @AppStorage("doubleTapEnabled") private var doubleTapEnabled = false
     @AppStorage("doubleTapModifier") private var doubleTapModifier = 0
     @AppStorage("retentionDays") private var retentionDays = 90
+    @State private var pendingRetentionOldDays = 0
+    @State private var pendingExpiredCount = 0
+    @State private var showRetentionCleanConfirm = false
     @AppStorage("addNewLineAfterPaste") private var addNewLineAfterPaste = false
     @AppStorage("showLinkURL") private var showLinkURL = false
     @AppStorage("webPreviewEnabled") private var webPreviewEnabled = true
@@ -305,9 +309,29 @@ struct PreferencesTab: View {
                         Text(L10n.tr("settings.retentionDays.days", days)).tag(days)
                     }
                 }
+                .onChange(of: retentionDays) { oldValue, newValue in
+                    prepareRetentionCleanup(oldDays: oldValue, newDays: newValue)
+                }
             }
         }
         .formStyle(.grouped)
+        .alert(
+            L10n.tr("settings.retentionDays.cleanConfirm", pendingExpiredCount),
+            isPresented: $showRetentionCleanConfirm
+        ) {
+            Button(L10n.tr("action.delete"), role: .destructive) {
+                // Defer deletion to next run loop iteration — the alert sheet close
+                // animation triggers a layout pass that would access zombie SwiftData objects
+                DispatchQueue.main.async {
+                    executeRetentionCleanup()
+                }
+            }
+            Button(L10n.tr("action.cancel"), role: .cancel) {
+                retentionDays = pendingRetentionOldDays
+            }
+        } message: {
+            Text(L10n.tr("settings.retentionDays.cleanWarning"))
+        }
     }
 
     private func applyShortcut() {
@@ -316,6 +340,35 @@ struct PreferencesTab: View {
 
     private func applyManagerShortcut() {
         HotkeyManager.shared.updateManagerShortcut(keyCode: managerKeyCode, modifiers: managerModifiers)
+    }
+
+    private func prepareRetentionCleanup(oldDays: Int, newDays: Int) {
+        guard newDays > 0, (oldDays == 0 || newDays < oldDays) else { return }
+
+        let cutoff = Calendar.current.date(byAdding: .day, value: -newDays, to: Date())!
+        let descriptor = FetchDescriptor<ClipItem>()
+        guard let allItems = try? modelContext.fetch(descriptor) else { return }
+        let count = allItems.filter({ $0.createdAt < cutoff && !$0.isPinned }).count
+        guard count > 0 else { return }
+
+        pendingRetentionOldDays = oldDays
+        pendingExpiredCount = count
+        showRetentionCleanConfirm = true
+    }
+
+    private func executeRetentionCleanup() {
+        let cutoff = Calendar.current.date(byAdding: .day, value: -retentionDays, to: Date())!
+        let descriptor = FetchDescriptor<ClipItem>()
+        guard let allItems = try? modelContext.fetch(descriptor) else { return }
+        let expiredItems = allItems.filter { $0.createdAt < cutoff && !$0.isPinned }
+        guard !expiredItems.isEmpty else { return }
+
+        for item in expiredItems {
+            if let groupName = item.groupName, !groupName.isEmpty {
+                ClipboardManager.shared.decrementSmartGroup(name: groupName, context: modelContext)
+            }
+        }
+        ClipItemStore.deleteAndNotify(expiredItems, from: modelContext)
     }
 }
 

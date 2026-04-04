@@ -114,7 +114,9 @@ enum ClipContentType: String, Codable, CaseIterable {
 final class ClipItem {
     var itemID: String = UUID().uuidString
     var content: String
-    var contentType: ClipContentType
+    /// Stored as raw String to avoid SwiftData enum deserialization crash on zombie objects.
+    @Attribute(originalName: "contentType")
+    var contentTypeRaw: String = ClipContentType.text.rawValue
     @Attribute(.externalStorage) var imageData: Data?
     var sourceApp: String?
     var sourceAppBundleID: String?
@@ -155,7 +157,7 @@ final class ClipItem {
         richTextType: String? = nil
     ) {
         self.content = content
-        self.contentType = contentType
+        self.contentTypeRaw = contentType.rawValue
         self.imageData = imageData
         self.sourceApp = sourceApp
         self.sourceAppBundleID = sourceAppBundleID
@@ -170,6 +172,12 @@ final class ClipItem {
         if contentType == .image, imageData != nil {
             self.ocrStatus = OCRStatus.pending.rawValue
         }
+    }
+
+    /// Computed enum accessor — never crashes because contentTypeRaw is a plain String.
+    var contentType: ClipContentType {
+        get { ClipContentType(rawValue: contentTypeRaw) ?? .text }
+        set { contentTypeRaw = newValue.rawValue }
     }
 
     var resolvedOCRStatus: OCRStatus {

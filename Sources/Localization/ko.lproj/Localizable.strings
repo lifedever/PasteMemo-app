@@ -131,6 +131,8 @@
 "settings.retentionDays" = "기록 보관";
 "settings.retentionDays.forever" = "영구";
 "settings.retentionDays.days" = "%d일";
+"settings.retentionDays.cleanConfirm" = "보관 기간을 초과한 %d개 항목이 삭제됩니다";
+"settings.retentionDays.cleanWarning" = "이 작업은 되돌릴 수 없습니다. 계속하시겠습니까?";
 "settings.display" = "표시";
 "settings.behavior" = "동작";
 "settings.preferences" = "환경설정";

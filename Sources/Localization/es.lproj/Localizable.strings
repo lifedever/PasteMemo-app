@@ -131,6 +131,8 @@
 "settings.retentionDays" = "Conservar historial";
 "settings.retentionDays.forever" = "Para siempre";
 "settings.retentionDays.days" = "%d días";
+"settings.retentionDays.cleanConfirm" = "Se eliminarán %d elementos que superan el período de retención";
+"settings.retentionDays.cleanWarning" = "Esta acción no se puede deshacer. ¿Continuar?";
 "settings.display" = "Visualización";
 "settings.behavior" = "Comportamiento";
 "settings.preferences" = "Preferencias";

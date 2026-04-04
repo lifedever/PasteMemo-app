@@ -115,6 +115,8 @@
 "settings.retentionDays" = "Keep History";
 "settings.retentionDays.forever" = "Forever";
 "settings.retentionDays.days" = "%d days";
+"settings.retentionDays.cleanConfirm" = "%d items beyond the retention period will be deleted";
+"settings.retentionDays.cleanWarning" = "This action cannot be undone. Are you sure?";
 "settings.display" = "Display";
 "settings.behavior" = "Behavior";
 "settings.preferences" = "Preferences";

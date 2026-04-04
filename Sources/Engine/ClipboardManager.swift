@@ -133,7 +133,7 @@ final class ClipboardManager: ObservableObject {
         if let existingItem = findExistingDuplicate(for: newItem, in: context) {
             reuseExistingDuplicate(existingItem, with: newItem, in: context)
             cleanExpiredItems(in: context)
-            try? context.save()
+            ClipItemStore.saveAndNotify(context)
             SoundManager.playCopy()
             refreshLinkMetadataIfNeeded(for: existingItem, in: context)
             enqueueOCRIfNeeded(for: existingItem)
@@ -142,7 +142,7 @@ final class ClipboardManager: ObservableObject {
 
         context.insert(newItem)
         cleanExpiredItems(in: context)
-        try? context.save()
+        ClipItemStore.saveAndNotify(context)
 
         SoundManager.playCopy()
 
@@ -347,13 +347,12 @@ final class ClipboardManager: ObservableObject {
         let descriptor = FetchDescriptor<ClipItem>()
         guard let allItems = try? context.fetch(descriptor) else { return }
 
-        var hasGroupedItems = false
-        for item in allItems where item.createdAt < cutoff {
-            if item.groupName != nil { hasGroupedItems = true }
-            context.delete(item)
-        }
+        let expiredItems = allItems.filter { $0.createdAt < cutoff && !$0.isPinned }
+        guard !expiredItems.isEmpty else { return }
+
+        let hasGroupedItems = expiredItems.contains { $0.groupName != nil }
+        ClipItemStore.deleteAndNotify(expiredItems, from: context)
         if hasGroupedItems {
-            try? context.save()
             recalculateAllGroupCounts(context: context)
         }
     }

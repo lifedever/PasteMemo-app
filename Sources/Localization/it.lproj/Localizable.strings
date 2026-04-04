@@ -106,6 +106,8 @@
 "settings.retentionDays" = "Conserva cronologia";
 "settings.retentionDays.forever" = "Per sempre";
 "settings.retentionDays.days" = "%d giorni";
+"settings.retentionDays.cleanConfirm" = "%d elementi oltre il periodo di conservazione verranno eliminati";
+"settings.retentionDays.cleanWarning" = "Questa azione non può essere annullata. Continuare?";
 "settings.display" = "Visualizzazione";
 "settings.behavior" = "Comportamento";
 "settings.preferences" = "Preferenze";

@@ -139,6 +139,8 @@
 "settings.retentionDays" = "履歴の保持";
 "settings.retentionDays.forever" = "永久";
 "settings.retentionDays.days" = "%d日";
+"settings.retentionDays.cleanConfirm" = "保持期間を超えた%d件の項目が削除されます";
+"settings.retentionDays.cleanWarning" = "この操作は元に戻せません。続行しますか？";
 "settings.display" = "表示";
 "settings.behavior" = "動作";
 "settings.preferences" = "環境設定";
