@@ -282,10 +282,12 @@ struct PasteMemoApp: App {
         try? FileManager.default.createDirectory(at: storeDir, withIntermediateDirectories: true)
         let storeURL = storeDir.appendingPathComponent("PasteMemo.store")
         ensureIndexes(at: storeURL)
-        migrateContentTypeColumn(at: storeURL)
         let config = ModelConfiguration(url: storeURL)
         do {
-            return try ModelContainer(for: schema, configurations: [config])
+            let container = try ModelContainer(for: schema, configurations: [config])
+            // Run AFTER ModelContainer creates the ZCONTENTTYPERAW column
+            migrateContentTypeColumn(at: storeURL)
+            return container
         } catch {
             fatalError("Could not create ModelContainer: \(error)")
         }
@@ -294,7 +296,9 @@ struct PasteMemoApp: App {
     /// One-time migration: copy ZCONTENTTYPE → ZCONTENTTYPERAW for existing rows
     /// after the storage was changed from enum to raw String.
     private static func migrateContentTypeColumn(at storeURL: URL) {
-        let key = "contentTypeRawMigrated"
+        // v2: previous migration ran before ModelContainer (column didn't exist yet),
+        // so reset the old flag to re-run for users who got the broken 1.2.4.
+        let key = "contentTypeRawMigrated_v2"
         guard !UserDefaults.standard.bool(forKey: key) else { return }
         guard FileManager.default.fileExists(atPath: storeURL.path) else { return }
         guard let db = SQLiteConnection(path: storeURL.path) else { return }
