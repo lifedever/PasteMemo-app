@@ -496,6 +496,53 @@ final class ClipboardManager: ObservableObject {
         writeFileURLsToPasteboard(pasteboard, paths: paths)
     }
 
+    /// Apps that are pure text environments — cannot accept file URLs or image data.
+    /// For these apps, file/image items are downgraded to filename text.
+    /// This is a subset of PLAIN_TEXT_ONLY_APPS (excludes IM apps which can accept files).
+    private static let TEXT_ONLY_APPS: Set<String> = [
+        // Terminal
+        "com.apple.Terminal",
+        "com.googlecode.iterm2",          // iTerm2
+        "dev.warp.Warp-Stable",           // Warp
+        "org.alacritty",                  // Alacritty
+        "net.kovidgoyal.kitty",           // Kitty
+        "co.zeit.hyper",                  // Hyper
+        "com.github.wez.wezterm",        // WezTerm
+        "com.raphael.rio",               // Rio
+        "org.tabby",                     // Tabby
+        "dev.commandline.wave",          // Wave Terminal
+        "com.mitchellh.ghostty",         // Ghostty
+        // Code editors / IDEs
+        "com.apple.dt.Xcode",            // Xcode
+        "com.google.android.studio",     // Android Studio
+        "com.sublimetext.4",             // Sublime Text
+        "com.sublimetext.3",
+        "com.microsoft.VSCode",          // VS Code
+        "com.jetbrains.intellij",        // IntelliJ IDEA
+        "com.jetbrains.intellij.ce",
+        "com.jetbrains.WebStorm",
+        "com.jetbrains.pycharm",
+        "com.jetbrains.pycharm.ce",
+        "com.jetbrains.goland",
+        "com.jetbrains.CLion",
+        "com.jetbrains.PhpStorm",
+        "com.jetbrains.rubymine",
+        "com.jetbrains.rider",
+        "com.jetbrains.AppCode",
+        "com.jetbrains.fleet",
+        "dev.zed.Zed",                   // Zed
+        "com.panic.Nova",                // Nova
+        "com.barebones.bbedit",          // BBEdit
+        "abnerworks.Typora",             // Typora
+        "com.cursor.Cursor",             // Cursor
+        "com.macromates.TextMate",       // TextMate
+        "com.coteditor.CotEditor",       // CotEditor
+        "com.neovide.neovide",           // Neovide
+        "com.qvacua.VimR",              // VimR
+        "com.codeium.windsurf",          // Windsurf
+        "com.trae.Trae",                 // Trae
+    ]
+
     /// Paste multiple items in display order via sequential Cmd+V operations.
     /// Consecutive file items are merged into one paste; each text/image gets its own paste to preserve formatting.
     /// Apps that don't handle rich text paste well — downgrade to plain text for merging.
@@ -510,11 +557,25 @@ final class ClipboardManager: ObservableObject {
         "com.tinyspeck.slackmacgap",      // Slack
         "ru.keepcoder.Telegram",          // Telegram
         "com.discord.Discord",            // Discord
+        "net.whatsapp.WhatsApp",          // WhatsApp
+        "org.whispersystems.signal-desktop", // Signal
+        "jp.naver.line.mac",              // Line
+        "us.zoom.xos",                    // Zoom
         // Terminal
         "com.apple.Terminal",
         "com.googlecode.iterm2",          // iTerm2
         "dev.warp.Warp-Stable",           // Warp
+        "org.alacritty",                  // Alacritty
+        "net.kovidgoyal.kitty",           // Kitty
+        "co.zeit.hyper",                  // Hyper
+        "com.github.wez.wezterm",        // WezTerm
+        "com.raphael.rio",               // Rio
+        "org.tabby",                     // Tabby
+        "dev.commandline.wave",          // Wave Terminal
+        "com.mitchellh.ghostty",         // Ghostty
         // Code editors / IDEs
+        "com.apple.dt.Xcode",            // Xcode
+        "com.google.android.studio",     // Android Studio
         "com.sublimetext.4",              // Sublime Text
         "com.sublimetext.3",
         "com.microsoft.VSCode",           // VS Code
@@ -535,11 +596,23 @@ final class ClipboardManager: ObservableObject {
         "com.barebones.bbedit",           // BBEdit
         "abnerworks.Typora",              // Typora
         "com.cursor.Cursor",              // Cursor
+        "com.macromates.TextMate",        // TextMate
+        "com.coteditor.CotEditor",        // CotEditor
+        "com.neovide.neovide",            // Neovide
+        "com.qvacua.VimR",               // VimR
+        "com.codeium.windsurf",           // Windsurf
+        "com.trae.Trae",                  // Trae
     ]
 
     private func shouldDowngradeRichText(targetApp: NSRunningApplication?) -> Bool {
         guard let bundleID = targetApp?.bundleIdentifier else { return false }
         return Self.PLAIN_TEXT_ONLY_APPS.contains(bundleID)
+    }
+
+    /// Whether the target app is a text-only environment that cannot accept file URLs or image data.
+    func isTextOnlyApp(_ targetApp: NSRunningApplication?) -> Bool {
+        guard let bundleID = targetApp?.bundleIdentifier else { return false }
+        return Self.TEXT_ONLY_APPS.contains(bundleID)
     }
 
     func pasteMultiple(_ items: [ClipItem], forceNewLine: Bool = false, targetApp: NSRunningApplication? = nil) {
