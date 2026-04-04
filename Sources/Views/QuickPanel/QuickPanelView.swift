@@ -1287,6 +1287,7 @@ struct QuickPanelView: View {
             }
             modelContext.delete(del)
         }
+        ClipItemStore.saveAndNotify(modelContext)
         store.removeItems(matching: idsToDelete)
         let remaining = filteredItems
         if let idx = firstIdx, !remaining.isEmpty {

@@ -672,14 +672,10 @@ struct MainWindowView: View {
                 }
                 Divider()
                 Button(L10n.tr("action.delete"), role: .destructive) {
-                    if selectedItems.contains(item.persistentModelID) {
-                        deleteSelectedItems()
-                    } else {
-                        if let groupName = item.groupName, !groupName.isEmpty {
-                            ClipboardManager.shared.decrementSmartGroup(name: groupName, context: modelContext)
-                        }
-                        modelContext.delete(item)
+                    if !selectedItems.contains(item.persistentModelID) {
+                        selectedItems = [item.persistentModelID]
                     }
+                    deleteSelectedItems()
                 }
                 } // isDeleted guard
             }
@@ -1005,6 +1001,9 @@ struct MainWindowView: View {
 
         // Find the lowest index among deleted items for successor selection
         let firstDeletedIdx = items.firstIndex { idsToDelete.contains($0.persistentModelID) }
+
+        // Remove from store FIRST so SwiftUI stops referencing these items
+        store.removeItems(matching: idsToDelete)
 
         for item in items where idsToDelete.contains(item.persistentModelID) {
             if let groupName = item.groupName, !groupName.isEmpty {
