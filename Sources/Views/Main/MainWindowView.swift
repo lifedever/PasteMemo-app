@@ -574,6 +574,7 @@ struct MainWindowView: View {
             }
             .onTapGesture { handleRowClick(item) }
             .contextMenu {
+                if item.isDeleted { EmptyView() } else {
                 Button(item.isPinned ? L10n.tr("action.unpin") : L10n.tr("action.pin")) {
                     if selectedItems.contains(item.persistentModelID), selectedItems.count > 1 {
                         let items = selectedClipItems
@@ -680,6 +681,7 @@ struct MainWindowView: View {
                         modelContext.delete(item)
                     }
                 }
+                } // isDeleted guard
             }
         }
     }

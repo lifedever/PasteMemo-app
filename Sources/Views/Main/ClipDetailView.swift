@@ -16,7 +16,9 @@ struct ClipDetailView: View {
         item.contentType == .text || item.contentType == .code
     }
 
+    @ViewBuilder
     var body: some View {
+        if item.isDeleted { EmptyView() } else {
         VStack(alignment: .leading, spacing: 0) {
             actionBar
                 .padding(.horizontal, 16)
@@ -47,6 +49,7 @@ struct ClipDetailView: View {
             if isEditing { cancelEdit() }
             isOCRExpanded = false
         }
+        } // isDeleted guard
     }
 
     // MARK: - Content Area

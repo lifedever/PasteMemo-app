@@ -19,7 +19,9 @@ struct QuickPreviewPane: View {
         item.contentType == .video && !item.content.contains("\n")
     }
 
+    @ViewBuilder
     var body: some View {
+        if item.isDeleted { EmptyView() } else {
         VStack(spacing: 0) {
             Group {
                 if item.isSensitive {
@@ -36,6 +38,7 @@ struct QuickPreviewPane: View {
             propertiesSection
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        } // isDeleted guard
     }
 
     @ViewBuilder

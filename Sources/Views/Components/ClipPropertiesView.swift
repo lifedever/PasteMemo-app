@@ -6,12 +6,15 @@ struct ClipPropertiesView: View {
     var fontSize: CGFloat = 12
     var onLocationTap: ((String) -> Void)?
 
+    @ViewBuilder
     var body: some View {
+        if item.isDeleted { EmptyView() } else {
         VStack(alignment: .leading, spacing: 0) {
             commonProperties
             typeSpecificProperties
             propDivider
             propRow(L10n.tr("detail.created"), formatDate(item.createdAt))
+        }
         }
     }
 

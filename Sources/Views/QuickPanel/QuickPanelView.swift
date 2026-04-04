@@ -579,6 +579,7 @@ struct QuickPanelView: View {
                                         handleItemClick(itemID)
                                     }
                                     .contextMenu {
+                                        if item.isDeleted { EmptyView() } else
                                         if isMultiSelected, selectedItemIDs.contains(itemID) {
                                             let items = currentItems
                                             let hasPinned = items.contains(where: \.isPinned)
