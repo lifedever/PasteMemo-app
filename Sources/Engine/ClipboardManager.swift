@@ -466,6 +466,7 @@ final class ClipboardManager: ObservableObject {
         pasteboard.clearContents()
 
         let textOnly = isTextOnlyApp(targetApp)
+        let terminal = isTerminalApp(targetApp)
 
         switch item.contentType {
         case .image:
@@ -497,8 +498,10 @@ final class ClipboardManager: ObservableObject {
             }
         case .file, .video, .audio, .document, .archive, .application:
             if textOnly {
-                // Text-only app: paste filename directly
-                if let names = filenamesFromContent(item.content) {
+                // Terminal: paste full path; Editor: paste filename
+                if terminal {
+                    pasteboard.setString(item.content, forType: .string)
+                } else if let names = filenamesFromContent(item.content) {
                     pasteboard.setString(names, forType: .string)
                 }
             } else {
@@ -534,11 +537,8 @@ final class ClipboardManager: ObservableObject {
         writeFileURLsToPasteboard(pasteboard, paths: paths)
     }
 
-    /// Apps that are pure text environments — cannot accept file URLs or image data.
-    /// For these apps, file/image items are downgraded to filename text.
-    /// This is a subset of PLAIN_TEXT_ONLY_APPS (excludes IM apps which can accept files).
-    private static let TEXT_ONLY_APPS: Set<String> = [
-        // Terminal
+    /// Terminal apps — paste full file path (not just filename) since terminal users need paths to operate on files.
+    private static let TERMINAL_APPS: Set<String> = [
         "com.apple.Terminal",
         "com.googlecode.iterm2",          // iTerm2
         "dev.warp.Warp-Stable",           // Warp
@@ -550,6 +550,12 @@ final class ClipboardManager: ObservableObject {
         "org.tabby",                     // Tabby
         "dev.commandline.wave",          // Wave Terminal
         "com.mitchellh.ghostty",         // Ghostty
+    ]
+
+    /// Apps that are pure text environments — cannot accept file URLs or image data.
+    /// Terminal apps get full path, editors get filename.
+    /// This is a subset of PLAIN_TEXT_ONLY_APPS (excludes IM apps which can accept files).
+    private static let TEXT_ONLY_APPS: Set<String> = TERMINAL_APPS.union([
         // Code editors / IDEs
         "com.apple.dt.Xcode",            // Xcode
         "com.google.android.studio",     // Android Studio
@@ -579,7 +585,7 @@ final class ClipboardManager: ObservableObject {
         "com.qvacua.VimR",              // VimR
         "com.codeium.windsurf",          // Windsurf
         "com.trae.Trae",                 // Trae
-    ]
+    ])
 
     /// Paste multiple items in display order via sequential Cmd+V operations.
     /// Consecutive file items are merged into one paste; each text/image gets its own paste to preserve formatting.
@@ -613,9 +619,16 @@ final class ClipboardManager: ObservableObject {
         return Self.TEXT_ONLY_APPS.contains(bundleID)
     }
 
+    /// Whether the target app is a terminal — terminals get full file path, editors get filename.
+    private func isTerminalApp(_ targetApp: NSRunningApplication?) -> Bool {
+        guard let bundleID = targetApp?.bundleIdentifier else { return false }
+        return Self.TERMINAL_APPS.contains(bundleID)
+    }
+
     func pasteMultiple(_ items: [ClipItem], forceNewLine: Bool = false, targetApp: NSRunningApplication? = nil) {
         let downgrade = shouldDowngradeRichText(targetApp: targetApp)
         let textOnly = isTextOnlyApp(targetApp)
+        let terminal = isTerminalApp(targetApp)
         let groups = buildPasteGroups(items, downgradeRichText: downgrade)
 
         SoundManager.playPaste()
@@ -631,8 +644,11 @@ final class ClipboardManager: ObservableObject {
                 switch group {
                 case .files(let paths):
                     if textOnly {
-                        let names = paths.map { URL(fileURLWithPath: $0).lastPathComponent }
-                        pasteboard.setString(names.joined(separator: "\n"), forType: .string)
+                        // Terminal: full paths; Editor: filenames
+                        let text = terminal
+                            ? paths.joined(separator: "\n")
+                            : paths.map { URL(fileURLWithPath: $0).lastPathComponent }.joined(separator: "\n")
+                        pasteboard.setString(text, forType: .string)
                     } else {
                         writeFileURLsToPasteboard(pasteboard, paths: paths)
                     }
