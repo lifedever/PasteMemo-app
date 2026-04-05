@@ -20,8 +20,12 @@ enum RelayPaster {
     static func pasteImage(_ data: Data, monitor: RelayClipboardMonitor) async {
         let pasteboard = NSPasteboard.general
         pasteboard.clearContents()
-        pasteboard.setData(data, forType: .png)
-        pasteboard.setData(data, forType: .tiff)
+        if let image = NSImage(data: data) {
+            pasteboard.writeObjects([image])
+        } else {
+            pasteboard.setData(data, forType: .png)
+            pasteboard.setData(data, forType: .tiff)
+        }
         monitor.skipNextChange()
         try? await Task.sleep(for: PASTE_DELAY)
         simulateCommandV()

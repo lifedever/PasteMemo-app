@@ -662,8 +662,12 @@ final class ClipboardManager: ObservableObject {
                         pasteboard.setData(rtfData, forType: type)
                     }
                 case .image(let data):
-                    pasteboard.setData(data, forType: .png)
-                    pasteboard.setData(data, forType: .tiff)
+                    if let image = NSImage(data: data) {
+                        pasteboard.writeObjects([image])
+                    } else {
+                        pasteboard.setData(data, forType: .png)
+                        pasteboard.setData(data, forType: .tiff)
+                    }
                 }
 
                 lastChangeCount = pasteboard.changeCount
