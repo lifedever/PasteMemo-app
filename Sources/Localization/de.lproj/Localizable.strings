@@ -169,6 +169,7 @@
 "menu.newGroup" = "Neue Gruppe…";
 "menu.newSmartGroup" = "Neue intelligente Gruppe…";
 "menu.help" = "PasteMemo Hilfe";
+"menu.alwaysOnTop" = "Immer im Vordergrund";
 "help.title" = "PasteMemo Hilfe";
 "help.subtitle" = "Kurzanleitung für deinen Zwischenablage-Manager.";
 "help.close" = "Verstanden";
@@ -554,6 +555,7 @@ Verwenden Sie %@ zum Einfügen.";
 /* Relay (additional) */
 "relay.editItem" = "Inhalt bearbeiten";
 "relay.reverse" = "Reihenfolge umkehren";
+"relay.clearAll" = "Alle löschen";
 
 /* Command Palette (additional) */
 "cmd.copyAs" = "Kopieren als %@";

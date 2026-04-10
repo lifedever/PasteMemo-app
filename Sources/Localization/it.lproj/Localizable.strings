@@ -244,6 +244,7 @@
 "menu.newGroup" = "Nuovo gruppo…";
 "menu.newSmartGroup" = "Nuovo gruppo smart…";
 "menu.help" = "Guida PasteMemo";
+"menu.alwaysOnTop" = "Sempre in primo piano";
 "help.title" = "Guida PasteMemo";
 "help.subtitle" = "Guida rapida per sfruttare al meglio i tuoi appunti.";
 "help.close" = "Ho capito";
@@ -525,6 +526,7 @@ Usa %@ per incollare uno per uno.";
 "cmd.showInFinder" = "Mostra nel Finder";
 "cmd.copyAs" = "Copia come %@";
 "relay.reverse" = "Inverti ordine";
+"relay.clearAll" = "Cancella tutto";
 "relay.editItem" = "Modifica contenuto";
 "quickPanel.pin" = "Fissa finestra";
 "quickPanel.unpin" = "Sblocca finestra";

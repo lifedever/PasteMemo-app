@@ -8,6 +8,7 @@ struct PasteMemoApp: App {
     @AppStorage("appearanceMode") private var appearanceMode: String = "system"
     @AppStorage("menuBarIconStyle") private var menuBarIconStyle: String = "outline"
     @ObservedObject private var clipboardManager = ClipboardManager.shared
+    @AppStorage("alwaysOnTop") private var alwaysOnTop = false
 
     var body: some Scene {
         Window(L10n.tr("app.name"), id: "main") {
@@ -60,6 +61,21 @@ struct PasteMemoApp: App {
                         DevDataImporter.importFromRelease()
                     }
                 }
+            }
+            CommandGroup(after: .windowArrangement) {
+                Button {
+                    alwaysOnTop.toggle()
+                    for window in NSApp.windows where window.canBecomeMain {
+                        window.level = alwaysOnTop ? .floating : .normal
+                    }
+                } label: {
+                    if alwaysOnTop {
+                        Text("✓ " + L10n.tr("menu.alwaysOnTop"))
+                    } else {
+                        Text("    " + L10n.tr("menu.alwaysOnTop"))
+                    }
+                }
+                .keyboardShortcut("t", modifiers: [.command, .shift])
             }
             CommandGroup(replacing: .help) {
                 Button(L10n.tr("menu.help")) {

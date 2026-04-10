@@ -119,6 +119,12 @@ final class RelayManager {
         markCurrentIfNeeded()
     }
 
+    func clearAll() {
+        items.removeAll()
+        currentIndex = 0
+        windowController?.updateSize(for: 0)
+    }
+
     func updateItem(at index: Int, content: String) {
         guard index >= 0, index < items.count else { return }
         items[index].content = content
@@ -194,12 +200,14 @@ final class RelayManager {
     private var monitor: RelayClipboardMonitor?
     private var hotkeyHandler: RelayHotkeyHandler?
     private var windowController: RelayFloatingWindowController?
+    private var wasMonitoringPausedBeforeRelay = false
 
     // MARK: - Mode Lifecycle
 
     func activate() {
         guard !isActive else { return }
         isActive = true
+        wasMonitoringPausedBeforeRelay = clipboardController?.isMonitoringPaused ?? false
         clipboardController?.pauseMonitoring()
         hotkeyController?.disableHotkey()
         // Defensive: ensure quick panel hotkey is fully unregistered
@@ -218,7 +226,9 @@ final class RelayManager {
         isPaused = true
         stopMonitor()
         stopHotkeys()
-        clipboardController?.resumeMonitoring()
+        if !wasMonitoringPausedBeforeRelay {
+            clipboardController?.resumeMonitoring()
+        }
         HotkeyManager.shared.register()
     }
 
@@ -242,7 +252,9 @@ final class RelayManager {
         dismissWindow()
         items.removeAll()
         currentIndex = 0
-        clipboardController?.resumeMonitoring()
+        if !wasMonitoringPausedBeforeRelay {
+            clipboardController?.resumeMonitoring()
+        }
         hotkeyController?.enableHotkey()
         HotkeyManager.shared.register()
     }

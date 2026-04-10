@@ -183,6 +183,7 @@
 "menu.newGroup" = "新規グループ…";
 "menu.newSmartGroup" = "新規スマートグループ…";
 "menu.help" = "PasteMemo ヘルプ";
+"menu.alwaysOnTop" = "常に最前面に表示";
 "help.title" = "PasteMemo ヘルプ";
 "help.subtitle" = "クリップボードマネージャーの使い方ガイド。";
 "help.close" = "了解";
@@ -579,6 +580,7 @@
 /* Relay - Additional */
 "relay.editItem" = "内容を編集";
 "relay.reverse" = "逆順にする";
+"relay.clearAll" = "すべてクリア";
 
 /* Command - Additional */
 "cmd.copyAs" = "%@ としてコピー";

@@ -169,6 +169,7 @@
 "menu.newGroup" = "새 그룹…";
 "menu.newSmartGroup" = "새 스마트 그룹…";
 "menu.help" = "PasteMemo 도움말";
+"menu.alwaysOnTop" = "항상 위에 표시";
 "help.title" = "PasteMemo 도움말";
 "help.subtitle" = "클립보드 관리자 사용 가이드.";
 "help.close" = "확인";
@@ -562,6 +563,7 @@
 /* Relay - Additional */
 "relay.editItem" = "내용 편집";
 "relay.reverse" = "역순 정렬";
+"relay.clearAll" = "모두 지우기";
 
 /* Command - Additional */
 "cmd.copyAs" = "%@(으)로 복사";

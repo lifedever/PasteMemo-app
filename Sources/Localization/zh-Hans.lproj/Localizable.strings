@@ -26,7 +26,8 @@
 "action.pin" = "置顶";
 "cmd.showInFinder" = "在 Finder 中显示";
 "cmd.copyAs" = "复制为 %@";
-"relay.reverse" = "颠倒顺序";
+"relay.reverse" = "反转顺序";
+"relay.clearAll" = "清空所有";
 "relay.editItem" = "编辑内容";
 "quickPanel.pin" = "固定窗口";
 "quickPanel.unpin" = "取消固定";
@@ -276,6 +277,7 @@
 "menu.newGroup" = "新建分组…";
 "menu.newSmartGroup" = "新建智能分组…";
 "menu.help" = "PasteMemo 帮助";
+"menu.alwaysOnTop" = "始终保持在最前";
 "help.title" = "PasteMemo 帮助";
 "help.subtitle" = "快速了解剪贴板管理器的使用方法。";
 "help.close" = "知道了";

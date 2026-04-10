@@ -169,6 +169,7 @@
 "menu.newGroup" = "Nuevo grupo…";
 "menu.newSmartGroup" = "Nuevo grupo inteligente…";
 "menu.help" = "Ayuda de PasteMemo";
+"menu.alwaysOnTop" = "Siempre visible";
 "help.title" = "Ayuda de PasteMemo";
 "help.subtitle" = "Guía rápida para tu gestor de portapapeles.";
 "help.close" = "Entendido";
@@ -562,6 +563,7 @@ Usa %@ para pegar uno por uno.";
 /* Relay - Additional */
 "relay.editItem" = "Editar contenido";
 "relay.reverse" = "Invertir orden";
+"relay.clearAll" = "Borrar todo";
 
 /* Commands - Additional */
 "cmd.copyAs" = "Copiar como %@";

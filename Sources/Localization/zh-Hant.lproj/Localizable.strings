@@ -246,6 +246,7 @@
 "menu.newGroup" = "新建分組…";
 "menu.newSmartGroup" = "新建智慧分組…";
 "menu.help" = "PasteMemo 說明";
+"menu.alwaysOnTop" = "始終保持在最前";
 "help.title" = "PasteMemo 說明";
 "help.subtitle" = "快速瞭解剪貼簿管理器的使用方法。";
 "help.close" = "知道了";
@@ -523,7 +524,8 @@
 /* 缺失的鍵 - 操作 */
 "cmd.showInFinder" = "在 Finder 中顯示";
 "cmd.copyAs" = "複製為 %@";
-"relay.reverse" = "顛倒順序";
+"relay.reverse" = "反轉順序";
+"relay.clearAll" = "清空所有";
 "relay.editItem" = "編輯內容";
 "quickPanel.pin" = "固定視窗";
 "quickPanel.unpin" = "取消固定";

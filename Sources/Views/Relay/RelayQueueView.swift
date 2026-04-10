@@ -11,7 +11,7 @@ struct RelayQueueView: View {
             queueList
             footerBar
         }
-        .frame(width: 260)
+        .frame(width: 320)
         .background(Color.clear)
         .onChange(of: splitTargetIndex) {
             guard let index = splitTargetIndex, index < manager.items.count else { return }
@@ -25,30 +25,53 @@ struct RelayQueueView: View {
     // MARK: - Header
 
     private var headerBar: some View {
-        HStack(spacing: 8) {
-            Image(systemName: manager.isPaused ? "pause.circle.fill" : "arrow.right.arrow.left")
-                .font(.system(size: 11, weight: .semibold))
-                .foregroundStyle(manager.isPaused ? .orange : .primary)
-            Text(manager.isPaused ? L10n.tr("relay.paused") : L10n.tr("relay.title"))
-                .font(.system(size: 13, weight: .semibold))
-            Spacer()
-            Button {
-                manager.reverseItems()
-            } label: {
-                Image(systemName: "arrow.up.arrow.down")
-                    .font(.system(size: 10))
+        VStack(spacing: 6) {
+            HStack(spacing: 8) {
+                Image(systemName: manager.isPaused ? "pause.circle.fill" : "arrow.right.arrow.left")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(manager.isPaused ? .orange : .primary)
+                Text(manager.isPaused ? L10n.tr("relay.paused") : L10n.tr("relay.title"))
+                    .font(.system(size: 13, weight: .semibold))
+                Spacer()
+                Text("\(manager.currentIndex)/\(manager.items.count)")
+                    .font(.system(size: 11, weight: .medium, design: .monospaced))
                     .foregroundStyle(.secondary)
             }
-            .buttonStyle(.plain)
-            .help(L10n.tr("relay.reverse"))
 
-            Text("\(manager.currentIndex)/\(manager.items.count)")
-                .font(.system(size: 11, weight: .medium, design: .monospaced))
-                .foregroundStyle(.secondary)
+            HStack(spacing: 6) {
+                headerButton(icon: "arrow.up.arrow.down", title: L10n.tr("relay.reverse")) {
+                    manager.reverseItems()
+                }
+                .disabled(manager.items.isEmpty)
+
+                headerButton(icon: "trash", title: L10n.tr("relay.clearAll")) {
+                    manager.clearAll()
+                }
+                .disabled(manager.items.isEmpty)
+
+                Spacer()
+            }
         }
         .padding(.horizontal, 14)
-        .padding(.vertical, 10)
+        .padding(.top, 10)
+        .padding(.bottom, 6)
         .background(WindowDragArea())
+    }
+
+    private func headerButton(icon: String, title: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 3) {
+                Image(systemName: icon)
+                    .font(.system(size: 9))
+                Text(title)
+                    .font(.system(size: 11))
+            }
+            .foregroundStyle(.secondary)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 3)
+            .background(Color.primary.opacity(0.06), in: Capsule())
+        }
+        .buttonStyle(.plain)
     }
 
     // MARK: - Queue List

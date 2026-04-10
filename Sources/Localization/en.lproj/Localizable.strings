@@ -27,6 +27,7 @@
 "cmd.showInFinder" = "Show in Finder";
 "cmd.copyAs" = "Copy as %@";
 "relay.reverse" = "Reverse Order";
+"relay.clearAll" = "Clear All";
 "relay.editItem" = "Edit Content";
 "quickPanel.pin" = "Pin Window";
 "quickPanel.unpin" = "Unpin Window";
@@ -275,6 +276,7 @@
 "menu.newGroup" = "New Group…";
 "menu.newSmartGroup" = "New Smart Group…";
 "menu.help" = "PasteMemo Help";
+"menu.alwaysOnTop" = "Always on Top";
 "help.title" = "PasteMemo Help";
 "help.subtitle" = "Quick guide to get the most out of your clipboard.";
 "help.close" = "Got it";

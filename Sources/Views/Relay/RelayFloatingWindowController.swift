@@ -1,7 +1,7 @@
 import AppKit
 import SwiftUI
 
-private let WINDOW_WIDTH: CGFloat = 260
+private let WINDOW_WIDTH: CGFloat = 320
 private let SCREEN_MARGIN: CGFloat = 16
 private let MAX_HEIGHT: CGFloat = 500
 

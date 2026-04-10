@@ -856,6 +856,8 @@ final class ClipboardManager: ObservableObject {
 // MARK: - ClipboardControllable
 
 extension ClipboardManager: ClipboardControllable {
+    var isMonitoringPaused: Bool { isPaused }
+
     func pauseMonitoring() {
         guard !isPaused else { return }
         isPaused = true

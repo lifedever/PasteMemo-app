@@ -48,6 +48,7 @@ struct MainWindowView: View {
     @State private var relaySplitText: String?
     @State private var showCommandPalette = false
     @AppStorage("hideDockIcon") private var hideDockIcon = false
+    @AppStorage("alwaysOnTop") private var alwaysOnTop = false
 
     private var sourceApps: [String] { store.sourceApps }
 
@@ -88,6 +89,13 @@ struct MainWindowView: View {
             store.sortPinnedFirst = true
             store.isActive = true
             store.configure(modelContext: modelContext)
+            if alwaysOnTop {
+                DispatchQueue.main.async {
+                    for window in NSApp.windows where window.canBecomeMain {
+                        window.level = .floating
+                    }
+                }
+            }
             keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
                 guard let window = event.window, window.canBecomeMain,
                       !HotkeyManager.shared.isQuickPanelVisible else { return event }

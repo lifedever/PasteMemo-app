@@ -244,6 +244,7 @@
 "menu.newGroup" = "Grup Baru…";
 "menu.newSmartGroup" = "Grup Pintar Baru…";
 "menu.help" = "Bantuan PasteMemo";
+"menu.alwaysOnTop" = "Selalu di Atas";
 "help.title" = "Bantuan PasteMemo";
 "help.subtitle" = "Panduan singkat untuk memaksimalkan papan klip Anda.";
 "help.close" = "Mengerti";
@@ -500,6 +501,7 @@ Gunakan %@ untuk menempel satu per satu.";
 "cmd.showInFinder" = "Tampilkan di Finder";
 "cmd.copyAs" = "Salin sebagai %@";
 "relay.reverse" = "Balik Urutan";
+"relay.clearAll" = "Hapus Semua";
 "relay.editItem" = "Edit Konten";
 "quickPanel.pin" = "Sematkan Jendela";
 "quickPanel.unpin" = "Lepas Sematan Jendela";

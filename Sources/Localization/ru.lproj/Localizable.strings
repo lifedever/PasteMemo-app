@@ -244,6 +244,7 @@
 "menu.newGroup" = "Новая группа…";
 "menu.newSmartGroup" = "Новая смарт-группа…";
 "menu.help" = "Справка PasteMemo";
+"menu.alwaysOnTop" = "Всегда поверх других окон";
 "help.title" = "Справка PasteMemo";
 "help.subtitle" = "Краткое руководство по использованию менеджера буфера обмена.";
 "help.close" = "Понятно";
@@ -500,6 +501,7 @@
 "cmd.showInFinder" = "Показать в Finder";
 "cmd.copyAs" = "Копировать как %@";
 "relay.reverse" = "Обратный порядок";
+"relay.clearAll" = "Очистить всё";
 "relay.editItem" = "Редактировать содержимое";
 "quickPanel.pin" = "Закрепить окно";
 "quickPanel.unpin" = "Открепить окно";
