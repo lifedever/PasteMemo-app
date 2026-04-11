@@ -1,6 +1,6 @@
 SHELL := /bin/bash
 
-.PHONY: dev build run test package
+.PHONY: dev build run test check check-staged install-hooks package
 
 dev:
 	bash ./scripts/dev.sh
@@ -13,6 +13,15 @@ run:
 
 test:
 	swift test
+
+check:
+	bash ./scripts/check.sh --all
+
+check-staged:
+	bash ./scripts/check.sh --staged
+
+install-hooks:
+	bash ./scripts/install-hooks.sh
 
 package:
 	VERSION="$(VERSION)" \

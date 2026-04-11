@@ -162,6 +162,26 @@ make dev
 这个命令会启动应用，并在 `Sources/`、`Tests/` 或 `Package.swift` 发生变化后自动重新执行 `swift run`。
 如果系统里装了 `fswatch`，脚本会优先使用它；否则退化为每秒轮询一次。
 
+### 检查
+
+```bash
+make check
+```
+
+这个命令会执行全仓库的快速检查：
+
+- Swift 源码存在时执行 `swift build`
+- 对 `.strings` 文件执行 `plutil -lint`
+- 对 shell 脚本执行 `bash -n`
+
+如果要启用提交前自动检查：
+
+```bash
+make install-hooks
+```
+
+执行后会把 Git hooks 指向 `.githooks`，之后每次提交都会自动检查暂存区文件。
+
 ### 打包
 
 ```bash

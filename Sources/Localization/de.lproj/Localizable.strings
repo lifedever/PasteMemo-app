@@ -111,7 +111,7 @@
 "action.newGroup" = "Neue Gruppe…";
 "action.editGroup" = "Gruppe bearbeiten…";
 "action.deleteGroup" = "Gruppe löschen";
-"action.deleteGroupConfirm" = "Möchten Sie die Gruppe „%@" wirklich löschen? Die Elemente in der Gruppe werden nicht gelöscht.";
+"action.deleteGroupConfirm" = "Möchten Sie die Gruppe „%@“ wirklich löschen? Die Elemente in der Gruppe werden nicht gelöscht.";
 "action.removeFromGroup" = "Aus Gruppe entfernen";
 "action.changeIcon" = "Symbol ändern…";
 "action.clearConfirm" = "Alle Elemente außer Favoriten und angehefteten Elementen werden gelöscht.";

@@ -405,7 +405,7 @@
 "cmd.pasteAsFile" = "ファイルとしてペースト";
 "cmd.pastePath" = "パスをペースト";
 "cmd.retryOCR" = "OCRを再試行";
-"cmd.openInPreview" = ""プレビュー"で開く";
+"cmd.openInPreview" = "「プレビュー」で開く";
 "cmd.andNewLine" = "＋改行";
 "cmd.transform" = "変換";
 
