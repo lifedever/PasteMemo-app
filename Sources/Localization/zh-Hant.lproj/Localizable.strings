@@ -111,6 +111,16 @@
 "settings.retentionDays.cleanConfirm" = "將刪除 %d 條超出保留期的記錄";
 "settings.retentionDays.cleanWarning" = "此操作不可恢復，確定要繼續嗎？";
 "settings.display" = "顯示";
+"settings.quickPanelPosition" = "快捷面板位置";
+"settings.quickPanelPosition.remembered" = "記住上次位置";
+"settings.quickPanelPosition.cursor" = "游標";
+"settings.quickPanelPosition.menuBarIcon" = "選單列圖示";
+"settings.quickPanelPosition.windowCenter" = "目前視窗中心";
+"settings.quickPanelPosition.screenCenter" = "螢幕中央";
+"settings.quickPanelTargetScreen" = "目標螢幕";
+"settings.quickPanelTargetScreen.active" = "目前螢幕";
+"settings.quickPanelTargetScreen.specified" = "指定螢幕";
+"settings.quickPanelSpecifiedScreen" = "指定顯示器";
 "settings.behavior" = "行為";
 "settings.preferences" = "偏好";
 "settings.showLinkURL" = "連結顯示原始網址而非頁面標題";

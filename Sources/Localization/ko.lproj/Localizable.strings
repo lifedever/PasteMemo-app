@@ -135,6 +135,16 @@
 "settings.retentionDays.cleanConfirm" = "보관 기간을 초과한 %d개 항목이 삭제됩니다";
 "settings.retentionDays.cleanWarning" = "이 작업은 되돌릴 수 없습니다. 계속하시겠습니까?";
 "settings.display" = "표시";
+"settings.quickPanelPosition" = "빠른 패널 위치";
+"settings.quickPanelPosition.remembered" = "마지막 위치 기억";
+"settings.quickPanelPosition.cursor" = "커서";
+"settings.quickPanelPosition.menuBarIcon" = "메뉴 막대 아이콘";
+"settings.quickPanelPosition.windowCenter" = "활성 창 중앙";
+"settings.quickPanelPosition.screenCenter" = "화면 중앙";
+"settings.quickPanelTargetScreen" = "대상 화면";
+"settings.quickPanelTargetScreen.active" = "활성 화면";
+"settings.quickPanelTargetScreen.specified" = "지정 화면";
+"settings.quickPanelSpecifiedScreen" = "지정 디스플레이";
 "settings.behavior" = "동작";
 "settings.preferences" = "환경설정";
 "settings.showLinkURL" = "링크를 페이지 제목 대신 URL로 표시";

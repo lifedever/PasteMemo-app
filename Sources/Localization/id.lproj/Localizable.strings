@@ -110,6 +110,16 @@
 "settings.retentionDays.cleanConfirm" = "%d item di luar periode penyimpanan akan dihapus";
 "settings.retentionDays.cleanWarning" = "Tindakan ini tidak dapat dibatalkan. Lanjutkan?";
 "settings.display" = "Tampilan";
+"settings.quickPanelPosition" = "Posisi panel cepat";
+"settings.quickPanelPosition.remembered" = "Ingat posisi terakhir";
+"settings.quickPanelPosition.cursor" = "Kursor";
+"settings.quickPanelPosition.menuBarIcon" = "Ikon bar menu";
+"settings.quickPanelPosition.windowCenter" = "Tengah jendela aktif";
+"settings.quickPanelPosition.screenCenter" = "Tengah layar";
+"settings.quickPanelTargetScreen" = "Layar target";
+"settings.quickPanelTargetScreen.active" = "Layar aktif";
+"settings.quickPanelTargetScreen.specified" = "Layar tertentu";
+"settings.quickPanelSpecifiedScreen" = "Display tertentu";
 "settings.behavior" = "Perilaku";
 "settings.preferences" = "Preferensi";
 "settings.showLinkURL" = "Tampilkan URL alih-alih judul halaman untuk tautan";

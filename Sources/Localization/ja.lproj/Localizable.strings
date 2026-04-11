@@ -143,6 +143,16 @@
 "settings.retentionDays.cleanConfirm" = "保持期間を超えた%d件の項目が削除されます";
 "settings.retentionDays.cleanWarning" = "この操作は元に戻せません。続行しますか？";
 "settings.display" = "表示";
+"settings.quickPanelPosition" = "クイックパネルの位置";
+"settings.quickPanelPosition.remembered" = "前回の位置を記憶";
+"settings.quickPanelPosition.cursor" = "カーソル";
+"settings.quickPanelPosition.menuBarIcon" = "メニューバーアイコン";
+"settings.quickPanelPosition.windowCenter" = "アクティブウィンドウの中央";
+"settings.quickPanelPosition.screenCenter" = "画面中央";
+"settings.quickPanelTargetScreen" = "対象画面";
+"settings.quickPanelTargetScreen.active" = "アクティブ画面";
+"settings.quickPanelTargetScreen.specified" = "指定画面";
+"settings.quickPanelSpecifiedScreen" = "指定ディスプレイ";
 "settings.behavior" = "動作";
 "settings.preferences" = "環境設定";
 "settings.ocr" = "画像OCR";
