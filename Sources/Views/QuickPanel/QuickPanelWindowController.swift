@@ -55,7 +55,7 @@ final class QuickPanelWindowController {
 
     private var positionMode: QuickPanelPositionMode {
         let rawValue = UserDefaults.standard.string(forKey: QuickPanelPositionSettings.modeKey)
-        return QuickPanelPositionMode(rawValue: rawValue ?? "") ?? .remembered
+        return QuickPanelPositionMode(rawValue: rawValue ?? "") ?? .cursor
     }
 
     private var screenTarget: QuickPanelScreenTarget {
