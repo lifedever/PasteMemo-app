@@ -68,6 +68,8 @@ chmod +x "$APP_DIR/Contents/MacOS/$EXECUTABLE_NAME"
 cp "$ICON_FILE" "$APP_DIR/Contents/Resources/AppIcon.icns"
 cp -R "$RESOURCE_BUNDLE" "$APP_DIR/"
 
+CURRENT_YEAR="$(date +%Y)"
+
 cat > "$APP_DIR/Contents/Info.plist" <<EOF
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "https://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -95,10 +97,16 @@ cat > "$APP_DIR/Contents/Info.plist" <<EOF
   <string>${VERSION}</string>
   <key>LSMinimumSystemVersion</key>
   <string>${MIN_SYSTEM_VERSION}</string>
+  <key>LSUIElement</key>
+  <true/>
   <key>NSHighResolutionCapable</key>
   <true/>
   <key>NSPrincipalClass</key>
   <string>NSApplication</string>
+  <key>NSHumanReadableCopyright</key>
+  <string>Copyright © ${CURRENT_YEAR} lifedever. All rights reserved.</string>
+  <key>NSAppleEventsUsageDescription</key>
+  <string>PasteMemo needs to communicate with Finder to save images to folders.</string>
 </dict>
 </plist>
 EOF

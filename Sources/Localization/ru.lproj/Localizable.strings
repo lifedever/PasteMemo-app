@@ -101,7 +101,7 @@
 "settings.shortcut.clickToRecord" = "Нажмите для записи";
 "settings.shortcut.pressKey" = "Нажмите клавиши…";
 "settings.paste" = "Вставка";
-"settings.autoPaste" = "Автоматически вставлять после выбора";
+"settings.autoPaste" = "Вставлять в приложение по Enter";
 "settings.addNewLine" = "Добавлять перевод строки после вставки";
 "settings.history" = "История";
 "settings.retentionDays" = "Хранить историю";

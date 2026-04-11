@@ -111,7 +111,7 @@
 "settings.doubleTap" = "Double-tap to open";
 "settings.doubleTap.modifier" = "Double-tap Modifier Key";
 "settings.paste" = "Paste";
-"settings.autoPaste" = "Paste Immediately After Selection";
+"settings.autoPaste" = "Paste to App on Enter";
 "settings.addNewLine" = "Add new line after paste";
 "settings.history" = "History";
 "settings.retentionDays" = "Keep History";

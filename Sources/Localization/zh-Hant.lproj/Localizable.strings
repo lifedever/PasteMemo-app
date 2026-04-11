@@ -102,7 +102,7 @@
 "settings.shortcut.clickToRecord" = "點擊錄入";
 "settings.shortcut.pressKey" = "請按快捷鍵…";
 "settings.paste" = "貼上";
-"settings.autoPaste" = "選中後立即貼上";
+"settings.autoPaste" = "按 Enter 直接貼上到應用";
 "settings.addNewLine" = "貼上後自動換行";
 "settings.history" = "歷史記錄";
 "settings.retentionDays" = "保留時長";

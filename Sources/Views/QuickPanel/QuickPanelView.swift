@@ -1028,7 +1028,7 @@ struct QuickPanelView: View {
                         return event // let system copy selected text
                     }
                     let items = isMultiSelected ? currentItems : (currentItem.map { [$0] } ?? [])
-                    if !items.isEmpty { copyItemsToClipboard(items) }
+                    if !items.isEmpty { copyItemsToClipboard(items, dismissAfterCopy: true, playSound: true) }
                     return nil
                 }
                 return event
@@ -1105,7 +1105,7 @@ struct QuickPanelView: View {
             }
         case .copy:
             let items = isMultiSelected ? currentItems : (currentItem.map { [$0] } ?? [])
-            if !items.isEmpty { copyItemsToClipboard(items) }
+            if !items.isEmpty { copyItemsToClipboard(items, dismissAfterCopy: true, playSound: true) }
         case .retryOCR:
             if let item = currentItem, item.contentType == .image, item.imageData != nil {
                 OCRTaskCoordinator.shared.retry(itemID: item.itemID)
@@ -1301,6 +1301,7 @@ struct QuickPanelView: View {
 
         if dismissAfterCopy {
             QuickPanelWindowController.shared.dismiss()
+            GlobalToast.show(L10n.tr("action.copied"))
             return
         }
 
@@ -1498,6 +1499,7 @@ struct QuickPanelView: View {
         try? item.modelContext?.save()
         SoundManager.playCopy()
         QuickPanelWindowController.shared.dismiss()
+        GlobalToast.show(L10n.tr("action.copied"))
     }
 
     private func handlePlainTextPaste(_ item: ClipItem) {

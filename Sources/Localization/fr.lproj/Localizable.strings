@@ -126,7 +126,7 @@
 "settings.managerShortcut" = "Open Manager";
 "settings.shortcut.none" = "Non défini";
 "settings.paste" = "Collage";
-"settings.autoPaste" = "Coller automatiquement après sélection";
+"settings.autoPaste" = "Coller dans l'app avec Entrée";
 "settings.addNewLine" = "Ajouter un retour à la ligne après le collage";
 "settings.history" = "Historique";
 "settings.retentionDays" = "Conserver l'historique";

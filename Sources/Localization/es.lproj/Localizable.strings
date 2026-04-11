@@ -126,7 +126,7 @@
 "settings.managerShortcut" = "Open Manager";
 "settings.shortcut.none" = "No configurado";
 "settings.paste" = "Pegar";
-"settings.autoPaste" = "Pegar automáticamente al seleccionar";
+"settings.autoPaste" = "Pegar en la app con Enter";
 "settings.addNewLine" = "Agregar nueva línea después de pegar";
 "settings.history" = "Historial";
 "settings.retentionDays" = "Conservar historial";

@@ -30,7 +30,11 @@ func showAccessibilityPrompt() {
     alert.addButton(withTitle: L10n.tr("accessibility.lost.later"))
 
     if alert.runModal() == .alertFirstButtonReturn {
-        ClipboardManager.shared.requestAccessibilityPermission()
+        let opened = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")
+            .map { NSWorkspace.shared.open($0) } ?? false
+        if !opened {
+            ClipboardManager.shared.requestAccessibilityPermission()
+        }
     }
 }
 

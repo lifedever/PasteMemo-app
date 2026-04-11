@@ -11,23 +11,35 @@ WATCH_PATHS=(
 )
 
 SWIFT_RUN_PID=""
+DEBOUNCE_PID=""
 
 cleanup() {
-  if [[ -n "${SWIFT_RUN_PID}" ]] && kill -0 "${SWIFT_RUN_PID}" 2>/dev/null; then
-    kill "${SWIFT_RUN_PID}" 2>/dev/null || true
-    wait "${SWIFT_RUN_PID}" 2>/dev/null || true
+  [[ -n "${DEBOUNCE_PID:-}" ]] && kill "$DEBOUNCE_PID" 2>/dev/null || true
+  if [[ -n "${SWIFT_RUN_PID:-}" ]] && kill -0 "$SWIFT_RUN_PID" 2>/dev/null; then
+    kill "$SWIFT_RUN_PID" 2>/dev/null || true
+    wait "$SWIFT_RUN_PID" 2>/dev/null || true
   fi
 }
 
 restart_app() {
   printf '\n[%s] restarting %s\n' "$(date '+%H:%M:%S')" "$APP_NAME"
-  cleanup
+  if [[ -n "${SWIFT_RUN_PID:-}" ]] && kill -0 "$SWIFT_RUN_PID" 2>/dev/null; then
+    kill "$SWIFT_RUN_PID" 2>/dev/null || true
+    wait "$SWIFT_RUN_PID" 2>/dev/null || true
+  fi
 
   (
     cd "$ROOT_DIR"
     exec env PASTEMEMO_DEV=1 swift run
   ) &
   SWIFT_RUN_PID=$!
+}
+
+schedule_restart() {
+  # Debounce: cancel previous pending restart, wait 0.5s before restarting
+  [[ -n "${DEBOUNCE_PID:-}" ]] && kill "$DEBOUNCE_PID" 2>/dev/null || true
+  ( sleep 0.5 && restart_app ) &
+  DEBOUNCE_PID=$!
 }
 
 poll_signature() {
@@ -39,7 +51,7 @@ poll_signature() {
 watch_with_fswatch() {
   printf '[dev] using fswatch\n'
   fswatch -0 -r --event Updated --event Created --event Removed --event Renamed "${WATCH_PATHS[@]}" | while IFS= read -r -d '' _; do
-    restart_app
+    schedule_restart
   done
 }
 

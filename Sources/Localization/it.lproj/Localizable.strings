@@ -101,7 +101,7 @@
 "settings.shortcut.clickToRecord" = "Clicca per registrare";
 "settings.shortcut.pressKey" = "Premi scorciatoia…";
 "settings.paste" = "Incolla";
-"settings.autoPaste" = "Incolla automaticamente dopo la selezione";
+"settings.autoPaste" = "Incolla nell'app con Invio";
 "settings.addNewLine" = "Aggiungi a capo dopo incolla";
 "settings.history" = "Cronologia";
 "settings.retentionDays" = "Conserva cronologia";

@@ -126,7 +126,7 @@
 "settings.managerShortcut" = "Open Manager";
 "settings.shortcut.none" = "미설정";
 "settings.paste" = "붙여넣기";
-"settings.autoPaste" = "선택 후 자동 붙여넣기";
+"settings.autoPaste" = "Enter로 앱에 바로 붙여넣기";
 "settings.addNewLine" = "붙여넣기 후 줄바꿈 추가";
 "settings.history" = "기록";
 "settings.retentionDays" = "기록 보관";

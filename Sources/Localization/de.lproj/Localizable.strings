@@ -126,7 +126,7 @@
 "settings.managerShortcut" = "Open Manager";
 "settings.shortcut.none" = "Nicht festgelegt";
 "settings.paste" = "Einfügen";
-"settings.autoPaste" = "Nach Auswahl automatisch einfügen";
+"settings.autoPaste" = "Mit Enter direkt in App einfügen";
 "settings.addNewLine" = "Nach dem Einfügen neue Zeile hinzufügen";
 "settings.history" = "Verlauf";
 "settings.retentionDays" = "Verlauf behalten";

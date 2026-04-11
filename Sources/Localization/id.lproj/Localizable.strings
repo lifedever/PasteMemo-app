@@ -101,7 +101,7 @@
 "settings.shortcut.clickToRecord" = "Klik untuk merekam";
 "settings.shortcut.pressKey" = "Tekan pintasan…";
 "settings.paste" = "Tempel";
-"settings.autoPaste" = "Tempel otomatis setelah memilih";
+"settings.autoPaste" = "Tempel ke app dengan Enter";
 "settings.addNewLine" = "Tambah baris baru setelah tempel";
 "settings.history" = "Riwayat";
 "settings.retentionDays" = "Simpan Riwayat";

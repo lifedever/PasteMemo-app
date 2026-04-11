@@ -111,7 +111,7 @@
 "settings.doubleTap" = "双击按键唤起";
 "settings.doubleTap.modifier" = "双击修饰键";
 "settings.paste" = "粘贴";
-"settings.autoPaste" = "选中后立即粘贴";
+"settings.autoPaste" = "回车直接粘贴到应用";
 "settings.addNewLine" = "粘贴后自动换行";
 "settings.history" = "历史记录";
 "settings.retentionDays" = "保留时长";
