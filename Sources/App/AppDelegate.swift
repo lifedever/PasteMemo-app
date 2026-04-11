@@ -9,6 +9,7 @@ final class AppAction {
     var openMainWindow: (() -> Void)?
     var openSettings: (() -> Void)?
     var openAutomationManager: (() -> Void)?
+    var showNewSnippetWindow: (() -> Void)?
     private init() {}
 }
 

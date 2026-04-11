@@ -107,12 +107,26 @@ final class RelayManager {
     }
 
     func deleteItem(at index: Int) {
+        guard index >= 0, index < items.count else { return }
+
+        let removedWasCurrent = index == currentIndex
         items.remove(at: index)
         windowController?.updateSize(for: items.count)
+
         if items.isEmpty {
             currentIndex = 0
             return
         }
+
+        if index < currentIndex {
+            currentIndex -= 1
+        } else if removedWasCurrent {
+            currentIndex = min(currentIndex, items.count - 1)
+            for itemIndex in items.indices where items[itemIndex].state == .current {
+                items[itemIndex].state = .pending
+            }
+        }
+
         if currentIndex >= items.count {
             currentIndex = items.count - 1
         }

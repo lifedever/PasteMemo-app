@@ -35,6 +35,220 @@ struct PasteMemoTests {
         #expect(result.type == .code)
     }
 
+    @Test("Snippet title falls back to first non-empty content line")
+    @MainActor func snippetResolvedTitleFallsBackToContent() {
+        let snippet = SnippetItem(title: "", content: "\n  hello world  \nsecond line", contentType: .text)
+        #expect(snippet.resolvedTitle == "hello world")
+    }
+
+    @Test("Snippet title fallback uses localized untitled label when content is empty")
+    @MainActor func snippetResolvedTitleUsesLocalizedUntitledFallback() {
+        let previousLanguage = LanguageManager.shared.current
+        defer { LanguageManager.shared.setLanguage(previousLanguage) }
+
+        LanguageManager.shared.setLanguage("zh-Hans")
+
+        let snippet = SnippetItem(title: "   ", content: "\n\n", contentType: .text)
+        #expect(snippet.resolvedTitle == "未命名片段")
+    }
+
+    @Test("All supported languages include snippet localization keys")
+    @MainActor func allSupportedLanguagesIncludeSnippetLocalizationKeys() {
+        let requiredKeys = [
+            "snippet.new",
+            "snippet.saveAs",
+            "snippet.saved",
+            "snippet.delete",
+            "snippet.titlePlural",
+            "snippet.count",
+            "snippet.titlePlaceholder",
+            "snippet.typeLabel",
+            "snippet.groupLabel",
+            "snippet.groupPlaceholder",
+            "snippet.groupNone",
+            "snippet.groupChoose",
+            "snippet.groupClear",
+            "snippet.tagsLabel",
+            "snippet.tagsPlaceholder",
+            "snippet.tagsPrompt",
+            "snippet.addTags",
+            "snippet.removeTags",
+            "snippet.duplicateTitle",
+            "snippet.duplicateMessage",
+            "snippet.updateExisting",
+            "snippet.createNew",
+            "snippet.contentLabel",
+            "snippet.empty",
+            "snippet.unused",
+            "snippet.usedCount",
+            "snippet.untitled",
+            "snippet.badge",
+            "snippet.namePromptTitle",
+            "snippet.namePromptMessage",
+            "quick.switchScope",
+            "quick.switchToSnippets",
+            "quick.switchToHistory",
+            "quick.switchSearchSection",
+            "quick.switchSnippetSort",
+            "quick.snippetMove",
+        ]
+
+        var missing: [String] = []
+
+        let testsDir = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
+        let projectRoot = testsDir.deletingLastPathComponent()
+        let localizationRoot = projectRoot.appendingPathComponent("Sources/Localization", isDirectory: true)
+
+        for code in L10n.supportedLanguages.map(\.code) {
+            let fileURL = localizationRoot
+                .appendingPathComponent("\(code).lproj", isDirectory: true)
+                .appendingPathComponent("Localizable.strings", isDirectory: false)
+
+            guard let contents = try? String(contentsOf: fileURL, encoding: .utf8) else {
+                missing.append("\(code):file")
+                continue
+            }
+
+            for key in requiredKeys where !contents.contains("\"\(key)\"") {
+                missing.append("\(code):\(key)")
+            }
+        }
+
+        #expect(missing.isEmpty)
+    }
+
+    @Test("Save as snippet copies core clip fields")
+    @MainActor func saveAsSnippetCopiesClipFields() throws {
+        let container = try ModelContainer(
+            for: ClipItem.self, SnippetItem.self, SmartGroup.self, AutomationRule.self,
+            configurations: ModelConfiguration(isStoredInMemoryOnly: true)
+        )
+        let context = container.mainContext
+
+        let clip = ClipItem(
+            content: "hello snippet",
+            contentType: .code,
+            sourceApp: "Xcode",
+            isPinned: true,
+            richTextData: Data("<b>hello</b>".utf8),
+            richTextType: "html"
+        )
+        clip.displayTitle = "Greeting"
+        clip.groupName = "Dev"
+
+        let snippet = SnippetLibrary.createSnippet(from: clip, in: context)
+
+        #expect(snippet.title == "Greeting")
+        #expect(snippet.content == "hello snippet")
+        #expect(snippet.contentType == .code)
+        #expect(snippet.groupName == "Dev")
+        #expect(snippet.isPinned)
+        #expect(snippet.richTextType == "html")
+        #expect(snippet.richTextData == Data("<b>hello</b>".utf8))
+    }
+
+    @Test("Save as snippet uses custom title when provided")
+    @MainActor func saveAsSnippetUsesCustomTitle() throws {
+        let container = try ModelContainer(
+            for: ClipItem.self, SnippetItem.self, SmartGroup.self, AutomationRule.self,
+            configurations: ModelConfiguration(isStoredInMemoryOnly: true)
+        )
+        let context = container.mainContext
+
+        let clip = ClipItem(content: "hello snippet", contentType: .text)
+        clip.displayTitle = "Original"
+
+        let snippet = SnippetLibrary.saveSnippet(from: clip, title: "Pinned Greeting", in: context) { _ in .createNew }
+
+        #expect(snippet?.title == "Pinned Greeting")
+    }
+
+    @Test("Save as snippet falls back to suggested title when custom title is empty")
+    @MainActor func saveAsSnippetFallsBackToSuggestedTitleWhenCustomTitleEmpty() throws {
+        let container = try ModelContainer(
+            for: ClipItem.self, SnippetItem.self, SmartGroup.self, AutomationRule.self,
+            configurations: ModelConfiguration(isStoredInMemoryOnly: true)
+        )
+        let context = container.mainContext
+
+        let clip = ClipItem(content: "\n  hello snippet  ", contentType: .text)
+        clip.displayTitle = ""
+
+        let snippet = SnippetLibrary.saveSnippet(from: clip, title: "   ", in: context) { _ in .createNew }
+
+        #expect(snippet?.title == "hello snippet")
+    }
+
+    @Test("Snippet tags parse and deduplicate")
+    @MainActor func snippetTagsParseAndDeduplicate() {
+        let parsed = SnippetItem.parseTags(from: "swift, ai tools, swift, code review")
+        #expect(parsed == ["swift", "ai tools", "code review"])
+
+        let snippet = SnippetItem(tags: ["swift", "ai tools"])
+        #expect(snippet.tagsText == "swift, ai tools")
+    }
+
+    @Test("Saving duplicate snippet updates content fields but keeps organization")
+    @MainActor func saveDuplicateSnippetUpdatesExistingSnippet() throws {
+        let container = try ModelContainer(
+            for: ClipItem.self, SnippetItem.self, SmartGroup.self, AutomationRule.self,
+            configurations: ModelConfiguration(isStoredInMemoryOnly: true)
+        )
+        let context = container.mainContext
+
+        let existing = SnippetItem(
+            title: "Old title",
+            content: "same body",
+            contentType: .text,
+            groupName: "Keep Group",
+            tags: ["swift", "review"],
+            isPinned: true,
+            createdAt: Date(timeIntervalSince1970: 10),
+            lastUsedAt: Date(timeIntervalSince1970: 20),
+            usageCount: 7,
+            richTextData: Data("old".utf8),
+            richTextType: "html"
+        )
+        context.insert(existing)
+        try context.save()
+
+        let clip = ClipItem(content: "same body", contentType: .code, richTextData: Data("new".utf8), richTextType: "rtf")
+        clip.displayTitle = "New title"
+        clip.groupName = "New Group"
+
+        let saved = SnippetLibrary.saveSnippet(from: clip, title: "Preferred title", in: context) { _ in .updateExisting }
+        #expect(saved?.persistentModelID == existing.persistentModelID)
+        #expect(existing.title == "Preferred title")
+        #expect(existing.contentType == .code)
+        #expect(existing.richTextData == Data("new".utf8))
+        #expect(existing.richTextType == "rtf")
+        #expect(existing.groupName == "Keep Group")
+        #expect(existing.tags == ["swift", "review"])
+        #expect(existing.isPinned)
+        #expect(existing.usageCount == 7)
+        #expect(existing.lastUsedAt == Date(timeIntervalSince1970: 20))
+    }
+
+    @Test("Snippet search matches plain text across snippet fields")
+    @MainActor func snippetSearchMatchesPlainTextAcrossFields() throws {
+        let container = try ModelContainer(
+            for: ClipItem.self, SnippetItem.self, SmartGroup.self, AutomationRule.self,
+            configurations: ModelConfiguration(isStoredInMemoryOnly: true)
+        )
+        let context = container.mainContext
+
+        context.insert(SnippetItem(title: "Pinned SQL", content: "select id from tasks", contentType: .code, groupName: "Work", tags: ["sql"], isPinned: true))
+        context.insert(SnippetItem(title: "Unpinned SQL", content: "select name from users", contentType: .code, groupName: "Work", tags: ["sql"], isPinned: false))
+        context.insert(SnippetItem(title: "Pinned Note", content: "remember this", contentType: .text, groupName: "Work", tags: ["sql"], isPinned: true))
+        try context.save()
+
+        let store = SnippetStore()
+        store.configure(modelContext: context)
+        store.searchText = "sql work select"
+
+        #expect(store.items.map(\.resolvedTitle) == ["Pinned SQL", "Unpinned SQL"])
+    }
+
     @Test("Reuse existing duplicate moves item to top without inserting a new row")
     @MainActor func reuseExistingDuplicateMovesToTop() throws {
         let container = try ModelContainer(
@@ -74,6 +288,170 @@ struct PasteMemoTests {
         #expect(items[0].sourceApp == "New App")
         #expect(items[0].lastUsedAt > originalDate)
         #expect(items[0].createdAt == originalDate)
+    }
+
+    @Test("Plain text matches adjacent rich text duplicate and upgrades existing item")
+    @MainActor func richTextDuplicateUpgradesExistingPlainItem() throws {
+        let container = try ModelContainer(
+            for: ClipItem.self, SmartGroup.self, AutomationRule.self,
+            configurations: ModelConfiguration(isStoredInMemoryOnly: true)
+        )
+        let context = container.mainContext
+
+        let existing = ClipItem(
+            content: "hello",
+            contentType: .text,
+            sourceApp: "Old App",
+            createdAt: Date(timeIntervalSince1970: 100),
+            lastUsedAt: Date(timeIntervalSince1970: 100)
+        )
+        context.insert(existing)
+        try context.save()
+
+        let richData = Data("{\\rtf1 rich}".utf8)
+        let incoming = ClipItem(
+            content: "hello",
+            contentType: .text,
+            sourceApp: "New App",
+            createdAt: Date(timeIntervalSince1970: 200),
+            lastUsedAt: Date(timeIntervalSince1970: 200),
+            richTextData: richData,
+            richTextType: "rtf"
+        )
+
+        let matched = ClipboardManager.shared.findExistingDuplicate(for: incoming, in: context)
+        #expect(matched?.persistentModelID == existing.persistentModelID)
+
+        ClipboardManager.shared.reuseExistingDuplicate(existing, with: incoming, in: context)
+        try context.save()
+
+        #expect(existing.richTextData == richData)
+        #expect(existing.richTextType == "rtf")
+        #expect(existing.sourceApp == "New App")
+    }
+
+    @Test("Rich text matches adjacent plain text duplicate without losing formatting")
+    @MainActor func plainTextDuplicateKeepsExistingRichItem() throws {
+        let container = try ModelContainer(
+            for: ClipItem.self, SmartGroup.self, AutomationRule.self,
+            configurations: ModelConfiguration(isStoredInMemoryOnly: true)
+        )
+        let context = container.mainContext
+
+        let richData = Data("<b>hello</b>".utf8)
+        let existing = ClipItem(
+            content: "hello",
+            contentType: .text,
+            sourceApp: "Old App",
+            createdAt: Date(timeIntervalSince1970: 100),
+            lastUsedAt: Date(timeIntervalSince1970: 100),
+            richTextData: richData,
+            richTextType: "html"
+        )
+        context.insert(existing)
+        try context.save()
+
+        let incoming = ClipItem(
+            content: "hello",
+            contentType: .text,
+            sourceApp: "New App",
+            createdAt: Date(timeIntervalSince1970: 200),
+            lastUsedAt: Date(timeIntervalSince1970: 200)
+        )
+
+        let matched = ClipboardManager.shared.findExistingDuplicate(for: incoming, in: context)
+        #expect(matched?.persistentModelID == existing.persistentModelID)
+
+        ClipboardManager.shared.reuseExistingDuplicate(existing, with: incoming, in: context)
+        try context.save()
+
+        #expect(existing.richTextData == richData)
+        #expect(existing.richTextType == "html")
+        #expect(existing.sourceApp == "New App")
+    }
+
+    @Test("Different rich text payloads are not treated as duplicates")
+    @MainActor func differentRichTextPayloadsRemainDistinct() throws {
+        let container = try ModelContainer(
+            for: ClipItem.self, SmartGroup.self, AutomationRule.self,
+            configurations: ModelConfiguration(isStoredInMemoryOnly: true)
+        )
+        let context = container.mainContext
+
+        let existing = ClipItem(
+            content: "hello",
+            contentType: .text,
+            richTextData: Data("<b>hello</b>".utf8),
+            richTextType: "html"
+        )
+        context.insert(existing)
+        try context.save()
+
+        let incoming = ClipItem(
+            content: "hello",
+            contentType: .text,
+            richTextData: Data("<i>hello</i>".utf8),
+            richTextType: "html"
+        )
+
+        let matched = ClipboardManager.shared.findExistingDuplicate(for: incoming, in: context)
+        #expect(matched == nil)
+    }
+
+    @Test("History sort mode returns the matching clip date")
+    @MainActor func historySortModeUsesExpectedDate() {
+        let created = Date(timeIntervalSince1970: 100)
+        let lastUsed = Date(timeIntervalSince1970: 200)
+        let item = ClipItem(content: "hello", createdAt: created, lastUsedAt: lastUsed)
+
+        #expect(HistorySortMode.created.date(for: item) == created)
+        #expect(HistorySortMode.lastUsed.date(for: item) == lastUsed)
+    }
+
+    @Test("Time grouping follows created time when requested")
+    @MainActor func groupItemsByCreatedDate() {
+        let now = Date()
+        let item = ClipItem(
+            content: "hello",
+            createdAt: Calendar.current.date(byAdding: .day, value: -2, to: now)!,
+            lastUsedAt: now
+        )
+
+        let groups = groupItemsByTime([item], sortMode: .created)
+        #expect(groups.count == 1)
+        #expect(groups.first?.group == .thisWeek)
+    }
+
+    @Test("Time grouping follows last used time when requested")
+    @MainActor func groupItemsByLastUsedDate() {
+        let now = Date()
+        let item = ClipItem(
+            content: "hello",
+            createdAt: Calendar.current.date(byAdding: .day, value: -40, to: now)!,
+            lastUsedAt: now
+        )
+
+        let groups = groupItemsByTime([item], sortMode: .lastUsed)
+        #expect(groups.count == 1)
+        #expect(groups.first?.group == .today)
+    }
+
+    @Test("Updating last used date moves item to top when sorted by last used")
+    @MainActor func updatingLastUsedMovesItemToTop() throws {
+        let olderDate = Date(timeIntervalSince1970: 100)
+        let newerDate = Date(timeIntervalSince1970: 200)
+        let latestDate = Date(timeIntervalSince1970: 300)
+
+        let olderItem = ClipItem(content: "older", createdAt: olderDate, lastUsedAt: olderDate)
+        let newerItem = ClipItem(content: "newer", createdAt: newerDate, lastUsedAt: newerDate)
+
+        let initial = [olderItem, newerItem].sorted { $0.lastUsedAt > $1.lastUsedAt }
+        #expect(initial.map(\.content) == ["newer", "older"])
+
+        olderItem.lastUsedAt = latestDate
+
+        let updated = [olderItem, newerItem].sorted { $0.lastUsedAt > $1.lastUsedAt }
+        #expect(updated.map(\.content) == ["older", "newer"])
     }
 
     @Test("Retry OCR respects global OCR setting")
@@ -136,6 +514,54 @@ struct PasteMemoTests {
         let snippet = String(attributed.characters)
         #expect(snippet.contains("line 42"))
         #expect(snippet.contains("error happened"))
+    }
+
+    @Test("Quick preview OCR snippet falls back to compact prefix when query is missing")
+    @MainActor func quickPreviewOCRSnippetWithoutMatch() {
+        let text = Array(repeating: "0123456789", count: 30).joined()
+        let attributed = QuickPreviewPane.buildOCRSnippet(text: text, query: "missing")
+        let snippet = String(attributed.characters)
+
+        #expect(snippet.count <= 221)
+        #expect(snippet.hasPrefix("0123456789"))
+    }
+
+    @Test("Quick preview code summary captures language, counts and truncation")
+    @MainActor func quickPreviewCodeSummary() {
+        let code = """
+        import Foundation
+        struct Demo {
+            func run() {
+                print("hello")
+            }
+        }
+        """
+
+        let summary = QuickPreviewPane.buildCodeSummary(text: code, language: .swift, previewLineLimit: 3, previewCharacterLimit: 80)
+
+        #expect(summary.language == .swift)
+        #expect(summary.lineCount == 6)
+        #expect(summary.characterCount == code.count)
+        #expect(summary.isTruncated)
+        #expect(summary.snippet.contains("import Foundation"))
+        #expect(summary.snippet.hasSuffix("…"))
+    }
+
+    @Test("Quick preview code summary disables expanded preview for very large code")
+    @MainActor func quickPreviewCodeSummaryDisablesExpandedPreview() {
+        let code = Array(repeating: "let value = 1", count: 4000).joined(separator: "\n")
+
+        let summary = QuickPreviewPane.buildCodeSummary(text: code, language: .swift, expandedPreviewCharacterLimit: 5000)
+
+        #expect(!summary.supportsExpandedPreview)
+    }
+
+    @Test("Quick preview link summary strips www and preserves path/query")
+    @MainActor func quickPreviewLinkSummaryHelpers() {
+        let url = URL(string: "https://www.example.com/docs/page?ref=abc&lang=en")!
+
+        #expect(QuickPreviewPane.displayHost(for: url) == "example.com")
+        #expect(QuickPreviewPane.displayPath(for: url) == "/docs/page?ref=abc&lang=en")
     }
 
     @Test("OCR language list prioritizes Chinese when app language is Chinese")
@@ -311,6 +737,23 @@ struct RelayManagerTests {
         #expect(success)
         #expect(manager.items.count == 3)
         #expect(manager.items[0].content == "张三")
+    }
+
+    @Test("Enqueue clip items preserves image and file relay kinds")
+    @MainActor func enqueueClipItemsPreservesRelayKinds() {
+        let manager = makeManager()
+        let image = ClipItem(content: "[Image]", contentType: .image, imageData: Data([0x89]))
+        let file = ClipItem(content: "/tmp/report.pdf", contentType: .document)
+        let text = ClipItem(content: "echo hello", contentType: .text)
+
+        manager.enqueue(clipItems: [image, file, text])
+
+        #expect(manager.items.count == 3)
+        #expect(manager.items[0].contentKind == .image)
+        #expect(manager.items[0].imageData == Data([0x89]))
+        #expect(manager.items[1].contentKind == .file)
+        #expect(manager.items[1].displayName == "report.pdf")
+        #expect(manager.items[2].contentKind == .text)
     }
 
     @Test("Progress string")

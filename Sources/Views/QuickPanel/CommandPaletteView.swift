@@ -9,9 +9,11 @@ enum CommandAction: Hashable {
     case openInPreview
     case showInFinder
     case copy
+    case saveAsSnippet
     case transform(RuleAction)
     case addToRelay
     case splitAndRelay
+    case openSnippetInManager
     case pin(isPinned: Bool)
     case toggleSensitive(isSensitive: Bool)
     case delete
@@ -25,9 +27,11 @@ enum CommandAction: Hashable {
         case .openInPreview: "photo.on.rectangle.angled"
         case .showInFinder: "folder"
         case .copy: "doc.on.doc"
+        case .saveAsSnippet: "bookmark"
         case .transform: "wand.and.stars"
         case .addToRelay: "arrow.right.arrow.left"
         case .splitAndRelay: "scissors"
+        case .openSnippetInManager: "sidebar.left"
         case .pin(let pinned): pinned ? "pin.slash" : "pin"
         case .toggleSensitive(let sensitive): sensitive ? "lock.open" : "lock.shield"
         case .delete: "trash"
@@ -43,9 +47,11 @@ enum CommandAction: Hashable {
         case .openInPreview: L10n.tr("cmd.openInPreview")
         case .showInFinder: L10n.tr("cmd.showInFinder")
         case .copy: L10n.tr("cmd.copy")
+        case .saveAsSnippet: L10n.tr("snippet.saveAs")
         case .transform(let action): action.displayLabel
         case .addToRelay: L10n.tr("relay.addToQueue")
         case .splitAndRelay: L10n.tr("relay.splitAndRelay")
+        case .openSnippetInManager: L10n.tr("quick.openManager")
         case .pin(let pinned): pinned ? L10n.tr("action.unpin") : L10n.tr("action.pin")
         case .toggleSensitive(let sensitive): sensitive ? L10n.tr("sensitive.unmarkSensitive") : L10n.tr("sensitive.markSensitive")
         case .delete: L10n.tr("cmd.delete")
@@ -61,9 +67,11 @@ enum CommandAction: Hashable {
         case .openInPreview: "L"
         case .showInFinder: "O"
         case .copy: "C"
+        case .saveAsSnippet: "N"
         case .transform: nil
         case .addToRelay: "R"
         case .splitAndRelay: "S"
+        case .openSnippetInManager: "M"
         case .pin: "T"
         case .toggleSensitive: "E"
         case .delete: "D"
@@ -79,9 +87,11 @@ enum CommandAction: Hashable {
         case .openInPreview: 37 // L
         case .showInFinder: 31 // O
         case .copy: 8        // C
+        case .saveAsSnippet: 45 // N
         case .transform: nil
         case .addToRelay: 15 // R
         case .splitAndRelay: 1 // S
+        case .openSnippetInManager: 46 // M
         case .pin: 17        // T
         case .toggleSensitive: 14 // E
         case .delete: 2      // D
@@ -98,6 +108,7 @@ enum CommandAction: Hashable {
 
 struct CommandPaletteContent: View {
     let item: ClipItem?
+    let snippet: SnippetItem?
     let isMultiSelected: Bool
     let onAction: (CommandAction) -> Void
     let onDismiss: () -> Void
@@ -108,6 +119,18 @@ struct CommandPaletteContent: View {
     @State private var isOptionPressed = false
 
     private var actions: [CommandAction] {
+        if let snippet {
+            var list: [CommandAction] = [.paste, .copy]
+            if !snippet.content.isEmpty {
+                list.append(.addToRelay)
+                list.append(.splitAndRelay)
+            }
+            list.append(.openSnippetInManager)
+            list.append(.pin(isPinned: snippet.isPinned))
+            list.append(.delete)
+            return list
+        }
+
         var list: [CommandAction] = [.paste]
         if let item, item.contentType == .color, let parsed = ColorConverter.parse(item.content) {
             let alt = parsed.alternateFormat
@@ -133,6 +156,9 @@ struct CommandPaletteContent: View {
             list.append(.showInFinder)
         }
         list.append(.copy)
+        if !isMultiSelected, item != nil {
+            list.append(.saveAsSnippet)
+        }
         list.append(.addToRelay)
         if !isMultiSelected, let item, !item.content.isEmpty {
             list.append(.splitAndRelay)

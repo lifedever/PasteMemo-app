@@ -84,26 +84,36 @@ enum AppMenuActions {
     }
 
     static func showNewGroupAlert() {
-        guard let result = GroupEditorPanel.show() else { return }
+        GroupEditorPanel.show() { result in
+            guard let result else { return }
 
-        let container = PasteMemoApp.sharedModelContainer
-        let context = container.mainContext
-        let resultName = result.name
-        let descriptor = FetchDescriptor<SmartGroup>(predicate: #Predicate { $0.name == resultName })
-        if (try? context.fetch(descriptor).first) != nil { return }
-        let maxOrder = (try? context.fetch(FetchDescriptor<SmartGroup>()))?.map(\.sortOrder).max() ?? -1
-        let group = SmartGroup(name: result.name, icon: result.icon, sortOrder: maxOrder + 1)
-        context.insert(group)
-        try? context.save()
-        NotificationCenter.default.post(name: ClipItemStore.itemDidUpdateNotification, object: nil)
+            let container = PasteMemoApp.sharedModelContainer
+            let context = container.mainContext
+            let resultName = result.name
+            let descriptor = FetchDescriptor<SmartGroup>(predicate: #Predicate { $0.name == resultName })
+            if (try? context.fetch(descriptor).first) != nil { return }
+            let maxOrder = (try? context.fetch(FetchDescriptor<SmartGroup>()))?.map(\.sortOrder).max() ?? -1
+            let group = SmartGroup(name: result.name, icon: result.icon, sortOrder: maxOrder + 1)
+            context.insert(group)
+            try? context.save()
+            NotificationCenter.default.post(name: ClipItemStore.itemDidUpdateNotification, object: nil)
+        }
     }
 
-    static func showEditGroupAlert(group: SmartGroup, context: ModelContext) {
-        guard let result = GroupEditorPanel.show(name: group.name, icon: group.icon) else { return }
-        group.name = result.name
-        group.icon = result.icon
-        try? context.save()
-        NotificationCenter.default.post(name: ClipItemStore.itemDidUpdateNotification, object: nil)
+    static func showEditGroupAlert(
+        group: SmartGroup,
+        context: ModelContext,
+        onComplete: ((String, String) -> Void)? = nil
+    ) {
+        GroupEditorPanel.show(name: group.name, icon: group.icon) { result in
+            guard let result else { return }
+            let oldName = group.name
+            group.name = result.name
+            group.icon = result.icon
+            try? context.save()
+            NotificationCenter.default.post(name: ClipItemStore.itemDidUpdateNotification, object: nil)
+            onComplete?(oldName, result.name)
+        }
     }
 
     static func deleteGroup(name: String, context: ModelContext) {

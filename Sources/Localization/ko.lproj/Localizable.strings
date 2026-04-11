@@ -94,6 +94,7 @@
 "detail.created" = "생성일";
 "detail.group" = "그룹";
 "detail.lastUsed" = "마지막 사용";
+"quick.switchSort" = "정렬 전환";
 "detail.chars" = "글자 수";
 "detail.lines" = "줄 수";
 "detail.aiPreview" = "AI용 미리보기";
@@ -149,6 +150,7 @@
 "pro.feature.customCategory" = "맞춤 카테고리";
 "pro.feature.ignoreApps" = "특정 앱 제외";
 "pro.feature.automation" = "클립보드 자동화";
+"history.sort" = "정렬 기준";
 
 /* Onboarding */
 "onboarding.back" = "이전";
@@ -727,3 +729,40 @@
 "quick.ocrMatch" = "인식된 텍스트에서 일치";
 "cmd.openInPreview" = "미리보기로 열기";
 "cmd.retryOCR" = "OCR 다시 시도";
+
+"snippet.new" = "새 스니펫";
+"snippet.saveAs" = "스니펫으로 저장";
+"snippet.saved" = "스니펫으로 저장됨";
+"snippet.delete" = "스니펫 삭제";
+"snippet.titlePlural" = "스니펫";
+"snippet.count" = "%d개 스니펫";
+"snippet.titlePlaceholder" = "스니펫 제목";
+"snippet.typeLabel" = "유형";
+"snippet.groupLabel" = "그룹";
+"snippet.groupPlaceholder" = "선택 그룹";
+"snippet.groupNone" = "그룹 없음";
+"snippet.groupChoose" = "그룹 선택…";
+"snippet.groupClear" = "그룹 지우기";
+"snippet.tagsLabel" = "태그";
+"snippet.tagsPlaceholder" = "tag1, tag2";
+"snippet.tagsPrompt" = "쉼표로 구분된 태그를 입력하세요.";
+"snippet.addTags" = "태그 추가";
+"snippet.removeTags" = "태그 제거";
+"snippet.duplicateTitle" = "스니펫이 이미 있습니다";
+"snippet.duplicateMessage" = "같은 내용의 스니펫이 이미 있습니다: %@";
+"snippet.updateExisting" = "기존 항목 업데이트";
+"snippet.createNew" = "새로 만들기";
+"snippet.contentLabel" = "내용";
+"snippet.empty" = "빈 스니펫";
+"snippet.unused" = "사용 안 함";
+"snippet.usedCount" = "%d회 사용됨";
+"snippet.untitled" = "제목 없는 스니펫";
+"snippet.badge" = "스니펫";
+"snippet.namePromptTitle" = "스니펫 이름 지정";
+"snippet.namePromptMessage" = "나중에 쉽게 찾을 수 있도록 이 스니펫의 이름을 정하세요.";
+"quick.switchScope" = "범위 전환";
+"quick.switchToSnippets" = "스니펫으로 전환";
+"quick.switchToHistory" = "기록으로 전환";
+"quick.switchSearchSection" = "기록과 스니펫 사이 전환";
+"quick.switchSnippetSort" = "스니펫 정렬 전환";
+"quick.snippetMove" = "스니펫 선택 이동";

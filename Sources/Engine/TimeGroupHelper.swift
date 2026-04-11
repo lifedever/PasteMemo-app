@@ -1,5 +1,25 @@
 import Foundation
 
+enum HistorySortMode: String, CaseIterable {
+    case created
+    case lastUsed
+
+    @MainActor
+    var label: String {
+        switch self {
+        case .created: return L10n.tr("detail.created")
+        case .lastUsed: return L10n.tr("detail.lastUsed")
+        }
+    }
+
+    func date(for item: ClipItem) -> Date {
+        switch self {
+        case .created: return item.createdAt
+        case .lastUsed: return item.lastUsedAt
+        }
+    }
+}
+
 enum TimeGroup: String, CaseIterable {
     case pinned
     case today
@@ -39,12 +59,16 @@ struct GroupedItem<T> {
     var items: [T]
 }
 
-func groupItemsByTime(_ items: [ClipItem], separatePinned: Bool = true) -> [GroupedItem<ClipItem>] {
+func groupItemsByTime(
+    _ items: [ClipItem],
+    sortMode: HistorySortMode = .lastUsed,
+    separatePinned: Bool = true
+) -> [GroupedItem<ClipItem>] {
     var groups: [TimeGroup: [ClipItem]] = [:]
 
     for item in items {
         let isPinned = separatePinned ? item.isPinned : false
-        let group = TimeGroup.group(for: item.lastUsedAt, isPinned: isPinned)
+        let group = TimeGroup.group(for: sortMode.date(for: item), isPinned: isPinned)
         groups[group, default: []].append(item)
     }
 

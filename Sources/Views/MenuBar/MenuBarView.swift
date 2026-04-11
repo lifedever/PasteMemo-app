@@ -57,6 +57,10 @@ struct MenuBarContent: View {
             AppAction.shared.openAutomationManager?()
         }
 
+        Button(L10n.tr("snippet.new")) {
+            AppAction.shared.showNewSnippetWindow?()
+        }
+
         Button(L10n.tr("menu.settings")) {
             if !hideDockIcon {
                 NSApp.setActivationPolicy(.regular)
@@ -96,6 +100,10 @@ struct MenuBarContent: View {
             }
             openWindow(id: "automationManager")
             NSApp.activate(ignoringOtherApps: true)
+        }
+        AppAction.shared.showNewSnippetWindow = {
+            AppAction.shared.openMainWindow?()
+            NotificationCenter.default.post(name: Notification.Name("createSnippetFromMenu"), object: nil)
         }
     }
 

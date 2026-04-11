@@ -3,6 +3,7 @@ import SwiftUI
 struct ClipItemRow: View {
     let item: ClipItem
     let onTap: () -> Void
+    var sortMode: HistorySortMode = .lastUsed
 
     var body: some View {
         if item.isDeleted {
@@ -53,7 +54,7 @@ struct ClipItemRow: View {
                 }
 
                 // Time
-                Text(item.lastUsedAt.relativeString)
+                Text(sortMode.date(for: item).relativeString)
                     .font(.caption2)
                     .foregroundStyle(.tertiary)
                     .frame(width: 36, alignment: .trailing)

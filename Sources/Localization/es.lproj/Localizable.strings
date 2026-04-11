@@ -94,6 +94,7 @@
 "detail.created" = "Creado";
 "detail.group" = "Grupo";
 "detail.lastUsed" = "Último uso";
+"quick.switchSort" = "Cambiar orden";
 "detail.chars" = "Caracteres";
 "detail.lines" = "Líneas";
 "detail.aiPreview" = "Vista previa para IA";
@@ -149,6 +150,7 @@
 "pro.feature.customCategory" = "Categorías personalizadas";
 "pro.feature.ignoreApps" = "Ignorar apps específicas";
 "pro.feature.automation" = "Automatización del portapapeles";
+"history.sort" = "Ordenar por";
 
 /* Onboarding */
 "onboarding.back" = "Atrás";
@@ -729,3 +731,40 @@ Usa %@ para pegar uno por uno.";
 "quick.ocrMatch" = "Coincidencia en el texto reconocido";
 "cmd.openInPreview" = "Abrir en Vista Previa";
 "cmd.retryOCR" = "Reintentar OCR";
+
+"snippet.new" = "Nuevo fragmento";
+"snippet.saveAs" = "Guardar como fragmento";
+"snippet.saved" = "Guardado como fragmento";
+"snippet.delete" = "Eliminar fragmento";
+"snippet.titlePlural" = "Fragmentos";
+"snippet.count" = "%d fragmentos";
+"snippet.titlePlaceholder" = "Título del fragmento";
+"snippet.typeLabel" = "Tipo";
+"snippet.groupLabel" = "Grupo";
+"snippet.groupPlaceholder" = "Grupo opcional";
+"snippet.groupNone" = "Sin grupo";
+"snippet.groupChoose" = "Elegir grupo…";
+"snippet.groupClear" = "Quitar grupo";
+"snippet.tagsLabel" = "Etiquetas";
+"snippet.tagsPlaceholder" = "etiqueta1, etiqueta2";
+"snippet.tagsPrompt" = "Introduce etiquetas separadas por comas.";
+"snippet.addTags" = "Añadir etiquetas";
+"snippet.removeTags" = "Quitar etiquetas";
+"snippet.duplicateTitle" = "El fragmento ya existe";
+"snippet.duplicateMessage" = "Ya existe un fragmento con el mismo contenido: %@";
+"snippet.updateExisting" = "Actualizar existente";
+"snippet.createNew" = "Crear nuevo";
+"snippet.contentLabel" = "Contenido";
+"snippet.empty" = "Fragmento vacío";
+"snippet.unused" = "Sin usar";
+"snippet.usedCount" = "Usado %d veces";
+"snippet.untitled" = "Fragmento sin título";
+"snippet.badge" = "FRAGMENTO";
+"snippet.namePromptTitle" = "Nombrar fragmento";
+"snippet.namePromptMessage" = "Dale un nombre a este fragmento para encontrarlo más fácilmente después.";
+"quick.switchScope" = "Cambiar alcance";
+"quick.switchToSnippets" = "Cambiar a fragmentos";
+"quick.switchToHistory" = "Cambiar al historial";
+"quick.switchSearchSection" = "Saltar entre historial y fragmentos";
+"quick.switchSnippetSort" = "Cambiar orden de fragmentos";
+"quick.snippetMove" = "Mover selección de fragmento";

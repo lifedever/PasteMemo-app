@@ -6,6 +6,7 @@ enum SidebarFilter: Equatable {
     case all
     case pinned
     case sensitive
+    case snippets
     case type(ClipContentType)
     case app(String)
     case group(String)
@@ -16,6 +17,7 @@ enum SidebarFilter: Equatable {
         case .all: return L10n.tr("filter.all")
         case .pinned: return L10n.tr("filter.pinned")
         case .sensitive: return L10n.tr("filter.sensitive")
+        case .snippets: return L10n.tr("snippet.titlePlural")
         case .type(let t): return t.label
         case .app(let name): return name.isEmpty ? L10n.tr("filter.other") : name
         case .group(let name): return name
@@ -27,9 +29,11 @@ struct MainWindowView: View {
     @EnvironmentObject var clipboardManager: ClipboardManager
     @Environment(\.modelContext) private var modelContext
     @State private var store = ClipItemStore()
+    @State private var snippetStore = SnippetStore()
     @State private var searchText = ""
     @State private var selectedFilter: SidebarFilter = .all
     @State private var selectedItems: Set<ClipItem.ID> = []
+    @State private var selectedSnippetIDs: Set<SnippetItem.ID> = []
     @State private var typeOrder: [ClipContentType] = ClipContentType.visibleCases
     @State private var draggingType: ClipContentType?
     @State private var draggingGroup: String?
@@ -37,6 +41,14 @@ struct MainWindowView: View {
     private var selectedItem: ClipItem? {
         guard selectedItems.count == 1, let id = selectedItems.first else { return nil }
         return store.items.first { $0.persistentModelID == id }
+    }
+    private var selectedSnippet: SnippetItem? {
+        guard selectedSnippetIDs.count == 1, let selectedSnippetID = selectedSnippetIDs.first else { return nil }
+        return snippetStore.items.first { $0.persistentModelID == selectedSnippetID }
+    }
+    private var selectedSnippets: [SnippetItem] {
+        let ids = selectedSnippetIDs
+        return filteredSnippets.filter { ids.contains($0.persistentModelID) }
     }
     @Environment(\.openWindow) private var openWindow
     @State private var showDeleteConfirm = false
@@ -69,11 +81,17 @@ struct MainWindowView: View {
         .searchable(text: $searchText, prompt: L10n.tr("search.placeholder"))
         .onChange(of: selectedFilter) {
             selectedItems.removeAll()
+            selectedSnippetIDs.removeAll()
             syncStoreFilter()
         }
         .onChange(of: searchText) {
             selectedItems.removeAll()
-            store.searchText = searchText
+            selectedSnippetIDs.removeAll()
+            if selectedFilter == .snippets {
+                snippetStore.searchText = searchText
+            } else {
+                store.searchText = searchText
+            }
         }
         .onReceive(NotificationCenter.default.publisher(for: Notification.Name("clearSelection"))) { _ in
             selectedItems.removeAll()
@@ -89,6 +107,7 @@ struct MainWindowView: View {
             store.sortPinnedFirst = true
             store.isActive = true
             store.configure(modelContext: modelContext)
+            snippetStore.configure(modelContext: modelContext)
             if alwaysOnTop {
                 DispatchQueue.main.async {
                     for window in NSApp.windows where window.canBecomeMain {
@@ -144,6 +163,12 @@ struct MainWindowView: View {
                 // Cmd+C: copy selected text if any, otherwise copy whole item
                 if event.keyCode == 8, event.modifierFlags.contains(.command) {
                     if hasTextSelection { return event }  // let system handle
+                    if selectedFilter == .snippets, let snippet = selectedSnippet {
+                        SnippetLibrary.copyToClipboard(snippet)
+                        showCopiedToast = true
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { showCopiedToast = false }
+                        return nil
+                    }
                     guard !isSearchFieldEditing, !selectedItems.isEmpty else { return event }
                     if selectedItems.count > 1 {
                         copySelectedToClipboard()
@@ -163,12 +188,24 @@ struct MainWindowView: View {
                 }
 
                 // Cmd+K: command palette
-                if event.keyCode == 40, event.modifierFlags.contains(.command), !selectedItems.isEmpty {
+                if event.keyCode == 40, event.modifierFlags.contains(.command), (selectedFilter == .snippets ? !selectedSnippetIDs.isEmpty : !selectedItems.isEmpty) {
                     showCommandPalette.toggle()
                     return nil
                 }
 
                 guard !isSearchFieldEditing, !isEditableTextViewActive else { return event }
+
+                if selectedFilter == .snippets {
+                    if event.keyCode == 51, selectedSnippet != nil {
+                        deleteSelectedSnippet()
+                        return nil
+                    }
+                    if event.keyCode == 0, event.modifierFlags.contains(.command) {
+                        selectedSnippetIDs = Set(filteredSnippets.map(\.persistentModelID))
+                        return nil
+                    }
+                    return event
+                }
 
                 // Delete key
                 if event.keyCode == 51, !selectedItems.isEmpty {
@@ -207,6 +244,25 @@ struct MainWindowView: View {
             OptionKeyMonitor.shared.isOptionPressed = false
         }
         .toolbar {
+            ToolbarItem(placement: .automatic) {
+                if selectedFilter == .snippets {
+                    Button {
+                        createEmptySnippetAndSelect()
+                    } label: {
+                        Label(L10n.tr("snippet.new"), systemImage: "plus")
+                    }
+                    .help(L10n.tr("snippet.new"))
+                }
+            }
+            ToolbarItem(placement: .automatic) {
+                Picker(L10n.tr("history.sort"), selection: $store.sortMode) {
+                    ForEach(HistorySortMode.allCases, id: \.self) { mode in
+                        Text(mode.label).tag(mode)
+                    }
+                }
+                .pickerStyle(.menu)
+                .help(L10n.tr("history.sort"))
+            }
             ToolbarItem(placement: .automatic) {
                 Button { clipboardManager.togglePause() } label: {
                     Label(
@@ -285,6 +341,19 @@ struct MainWindowView: View {
                 NSApp.activate(ignoringOtherApps: true)
                 UsageTracker.pingIfNeeded(source: .main)
             }
+            AppAction.shared.showNewSnippetWindow = {
+                AppAction.shared.openMainWindow?()
+                NotificationCenter.default.post(name: Notification.Name("createSnippetFromMenu"), object: nil)
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: Notification.Name("createSnippetFromMenu"))) { _ in
+            createEmptySnippetAndSelect()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .snippetShouldOpenInManager)) { note in
+            guard let snippetID = note.object as? PersistentIdentifier else { return }
+            selectedFilter = .snippets
+            snippetStore.reload()
+            selectedSnippetIDs = [snippetID]
         }
         .onChange(of: relaySplitText) {
             guard let text = relaySplitText else { return }
@@ -302,6 +371,10 @@ struct MainWindowView: View {
     // MARK: - Sidebar
 
     private func syncStoreFilter() {
+        if selectedFilter == .snippets {
+            snippetStore.searchText = searchText
+            return
+        }
         store.pinnedOnly = false
         store.sensitiveOnly = false
         store.filterType = nil
@@ -311,6 +384,7 @@ struct MainWindowView: View {
         case .all: break
         case .pinned: store.pinnedOnly = true
         case .sensitive: store.sensitiveOnly = true
+        case .snippets: break
         case .type(let t): store.filterType = t
         case .app(let name):
             store.sourceApp = name.isEmpty ? .unknown : .named(name)
@@ -325,6 +399,10 @@ struct MainWindowView: View {
             Section {
                 sidebarRow(L10n.tr("filter.all"), icon: "tray.full", badge: store.sidebarCounts.all, isActive: selectedFilter == .all) {
                     selectedFilter = .all
+                }
+
+                sidebarRow(L10n.tr("snippet.titlePlural"), icon: "bookmark", badge: snippetStore.totalCount, isActive: selectedFilter == .snippets) {
+                    selectedFilter = .snippets
                 }
 
                 let pinCount = store.sidebarCounts.pinned
@@ -497,8 +575,10 @@ struct MainWindowView: View {
     // MARK: - Clip List
 
     private var groupedFilteredItems: [GroupedItem<ClipItem>] {
-        groupItemsByTime(filteredItems)
+        groupItemsByTime(filteredItems, sortMode: store.sortMode)
     }
+
+    private var filteredSnippets: [SnippetItem] { snippetStore.items }
 
     /// Items in visual display order (matching grouped section rendering)
     private var visualOrderedItems: [ClipItem] {
@@ -506,6 +586,14 @@ struct MainWindowView: View {
     }
 
     private var clipListView: some View {
+        if selectedFilter == .snippets {
+            return AnyView(snippetListView)
+        }
+
+        return AnyView(historyListView)
+    }
+
+    private var historyListView: some View {
         ScrollViewReader { proxy in
             ScrollView {
                 LazyVStack(spacing: 0) {
@@ -538,6 +626,92 @@ struct MainWindowView: View {
         .navigationSplitViewColumnWidth(min: 250, ideal: 300, max: 450)
     }
 
+    private var snippetListView: some View {
+        ScrollViewReader { proxy in
+            ScrollView {
+                LazyVStack(spacing: 0) {
+                    ForEach(filteredSnippets) { snippet in
+                        let snippetID = snippet.persistentModelID
+                        let isSelected = selectedSnippetIDs.contains(snippetID)
+                        SnippetRow(snippet: snippet, isSelected: isSelected)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 3)
+                            .background(
+                                RoundedRectangle(cornerRadius: 7)
+                                    .fill(isSelected ? Color.primary.opacity(0.12) : Color.clear)
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 1)
+                            )
+                            .padding(.trailing, 4)
+                            .contentShape(Rectangle())
+                            .id(snippetID)
+                            .popover(
+                                isPresented: Binding(
+                                    get: {
+                                        showCommandPalette
+                                            && selectedSnippetIDs.contains(snippetID)
+                                            && selectedSnippetIDs.count == 1
+                                    },
+                                    set: { if !$0 { showCommandPalette = false } }
+                                ),
+                                arrowEdge: .trailing
+                            ) {
+                                CommandPaletteContent(
+                                    item: nil,
+                                    snippet: snippet,
+                                    isMultiSelected: false,
+                                    onAction: { handleSnippetCommandAction($0, snippet: snippet) },
+                                    onDismiss: { showCommandPalette = false }
+                                )
+                            }
+                            .onTapGesture {
+                                handleSnippetRowClick(snippet)
+                            }
+                            .contextMenu {
+                                Button(L10n.tr("cmd.copy")) {
+                                    SnippetLibrary.copyToClipboard(snippet)
+                                }
+                                Button(L10n.tr("snippet.groupChoose")) {
+                                    GroupEditorPanel.show(name: snippet.groupName ?? "", icon: "folder") { result in
+                                        guard let result else { return }
+                                        snippet.groupName = result.name
+                                        SnippetLibrary.saveAndNotify(modelContext)
+                                    }
+                                }
+                                if snippet.groupName != nil {
+                                    Button(L10n.tr("snippet.groupClear")) {
+                                        snippet.groupName = nil
+                                        SnippetLibrary.saveAndNotify(modelContext)
+                                    }
+                                }
+                                Button(snippet.isPinned ? L10n.tr("action.unpin") : L10n.tr("action.pin")) {
+                                    snippet.isPinned.toggle()
+                                    SnippetLibrary.saveAndNotify(modelContext)
+                                }
+                                Divider()
+                                Button(L10n.tr("snippet.delete"), role: .destructive) {
+                                    if !selectedSnippetIDs.contains(snippetID) {
+                                        selectedSnippetIDs = [snippetID]
+                                    }
+                                    deleteSelectedSnippet()
+                                }
+                            }
+                    }
+                }
+                .padding(.vertical, 4)
+            }
+            .onChange(of: selectedSnippet) { _, target in
+                guard let target else { return }
+                withAnimation(.easeInOut(duration: 0.15)) {
+                    proxy.scrollTo(target.persistentModelID, anchor: .center)
+                }
+            }
+        }
+        .navigationTitle(L10n.tr("snippet.titlePlural"))
+        .navigationSubtitle(L10n.tr("snippet.count", snippetStore.totalCount))
+        .navigationSplitViewColumnWidth(min: 250, ideal: 300, max: 450)
+    }
+
     @ViewBuilder
     private func mainListRow(item: ClipItem) -> some View {
         if item.isDeleted { EmptyView() } else {
@@ -547,7 +721,8 @@ struct MainWindowView: View {
             item: item,
             isSelected: isSelected,
             groupIcon: store.sidebarCounts.byGroup.first { $0.name == item.groupName }?.icon,
-            searchText: searchText
+            searchText: searchText,
+            sortMode: store.sortMode
         )
             .padding(.horizontal, 12)
             .padding(.vertical, 3)
@@ -575,6 +750,7 @@ struct MainWindowView: View {
             ) {
                 CommandPaletteContent(
                     item: item,
+                    snippet: nil,
                     isMultiSelected: selectedItems.count > 1,
                     onAction: { handleMainCommandAction($0, item: item) },
                     onDismiss: { showCommandPalette = false }
@@ -615,6 +791,11 @@ struct MainWindowView: View {
                         copySelectedToClipboard()
                     } else {
                         copyToClipboard(item)
+                    }
+                }
+                if !(selectedItems.contains(item.persistentModelID) && selectedItems.count > 1) {
+                    Button(L10n.tr("snippet.saveAs")) {
+                        saveSelectedItemAsSnippet(item)
                     }
                 }
                 if selectedItems.count > 1, selectedClipItems.allSatisfy({ $0.contentType.isMergeable }) {
@@ -798,6 +979,8 @@ struct MainWindowView: View {
             } else {
                 copyToClipboard(item)
             }
+        case .saveAsSnippet:
+            saveSelectedItemAsSnippet(item)
         case .retryOCR:
             if item.contentType == .image, item.imageData != nil {
                 OCRTaskCoordinator.shared.retry(itemID: item.itemID)
@@ -850,6 +1033,8 @@ struct MainWindowView: View {
             ClipItemStore.saveAndNotify(modelContext)
         case .delete:
             deleteSelectedItems()
+        case .openSnippetInManager:
+            break
         }
     }
 
@@ -870,6 +1055,149 @@ struct MainWindowView: View {
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
             showCopiedToast = false
         }
+    }
+
+    private func createEmptySnippetAndSelect() {
+        selectedFilter = .snippets
+        let snippet = SnippetLibrary.createEmpty(in: modelContext)
+        snippetStore.reload()
+        selectedSnippetIDs = [snippet.persistentModelID]
+    }
+
+    private func saveSelectedItemAsSnippet(_ item: ClipItem) {
+        DispatchQueue.main.async {
+            guard let saveInput = SnippetLibrary.promptForTitle(for: item) else {
+                return
+            }
+
+            let snippet = SnippetLibrary.saveSnippet(from: item, title: saveInput.title, in: modelContext) { duplicate in
+                duplicatePromptChoice(for: duplicate)
+            }
+            guard let snippet else {
+                return
+            }
+
+            snippetStore.reload()
+            selectedFilter = .snippets
+            selectedSnippetIDs = [snippet.persistentModelID]
+            toastMessage = L10n.tr("snippet.saved")
+            showCopiedToast = true
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                showCopiedToast = false
+                toastMessage = ""
+            }
+        }
+    }
+
+    private func deleteSelectedSnippet() {
+        let snippets = selectedSnippets
+        guard !snippets.isEmpty else { return }
+        for snippet in snippets {
+            modelContext.delete(snippet)
+        }
+        SnippetLibrary.saveAndNotify(modelContext)
+        snippetStore.reload()
+        selectedSnippetIDs = Set(snippetStore.items.prefix(1).map(\.persistentModelID))
+    }
+
+    private func duplicatePromptChoice(for duplicate: SnippetItem) -> SnippetSaveChoice {
+        let alert = NSAlert()
+        alert.messageText = L10n.tr("snippet.duplicateTitle")
+        alert.informativeText = L10n.tr("snippet.duplicateMessage", duplicate.resolvedTitle)
+        alert.addButton(withTitle: L10n.tr("snippet.updateExisting"))
+        alert.addButton(withTitle: L10n.tr("snippet.createNew"))
+        alert.addButton(withTitle: L10n.tr("action.cancel"))
+
+        switch alert.runModal() {
+        case .alertFirstButtonReturn: return .updateExisting
+        case .alertSecondButtonReturn: return .createNew
+        default: return .cancel
+        }
+    }
+
+    private func handleSnippetRowClick(_ snippet: SnippetItem) {
+        let flags = NSApp.currentEvent?.modifierFlags ?? []
+        let id = snippet.persistentModelID
+
+        if flags.contains(.command) {
+            if selectedSnippetIDs.contains(id) {
+                selectedSnippetIDs.remove(id)
+            } else {
+                selectedSnippetIDs.insert(id)
+            }
+        } else {
+            if selectedSnippetIDs == [id] {
+                selectedSnippetIDs.removeAll()
+            } else {
+                selectedSnippetIDs = [id]
+            }
+        }
+    }
+
+    private func handleSnippetCommandAction(_ action: CommandAction, snippet: SnippetItem) {
+        showCommandPalette = false
+        switch action {
+        case .paste:
+            SnippetLibrary.copyToClipboard(snippet)
+            showCopiedToast = true
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { showCopiedToast = false }
+        case .copy:
+            SnippetLibrary.copyToClipboard(snippet)
+            showCopiedToast = true
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { showCopiedToast = false }
+        case .addToRelay:
+            let texts = snippet.content.isEmpty ? [] : [snippet.content]
+            RelayManager.shared.enqueue(texts: texts)
+            if !RelayManager.shared.isActive { RelayManager.shared.activate() }
+        case .splitAndRelay:
+            if !snippet.content.isEmpty { relaySplitText = snippet.content }
+        case .pin:
+            snippet.isPinned.toggle()
+            SnippetLibrary.saveAndNotify(modelContext)
+        case .delete:
+            selectedSnippetIDs = [snippet.persistentModelID]
+            deleteSelectedSnippet()
+        case .openSnippetInManager:
+            SnippetLibrary.openInManager(snippet.persistentModelID)
+        default:
+            break
+        }
+    }
+
+    private func assignTags(to snippets: [SnippetItem], tags: [String]) {
+        guard !tags.isEmpty else { return }
+        for snippet in snippets {
+            snippet.tags = Array((snippet.tags + tags).reduce(into: [String]()) { result, tag in
+                guard !result.contains(where: { $0.caseInsensitiveCompare(tag) == .orderedSame }) else { return }
+                result.append(tag)
+            })
+        }
+        SnippetLibrary.saveAndNotify(modelContext)
+    }
+
+    private func removeTags(from snippets: [SnippetItem], tags: [String]) {
+        guard !tags.isEmpty else { return }
+        for snippet in snippets {
+            snippet.tags.removeAll { existing in
+                tags.contains(where: { $0.caseInsensitiveCompare(existing) == .orderedSame })
+            }
+        }
+        SnippetLibrary.saveAndNotify(modelContext)
+    }
+
+    private func promptForTags(titleKey: String, messageKey: String) -> [String]? {
+        let alert = NSAlert()
+        alert.messageText = L10n.tr(titleKey)
+        alert.informativeText = L10n.tr(messageKey)
+        alert.addButton(withTitle: L10n.tr("action.confirm"))
+        alert.addButton(withTitle: L10n.tr("action.cancel"))
+
+        let input = NSTextField(frame: NSRect(x: 0, y: 0, width: 320, height: 24))
+        input.placeholderString = L10n.tr("snippet.tagsPlaceholder")
+        alert.accessoryView = input
+
+        guard alert.runModal() == .alertFirstButtonReturn else { return nil }
+        return SnippetItem.parseTags(from: input.stringValue)
     }
 
     private func fetchEnabledAutomationRules() -> [AutomationRule] {
@@ -934,29 +1262,35 @@ struct MainWindowView: View {
     private func changeGroupIcon(name: String) {
         let descriptor = FetchDescriptor<SmartGroup>(predicate: #Predicate { $0.name == name })
         guard let group = try? modelContext.fetch(descriptor).first else { return }
-        guard let result = GroupEditorPanel.show(name: group.name, icon: group.icon) else { return }
-        group.icon = result.icon
-        try? modelContext.save()
-        store.refreshSidebarCounts()
+        GroupEditorPanel.show(name: group.name, icon: group.icon) { result in
+            guard let result else { return }
+            group.icon = result.icon
+            try? modelContext.save()
+            store.refreshSidebarCounts()
+        }
     }
 
     private func editGroup(name: String) {
         let descriptor = FetchDescriptor<SmartGroup>(predicate: #Predicate { $0.name == name })
         guard let group = try? modelContext.fetch(descriptor).first else { return }
-        let oldName = group.name
-        AppMenuActions.showEditGroupAlert(group: group, context: modelContext)
-        // Update ClipItem.groupName if name changed
-        if group.name != oldName {
+        AppMenuActions.showEditGroupAlert(group: group, context: modelContext) { oldName, newName in
+            guard oldName != newName else {
+                store.refreshSidebarCounts()
+                return
+            }
+
             let itemDescriptor = FetchDescriptor<ClipItem>(predicate: #Predicate { $0.groupName == oldName })
             if let items = try? modelContext.fetch(itemDescriptor) {
-                for item in items { item.groupName = group.name }
+                for item in items { item.groupName = newName }
             }
             try? modelContext.save()
+
             if selectedFilter == .group(oldName) {
-                selectedFilter = .group(group.name)
+                selectedFilter = .group(newName)
             }
+
+            store.refreshSidebarCounts()
         }
-        store.refreshSidebarCounts()
     }
 
     private func assignToGroup(items: [ClipItem], name: String) {
@@ -983,19 +1317,20 @@ struct MainWindowView: View {
     }
 
     private func showNewGroupAlert(for items: [ClipItem]) {
-        guard let result = GroupEditorPanel.show() else { return }
-        // Ensure group exists (upsert)
-        let name = result.name
-        let descriptor = FetchDescriptor<SmartGroup>(predicate: #Predicate { $0.name == name })
-        if let existing = try? modelContext.fetch(descriptor).first {
-            existing.icon = result.icon
-        } else {
-            let maxOrder = (try? modelContext.fetch(FetchDescriptor<SmartGroup>()))?.map(\.sortOrder).max() ?? -1
-            let group = SmartGroup(name: result.name, icon: result.icon, sortOrder: maxOrder + 1)
-            modelContext.insert(group)
+        GroupEditorPanel.show() { result in
+            guard let result else { return }
+            let name = result.name
+            let descriptor = FetchDescriptor<SmartGroup>(predicate: #Predicate { $0.name == name })
+            if let existing = try? modelContext.fetch(descriptor).first {
+                existing.icon = result.icon
+            } else {
+                let maxOrder = (try? modelContext.fetch(FetchDescriptor<SmartGroup>()))?.map(\.sortOrder).max() ?? -1
+                let group = SmartGroup(name: result.name, icon: result.icon, sortOrder: maxOrder + 1)
+                modelContext.insert(group)
+            }
+            try? modelContext.save()
+            assignToGroup(items: items, name: result.name)
         }
-        try? modelContext.save()
-        assignToGroup(items: items, name: result.name)
     }
 
     private func deleteSelectedItems() {
@@ -1042,8 +1377,37 @@ struct MainWindowView: View {
 
     @ViewBuilder
     private var detailView: some View {
-        if selectedItems.count == 1, let item = selectedItem {
-            ClipDetailView(item: item, clipboardManager: clipboardManager)
+        if selectedFilter == .snippets {
+            if let snippet = selectedSnippet {
+                SnippetDetailView(snippet: snippet) {
+                    deleteSelectedSnippet()
+                }
+            } else if selectedSnippetIDs.count > 1 {
+                snippetMultiSelectView
+            } else {
+                VStack(spacing: 16) {
+                    Image(nsImage: NSApp.applicationIconImage)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: 64, height: 64)
+                        .opacity(0.6)
+                    Text(L10n.tr("detail.select"))
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundStyle(.secondary)
+                    Text(L10n.tr("detail.selectHint"))
+                        .font(.system(size: 13))
+                        .foregroundStyle(.tertiary)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
+        } else if selectedItems.count == 1, let item = selectedItem {
+            ClipDetailView(
+                item: item,
+                clipboardManager: clipboardManager,
+                onSaveAsSnippet: {
+                    saveSelectedItemAsSnippet(item)
+                }
+            )
         } else if selectedItems.count > 1 {
             multiSelectView
         } else {
@@ -1069,6 +1433,81 @@ struct MainWindowView: View {
     private var selectedClipItems: [ClipItem] {
         let ids = selectedItems
         return filteredItems.filter { ids.contains($0.persistentModelID) }
+    }
+
+    @ViewBuilder
+    private var snippetMultiSelectView: some View {
+        let snippets = selectedSnippets
+        let hasPinned = snippets.contains(where: \.isPinned)
+        let hasGrouped = snippets.contains(where: { $0.groupName != nil })
+
+        VStack(spacing: 0) {
+            Spacer()
+
+            Text(L10n.tr("detail.multiSelected", selectedSnippetIDs.count))
+                .font(.system(size: 22, weight: .semibold, design: .rounded))
+                .foregroundStyle(.primary.opacity(0.6))
+                .padding(.bottom, 12)
+
+            snippetMultiSelectTypeChips(snippets)
+                .padding(.bottom, 24)
+
+            VStack(spacing: 0) {
+                multiActionRow(L10n.tr("cmd.copy"), icon: "doc.on.doc") {
+                    let joined = snippets.map(\.content).joined(separator: "\n")
+                    NSPasteboard.general.clearContents()
+                    NSPasteboard.general.setString(joined, forType: .string)
+                    showCopiedToast = true
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { showCopiedToast = false }
+                }
+                multiActionRow(hasPinned ? L10n.tr("action.unpin") : L10n.tr("action.pin"), icon: hasPinned ? "pin.slash" : "pin") {
+                    let newValue = !hasPinned
+                    for snippet in snippets { snippet.isPinned = newValue }
+                    SnippetLibrary.saveAndNotify(modelContext)
+                }
+                snippetMultiActionGroupMenu(snippets: snippets)
+                if hasGrouped {
+                    multiActionRow(L10n.tr("action.removeFromGroup"), icon: "folder.badge.minus") {
+                        for snippet in snippets { snippet.groupName = nil }
+                        SnippetLibrary.saveAndNotify(modelContext)
+                    }
+                }
+                multiActionRow(L10n.tr("snippet.addTags"), icon: "tag") {
+                    if let tags = promptForTags(titleKey: "snippet.addTags", messageKey: "snippet.tagsPrompt") {
+                        assignTags(to: snippets, tags: tags)
+                    }
+                }
+                multiActionRow(L10n.tr("snippet.removeTags"), icon: "tag.slash") {
+                    if let tags = promptForTags(titleKey: "snippet.removeTags", messageKey: "snippet.tagsPrompt") {
+                        removeTags(from: snippets, tags: tags)
+                    }
+                }
+
+                Divider().padding(.vertical, 4)
+
+                Button {
+                    deleteSelectedSnippet()
+                } label: {
+                    HStack(spacing: 10) {
+                        Image(systemName: "trash")
+                            .font(.system(size: 12))
+                            .frame(width: 18)
+                        Text(L10n.tr("action.deleteSelected", selectedSnippetIDs.count))
+                            .font(.system(size: 12))
+                        Spacer()
+                    }
+                    .foregroundStyle(.red)
+                    .padding(.vertical, 6)
+                    .padding(.horizontal, 6)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+            }
+            .frame(maxWidth: 240)
+
+            Spacer()
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     @ViewBuilder
@@ -1202,8 +1641,81 @@ struct MainWindowView: View {
         .menuIndicator(.hidden)
     }
 
+    private func snippetMultiActionGroupMenu(snippets: [SnippetItem]) -> some View {
+        Menu {
+            ForEach(store.sidebarCounts.byGroup, id: \.name) { group in
+                Button(group.name) {
+                    for snippet in snippets { snippet.groupName = group.name }
+                    SnippetLibrary.saveAndNotify(modelContext)
+                }
+            }
+            if !store.sidebarCounts.byGroup.isEmpty { Divider() }
+            Button(L10n.tr("action.newGroup")) {
+                GroupEditorPanel.show() { result in
+                    guard let result else { return }
+                    let groupName = result.name
+                    let descriptor = FetchDescriptor<SmartGroup>(predicate: #Predicate { $0.name == groupName })
+                    if let existing = try? modelContext.fetch(descriptor).first {
+                        existing.icon = result.icon
+                    } else {
+                        let maxOrder = (try? modelContext.fetch(FetchDescriptor<SmartGroup>()))?.map(\.sortOrder).max() ?? -1
+                        let group = SmartGroup(name: result.name, icon: result.icon, sortOrder: maxOrder + 1)
+                        modelContext.insert(group)
+                    }
+                    try? modelContext.save()
+                    for snippet in snippets { snippet.groupName = result.name }
+                    SnippetLibrary.saveAndNotify(modelContext)
+                    store.refreshSidebarCounts()
+                }
+            }
+        } label: {
+            HStack(spacing: 10) {
+                Image(systemName: "folder.badge.plus")
+                    .font(.system(size: 12))
+                    .foregroundStyle(.secondary)
+                    .frame(width: 18)
+                Text(L10n.tr("action.assignGroup"))
+                    .font(.system(size: 12))
+                    .foregroundStyle(.primary)
+                Spacer()
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 9))
+                    .foregroundStyle(.quaternary)
+            }
+            .padding(.vertical, 6)
+            .padding(.horizontal, 6)
+        }
+        .menuStyle(.button)
+        .buttonStyle(.plain)
+        .menuIndicator(.hidden)
+    }
+
     @ViewBuilder
     private func multiSelectTypeChips(_ items: [ClipItem]) -> some View {
+        let counts = items.reduce(into: [ClipContentType: Int]()) { $0[$1.contentType, default: 0] += 1 }
+        let sorted = counts.sorted { $0.value > $1.value }
+
+        HStack(spacing: 6) {
+            ForEach(sorted, id: \.key) { type, count in
+                HStack(spacing: 4) {
+                    Image(systemName: type.icon)
+                        .font(.system(size: 10))
+                    Text(type.label)
+                        .font(.system(size: 11, weight: .medium))
+                    Text("\(count)")
+                        .font(.system(size: 10))
+                        .foregroundStyle(.tertiary)
+                }
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(Color.primary.opacity(0.04), in: RoundedRectangle(cornerRadius: 5))
+                .foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func snippetMultiSelectTypeChips(_ items: [SnippetItem]) -> some View {
         let counts = items.reduce(into: [ClipContentType: Int]()) { $0[$1.contentType, default: 0] += 1 }
         let sorted = counts.sorted { $0.value > $1.value }
 
@@ -1295,9 +1807,10 @@ struct ClipItemListRow: View {
     var isSelected: Bool = false
     var groupIcon: String?
     var searchText: String = ""
+    var sortMode: HistorySortMode = .lastUsed
 
     var body: some View {
-        ClipRow(item: item, isSelected: isSelected, groupIcon: groupIcon, searchText: searchText)
+        ClipRow(item: item, isSelected: isSelected, groupIcon: groupIcon, searchText: searchText, sortMode: sortMode)
             .padding(.vertical, 2)
             .transaction { $0.animation = nil }
     }

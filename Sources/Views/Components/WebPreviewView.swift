@@ -1,12 +1,18 @@
 import SwiftUI
 import WebKit
 
-struct WebPreviewView: NSViewRepresentable {
-    let url: URL
+@MainActor
+final class WebPreviewPool {
+    static let shared = WebPreviewPool()
 
-    func makeNSView(context: Context) -> WKWebView {
+    private let webView: WKWebView
+    private let coordinator = Coordinator()
+    private weak var activeContainer: NSView?
+
+    private init() {
         let config = WKWebViewConfiguration()
         config.mediaTypesRequiringUserActionForPlayback = .all
+
         let prefs = WKWebpagePreferences()
         prefs.allowsContentJavaScript = true
         config.defaultWebpagePreferences = prefs
@@ -32,7 +38,7 @@ struct WebPreviewView: NSViewRepresentable {
                 el.autoplay = false;
                 el.removeAttribute('autoplay');
             });
-            var obs = new MutationObserver(function(mutations) {
+            var obs = new MutationObserver(function() {
                 document.querySelectorAll('video, audio').forEach(function(el) {
                     el.pause();
                     el.muted = true;
@@ -48,38 +54,44 @@ struct WebPreviewView: NSViewRepresentable {
         config.userContentController.addUserScript(viewportScript)
         config.userContentController.addUserScript(muteScript)
 
-        let webView = WKWebView(frame: .zero, configuration: config)
-        webView.navigationDelegate = context.coordinator
+        webView = WKWebView(frame: .zero, configuration: config)
         webView.allowsMagnification = true
         webView.allowsBackForwardNavigationGestures = false
         webView.setValue(false, forKey: "drawsBackground")
-        webView.load(URLRequest(url: url, timeoutInterval: 15))
-        return webView
+        webView.navigationDelegate = coordinator
     }
 
-    func updateNSView(_ webView: WKWebView, context: Context) {
-        let currentURL = context.coordinator.loadedURL
-        guard currentURL != url else { return }
-        webView.stopLoading()
-        context.coordinator.loadedURL = url
-        context.coordinator.removeErrorOverlay(from: webView)
-        webView.load(URLRequest(url: url, timeoutInterval: 15))
-    }
-
-    static func dismantleNSView(_ webView: WKWebView, coordinator: Coordinator) {
-        webView.stopLoading()
-        webView.loadHTMLString("", baseURL: nil)
-    }
-
-    func makeCoordinator() -> Coordinator { Coordinator(url: url) }
-
-    class Coordinator: NSObject, WKNavigationDelegate {
-        var loadedURL: URL
-        private weak var errorOverlay: NSView?
-
-        init(url: URL) {
-            self.loadedURL = url
+    func attach(to container: NSView) {
+        if webView.superview !== container {
+            webView.removeFromSuperview()
+            webView.frame = container.bounds
+            webView.autoresizingMask = [.width, .height]
+            container.addSubview(webView)
+            activeContainer = container
         }
+    }
+
+    func load(_ url: URL) {
+        if coordinator.loadedURL == url { return }
+        webView.stopLoading()
+        coordinator.loadedURL = url
+        coordinator.removeErrorOverlay(from: webView)
+        webView.load(URLRequest(url: url, timeoutInterval: 15))
+    }
+
+    func detach(from container: NSView? = nil) {
+        if let container, activeContainer !== container {
+            return
+        }
+        coordinator.loadedURL = nil
+        webView.stopLoading()
+        webView.removeFromSuperview()
+        activeContainer = nil
+    }
+
+    final class Coordinator: NSObject, WKNavigationDelegate {
+        var loadedURL: URL?
+        private weak var errorOverlay: NSView?
 
         func webView(
             _ webView: WKWebView,
@@ -136,5 +148,35 @@ struct WebPreviewView: NSViewRepresentable {
             webView.addSubview(overlay)
             errorOverlay = overlay
         }
+    }
+}
+
+private final class WebPreviewContainerView: NSView {
+    override init(frame frameRect: NSRect) {
+        super.init(frame: frameRect)
+    }
+
+    required init?(coder: NSCoder) {
+        super.init(coder: coder)
+    }
+}
+
+struct WebPreviewView: NSViewRepresentable {
+    let url: URL
+
+    func makeNSView(context: Context) -> NSView {
+        let view = WebPreviewContainerView(frame: .zero)
+        WebPreviewPool.shared.attach(to: view)
+        WebPreviewPool.shared.load(url)
+        return view
+    }
+
+    func updateNSView(_ nsView: NSView, context: Context) {
+        WebPreviewPool.shared.attach(to: nsView)
+        WebPreviewPool.shared.load(url)
+    }
+
+    static func dismantleNSView(_ nsView: NSView, coordinator: ()) {
+        WebPreviewPool.shared.detach(from: nsView)
     }
 }

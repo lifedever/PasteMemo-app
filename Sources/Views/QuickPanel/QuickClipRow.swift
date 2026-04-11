@@ -5,10 +5,11 @@ struct QuickClipRow: View {
     let isSelected: Bool
     var shortcutIndex: Int? = nil
     var searchText: String = ""
+    var sortMode: HistorySortMode = .lastUsed
 
     var body: some View {
         HStack(spacing: 0) {
-            ClipRow(item: item, isSelected: isSelected, showGroupLabel: false, searchText: searchText)
+            ClipRow(item: item, isSelected: isSelected, showGroupLabel: false, searchText: searchText, sortMode: sortMode)
             Spacer(minLength: 4)
             if let index = shortcutIndex {
                 shortcutBadge(index)

@@ -3,7 +3,7 @@ import JavaScriptCore
 
 // MARK: - Highlight Token
 
-struct HighlightToken {
+struct HighlightToken: Sendable {
     let text: String
     let scope: String?
 }

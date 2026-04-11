@@ -9,6 +9,7 @@ struct ClipRow: View {
     var groupIcon: String?
     var showGroupLabel: Bool = true
     var searchText: String = ""
+    var sortMode: HistorySortMode = .lastUsed
     @AppStorage(OCRTaskCoordinator.enableOCRKey) private var ocrEnabled = true
     @AppStorage("imageLinkPreviewEnabled") private var imageLinkPreviewEnabled = true
 
@@ -45,9 +46,16 @@ struct ClipRow: View {
                     }
 
                     HStack(spacing: 4) {
-                        Text(formatTimeAgo(item.lastUsedAt))
+                        Text(formatTimeAgo(sortMode.date(for: item)))
                             .font(.system(size: 11))
                             .foregroundStyle(.tertiary)
+                        if let detail = secondaryDetailText {
+                            Spacer().frame(width: 2)
+                            Text(detail)
+                                .font(.system(size: 11, weight: .medium, design: .rounded))
+                                .foregroundStyle(.tertiary)
+                                .lineLimit(1)
+                        }
                         if showGroupLabel, let groupName = item.groupName, !groupName.isEmpty {
                             Spacer().frame(width: 2)
                             Image(systemName: groupIcon ?? "folder")
@@ -146,13 +154,8 @@ struct ClipRow: View {
                     .background(Color.accentColor, in: Capsule())
                     .offset(x: 2, y: 2)
             }
-        } else if let data = item.imageData,
-                  let img = ImageCache.shared.thumbnail(for: data, key: item.itemID) {
-            Image(nsImage: img)
-                .resizable()
-                .aspectRatio(contentMode: .fit)
-                .frame(width: 36, height: 36)
-                .clipShape(RoundedRectangle(cornerRadius: 6))
+        } else if item.imageData != nil {
+            AsyncThumbnailImageView(data: item.imageData, cacheKey: item.itemID)
         } else if item.contentType == .code {
             LanguageIcon(language: item.resolvedCodeLanguage ?? .unknown, size: 36)
         } else if item.contentType == .text || item.contentType == .email {
@@ -238,15 +241,10 @@ struct ClipRow: View {
                 videoThumb = cached
                 return
             }
-            let url = URL(fileURLWithPath: path)
-            let generator = AVAssetImageGenerator(asset: AVURLAsset(url: url))
-            generator.appliesPreferredTrackTransform = true
-            generator.maximumSize = CGSize(width: 72, height: 72)
-            if let cgImage = try? await generator.image(at: CMTime(seconds: 1, preferredTimescale: 600)).image {
-                let img = NSImage(cgImage: cgImage, size: NSSize(width: cgImage.width, height: cgImage.height))
-                ImageCache.shared.setVideoThumbnail(img, forPath: path)
-                videoThumb = img
-            }
+            let task = ImageCache.shared.videoThumbnailTask(forPath: path)
+            _ = await task.value
+            guard !Task.isCancelled else { return }
+            videoThumb = ImageCache.shared.videoThumbnail(forPath: path)
         }
     }
 
@@ -260,6 +258,19 @@ struct ClipRow: View {
             return linkTitle
         }
         return item.displayTitle ?? item.content
+    }
+
+    private var secondaryDetailText: String? {
+        switch item.contentType {
+        case .code:
+            let summary = QuickPreviewPane.buildCodeSummary(text: item.content, language: item.resolvedCodeLanguage)
+            return "\(summary.language.displayName) · \(summary.lineCount)L"
+        case .link:
+            guard let url = URL(string: item.content.trimmingCharacters(in: .whitespacesAndNewlines)) else { return nil }
+            return QuickPreviewPane.displayHost(for: url)
+        default:
+            return nil
+        }
     }
 
     private func partialMask(_ text: String) -> String {

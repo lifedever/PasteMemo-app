@@ -94,6 +94,7 @@
 "detail.created" = "Créé le";
 "detail.group" = "Groupe";
 "detail.lastUsed" = "Dernière utilisation";
+"quick.switchSort" = "Changer le tri";
 "detail.chars" = "Caractères";
 "detail.lines" = "Lignes";
 "detail.aiPreview" = "Aperçu pour IA";
@@ -149,6 +150,7 @@
 "pro.feature.customCategory" = "Catégories personnalisées";
 "pro.feature.ignoreApps" = "Ignorer certaines apps";
 "pro.feature.automation" = "Automatisation du presse-papiers";
+"history.sort" = "Trier par";
 
 /* Onboarding */
 "onboarding.back" = "Retour";
@@ -729,3 +731,40 @@ Utilisez %@ pour coller un par un.";
 "quick.ocrMatch" = "Correspondance dans le texte reconnu";
 "cmd.openInPreview" = "Ouvrir dans Aperçu";
 "cmd.retryOCR" = "Relancer l'OCR";
+
+"snippet.new" = "Nouveau snippet";
+"snippet.saveAs" = "Enregistrer comme snippet";
+"snippet.saved" = "Enregistré comme snippet";
+"snippet.delete" = "Supprimer le snippet";
+"snippet.titlePlural" = "Snippets";
+"snippet.count" = "%d snippets";
+"snippet.titlePlaceholder" = "Titre du snippet";
+"snippet.typeLabel" = "Type";
+"snippet.groupLabel" = "Groupe";
+"snippet.groupPlaceholder" = "Groupe facultatif";
+"snippet.groupNone" = "Aucun groupe";
+"snippet.groupChoose" = "Choisir un groupe…";
+"snippet.groupClear" = "Retirer du groupe";
+"snippet.tagsLabel" = "Étiquettes";
+"snippet.tagsPlaceholder" = "tag1, tag2";
+"snippet.tagsPrompt" = "Saisissez les étiquettes séparées par des virgules.";
+"snippet.addTags" = "Ajouter des étiquettes";
+"snippet.removeTags" = "Retirer des étiquettes";
+"snippet.duplicateTitle" = "Le snippet existe déjà";
+"snippet.duplicateMessage" = "Un snippet avec le même contenu existe déjà : %@";
+"snippet.updateExisting" = "Mettre à jour l'existant";
+"snippet.createNew" = "Créer un nouveau";
+"snippet.contentLabel" = "Contenu";
+"snippet.empty" = "Snippet vide";
+"snippet.unused" = "Jamais utilisé";
+"snippet.usedCount" = "Utilisé %d fois";
+"snippet.untitled" = "Snippet sans titre";
+"snippet.badge" = "SNIPPET";
+"snippet.namePromptTitle" = "Nommer le snippet";
+"snippet.namePromptMessage" = "Donnez un nom à ce snippet pour le retrouver plus facilement plus tard.";
+"quick.switchScope" = "Changer de portée";
+"quick.switchToSnippets" = "Basculer vers les snippets";
+"quick.switchToHistory" = "Basculer vers l'historique";
+"quick.switchSearchSection" = "Passer entre l'historique et les snippets";
+"quick.switchSnippetSort" = "Changer le tri des snippets";
+"quick.snippetMove" = "Déplacer la sélection du snippet";

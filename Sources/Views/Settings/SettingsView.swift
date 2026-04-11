@@ -225,6 +225,7 @@ struct PreferencesTab: View {
     @AppStorage("showLinkURL") private var showLinkURL = false
     @AppStorage("webPreviewEnabled") private var webPreviewEnabled = true
     @AppStorage("imageLinkPreviewEnabled") private var imageLinkPreviewEnabled = true
+    @AppStorage("quickPanelUnifiedSearchDisplayMode") private var quickPanelUnifiedSearchDisplayMode = "grouped"
     private let allRetentionOptions = [1, 3, 7, 14, 30, 60, 90, 180, 365]
 
     private var availableOptions: [Int] { allRetentionOptions }
@@ -300,6 +301,10 @@ struct PreferencesTab: View {
                 Toggle(L10n.tr("settings.showLinkURL"), isOn: $showLinkURL)
                 Toggle(L10n.tr("settings.webPreview"), isOn: $webPreviewEnabled)
                 Toggle(L10n.tr("settings.imageLinkPreview"), isOn: $imageLinkPreviewEnabled)
+                Picker(L10n.tr("settings.unifiedSearchDisplayMode"), selection: $quickPanelUnifiedSearchDisplayMode) {
+                    Text(L10n.tr("settings.unifiedSearchDisplayMode.grouped")).tag("grouped")
+                    Text(L10n.tr("settings.unifiedSearchDisplayMode.mixed")).tag("mixed")
+                }
             }
 
             OCRSettingsSection()

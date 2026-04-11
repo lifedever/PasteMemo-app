@@ -5,6 +5,7 @@ import AVFoundation
 struct ClipDetailView: View {
     let item: ClipItem
     let clipboardManager: ClipboardManager
+    let onSaveAsSnippet: () -> Void
     @Environment(\.modelContext) private var modelContext
 
     @State private var isEditing = false
@@ -119,6 +120,7 @@ struct ClipDetailView: View {
             HStack {
                 Spacer()
                 copyButton
+                saveAsSnippetButton
                 if isEditableType { editButtons }
                 sensitiveButton
                 pinButton
@@ -137,6 +139,17 @@ struct ClipDetailView: View {
             )
         } label: {
             Label(L10n.tr("action.copy"), systemImage: "doc.on.doc")
+                .font(.system(size: 12))
+        }
+        .buttonStyle(.bordered)
+        .controlSize(.small)
+    }
+
+    private var saveAsSnippetButton: some View {
+        Button {
+            onSaveAsSnippet()
+        } label: {
+            Label(L10n.tr("snippet.saveAs"), systemImage: "bookmark")
                 .font(.system(size: 12))
         }
         .buttonStyle(.bordered)

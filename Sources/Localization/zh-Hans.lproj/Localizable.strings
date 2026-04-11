@@ -125,6 +125,9 @@
 "settings.showLinkURL" = "链接显示原始网址而非页面标题";
 "settings.webPreview" = "网页预览";
 "settings.imageLinkPreview" = "图片链接预览";
+"settings.unifiedSearchDisplayMode" = "融合搜索展示方式";
+"settings.unifiedSearchDisplayMode.grouped" = "分组显示";
+"settings.unifiedSearchDisplayMode.mixed" = "混合显示";
 "settings.ocr" = "图片 OCR";
 "settings.ocr.enable" = "启用图片 OCR";
 "settings.ocr.auto" = "自动处理新图片";
@@ -165,6 +168,8 @@
 "detail.created" = "创建时间";
 "detail.group" = "分组";
 "detail.lastUsed" = "最近使用";
+"history.sort" = "排序方式";
+"quick.switchSort" = "切换排序";
 "detail.chars" = "字符数";
 "detail.lines" = "行数";
 "detail.words" = "词数";
@@ -249,6 +254,7 @@
 "quick.preview" = "预览";
 "quick.commandPalette" = "快捷操作";
 "quick.pasteImage" = "粘贴图片";
+"quick.openManager" = "打开管理器";
 "settings.showGuide" = "显示新手引导";
 
 /* Onboarding */
@@ -291,6 +297,7 @@
 "help.shortcut.navigate" = "上下浏览条目";
 "help.shortcut.cmdEnter" = "粘贴路径 / 粘贴文件 / 粘贴图片";
 "help.shortcut.preview" = "预览 / 打开链接";
+"help.shortcut.openManager" = "打开主界面管理器";
 "help.shortcut.delete" = "删除条目";
 "help.shortcut.close" = "关闭面板";
 "help.actions" = "快捷粘贴操作";
@@ -599,6 +606,42 @@
 "cmd.openInPreview" = "用“预览”打开";
 "cmd.retryOCR" = "重新识别 OCR";
 "cmd.andNewLine" = "并换行";
+"snippet.new" = "新建片段";
+"snippet.saveAs" = "保存为片段";
+"snippet.saved" = "已保存为片段";
+"snippet.delete" = "删除片段";
+"snippet.titlePlural" = "片段";
+"snippet.count" = "%d 个片段";
+"snippet.titlePlaceholder" = "片段标题";
+"snippet.typeLabel" = "类型";
+"snippet.groupLabel" = "分组";
+"snippet.groupPlaceholder" = "可选分组";
+"snippet.groupNone" = "未分组";
+"snippet.groupChoose" = "选择分组…";
+"snippet.groupClear" = "清除分组";
+"snippet.tagsLabel" = "标签";
+"snippet.tagsPlaceholder" = "标签1, 标签2";
+"snippet.tagsPrompt" = "请输入标签，使用逗号分隔。";
+"snippet.addTags" = "添加标签";
+"snippet.removeTags" = "移除标签";
+"snippet.duplicateTitle" = "片段已存在";
+"snippet.duplicateMessage" = "已存在相同内容的片段：%@";
+"snippet.updateExisting" = "更新已有片段";
+"snippet.createNew" = "另存为新片段";
+"snippet.contentLabel" = "内容";
+"snippet.empty" = "空片段";
+"snippet.unused" = "未使用";
+"snippet.usedCount" = "已使用 %d 次";
+"snippet.untitled" = "未命名片段";
+"snippet.badge" = "片段";
+"snippet.namePromptTitle" = "命名片段";
+"snippet.namePromptMessage" = "给这个片段起个名称，方便后续搜索。";
+"quick.switchScope" = "切换范围";
+"quick.switchToSnippets" = "切换到片段";
+"quick.switchToHistory" = "切换到历史记录";
+"quick.switchSearchSection" = "在历史记录和片段间跳转";
+"quick.switchSnippetSort" = "切换片段排序";
+"quick.snippetMove" = "移动片段选择";
 
 "relay.title" = "接力模式";
 "relay.tab" = "接力";

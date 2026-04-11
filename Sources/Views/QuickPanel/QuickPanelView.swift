@@ -8,20 +8,104 @@ private enum QuickFilter: Equatable {
     case type(ClipContentType)
 }
 
+private enum QuickPanelScope: Equatable {
+    case history
+    case snippets
+}
+
+private enum UnifiedSearchFilter: Equatable {
+    case all
+    case history
+    case snippets
+}
+
+private enum UnifiedSearchDisplayMode: String {
+    case grouped
+    case mixed
+}
+
+private enum UnifiedSearchResult: Identifiable, Equatable {
+    case history(ClipItem)
+    case snippet(SnippetItem)
+
+    var id: String {
+        switch self {
+        case .history(let item):
+            return "history:\(item.persistentModelID)"
+        case .snippet(let snippet):
+            return "snippet:\(snippet.persistentModelID)"
+        }
+    }
+
+    var date: Date {
+        switch self {
+        case .history(let item):
+            return item.lastUsedAt
+        case .snippet(let snippet):
+            return snippet.lastUsedAt
+        }
+    }
+
+    var scope: QuickPanelScope {
+        switch self {
+        case .history:
+            return .history
+        case .snippet:
+            return .snippets
+        }
+    }
+}
+
 private let PANEL_WIDTH: CGFloat = 750
 private let PANEL_HEIGHT: CGFloat = 510
 private let LIST_WIDTH: CGFloat = 340
+
+private struct HistoryRowAttachments<ContextMenuContent: View>: ViewModifier {
+    let isSelected: Bool
+    let isPopoverPresented: Bool
+    let item: ClipItem
+    let isMultiSelected: Bool
+    let onAction: (CommandAction) -> Void
+    let onDismiss: () -> Void
+    @ViewBuilder let contextMenu: () -> ContextMenuContent
+
+    func body(content: Content) -> some View {
+        content
+            .popover(
+                isPresented: Binding(
+                    get: { isSelected && isPopoverPresented },
+                    set: { if !$0 { onDismiss() } }
+                ),
+                arrowEdge: .trailing
+            ) {
+                CommandPaletteContent(
+                    item: item,
+                    snippet: nil,
+                    isMultiSelected: isMultiSelected,
+                    onAction: onAction,
+                    onDismiss: onDismiss
+                )
+            }
+            .contextMenu {
+                contextMenu()
+            }
+    }
+}
 
 struct QuickPanelView: View {
     @EnvironmentObject var clipboardManager: ClipboardManager
     @Environment(\.modelContext) private var modelContext
     @State private var store = ClipItemStore()
+    @State private var snippetStore = SnippetStore()
     @State private var searchText = ""
     @State private var groupSuggestionIndex = -1
     @State private var selectedGroupFilter: String?
     @State private var isAppFilter = false
     @State private var selectedItemIDs: Set<PersistentIdentifier> = []
+    @State private var selectedSnippetID: PersistentIdentifier?
     @State private var selectedFilter: QuickFilter = .all
+    @State private var selectedScope: QuickPanelScope = .history
+    @State private var unifiedSearchFilter: UnifiedSearchFilter = .all
     @State private var keyMonitor: Any?
     @State private var flagsMonitor: Any?
     @FocusState private var isSearchFocused: Bool
@@ -41,9 +125,69 @@ struct QuickPanelView: View {
     @State private var cachedDisplayOrder: [ClipItem] = []
     @State private var cachedItemMap: [PersistentIdentifier: ClipItem] = [:]
     @State private var cachedIDSet: Set<PersistentIdentifier> = []
+    @State private var lastHistoryItemIDs: [PersistentIdentifier] = []
+    @State private var cachedShortcutIndexes: [PersistentIdentifier: Int] = [:]
     @AppStorage("quickPanelAutoPaste") private var quickPanelAutoPaste = true
+    @AppStorage("quickPanelUnifiedSearchDisplayMode") private var unifiedSearchDisplayModeRaw = UnifiedSearchDisplayMode.grouped.rawValue
 
     private var filteredItems: [ClipItem] { store.items }
+    private var filteredSnippets: [SnippetItem] { snippetStore.items }
+
+    private var unifiedSearchDisplayMode: UnifiedSearchDisplayMode {
+        get { UnifiedSearchDisplayMode(rawValue: unifiedSearchDisplayModeRaw) ?? .grouped }
+        set { unifiedSearchDisplayModeRaw = newValue.rawValue }
+    }
+
+    private var isUnifiedSearchActive: Bool {
+        let trimmed = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return false }
+        return !trimmed.contains(":")
+    }
+
+    private var unifiedAllResults: [UnifiedSearchResult] {
+        let history = filteredItems.map(UnifiedSearchResult.history)
+        let snippets = filteredSnippets.map(UnifiedSearchResult.snippet)
+        return (history + snippets).sorted { lhs, rhs in
+            lhs.date > rhs.date
+        }
+    }
+
+    private var unifiedFilteredResults: [UnifiedSearchResult] {
+        switch unifiedSearchFilter {
+        case .all:
+            return unifiedAllResults
+        case .history:
+            return unifiedAllResults.filter { $0.scope == .history }
+        case .snippets:
+            return unifiedAllResults.filter { $0.scope == .snippets }
+        }
+    }
+
+    private var unifiedNavigationResults: [UnifiedSearchResult] {
+        if unifiedSearchDisplayMode == .grouped && unifiedSearchFilter == .all {
+            return unifiedHistoryResults.map(UnifiedSearchResult.history)
+                + unifiedSnippetResults.map(UnifiedSearchResult.snippet)
+        }
+        return unifiedFilteredResults
+    }
+
+    private var defaultUnifiedResult: UnifiedSearchResult? {
+        unifiedFilteredResults.first
+    }
+
+    private var unifiedHistoryResults: [ClipItem] {
+        unifiedFilteredResults.compactMap {
+            guard case .history(let item) = $0 else { return nil }
+            return item
+        }
+    }
+
+    private var unifiedSnippetResults: [SnippetItem] {
+        unifiedFilteredResults.compactMap {
+            guard case .snippet(let snippet) = $0 else { return nil }
+            return snippet
+        }
+    }
 
     private var groupedItems: [GroupedItem<ClipItem>] { cachedGroupedItems }
 
@@ -54,11 +198,39 @@ struct QuickPanelView: View {
         cachedDisplayOrder.first
     }
 
+    private var defaultSnippet: SnippetItem? {
+        filteredSnippets.first
+    }
+
     private func rebuildGroupedItems() {
-        cachedGroupedItems = groupItemsByTime(filteredItems, separatePinned: false)
-        cachedDisplayOrder = cachedGroupedItems.flatMap(\.items)
-        cachedItemMap = Dictionary(cachedDisplayOrder.map { ($0.persistentModelID, $0) }, uniquingKeysWith: { _, last in last })
+        cachedGroupedItems = groupItemsByTime(filteredItems, sortMode: store.sortMode, separatePinned: false)
+        rebuildDerivedCaches(displayOrder: cachedGroupedItems.flatMap(\.items))
+    }
+
+    private func appendGroupedItems(from appendedItems: [ClipItem]) {
+        guard !appendedItems.isEmpty else { return }
+        let newGroups = groupItemsByTime(appendedItems, sortMode: store.sortMode, separatePinned: false)
+
+        guard !newGroups.isEmpty else { return }
+
+        for group in newGroups {
+            if let lastIndex = cachedGroupedItems.indices.last,
+               cachedGroupedItems[lastIndex].group == group.group {
+                cachedGroupedItems[lastIndex].items.append(contentsOf: group.items)
+            } else {
+                cachedGroupedItems.append(group)
+            }
+        }
+
+        rebuildDerivedCaches(displayOrder: cachedDisplayOrder + appendedItems)
+    }
+
+    private func rebuildDerivedCaches(displayOrder: [ClipItem]) {
+        cachedDisplayOrder = displayOrder
+        cachedItemMap = Dictionary(displayOrder.map { ($0.persistentModelID, $0) }, uniquingKeysWith: { _, last in last })
         cachedIDSet = Set(cachedItemMap.keys)
+        lastHistoryItemIDs = displayOrder.map(\.persistentModelID)
+        cachedShortcutIndexes = Dictionary(uniqueKeysWithValues: displayOrder.prefix(9).enumerated().map { ($0.element.persistentModelID, $0.offset + 1) })
     }
 
     /// Single selected ID for backward compat
@@ -68,6 +240,8 @@ struct QuickPanelView: View {
 
     private var isMultiSelected: Bool { selectedItemIDs.count > 1 }
 
+    private var isSnippetScope: Bool { selectedScope == .snippets }
+
     private var currentItems: [ClipItem] {
         guard !store.items.isEmpty else { return [] }
         let ids = selectedItemIDs
@@ -75,16 +249,52 @@ struct QuickPanelView: View {
     }
 
     private var currentItem: ClipItem? {
+        if isUnifiedSearchActive {
+            guard let selectedUnifiedResult else { return nil }
+            guard case .history(let item) = selectedUnifiedResult else { return nil }
+            return item
+        }
         guard !isMultiSelected else { return nil }
         // store.items is cleared by deleteAndNotify before deletion — this is the
         // only reliable signal; isDeleted is NOT safe on zombie SwiftData objects
         guard !store.items.isEmpty else { return nil }
-        guard let id = selectedItemIDs.first else { return defaultItem }
+        guard let id = selectedItemIDs.first ?? defaultItem?.persistentModelID else { return nil }
         guard let item = cachedItemMap[id], !item.isDeleted, item.modelContext != nil else { return nil }
         return item
     }
 
+    private var currentSnippet: SnippetItem? {
+        if isUnifiedSearchActive {
+            guard let selectedUnifiedResult else { return nil }
+            guard case .snippet(let snippet) = selectedUnifiedResult else { return nil }
+            return snippet
+        }
+        guard let selectedSnippetID else { return defaultSnippet }
+        return filteredSnippets.first { $0.persistentModelID == selectedSnippetID }
+    }
+
+    private var selectedUnifiedResult: UnifiedSearchResult? {
+        if let lastNavigatedID {
+            if let snippet = filteredSnippets.first(where: { $0.persistentModelID == lastNavigatedID }) {
+                return .snippet(snippet)
+            }
+            if let item = filteredItems.first(where: { $0.persistentModelID == lastNavigatedID }) {
+                return .history(item)
+            }
+        }
+        if let selectedSnippetID,
+           let snippet = filteredSnippets.first(where: { $0.persistentModelID == selectedSnippetID }) {
+            return .snippet(snippet)
+        }
+        if let selectedItemID,
+           let item = filteredItems.first(where: { $0.persistentModelID == selectedItemID }) {
+            return .history(item)
+        }
+        return defaultUnifiedResult
+    }
+
     private func selectItem(_ id: PersistentIdentifier) {
+        selectedSnippetID = nil
         selectedItemIDs = [id]
         lastNavigatedID = id
     }
@@ -114,6 +324,41 @@ struct QuickPanelView: View {
         lastClickTime = now
     }
 
+    private func selectSnippet(_ id: PersistentIdentifier) {
+        selectedItemIDs.removeAll()
+        selectedSnippetID = id
+        lastNavigatedID = id
+    }
+
+    private func handleSnippetClick(_ id: PersistentIdentifier) {
+        let now = Date()
+        let isDoubleClick = lastClickedID == id && now.timeIntervalSince(lastClickTime) < 0.3
+
+        if isDoubleClick {
+            selectSnippet(id)
+            handleSnippetPaste()
+            lastClickedID = nil
+            lastClickTime = .distantPast
+            return
+        }
+
+        selectSnippet(id)
+        isSearchFocused = true
+        lastClickedID = id
+        lastClickTime = now
+    }
+
+    private func switchScope(_ delta: Int) {
+        if isUnifiedSearchActive {
+            let filters: [UnifiedSearchFilter] = [.all, .history, .snippets]
+            unifiedSearchFilter = cycleSelection(filters, current: unifiedSearchFilter, delta: delta)
+            syncUnifiedSelection()
+            return
+        }
+        let scopes: [QuickPanelScope] = [.history, .snippets]
+        selectedScope = cycleSelection(scopes, current: selectedScope, delta: delta)
+    }
+
     private func toggleItemInSelection(_ id: PersistentIdentifier) {
         if selectedItemIDs.contains(id) {
             selectedItemIDs.remove(id)
@@ -140,7 +385,7 @@ struct QuickPanelView: View {
             searchBar
             tabBar
             Divider().opacity(0.3)
-            if filteredItems.isEmpty {
+            if displayedResultCount == 0 {
                 emptyStateView
             } else {
                 HStack(spacing: 0) {
@@ -168,7 +413,6 @@ struct QuickPanelView: View {
                 }
                 .animation(.easeInOut(duration: 0.2), value: showCopiedToast)
             }
-            // Command palette is now shown via popover on the selected row
         }
         // Floating group suggestions overlay
         if isShowingSuggestions {
@@ -193,8 +437,13 @@ struct QuickPanelView: View {
         } // ZStack
         .onAppear {
             store.configure(modelContext: modelContext)
+            snippetStore.configure(modelContext: modelContext)
             rebuildGroupedItems()
-            if let id = defaultItem?.persistentModelID { selectedItemIDs = [id]; lastNavigatedID = id }
+            if let id = defaultItem?.persistentModelID {
+                selectedItemIDs = [id]
+                lastNavigatedID = id
+            }
+            lastSeenFirstItemID = store.queryFirstItemID()
             installKeyMonitor()
             Task { @MainActor in
                 try? await Task.sleep(for: .milliseconds(50))
@@ -208,16 +457,28 @@ struct QuickPanelView: View {
         .onReceive(NotificationCenter.default.publisher(for: .quickPanelDidShow)) { _ in
             showCommandPalette = false
             searchText = ""
+            snippetStore.searchText = ""
             selectedGroupFilter = nil
             isAppFilter = false
             selectedFilter = .all
+            selectedScope = .history
+            unifiedSearchFilter = .all
+            selectedSnippetID = nil
+            selectedItemIDs.removeAll()
             isPanelPinned = false
             store.isActive = true
-            store.configure(modelContext: modelContext)
-            // Reset filters if new content arrived
+            store.configure(modelContext: modelContext, reloadData: false)
+            snippetStore.configure(modelContext: modelContext)
             let latestItemID = store.queryFirstItemID()
-            if latestItemID != lastSeenFirstItemID {
+            let didChange = latestItemID != lastSeenFirstItemID
+            if didChange {
                 store.resetFilters()
+                rebuildGroupedItems()
+                scrollResetToken = UUID()
+                if let id = cachedDisplayOrder.first?.persistentModelID {
+                    selectedItemIDs = [id]
+                    lastNavigatedID = id
+                }
                 lastSeenFirstItemID = latestItemID
             }
             // Always rebuild and select first item on panel open
@@ -232,34 +493,110 @@ struct QuickPanelView: View {
         }
         .onChange(of: searchText) {
             groupSuggestionIndex = -1
+            if isUnifiedSearchActive {
+                selectedGroupFilter = nil
+                isAppFilter = false
+                selectedFilter = .all
+                snippetStore.searchText = searchText
+                store.updateQuery(searchText: .set(searchText), sourceApp: .set(nil), groupName: .set(nil))
+                unifiedSearchFilter = .all
+                syncUnifiedSelection()
+                return
+            }
+            if isSnippetScope {
+                snippetStore.searchText = searchText
+                return
+            }
             if selectedGroupFilter != nil {
-                // Group tag is active — search text is just keyword
-                store.searchText = searchText
+                // Group/app tag is active — search text is just keyword
+                store.updateQuery(searchText: .set(searchText))
             } else if searchText.hasPrefix(Self.GROUP_SEARCH_PREFIX) {
                 // Typing / for group selection — don't search yet
-                store.searchText = ""
-                store.groupName = nil
+                store.updateQuery(searchText: .set(""), sourceApp: .set(nil), groupName: .set(nil))
             } else {
-                store.groupName = nil
-                store.searchText = searchText
+                store.updateQuery(searchText: .set(searchText), sourceApp: .set(nil), groupName: .set(nil))
             }
         }
         .onChange(of: selectedFilter) {
-            store.pinnedOnly = false
-            store.filterType = nil
+            guard !isSnippetScope else { return }
+            var pinnedOnly = false
+            var filterType: ClipContentType?
             switch selectedFilter {
             case .all: break
-            case .pinned: store.pinnedOnly = true
-            case .type(let t): store.filterType = t
+            case .pinned: pinnedOnly = true
+            case .type(let t): filterType = t
             }
-            store.applyFilters()
+            store.updateQuery(filterType: .set(filterType), pinnedOnly: pinnedOnly)
+        }
+        .onChange(of: store.sortMode) {
+            if isSnippetScope {
+                selectedSnippetID = defaultSnippet?.persistentModelID
+                lastNavigatedID = selectedSnippetID
+                return
+            }
+            rebuildGroupedItems()
+            scrollResetToken = UUID()
+            if let firstID = defaultItem?.persistentModelID {
+                selectedItemIDs = [firstID]
+                lastNavigatedID = firstID
+            } else {
+                selectedItemIDs.removeAll()
+                lastNavigatedID = nil
+            }
         }
         .onChange(of: store.items) {
-            rebuildGroupedItems()
+            if isUnifiedSearchActive {
+                syncUnifiedSelection()
+                return
+            }
+            guard !isSnippetScope else { return }
+            let newIDs = filteredItems.map(\.persistentModelID)
+            let didAppendOnly =
+                !lastHistoryItemIDs.isEmpty &&
+                newIDs.count > lastHistoryItemIDs.count &&
+                Array(newIDs.prefix(lastHistoryItemIDs.count)) == lastHistoryItemIDs
+
+            if didAppendOnly {
+                let appendedCount = newIDs.count - lastHistoryItemIDs.count
+                appendGroupedItems(from: Array(filteredItems.suffix(appendedCount)))
+            } else {
+                rebuildGroupedItems()
+            }
             guard selectedItemIDs.isEmpty || selectedItemIDs.isDisjoint(with: cachedIDSet) else { return }
             let firstID = defaultItem?.persistentModelID
             if let firstID { selectedItemIDs = [firstID] } else { selectedItemIDs.removeAll() }
             lastNavigatedID = firstID
+        }
+        .onChange(of: snippetStore.items) {
+            if isUnifiedSearchActive {
+                syncUnifiedSelection()
+                return
+            }
+            guard isSnippetScope else { return }
+            let firstID = defaultSnippet?.persistentModelID
+            if let selectedSnippetID, filteredSnippets.contains(where: { $0.persistentModelID == selectedSnippetID }) {
+                return
+            }
+            self.selectedSnippetID = firstID
+            lastNavigatedID = firstID
+        }
+        .onChange(of: selectedScope) {
+            guard !isUnifiedSearchActive else { return }
+            searchText = ""
+            selectedGroupFilter = nil
+            isAppFilter = false
+            if isSnippetScope {
+                selectedSnippetID = defaultSnippet?.persistentModelID
+                lastNavigatedID = selectedSnippetID
+            } else {
+                if let firstID = defaultItem?.persistentModelID {
+                    selectedItemIDs = [firstID]
+                    lastNavigatedID = firstID
+                } else {
+                    selectedItemIDs.removeAll()
+                    lastNavigatedID = nil
+                }
+            }
         }
         .onChange(of: relaySplitText) {
             guard let text = relaySplitText else { return }
@@ -273,6 +610,43 @@ struct QuickPanelView: View {
             relaySplitText = nil
         }
         .localized()
+    }
+
+    private func syncUnifiedSelection() {
+        guard isUnifiedSearchActive else { return }
+
+        if let selectedUnifiedResult,
+           unifiedFilteredResults.contains(where: { $0.id == selectedUnifiedResult.id }) {
+            switch selectedUnifiedResult {
+            case .history(let item):
+                selectedSnippetID = nil
+                selectedItemIDs = [item.persistentModelID]
+                lastNavigatedID = item.persistentModelID
+            case .snippet(let snippet):
+                selectedItemIDs.removeAll()
+                selectedSnippetID = snippet.persistentModelID
+                lastNavigatedID = snippet.persistentModelID
+            }
+            return
+        }
+
+        guard let fallback = defaultUnifiedResult else {
+            selectedItemIDs.removeAll()
+            selectedSnippetID = nil
+            lastNavigatedID = nil
+            return
+        }
+
+        switch fallback {
+        case .history(let item):
+            selectedSnippetID = nil
+            selectedItemIDs = [item.persistentModelID]
+            lastNavigatedID = item.persistentModelID
+        case .snippet(let snippet):
+            selectedItemIDs.removeAll()
+            selectedSnippetID = snippet.persistentModelID
+            lastNavigatedID = snippet.persistentModelID
+        }
     }
 
     // MARK: - Search
@@ -412,32 +786,55 @@ struct QuickPanelView: View {
         case .group(let name, _, _):
             selectedGroupFilter = name
             isAppFilter = false
-            store.groupName = name
-            store.sourceApp = nil
+            store.updateQuery(searchText: .set(""), sourceApp: .set(nil), groupName: .set(name))
         case .app(let name, _):
             selectedGroupFilter = name
             isAppFilter = true
-            store.groupName = nil
-            store.sourceApp = .named(name)
+            store.updateQuery(searchText: .set(""), sourceApp: .set(.named(name)), groupName: .set(nil))
         }
-        store.searchText = ""
-        store.applyFilters()
     }
 
     private func clearGroupFilter() {
         selectedGroupFilter = nil
-        store.groupName = nil
-        store.sourceApp = nil
-        store.applyFilters()
+        store.updateQuery(sourceApp: .set(nil), groupName: .set(nil))
     }
 
     private var searchBar: some View {
         HStack(spacing: 10) {
+            HStack(spacing: 4) {
+                if isUnifiedSearchActive {
+                    badge(L10n.tr("filter.all"), isActive: unifiedSearchFilter == .all) {
+                        unifiedSearchFilter = .all
+                        syncUnifiedSelection()
+                        isSearchFocused = true
+                    }
+                    badge(L10n.tr("settings.history"), isActive: unifiedSearchFilter == .history) {
+                        unifiedSearchFilter = .history
+                        syncUnifiedSelection()
+                        isSearchFocused = true
+                    }
+                    badge(L10n.tr("snippet.titlePlural"), isActive: unifiedSearchFilter == .snippets) {
+                        unifiedSearchFilter = .snippets
+                        syncUnifiedSelection()
+                        isSearchFocused = true
+                    }
+                } else {
+                    badge(L10n.tr("settings.history"), isActive: selectedScope == .history) {
+                        selectedScope = .history
+                        isSearchFocused = true
+                    }
+                    badge(L10n.tr("snippet.titlePlural"), isActive: selectedScope == .snippets) {
+                        selectedScope = .snippets
+                        isSearchFocused = true
+                    }
+                }
+            }
+
             Image(systemName: "magnifyingglass")
                 .font(.system(size: 18))
                 .foregroundStyle(.tertiary)
 
-            if let filterName = selectedGroupFilter {
+            if !isUnifiedSearchActive, !isSnippetScope, let filterName = selectedGroupFilter {
                 let groupIcon = store.sidebarCounts.byGroup.first { $0.name == filterName }?.icon ?? "folder"
                 HStack(spacing: 4) {
                     if isAppFilter, let nsIcon = appIcon(forBundleID: nil, name: filterName) {
@@ -470,13 +867,25 @@ struct QuickPanelView: View {
                 .focused($isSearchFocused)
 
             if !searchText.isEmpty || selectedGroupFilter != nil {
-                Button { searchText = ""; clearGroupFilter(); if let id = defaultItem?.persistentModelID { selectedItemIDs = [id] } } label: {
+                Button {
+                    searchText = ""
+                    snippetStore.searchText = ""
+                    clearGroupFilter()
+                    unifiedSearchFilter = .all
+                    selectedSnippetID = nil
+                    if let id = defaultItem?.persistentModelID {
+                        selectedItemIDs = [id]
+                        lastNavigatedID = id
+                    }
+                } label: {
                     Image(systemName: "xmark.circle.fill")
                         .font(.system(size: 14))
                         .foregroundStyle(.quaternary)
                 }
                 .buttonStyle(.plain)
             }
+
+            sortModeButton
 
             Button {
                 isPanelPinned.toggle()
@@ -493,7 +902,7 @@ struct QuickPanelView: View {
             .buttonStyle(.plain)
             .help(isPanelPinned ? L10n.tr("quickPanel.unpin") : L10n.tr("quickPanel.pin"))
 
-            Text("\(store.totalCount)")
+            Text("\(displayedResultCount)")
                 .font(.system(size: 12, weight: .medium).monospacedDigit())
                 .foregroundStyle(.tertiary)
                 .frame(height: 20)
@@ -508,6 +917,23 @@ struct QuickPanelView: View {
     // MARK: - Tabs
 
     private var tabBar: some View {
+        if isUnifiedSearchActive {
+            switch unifiedSearchDisplayMode {
+            case .grouped:
+                return AnyView(EmptyView())
+            case .mixed:
+                return AnyView(historyTabBar)
+            }
+        }
+
+        if isSnippetScope {
+            return AnyView(EmptyView())
+        }
+
+        return AnyView(historyTabBar)
+    }
+
+    private var historyTabBar: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 6) {
                 badge(L10n.tr("filter.pinned"), isActive: selectedFilter == .pinned) {
@@ -547,6 +973,23 @@ struct QuickPanelView: View {
     // MARK: - List
 
     private var clipList: some View {
+        if isUnifiedSearchActive {
+            switch unifiedSearchDisplayMode {
+            case .grouped where unifiedSearchFilter == .all:
+                return AnyView(unifiedGroupedList)
+            case .grouped, .mixed:
+                return AnyView(unifiedMixedList)
+            }
+        }
+
+        if isSnippetScope {
+            return AnyView(snippetList)
+        }
+
+        return AnyView(historyClipList)
+    }
+
+    private var historyClipList: some View {
         ScrollViewReader { proxy in
             ScrollView {
                     LazyVStack(spacing: 0) {
@@ -564,26 +1007,26 @@ struct QuickPanelView: View {
                                 if item.isDeleted { EmptyView() } else {
                                 let itemID = item.persistentModelID
                                 let itemContentType = item.contentType
-                                let shortcutIdx = shortcutIndex(for: item)
-                                QuickClipRow(item: item, isSelected: selectedItemIDs.contains(itemID), shortcutIndex: shortcutIdx, searchText: searchText)
+                                let isSelected = selectedItemIDs.contains(itemID)
+                                let shortcutIdx = cachedShortcutIndexes[itemID]
+                                let row = QuickClipRow(item: item, isSelected: isSelected, shortcutIndex: shortcutIdx, searchText: searchText, sortMode: store.sortMode)
+                                let isLastVisibleItem = item.id == filteredItems.last?.id
+                                row
                                     .id(itemID)
                                     .contentShape(Rectangle())
-                                    .popover(
-                                        isPresented: Binding(
-                                            get: { showCommandPalette && selectedItemIDs.contains(itemID) && (lastNavigatedID ?? selectedItemIDs.first) == itemID },
-                                            set: { if !$0 { showCommandPalette = false; isSearchFocused = true } }
-                                        ),
-                                        arrowEdge: .trailing
-                                    ) {
-                                        CommandPaletteContent(
-                                            item: item,
-                                            isMultiSelected: isMultiSelected,
-                                            onAction: { handleCommandAction($0) },
-                                            onDismiss: { showCommandPalette = false; isSearchFocused = true }
-                                        )
-                                    }
+                                    .modifier(HistoryRowAttachments(
+                                        isSelected: isSelected,
+                                        isPopoverPresented: showCommandPalette && (lastNavigatedID ?? selectedItemIDs.first) == itemID,
+                                        item: item,
+                                        isMultiSelected: isMultiSelected,
+                                        onAction: { handleCommandAction($0) },
+                                        onDismiss: { showCommandPalette = false; isSearchFocused = true },
+                                        contextMenu: {
+                                            historyContextMenu(for: item, itemID: itemID, itemContentType: itemContentType)
+                                        }
+                                    ))
                                     .onAppear {
-                                        if item.id == filteredItems.last?.id { store.loadMore() }
+                                        if isLastVisibleItem { store.loadMore() }
                                     }
                                     .onTapGesture {
                                         handleItemClick(itemID)
@@ -592,86 +1035,6 @@ struct QuickPanelView: View {
                                         if !selectedItemIDs.contains(itemID) {
                                             selectedItemIDs = [itemID]
                                             lastNavigatedID = itemID
-                                        }
-                                    }
-                                    .contextMenu {
-                                        if isMultiSelected, selectedItemIDs.contains(itemID) {
-                                            let items = currentItems
-                                            let hasPinned = items.contains(where: \.isPinned)
-                                            Button(hasPinned ? L10n.tr("action.unpin") : L10n.tr("action.pin")) {
-                                                let newValue = !hasPinned
-                                                for i in items { i.isPinned = newValue }
-                                                ClipItemStore.saveAndNotify(modelContext)
-                                            }
-                                            let hasSensitive = items.contains(where: \.isSensitive)
-                                            Button(hasSensitive ? L10n.tr("sensitive.unmarkSensitive") : L10n.tr("sensitive.markSensitive")) {
-                                                let newValue = !hasSensitive
-                                                for i in items { i.isSensitive = newValue }
-                                                ClipItemStore.saveAndNotify(modelContext)
-                                            }
-                                            Button(L10n.tr("action.mergeCopy")) {
-                                                copyItemsToClipboard(items)
-                                            }
-                                            Divider()
-                                            Button(L10n.tr("relay.addToQueue")) {
-                                                RelayManager.shared.enqueue(clipItems: items)
-                                                if !RelayManager.shared.isActive {
-                                                    RelayManager.shared.activate()
-                                                }
-                                            }
-                                            Divider()
-                                            Button(L10n.tr("action.delete"), role: .destructive) {
-                                                handleDeleteSelected()
-                                            }
-                                        } else {
-                                            Button(item.isPinned ? L10n.tr("action.unpin") : L10n.tr("action.pin")) {
-                                                item.isPinned.toggle()
-                                                ClipItemStore.saveAndNotify(modelContext)
-                                                selectItem(itemID)
-                                            }
-                                            Button(item.isSensitive ? L10n.tr("sensitive.unmarkSensitive") : L10n.tr("sensitive.markSensitive")) {
-                                                item.isSensitive.toggle()
-                                                ClipItemStore.saveAndNotify(modelContext)
-                                                selectItem(itemID)
-                                            }
-                                            Button(L10n.tr("action.mergeCopy")) {
-                                                copyItemsToClipboard([item])
-                                                selectItem(itemID)
-                                            }
-                                            if itemContentType.isMergeable,
-                                               ProManager.AUTOMATION_ENABLED {
-                                                let manualRules = fetchEnabledRules()
-                                                if !manualRules.isEmpty {
-                                                    Divider()
-                                                    Menu(L10n.tr("cmd.automation")) {
-                                                        ForEach(manualRules) { rule in
-                                                            Button(rule.isBuiltIn ? L10n.tr(rule.name) : rule.name) {
-                                                                applyRule(rule, to: item)
-                                                            }
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                            Divider()
-                                            if !item.content.isEmpty || item.imageData != nil {
-                                                Button(L10n.tr("relay.addToQueue")) {
-                                                    RelayManager.shared.enqueue(clipItems: [item])
-                                                    if !RelayManager.shared.isActive {
-                                                        RelayManager.shared.activate()
-                                                    }
-                                                }
-                                                Button(L10n.tr("relay.splitAndRelay")) {
-                                                    relaySplitText = item.content
-                                                }
-                                            }
-                                            Divider()
-                                            Button(L10n.tr("action.copyDebugInfo")) {
-                                                copyDebugInfo(for: item)
-                                            }
-                                            Divider()
-                                            Button(L10n.tr("action.delete"), role: .destructive) {
-                                                deleteItem(item)
-                                            }
                                         }
                                     }
                                 } // isDeleted guard
@@ -692,15 +1055,239 @@ struct QuickPanelView: View {
                     proxy.scrollTo("group_\(firstGroup.group.rawValue)", anchor: .top)
                 }
             }
+                .onChange(of: store.sortMode) {
+                if let firstGroup = cachedGroupedItems.first {
+                    proxy.scrollTo("group_\(firstGroup.group.rawValue)", anchor: .top)
+                }
+            }
             .id(scrollResetToken)
         }
         .frame(width: LIST_WIDTH)
     }
 
+    private var snippetList: some View {
+        ScrollViewReader { proxy in
+            ScrollView {
+                LazyVStack(spacing: 0) {
+                    ForEach(filteredSnippets) { snippet in
+                        let snippetID = snippet.persistentModelID
+                        QuickSnippetRow(snippet: snippet, isSelected: selectedSnippetID == snippetID)
+                            .id(snippetID)
+                            .contentShape(Rectangle())
+                            .popover(
+                                isPresented: Binding(
+                                    get: { showCommandPalette && selectedSnippetID == snippetID },
+                                    set: { if !$0 { showCommandPalette = false; isSearchFocused = true } }
+                                ),
+                                arrowEdge: .trailing
+                            ) {
+                                CommandPaletteContent(
+                                    item: nil,
+                                    snippet: snippet,
+                                    isMultiSelected: false,
+                                    onAction: { handleCommandAction($0) },
+                                    onDismiss: { showCommandPalette = false; isSearchFocused = true }
+                                )
+                            }
+                            .onTapGesture {
+                                handleSnippetClick(snippetID)
+                            }
+                            .contextMenu {
+                                Button(L10n.tr("cmd.copy")) {
+                                    SnippetLibrary.copyToClipboard(snippet)
+                                }
+                                Button(L10n.tr("snippet.groupChoose")) {
+                                    GroupEditorPanel.show(name: snippet.groupName ?? "", icon: "folder") { result in
+                                        guard let result else { return }
+                                        snippet.groupName = result.name
+                                        SnippetLibrary.saveAndNotify(modelContext)
+                                    }
+                                }
+                                if snippet.groupName != nil {
+                                    Button(L10n.tr("snippet.groupClear")) {
+                                        snippet.groupName = nil
+                                        SnippetLibrary.saveAndNotify(modelContext)
+                                    }
+                                }
+                                Button(snippet.isPinned ? L10n.tr("action.unpin") : L10n.tr("action.pin")) {
+                                    snippet.isPinned.toggle()
+                                    SnippetLibrary.saveAndNotify(modelContext)
+                                }
+                                Divider()
+                                Button(L10n.tr("snippet.delete"), role: .destructive) {
+                                    deleteSnippet(snippet)
+                                }
+                            }
+                    }
+                }
+                .padding(.vertical, 4)
+                .padding(.horizontal, 6)
+            }
+            .onChange(of: selectedSnippetID) {
+                guard let id = selectedSnippetID else { return }
+                withAnimation(.easeOut(duration: 0.1)) {
+                    proxy.scrollTo(id)
+                }
+            }
+            .id(scrollResetToken)
+        }
+        .frame(width: LIST_WIDTH)
+    }
+
+    private var unifiedGroupedList: some View {
+        GeometryReader { geometry in
+            let availableHeight = max(geometry.size.height - 12, 220)
+            let topSectionHeight = groupedSectionHeight(
+                itemCount: unifiedHistoryResults.count,
+                totalItemCount: unifiedHistoryResults.count + unifiedSnippetResults.count,
+                availableHeight: availableHeight
+            )
+
+            VStack(spacing: 8) {
+                groupedSection(
+                    title: L10n.tr("settings.history"),
+                    count: unifiedHistoryResults.count,
+                    height: topSectionHeight
+                ) {
+                    ScrollViewReader { proxy in
+                        ScrollView {
+                            LazyVStack(spacing: 0) {
+                                ForEach(unifiedHistoryResults) { item in
+                                    let itemID = item.persistentModelID
+                                    let isSelected = selectedItemIDs.contains(itemID)
+                                    QuickClipRow(item: item, isSelected: isSelected, searchText: searchText, sortMode: store.sortMode)
+                                        .id(itemID)
+                                        .contentShape(Rectangle())
+                                        .onTapGesture { handleItemClick(itemID) }
+                                }
+                            }
+                            .padding(.vertical, 4)
+                            .padding(.horizontal, 6)
+                        }
+                        .onChange(of: lastNavigatedID) {
+                            guard let id = lastNavigatedID, selectedItemIDs.contains(id) else { return }
+                            withAnimation(.easeOut(duration: 0.1)) {
+                                proxy.scrollTo(id)
+                            }
+                        }
+                    }
+                }
+
+                groupedSection(
+                    title: L10n.tr("snippet.titlePlural"),
+                    count: unifiedSnippetResults.count,
+                    height: max(availableHeight - topSectionHeight - 8, 96)
+                ) {
+                    ScrollViewReader { proxy in
+                        ScrollView {
+                            LazyVStack(spacing: 0) {
+                                ForEach(unifiedSnippetResults) { snippet in
+                                    let snippetID = snippet.persistentModelID
+                                    QuickSnippetRow(snippet: snippet, isSelected: selectedSnippetID == snippetID)
+                                        .id(snippetID)
+                                        .contentShape(Rectangle())
+                                        .onTapGesture { handleSnippetClick(snippetID) }
+                                }
+                            }
+                            .padding(.vertical, 4)
+                            .padding(.horizontal, 6)
+                        }
+                        .onChange(of: lastNavigatedID) {
+                            guard let id = lastNavigatedID, selectedSnippetID == id else { return }
+                            withAnimation(.easeOut(duration: 0.1)) {
+                                proxy.scrollTo(id)
+                            }
+                        }
+                    }
+                }
+            }
+            .padding(.vertical, 6)
+        }
+        .frame(width: LIST_WIDTH)
+    }
+
+    private func groupedSectionHeight(itemCount: Int, totalItemCount: Int, availableHeight: CGFloat) -> CGFloat {
+        guard totalItemCount > 0 else { return availableHeight / 2 }
+        let ratio = CGFloat(itemCount) / CGFloat(totalItemCount)
+        let flexibleHeight = availableHeight - 192
+        let preferred = 96 + flexibleHeight * ratio
+        return min(max(preferred, 96), max(availableHeight - 96, 96))
+    }
+
+    private func groupedSection<Content: View>(title: String, count: Int, height: CGFloat, @ViewBuilder content: () -> Content) -> some View {
+        VStack(spacing: 0) {
+            HStack(spacing: 6) {
+                Text(title)
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(.tertiary)
+                Text("\(count)")
+                    .font(.system(size: 10, weight: .medium).monospacedDigit())
+                    .foregroundStyle(.quaternary)
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal, 14)
+            .padding(.top, 8)
+            .padding(.bottom, 4)
+
+            Divider().opacity(0.2)
+
+            content()
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        }
+        .frame(height: height)
+        .background(Color.primary.opacity(0.028), in: RoundedRectangle(cornerRadius: 10))
+        .overlay(
+            RoundedRectangle(cornerRadius: 10)
+                .stroke(Color.primary.opacity(0.05), lineWidth: 1)
+        )
+    }
+
+    private var unifiedMixedList: some View {
+        ScrollViewReader { proxy in
+            ScrollView {
+                LazyVStack(spacing: 0) {
+                    ForEach(unifiedFilteredResults) { result in
+                        switch result {
+                        case .history(let item):
+                            let itemID = item.persistentModelID
+                            let isSelected = selectedItemIDs.contains(itemID)
+                            QuickClipRow(item: item, isSelected: isSelected, searchText: searchText, sortMode: store.sortMode)
+                                .id(itemID)
+                                .contentShape(Rectangle())
+                                .onTapGesture { handleItemClick(itemID) }
+                        case .snippet(let snippet):
+                            let snippetID = snippet.persistentModelID
+                            QuickSnippetRow(snippet: snippet, isSelected: selectedSnippetID == snippetID, showSnippetScopeBadge: true)
+                                .id(snippetID)
+                                .contentShape(Rectangle())
+                                .onTapGesture { handleSnippetClick(snippetID) }
+                        }
+                    }
+                }
+                .padding(.vertical, 4)
+                .padding(.horizontal, 6)
+            }
+            .onChange(of: lastNavigatedID) {
+                guard let id = lastNavigatedID else { return }
+                withAnimation(.easeOut(duration: 0.1)) {
+                    proxy.scrollTo(id)
+                }
+            }
+        }
+        .frame(width: LIST_WIDTH)
+    }
+
+    private var displayedResultCount: Int {
+        if isUnifiedSearchActive {
+            return unifiedFilteredResults.count
+        }
+        return isSnippetScope ? snippetStore.totalCount : store.totalCount
+    }
+
     // MARK: - Empty State
 
     private var isFilterActive: Bool {
-        selectedFilter != .all || !searchText.isEmpty || selectedGroupFilter != nil
+        isSnippetScope ? !searchText.isEmpty : (selectedFilter != .all || !searchText.isEmpty || selectedGroupFilter != nil)
     }
 
     private var emptyStateView: some View {
@@ -721,7 +1308,9 @@ struct QuickPanelView: View {
 
     @ViewBuilder
     private var previewPane: some View {
-        if isMultiSelected {
+        if let snippet = currentSnippet, (isSnippetScope || isUnifiedSearchActive) {
+            SnippetPreviewPane(snippet: snippet)
+        } else if isMultiSelected {
             multiSelectPreview
         } else if let item = currentItem {
             QuickPreviewPane(item: item, searchText: searchText)
@@ -760,8 +1349,15 @@ struct QuickPanelView: View {
             // Expandable shortcuts panel
             if showAllShortcuts {
                 HStack(spacing: 12) {
-                    footerKey("←→", L10n.tr("quick.switchType"))
+                    footerKey("←→", isSnippetScope ? L10n.tr("quick.snippetMove") : L10n.tr("quick.switchType"))
                     footerKey("↑↓", L10n.tr("quick.navigate"))
+                    if isUnifiedSearchActive && unifiedSearchDisplayMode == .grouped && unifiedSearchFilter == .all {
+                        footerKey("⌘↑↓", L10n.tr("quick.switchSearchSection"))
+                    } else {
+                        footerKey("⌘←→", isSnippetScope ? L10n.tr("quick.switchToHistory") : L10n.tr("quick.switchToSnippets"))
+                    }
+                    footerKey("⌘S", isSnippetScope ? L10n.tr("quick.switchSnippetSort") : L10n.tr("quick.switchSort"))
+                    footerKey("⌘M", L10n.tr("quick.openManager"))
                     footerKey("⌘O", currentItem?.contentType == .link ? L10n.tr("quick.openLink") : L10n.tr("quick.preview"))
                     footerKey("⌘⌫", L10n.tr("quick.delete"))
                 }
@@ -796,28 +1392,34 @@ struct QuickPanelView: View {
                 }
                 Spacer()
                 HStack(spacing: 12) {
-                    if isMultiSelected {
-                        footerKey("↵", quickPanelAutoPaste ? (isTargetFinder ? L10n.tr("quick.saveToFolder") : L10n.tr("quick.batchPaste")) : L10n.tr("action.copy"))
+                    if let _ = currentSnippet, (isSnippetScope || isUnifiedSearchActive) {
+                        footerKey("↵", L10n.tr("quick.pasteAction"))
+                    } else if isMultiSelected {
+                        footerKey(
+                            "↵",
+                            quickPanelAutoPaste
+                                ? (isTargetFinder ? L10n.tr("quick.saveToFolder") : L10n.tr("quick.batchPaste"))
+                                : L10n.tr("action.copy")
+                        )
                         if quickPanelAutoPaste, !isTargetFinder {
                             footerKey("⇧↵", L10n.tr("quick.pasteNewLine"))
                         }
                         footerKey("⌘↵", quickPanelAutoPaste ? L10n.tr("action.pasteAsPlainText") : L10n.tr("cmd.copyAsPlainText"))
-                    } else {
-                        if let cur = currentItem {
-                            footerKey("↵", primaryFooterLabel(for: cur))
-                            if quickPanelAutoPaste {
-                                if !(cur.imageData != nil && canPasteToFinderFolder), !canSaveTextToFolder {
-                                    footerKey("⇧↵", L10n.tr("quick.pasteNewLine"))
-                                }
-                            }
-                            if let cmdEnterLabel = cmdEnterFooterLabel(for: cur) {
-                                footerKey("⌘↵", cmdEnterLabel)
-                            }
+                    } else if let cur = currentItem {
+                        footerKey("↵", primaryFooterLabel(for: cur))
+                        if quickPanelAutoPaste,
+                           !(cur.imageData != nil && canPasteToFinderFolder),
+                           !canSaveTextToFolder {
+                            footerKey("⇧↵", L10n.tr("quick.pasteNewLine"))
+                        }
+                        if let cmdEnterLabel = cmdEnterFooterLabel(for: cur) {
+                            footerKey("⌘↵", cmdEnterLabel)
                         }
                     }
                     if let cur = currentItem, cur.isSensitive, !isMultiSelected {
                         footerKey("⌥", L10n.tr("sensitive.peek"))
                     }
+                    footerKey("⌘M", L10n.tr("quick.openManager"))
                     footerKey("⌘K", L10n.tr("cmd.title"))
                     footerKey("esc", L10n.tr("quick.close"))
 
@@ -891,6 +1493,35 @@ struct QuickPanelView: View {
         return nil
     }
 
+    private var sortModeButton: some View {
+        Button {
+            switchSortMode(1)
+        } label: {
+            HStack(spacing: 5) {
+                Text(L10n.tr("history.sort"))
+                    .font(.system(size: 10, weight: .regular))
+                    .foregroundStyle(.tertiary)
+                Text((isSnippetScope && !isUnifiedSearchActive ? snippetStore.sortMode : store.sortMode).label)
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(.secondary)
+                Image(systemName: "chevron.up.chevron.down")
+                    .font(.system(size: 8, weight: .semibold))
+                    .foregroundStyle(.quaternary)
+            }
+            .frame(height: 20)
+            .padding(.horizontal, 8)
+            .background(Color.primary.opacity(0.035), in: RoundedRectangle(cornerRadius: 5))
+            .overlay(
+                RoundedRectangle(cornerRadius: 5)
+                    .stroke(Color.primary.opacity(0.05), lineWidth: 1)
+            )
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .pointerCursor()
+        .help(L10n.tr("quick.switchSort"))
+    }
+
     private func footerKey(_ key: String, _ label: String) -> some View {
         HStack(spacing: 4) {
             Text(key)
@@ -907,7 +1538,61 @@ struct QuickPanelView: View {
 
     // MARK: - Actions
 
+    private func cycleSelection<T: Equatable>(_ values: [T], current: T, delta: Int) -> T {
+        guard !values.isEmpty else { return current }
+        guard let currentIndex = values.firstIndex(of: current) else {
+            return delta >= 0 ? values[0] : values[values.count - 1]
+        }
+        let nextIndex = (currentIndex + delta + values.count) % values.count
+        return values[nextIndex]
+    }
+
+    private func switchSortMode(_ delta: Int) {
+        if isUnifiedSearchActive {
+            let next = cycleSelection(HistorySortMode.allCases, current: store.sortMode, delta: delta)
+            store.sortMode = next
+            snippetStore.sortMode = next
+        } else if isSnippetScope {
+            snippetStore.sortMode = cycleSelection(HistorySortMode.allCases, current: snippetStore.sortMode, delta: delta)
+        } else {
+            store.sortMode = cycleSelection(HistorySortMode.allCases, current: store.sortMode, delta: delta)
+        }
+    }
+
     private func moveSelection(_ delta: Int, extendSelection: Bool = false) {
+        if isUnifiedSearchActive {
+            let items = unifiedNavigationResults
+            guard !items.isEmpty else { return }
+            let currentID = selectedUnifiedResult?.id ?? defaultUnifiedResult?.id
+            guard let currentID,
+                  let currentIdx = items.firstIndex(where: { $0.id == currentID }) else { return }
+            let next = max(0, min(items.count - 1, currentIdx + delta))
+            let target = items[next]
+            switch target {
+            case .history(let item):
+                selectedSnippetID = nil
+                selectedItemIDs = [item.persistentModelID]
+                lastNavigatedID = item.persistentModelID
+            case .snippet(let snippet):
+                selectedItemIDs.removeAll()
+                selectedSnippetID = snippet.persistentModelID
+                lastNavigatedID = snippet.persistentModelID
+            }
+            return
+        }
+
+        if isSnippetScope {
+            let items = filteredSnippets
+            guard !items.isEmpty else { return }
+            let cursorID = lastNavigatedID ?? selectedSnippetID ?? items.first?.persistentModelID
+            guard let currentIdx = items.firstIndex(where: { $0.persistentModelID == cursorID }) else { return }
+            let next = max(0, min(items.count - 1, currentIdx + delta))
+            let targetID = items[next].persistentModelID
+            lastNavigatedID = targetID
+            selectedSnippetID = targetID
+            return
+        }
+
         var items = displayOrderItems
         guard !items.isEmpty else { return }
         let cursorID = lastNavigatedID ?? selectedItemIDs.first ?? items.first?.persistentModelID
@@ -933,6 +1618,46 @@ struct QuickPanelView: View {
         }
     }
 
+    private func switchUnifiedSearchSection(_ delta: Int) {
+        guard isUnifiedSearchActive,
+              unifiedSearchDisplayMode == .grouped,
+              unifiedSearchFilter == .all else { return }
+
+        let sections: [UnifiedSearchFilter] = [.history, .snippets].filter { filter in
+            switch filter {
+            case .history:
+                return !unifiedHistoryResults.isEmpty
+            case .snippets:
+                return !unifiedSnippetResults.isEmpty
+            case .all:
+                return false
+            }
+        }
+
+        guard !sections.isEmpty else { return }
+
+        let currentSection: UnifiedSearchFilter = {
+            if currentSnippet != nil { return .snippets }
+            if currentItem != nil { return .history }
+            return sections[0]
+        }()
+
+        let nextSection = cycleSelection(sections, current: currentSection, delta: delta)
+
+        switch nextSection {
+        case .history:
+            if let first = unifiedHistoryResults.first {
+                selectItem(first.persistentModelID)
+            }
+        case .snippets:
+            if let first = unifiedSnippetResults.first {
+                selectSnippet(first.persistentModelID)
+            }
+        case .all:
+            break
+        }
+    }
+
     private func installKeyMonitor() {
         flagsMonitor = NSEvent.addLocalMonitorForEvents(matching: .flagsChanged) { event in
             guard HotkeyManager.shared.isQuickPanelVisible else { return event }
@@ -946,6 +1671,22 @@ struct QuickPanelView: View {
             let hasShift = event.modifierFlags.contains(.shift)
             let hasCmd = event.modifierFlags.contains(.command)
             let hasControl = event.modifierFlags.contains(.control)
+
+            if isUnifiedSearchActive,
+               unifiedSearchDisplayMode == .grouped,
+               unifiedSearchFilter == .all,
+               hasCmd {
+                switch Int(event.keyCode) {
+                case 126:
+                    switchUnifiedSearchSection(-1)
+                    return nil
+                case 125:
+                    switchUnifiedSearchSection(1)
+                    return nil
+                default:
+                    break
+                }
+            }
 
             // Group suggestion keyboard navigation
             if isShowingSuggestions {
@@ -977,8 +1718,12 @@ struct QuickPanelView: View {
             switch Int(event.keyCode) {
             case 126: moveSelection(-1, extendSelection: hasShift); return nil
             case 125: moveSelection(1, extendSelection: hasShift); return nil
-            case 123: switchType(-1); return nil
-            case 124: switchType(1); return nil
+            case 123:
+                if hasCmd { switchScope(-1); return nil }
+                switchType(-1); return nil
+            case 124:
+                if hasCmd { switchScope(1); return nil }
+                switchType(1); return nil
             case 45:
                 if hasControl {
                     moveSelection(1, extendSelection: hasShift)
@@ -999,6 +1744,16 @@ struct QuickPanelView: View {
                 }
                 return event
             case 48: switchType(hasShift ? -1 : 1); return nil  // Tab / Shift+Tab
+            case 1:
+                if hasCmd { switchSortMode(1); return nil }
+                return event
+            case 46:
+                if hasCmd {
+                    handleDismiss()
+                    AppAction.shared.openMainWindow?()
+                    return nil
+                }
+                return event
             case 13: // Cmd+W
                 if hasCmd { handleDismiss(); return nil }
                 return event
@@ -1027,6 +1782,12 @@ struct QuickPanelView: View {
                        textView.selectedRange().length > 0 {
                         return event // let system copy selected text
                     }
+                    if let snippet = currentSnippet, (isSnippetScope || isUnifiedSearchActive) {
+                        SnippetLibrary.copyToClipboard(snippet)
+                        showCopiedToast = true
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { showCopiedToast = false }
+                        return nil
+                    }
                     let items = isMultiSelected ? currentItems : (currentItem.map { [$0] } ?? [])
                     if !items.isEmpty { copyItemsToClipboard(items, dismissAfterCopy: true, playSound: true) }
                     return nil
@@ -1051,7 +1812,9 @@ struct QuickPanelView: View {
                    textView.hasMarkedText() {
                     return event
                 }
-                if isMultiSelected {
+                if let _ = currentSnippet, (isSnippetScope || isUnifiedSearchActive) {
+                    handleSnippetPaste()
+                } else if isMultiSelected {
                     handleMultiPaste(asPlainText: hasCmd, forceNewLine: hasShift)
                 } else if hasCmd {
                     handleCmdEnter()
@@ -1080,15 +1843,11 @@ struct QuickPanelView: View {
     private var availableContentTypes: [ClipContentType] { store.availableTypes }
 
     private func switchType(_ delta: Int) {
+        guard !isUnifiedSearchActive else { return }
+        guard !isSnippetScope else { return }
         let types = availableContentTypes
         let allFilters: [QuickFilter] = [.pinned, .all] + types.map { .type($0) }
-
-        if let idx = allFilters.firstIndex(of: selectedFilter) {
-            let newIdx = (idx + delta + allFilters.count) % allFilters.count
-            selectedFilter = allFilters[newIdx]
-        } else {
-            selectedFilter = delta > 0 ? allFilters.first! : allFilters.last!
-        }
+        selectedFilter = cycleSelection(allFilters, current: selectedFilter, delta: delta)
     }
 
     private func handleCommandAction(_ action: CommandAction) {
@@ -1096,7 +1855,34 @@ struct QuickPanelView: View {
         isSearchFocused = true
         switch action {
         case .paste:
-            handlePaste(respectAutoPaste: false)
+            if let _ = currentSnippet, (isSnippetScope || isUnifiedSearchActive) {
+                handleSnippetPaste()
+            } else {
+                handlePaste(respectAutoPaste: false)
+            }
+        case .saveAsSnippet:
+            if let item = currentItem {
+                DispatchQueue.main.async {
+                    guard let saveInput = SnippetLibrary.promptForTitle(for: item) else {
+                        return
+                    }
+
+                    _ = SnippetLibrary.saveSnippet(from: item, title: saveInput.title, in: modelContext) { duplicate in
+                        let alert = NSAlert()
+                        alert.messageText = L10n.tr("snippet.duplicateTitle")
+                        alert.informativeText = L10n.tr("snippet.duplicateMessage", duplicate.resolvedTitle)
+                        alert.addButton(withTitle: L10n.tr("snippet.updateExisting"))
+                        alert.addButton(withTitle: L10n.tr("snippet.createNew"))
+                        alert.addButton(withTitle: L10n.tr("action.cancel"))
+
+                        switch alert.runModal() {
+                        case .alertFirstButtonReturn: return .updateExisting
+                        case .alertSecondButtonReturn: return .createNew
+                        default: return .cancel
+                        }
+                    }
+                }
+            }
         case .cmdEnter:
             if isMultiSelected {
                 handleMultiPaste(asPlainText: true, forceNewLine: false, respectAutoPaste: false)
@@ -1104,8 +1890,15 @@ struct QuickPanelView: View {
                 handleCmdEnter(respectAutoPaste: false)
             }
         case .copy:
-            let items = isMultiSelected ? currentItems : (currentItem.map { [$0] } ?? [])
-            if !items.isEmpty { copyItemsToClipboard(items, dismissAfterCopy: true, playSound: true) }
+            if let snippet = currentSnippet, (isSnippetScope || isUnifiedSearchActive) {
+                SnippetLibrary.copyToClipboard(snippet)
+                clipboardManager.lastChangeCount = NSPasteboard.general.changeCount
+                showCopiedToast = true
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { showCopiedToast = false }
+            } else {
+                let items = isMultiSelected ? currentItems : (currentItem.map { [$0] } ?? [])
+                if !items.isEmpty { copyItemsToClipboard(items, dismissAfterCopy: true, playSound: true) }
+            }
         case .retryOCR:
             if let item = currentItem, item.contentType == .image, item.imageData != nil {
                 OCRTaskCoordinator.shared.retry(itemID: item.itemID)
@@ -1115,22 +1908,38 @@ struct QuickPanelView: View {
                 QuickLookHelper.shared.openInPreviewApp(item: item)
             }
         case .addToRelay:
-            let items = isMultiSelected ? currentItems : (currentItem.map { [$0] } ?? [])
-            RelayManager.shared.enqueue(clipItems: items)
+            if let snippet = currentSnippet, (isSnippetScope || isUnifiedSearchActive) {
+                let texts = snippet.content.isEmpty ? [] : [snippet.content]
+                RelayManager.shared.enqueue(texts: texts)
+            } else {
+                let items = isMultiSelected ? currentItems : (currentItem.map { [$0] } ?? [])
+                RelayManager.shared.enqueue(clipItems: items)
+            }
             if !RelayManager.shared.isActive { RelayManager.shared.activate() }
         case .splitAndRelay:
-            if let item = currentItem, !item.content.isEmpty {
+            if let snippet = currentSnippet, (isSnippetScope || isUnifiedSearchActive), !snippet.content.isEmpty {
+                relaySplitText = snippet.content
+            } else if let item = currentItem, !item.content.isEmpty {
                 relaySplitText = item.content
             }
+        case .openSnippetInManager:
+            if let snippet = currentSnippet {
+                handleDismiss()
+                SnippetLibrary.openInManager(snippet.persistentModelID)
+            }
         case .pin:
-            if isMultiSelected {
+            if let snippet = currentSnippet, (isSnippetScope || isUnifiedSearchActive) {
+                snippet.isPinned.toggle()
+                SnippetLibrary.saveAndNotify(modelContext)
+            } else if isMultiSelected {
                 let items = currentItems
                 let shouldPin = !items.contains(where: \.isPinned)
                 for i in items { i.isPinned = shouldPin }
+                ClipItemStore.saveAndNotify(modelContext)
             } else {
                 currentItem?.isPinned.toggle()
+                ClipItemStore.saveAndNotify(modelContext)
             }
-            ClipItemStore.saveAndNotify(modelContext)
         case .toggleSensitive:
             if isMultiSelected {
                 let items = currentItems
@@ -1175,13 +1984,87 @@ struct QuickPanelView: View {
         OptionKeyMonitor.shared.isOptionPressed = false
     }
 
-    /// Returns 1-based shortcut index (1~9) for the item, or nil if beyond top 9.
-    private func shortcutIndex(for item: ClipItem) -> Int? {
-        guard let first9 = cachedDisplayOrder.prefix(9).firstIndex(where: { $0.persistentModelID == item.persistentModelID }) else { return nil }
-        return first9 + 1
+    @ViewBuilder
+    private func historyContextMenu(for item: ClipItem, itemID: PersistentIdentifier, itemContentType: ClipContentType) -> some View {
+        if isMultiSelected, selectedItemIDs.contains(itemID) {
+            let items = currentItems
+            let hasPinned = items.contains(where: \.isPinned)
+            Button(hasPinned ? L10n.tr("action.unpin") : L10n.tr("action.pin")) {
+                let newValue = !hasPinned
+                for i in items { i.isPinned = newValue }
+                ClipItemStore.saveAndNotify(modelContext)
+            }
+            let hasSensitive = items.contains(where: \.isSensitive)
+            Button(hasSensitive ? L10n.tr("sensitive.unmarkSensitive") : L10n.tr("sensitive.markSensitive")) {
+                let newValue = !hasSensitive
+                for i in items { i.isSensitive = newValue }
+                ClipItemStore.saveAndNotify(modelContext)
+            }
+            Button(L10n.tr("action.mergeCopy")) {
+                copyItemsToClipboard(items)
+            }
+            Divider()
+            Button(L10n.tr("relay.addToQueue")) {
+                RelayManager.shared.enqueue(clipItems: items)
+                if !RelayManager.shared.isActive {
+                    RelayManager.shared.activate()
+                }
+            }
+            Divider()
+            Button(L10n.tr("action.delete"), role: .destructive) {
+                handleDeleteSelected()
+            }
+        } else {
+            Button(item.isPinned ? L10n.tr("action.unpin") : L10n.tr("action.pin")) {
+                item.isPinned.toggle()
+                ClipItemStore.saveAndNotify(modelContext)
+                selectItem(itemID)
+            }
+            Button(item.isSensitive ? L10n.tr("sensitive.unmarkSensitive") : L10n.tr("sensitive.markSensitive")) {
+                item.isSensitive.toggle()
+                ClipItemStore.saveAndNotify(modelContext)
+                selectItem(itemID)
+            }
+            Button(L10n.tr("action.mergeCopy")) {
+                copyItemsToClipboard([item])
+                selectItem(itemID)
+            }
+            if itemContentType.isMergeable,
+               ProManager.AUTOMATION_ENABLED {
+                let manualRules = fetchEnabledRules()
+                if !manualRules.isEmpty {
+                    Divider()
+                    Menu(L10n.tr("cmd.automation")) {
+                        ForEach(manualRules) { rule in
+                            Button(rule.isBuiltIn ? L10n.tr(rule.name) : rule.name) {
+                                applyRule(rule, to: item)
+                            }
+                        }
+                    }
+                }
+            }
+            Divider()
+            if !item.content.isEmpty || item.imageData != nil {
+                Button(L10n.tr("relay.addToQueue")) {
+                    RelayManager.shared.enqueue(clipItems: [item])
+                    if !RelayManager.shared.isActive {
+                        RelayManager.shared.activate()
+                    }
+                }
+                Button(L10n.tr("relay.splitAndRelay")) {
+                    relaySplitText = item.content
+                }
+            }
+            Divider()
+            Button(L10n.tr("action.delete"), role: .destructive) {
+                deleteItem(item)
+            }
+        }
     }
 
     private func handleShortcutPaste(index: Int) {
+        guard !isUnifiedSearchActive else { return }
+        guard !isSnippetScope else { return }
         let items = displayOrderItems
         guard index >= 1, index <= 9, index <= items.count else { return }
         let target = items[index - 1]
@@ -1286,6 +2169,29 @@ struct QuickPanelView: View {
         }
     }
 
+    private func handleSnippetPaste() {
+        guard let snippet = currentSnippet else { return }
+
+        let appToRestore = QuickPanelWindowController.shared.previousApp
+        QuickPanelWindowController.shared.dismiss()
+
+        if let app = appToRestore {
+            app.activate()
+            Task { @MainActor in
+                for _ in 0..<20 {
+                    try? await Task.sleep(for: .milliseconds(50))
+                    if NSWorkspace.shared.frontmostApplication?.processIdentifier == app.processIdentifier { break }
+                }
+                try? await Task.sleep(for: .milliseconds(50))
+                SnippetLibrary.writeToPasteboard(snippet)
+                clipboardManager.lastChangeCount = NSPasteboard.general.changeCount
+                SoundManager.playPaste()
+                clipboardManager.simulatePaste()
+                SnippetLibrary.markUsed(snippet, in: modelContext)
+            }
+        }
+    }
+
     private func copyItemsToClipboard(_ items: [ClipItem], dismissAfterCopy: Bool = false, playSound: Bool = false) {
         let pasteboard = NSPasteboard.general
         pasteboard.clearContents()
@@ -1310,27 +2216,23 @@ struct QuickPanelView: View {
     }
 
     private func handleDeleteSelected() {
+        if isSnippetScope {
+            if let snippet = currentSnippet {
+                deleteSnippet(snippet)
+            }
+            return
+        }
         let itemsToDelete = isMultiSelected ? currentItems : (currentItem.map { [$0] } ?? [])
         deleteItems(itemsToDelete)
     }
 
-    private func copyDebugInfo(for item: ClipItem) {
-        let hexContent = item.content.utf8.map { String(format: "%02x", $0) }.joined()
-        let hexTitle = (item.displayTitle ?? "").utf8.map { String(format: "%02x", $0) }.joined()
-        let info = """
-            [PasteMemo Debug Info]
-            itemID: \(item.itemID)
-            contentType: \(item.contentType.rawValue)
-            content.count: \(item.content.count)
-            content.hex: \(hexContent)
-            content.text: \(item.content)
-            displayTitle.hex: \(hexTitle)
-            displayTitle.text: \(item.displayTitle ?? "nil")
-            hasRichText: \(item.richTextData != nil)
-            richTextType: \(item.richTextType ?? "nil")
-            """
-        NSPasteboard.general.clearContents()
-        NSPasteboard.general.setString(info, forType: .string)
+    private func deleteSnippet(_ snippet: SnippetItem) {
+        let deletedID = snippet.persistentModelID
+        modelContext.delete(snippet)
+        SnippetLibrary.saveAndNotify(modelContext)
+        snippetStore.removeItem(id: deletedID)
+        selectedSnippetID = filteredSnippets.first?.persistentModelID
+        lastNavigatedID = selectedSnippetID
     }
 
     private func deleteItem(_ item: ClipItem) {
@@ -1674,6 +2576,7 @@ struct QuickPanelView: View {
             QuickPanelWindowController.shared.dismissAndPaste(
                 item,
                 clipboardManager: clipboardManager,
+                modelContext: modelContext,
                 addNewLine: forceNewLine
             )
         }
@@ -1683,7 +2586,11 @@ struct QuickPanelView: View {
         guard let item = currentItem, let imageData = item.imageData else {
             // No image data, fallback to normal paste
             if let item = currentItem {
-                QuickPanelWindowController.shared.dismissAndPaste(item, clipboardManager: clipboardManager)
+                QuickPanelWindowController.shared.dismissAndPaste(
+                    item,
+                    clipboardManager: clipboardManager,
+                    modelContext: modelContext
+                )
             }
             return
         }

@@ -1,5 +1,15 @@
 import AppKit
 
+actor SyntaxHighlightWorker {
+    static let shared = SyntaxHighlightWorker()
+
+    func highlight(code: String, language: String) async -> [HighlightToken] {
+        await MainActor.run {
+            HighlightEngine.shared.highlight(code, language: language)
+        }
+    }
+}
+
 // MARK: - Theme
 
 struct SyntaxTheme {
@@ -128,14 +138,50 @@ enum SyntaxHighlighter {
     private static var cacheOrder: [Int] = []
     private static let MAX_CACHE_SIZE = 30
 
+    nonisolated private static func cacheKey(for code: String, language: CodeLanguage, isDark: Bool) -> Int {
+        var hasher = Hasher()
+        hasher.combine(code)
+        hasher.combine(language)
+        hasher.combine(isDark)
+        return hasher.finalize()
+    }
+
+    static func cachedHighlight(
+        _ code: String,
+        language: CodeLanguage,
+        isDark: Bool
+    ) -> NSAttributedString? {
+        attrStringCache[cacheKey(for: code, language: language, isDark: isDark)]
+    }
+
+    nonisolated static func highlightOffMain(
+        _ code: String,
+        language: CodeLanguage,
+        isDark: Bool
+    ) -> NSAttributedString {
+        let theme = isDark ? SyntaxTheme.dark : SyntaxTheme.light
+        let font = NSFont.monospacedSystemFont(ofSize: 13, weight: .regular)
+        let baseAttrs: [NSAttributedString.Key: Any] = [
+            .font: font,
+            .foregroundColor: theme.plain,
+        ]
+
+        let codeToHighlight = code.count > MAX_HIGHLIGHT_LENGTH
+            ? String(code.prefix(MAX_HIGHLIGHT_LENGTH))
+            : code
+
+        let result = NSMutableAttributedString(string: codeToHighlight, attributes: baseAttrs)
+        if code.count > MAX_HIGHLIGHT_LENGTH {
+            let remaining = String(code.dropFirst(MAX_HIGHLIGHT_LENGTH))
+            result.append(NSAttributedString(string: remaining, attributes: baseAttrs))
+        }
+        return result
+    }
+
     static func highlight(_ code: String, language: CodeLanguage? = nil) -> NSAttributedString {
         let isDark = NSApp.effectiveAppearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
         let lang = language ?? CodeDetector.detectLanguage(code) ?? .unknown
-        var hasher = Hasher()
-        hasher.combine(code)
-        hasher.combine(lang)
-        hasher.combine(isDark)
-        let cacheKey = hasher.finalize()
+        let cacheKey = cacheKey(for: code, language: lang, isDark: isDark)
 
         if let cached = attrStringCache[cacheKey] { return cached }
 
@@ -167,6 +213,48 @@ enum SyntaxHighlighter {
 
         putCache(cacheKey, result)
         return result
+    }
+
+    static func highlightAsync(
+        _ code: String,
+        language: CodeLanguage? = nil,
+        isDark: Bool
+    ) async -> NSAttributedString {
+        let lang = language ?? CodeDetector.detectLanguage(code) ?? .unknown
+        let cacheKey = cacheKey(for: code, language: lang, isDark: isDark)
+
+        if let cached = cachedHighlight(code, language: lang, isDark: isDark) {
+            return cached
+        }
+
+        let theme = isDark ? SyntaxTheme.dark : SyntaxTheme.light
+        let font = NSFont.monospacedSystemFont(ofSize: 13, weight: .regular)
+        let baseAttrs: [NSAttributedString.Key: Any] = [
+            .font: font,
+            .foregroundColor: theme.plain,
+        ]
+
+        let codeToHighlight = code.count > MAX_HIGHLIGHT_LENGTH
+            ? String(code.prefix(MAX_HIGHLIGHT_LENGTH))
+            : code
+        let tokens = await SyntaxHighlightWorker.shared.highlight(code: codeToHighlight, language: lang.hljsName)
+
+        let result = NSMutableAttributedString()
+        for token in tokens {
+            let color = token.scope.map { theme.color(forScope: $0) } ?? theme.plain
+            var attrs = baseAttrs
+            attrs[.foregroundColor] = color
+            result.append(NSAttributedString(string: token.text, attributes: attrs))
+        }
+
+        if code.count > MAX_HIGHLIGHT_LENGTH {
+            let remaining = String(code.dropFirst(MAX_HIGHLIGHT_LENGTH))
+            result.append(NSAttributedString(string: remaining, attributes: baseAttrs))
+        }
+
+        let final = NSAttributedString(attributedString: result)
+        putCache(cacheKey, final)
+        return final
     }
 
     private static func putCache(_ key: Int, _ value: NSAttributedString) {

@@ -125,6 +125,9 @@
 "settings.showLinkURL" = "Show URL instead of page title for links";
 "settings.webPreview" = "Web preview";
 "settings.imageLinkPreview" = "Image link preview";
+"settings.unifiedSearchDisplayMode" = "Unified Search Layout";
+"settings.unifiedSearchDisplayMode.grouped" = "Grouped";
+"settings.unifiedSearchDisplayMode.mixed" = "Mixed";
 "settings.ocr" = "Image OCR";
 "settings.ocr.enable" = "Enable image OCR";
 "settings.ocr.auto" = "Process new images automatically";
@@ -165,6 +168,8 @@
 "detail.created" = "Created";
 "detail.group" = "Group";
 "detail.lastUsed" = "Last Used";
+"history.sort" = "Sort By";
+"quick.switchSort" = "Switch Sort";
 "detail.chars" = "Characters";
 "detail.lines" = "Lines";
 "detail.words" = "Words";
@@ -248,6 +253,7 @@
 "quick.preview" = "Preview";
 "quick.commandPalette" = "Actions";
 "quick.pasteImage" = "Paste Image";
+"quick.openManager" = "Open Manager";
 "settings.showGuide" = "Show Welcome Guide";
 
 /* Onboarding */
@@ -290,6 +296,7 @@
 "help.shortcut.navigate" = "Navigate items";
 "help.shortcut.cmdEnter" = "Paste path / Paste file / Paste image";
 "help.shortcut.preview" = "Preview / Open link";
+"help.shortcut.openManager" = "Open main manager window";
 "help.shortcut.delete" = "Delete item";
 "help.shortcut.close" = "Close panel";
 "help.actions" = "Quick Paste Actions";
@@ -598,6 +605,42 @@
 "cmd.openInPreview" = "Open in Preview";
 "cmd.retryOCR" = "Retry OCR";
 "cmd.andNewLine" = " + New Line";
+"snippet.new" = "New Snippet";
+"snippet.saveAs" = "Save as Snippet";
+"snippet.saved" = "Saved as snippet";
+"snippet.delete" = "Delete Snippet";
+"snippet.titlePlural" = "Snippets";
+"snippet.count" = "%d snippets";
+"snippet.titlePlaceholder" = "Snippet title";
+"snippet.typeLabel" = "Type";
+"snippet.groupLabel" = "Group";
+"snippet.groupPlaceholder" = "Optional group";
+"snippet.groupNone" = "No group";
+"snippet.groupChoose" = "Choose Group…";
+"snippet.groupClear" = "Clear Group";
+"snippet.tagsLabel" = "Tags";
+"snippet.tagsPlaceholder" = "tag1, tag2";
+"snippet.tagsPrompt" = "Enter tags separated by commas.";
+"snippet.addTags" = "Add Tags";
+"snippet.removeTags" = "Remove Tags";
+"snippet.duplicateTitle" = "Snippet Already Exists";
+"snippet.duplicateMessage" = "A snippet with the same content already exists: %@";
+"snippet.updateExisting" = "Update Existing";
+"snippet.createNew" = "Create New";
+"snippet.contentLabel" = "Content";
+"snippet.empty" = "Empty snippet";
+"snippet.unused" = "Unused";
+"snippet.usedCount" = "Used %dx";
+"snippet.untitled" = "Untitled Snippet";
+"snippet.badge" = "SNIPPET";
+"snippet.namePromptTitle" = "Name Snippet";
+"snippet.namePromptMessage" = "Set a name for this snippet so it is easier to find later.";
+"quick.switchScope" = "Switch Scope";
+"quick.switchToSnippets" = "Switch to Snippets";
+"quick.switchToHistory" = "Switch to History";
+"quick.switchSearchSection" = "Jump Between History and Snippets";
+"quick.switchSnippetSort" = "Switch Snippet Sort";
+"quick.snippetMove" = "Move Snippet Selection";
 
 "relay.title" = "Relay Mode";
 "relay.tab" = "Relay";

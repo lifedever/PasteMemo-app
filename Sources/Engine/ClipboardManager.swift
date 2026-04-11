@@ -312,13 +312,34 @@ final class ClipboardManager: ObservableObject {
     }
 
     private func matchesDuplicateCandidate(_ existingItem: ClipItem, with newItem: ClipItem) -> Bool {
-        guard existingItem.content == newItem.content, existingItem.contentType == newItem.contentType else {
+        guard existingItem.content == newItem.content else {
             return false
         }
-        // Different image data means edited image, not a duplicate
-        if existingItem.contentType == .image, existingItem.imageData != newItem.imageData { return false }
-        // Different rich text data means different format, not a duplicate
-        return existingItem.richTextData == newItem.richTextData
+
+        let existingIsRelaxedText = existingItem.contentType == .text
+        let newIsRelaxedText = newItem.contentType == .text
+
+        if existingItem.contentType == newItem.contentType {
+            // Different image data means edited image, not a duplicate
+            if existingItem.contentType == .image, existingItem.imageData != newItem.imageData { return false }
+            if existingIsRelaxedText && newIsRelaxedText {
+                let existingHasRichText = existingItem.richTextData != nil
+                let newHasRichText = newItem.richTextData != nil
+                if existingHasRichText != newHasRichText {
+                    return true
+                }
+            }
+            // Different rich text data means different format, not a duplicate
+            return existingItem.richTextData == newItem.richTextData
+        }
+
+        guard existingIsRelaxedText, newIsRelaxedText else {
+            return false
+        }
+
+        let existingHasRichText = existingItem.richTextData != nil
+        let newHasRichText = newItem.richTextData != nil
+        return existingHasRichText != newHasRichText
     }
 
     private func refreshLinkMetadataIfNeeded(for item: ClipItem, in context: ModelContext) {

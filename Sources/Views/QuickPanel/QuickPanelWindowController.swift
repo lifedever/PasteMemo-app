@@ -123,11 +123,11 @@ final class QuickPanelWindowController {
         HotkeyManager.shared.isQuickPanelVisible = false
     }
 
-    func dismissAndPaste(_ item: ClipItem, clipboardManager: ClipboardManager, addNewLine: Bool = false) {
+    func dismissAndPaste(_ item: ClipItem, clipboardManager: ClipboardManager, modelContext: ModelContext, addNewLine: Bool = false) {
         let appToRestore = previousApp
         clipboardManager.writeToPasteboard(item, targetApp: appToRestore)
         item.lastUsedAt = Date()
-        try? item.modelContext?.save()
+        ClipItemStore.saveAndNotifyLastUsed(modelContext)
         SoundManager.playPaste()
 
         dismiss()

@@ -50,6 +50,7 @@
 
 - **Copy -> File, Instantly** -- Paste copied text as a `.txt` file, paste screenshots as image files. Drag directly into Finder or any file dialog.
 - **AI Terminal Ready** -- Seamlessly paste images and files into AI terminals. Built for developers who live in the command line.
+- **Reusable Snippets** -- Save any clipboard item as a reusable snippet with titles, groups, tags, and fast recall from the main window or Quick Paste panel.
 - **Smart Recognition** -- Automatically detects content type -- links with favicons, code snippets, colors, phone numbers, files -- with intelligent previews.
 - **Beyond Copy-Paste** -- Paste file paths, filenames, save to folders, or paste-and-enter for terminal commands. Every clip is a multi-tool.
 
@@ -66,10 +67,20 @@
 - **Filter by App** -- See which app each clip came from. Filter by source -- Chrome, VS Code, Figma, Slack, etc.
 - **History Retention** -- Configure how long to keep history: forever, or auto-delete after 1-365 days.
 
+### Snippets Library
+
+- **Save from History** -- Turn any clipboard item into a reusable snippet with a custom title.
+- **Organize Snippets** -- Edit title, content, type, pin state, group, and tags from the main window.
+- **Snippet Search** -- Search snippets by title, content, group, and tags from one input box.
+- **Quick Paste Integration** -- Open snippets from the sidebar, access them in Quick Paste, and reuse them without leaving the keyboard.
+- **Batch Management** -- Multi-select snippets to pin, group, tag, copy, or delete in one action.
+- **Usage Tracking** -- See last-used time and usage count so your most valuable snippets stand out.
+
 ### Quick Paste Panel
 
 - **Global Hotkey** -- Press Cmd+Shift+V (customizable, supports F1-F12) from anywhere to open the Quick Paste panel.
 - **Keyboard Navigation** -- Cmd+1 to Cmd+9 to paste directly. Arrow keys or Ctrl+P / Ctrl+N navigate history. Left/right arrows switch content types. Enter to paste.
+- **Snippet Scope + Unified Search** -- Switch between clipboard history and snippets, or search both together and jump between result sections.
 - **Quick Actions (Cmd+K)** -- Command palette for paste, copy, pin, delete, and more -- all without leaving the keyboard.
 - **Paste + Enter** -- Shift+Enter pastes and presses Enter. Perfect for terminal commands and chat apps.
 
@@ -106,6 +117,9 @@
 | Cmd+1 - Cmd+9 | Paste the Nth item directly |
 | Up / Down, Ctrl+P / Ctrl+N | Navigate history |
 | Left / Right | Switch content type |
+| Cmd+Left / Cmd+Right | Switch between clipboard history and snippets |
+| Cmd+Up / Cmd+Down | Jump between history and snippets in unified search |
+| Cmd+S | Switch sort order for history or snippets |
 | Enter | Paste selected item |
 | Shift+Enter | Paste and press Enter |
 | Cmd+K | Open Quick Actions |

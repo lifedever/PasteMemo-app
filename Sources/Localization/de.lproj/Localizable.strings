@@ -94,6 +94,7 @@
 "detail.created" = "Erstellt";
 "detail.group" = "Gruppe";
 "detail.lastUsed" = "Zuletzt verwendet";
+"quick.switchSort" = "Sortierung wechseln";
 "detail.chars" = "Zeichen";
 "detail.lines" = "Zeilen";
 "detail.aiPreview" = "KI-Vorschau";
@@ -149,6 +150,7 @@
 "pro.feature.customCategory" = "Eigene Kategorien";
 "pro.feature.ignoreApps" = "Bestimmte Apps ignorieren";
 "pro.feature.automation" = "Zwischenablage-Automatisierung";
+"history.sort" = "Sortieren nach";
 
 /* Onboarding */
 "onboarding.back" = "Zurück";
@@ -711,3 +713,40 @@ Verwenden Sie %@ zum Einfügen.";
 "quick.ocrMatch" = "Treffer im erkannten Text";
 "cmd.openInPreview" = "In Vorschau öffnen";
 "cmd.retryOCR" = "OCR erneut ausführen";
+
+"snippet.new" = "Neues Snippet";
+"snippet.saveAs" = "Als Snippet speichern";
+"snippet.saved" = "Als Snippet gespeichert";
+"snippet.delete" = "Snippet löschen";
+"snippet.titlePlural" = "Snippets";
+"snippet.count" = "%d Snippets";
+"snippet.titlePlaceholder" = "Snippet-Titel";
+"snippet.typeLabel" = "Typ";
+"snippet.groupLabel" = "Gruppe";
+"snippet.groupPlaceholder" = "Optionale Gruppe";
+"snippet.groupNone" = "Keine Gruppe";
+"snippet.groupChoose" = "Gruppe wählen…";
+"snippet.groupClear" = "Gruppe entfernen";
+"snippet.tagsLabel" = "Tags";
+"snippet.tagsPlaceholder" = "tag1, tag2";
+"snippet.tagsPrompt" = "Tags durch Kommas getrennt eingeben.";
+"snippet.addTags" = "Tags hinzufügen";
+"snippet.removeTags" = "Tags entfernen";
+"snippet.duplicateTitle" = "Snippet existiert bereits";
+"snippet.duplicateMessage" = "Ein Snippet mit demselben Inhalt existiert bereits: %@";
+"snippet.updateExisting" = "Vorhandenes aktualisieren";
+"snippet.createNew" = "Neu erstellen";
+"snippet.contentLabel" = "Inhalt";
+"snippet.empty" = "Leeres Snippet";
+"snippet.unused" = "Ungenutzt";
+"snippet.usedCount" = "%d-mal verwendet";
+"snippet.untitled" = "Unbenanntes Snippet";
+"snippet.badge" = "SNIPPET";
+"snippet.namePromptTitle" = "Snippet benennen";
+"snippet.namePromptMessage" = "Geben Sie diesem Snippet einen Namen, damit Sie es später leichter finden.";
+"quick.switchScope" = "Bereich wechseln";
+"quick.switchToSnippets" = "Zu Snippets wechseln";
+"quick.switchToHistory" = "Zum Verlauf wechseln";
+"quick.switchSearchSection" = "Zwischen Verlauf und Snippets wechseln";
+"quick.switchSnippetSort" = "Snippet-Sortierung wechseln";
+"quick.snippetMove" = "Snippet-Auswahl bewegen";

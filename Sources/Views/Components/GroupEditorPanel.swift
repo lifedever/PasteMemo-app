@@ -1,47 +1,135 @@
 import AppKit
 import SwiftUI
 
-/// Modal panel for creating/editing a group (name + categorized icon picker)
-@MainActor
-final class GroupEditorPanel {
+private final class KeyableModalWindow: NSWindow {
+    override var canBecomeKey: Bool { true }
+    override var canBecomeMain: Bool { true }
+}
 
+/// SwiftUI-backed group editor window shown without blocking `NSApp.runModal(for:)`.
+@MainActor
+enum GroupEditorPanel {
     struct Result {
         let name: String
         let icon: String
     }
 
-    static func show(name: String = "", icon: String = "folder") -> Result? {
-        let viewModel = GroupEditorViewModel(name: name, icon: icon)
-        let hostingView = NSHostingView(rootView: GroupEditorView(viewModel: viewModel))
-        hostingView.frame = NSRect(x: 0, y: 0, width: 380, height: 420)
+    private static var controller: GroupEditorPanelController?
 
-        let panel = NSPanel(
-            contentRect: NSRect(x: 0, y: 0, width: 380, height: 420),
-            styleMask: [.titled, .closable],
-            backing: .buffered,
-            defer: true
-        )
-        panel.title = name.isEmpty ? L10n.tr("action.newGroup") : L10n.tr("action.editGroup")
-        panel.contentView = hostingView
-        panel.center()
-        panel.isFloatingPanel = true
-        panel.level = .modalPanel
+    static func show(name: String = "", icon: String = "folder", onComplete: @escaping (Result?) -> Void) {
+        controller?.closeWithoutCallback()
+        let controller = GroupEditorPanelController(name: name, icon: icon, onComplete: onComplete)
+        self.controller = controller
+        controller.show()
+    }
 
-        viewModel.onDismiss = { panel.close(); NSApp.stopModal(withCode: .cancel) }
-        viewModel.onConfirm = { panel.close(); NSApp.stopModal(withCode: .OK) }
+    static func dismissCurrent() {
+        controller?.closeWithoutCallback()
+        controller = nil
+    }
 
-        let response = NSApp.runModal(for: panel)
-        guard response == .OK else { return nil }
-        let resultName = viewModel.name.trimmingCharacters(in: .whitespaces)
-        guard !resultName.isEmpty else { return nil }
-        return Result(name: resultName, icon: viewModel.selectedIcon)
+    fileprivate static func clear(controller: GroupEditorPanelController) {
+        if self.controller === controller {
+            self.controller = nil
+        }
     }
 }
 
-// MARK: - ViewModel
+@MainActor
+private final class GroupEditorPanelController: NSObject, NSWindowDelegate {
+    private let window: NSWindow
+    private let viewModel: GroupEditorViewModel
+    private var onComplete: ((GroupEditorPanel.Result?) -> Void)?
+    private var didComplete = false
+
+    init(name: String, icon: String, onComplete: @escaping (GroupEditorPanel.Result?) -> Void) {
+        viewModel = GroupEditorViewModel(name: name, icon: icon)
+        self.onComplete = onComplete
+
+        let hosting = NSHostingController(rootView: GroupEditorView(viewModel: viewModel))
+
+        window = KeyableModalWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 380, height: 420),
+            styleMask: [.titled, .closable],
+            backing: .buffered,
+            defer: false
+        )
+
+        super.init()
+
+        window.title = name.isEmpty ? L10n.tr("action.newGroup") : L10n.tr("action.editGroup")
+        window.level = .modalPanel
+        window.isReleasedWhenClosed = false
+        window.delegate = self
+
+        let container = NSView(frame: NSRect(x: 0, y: 0, width: 380, height: 420))
+        container.wantsLayer = true
+        container.layer?.backgroundColor = NSColor.windowBackgroundColor.cgColor
+
+        let hostingView = hosting.view
+        hostingView.translatesAutoresizingMaskIntoConstraints = false
+        container.addSubview(hostingView)
+        NSLayoutConstraint.activate([
+            hostingView.topAnchor.constraint(equalTo: container.topAnchor),
+            hostingView.bottomAnchor.constraint(equalTo: container.bottomAnchor),
+            hostingView.leadingAnchor.constraint(equalTo: container.leadingAnchor),
+            hostingView.trailingAnchor.constraint(equalTo: container.trailingAnchor),
+        ])
+        container.layoutSubtreeIfNeeded()
+
+        window.contentView = container
+        window.center()
+
+        viewModel.onDismiss = { [weak self] in
+            self?.finish(with: nil)
+        }
+        viewModel.onConfirm = { [weak self] in
+            guard let self else { return }
+            let trimmed = self.viewModel.name.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !trimmed.isEmpty else { return }
+            self.finish(with: GroupEditorPanel.Result(name: trimmed, icon: self.viewModel.selectedIcon))
+        }
+    }
+
+    func show() {
+        NSApp.activate(ignoringOtherApps: true)
+        window.center()
+        window.makeKeyAndOrderFront(nil)
+    }
+
+    func windowWillClose(_ notification: Notification) {
+        finish(with: nil)
+    }
+
+    func closeWithoutCallback() {
+        onComplete = nil
+        didComplete = true
+        if window.isVisible {
+            NSApp.abortModal()
+            window.close()
+        }
+        GroupEditorPanel.clear(controller: self)
+    }
+
+    private func finish(with result: GroupEditorPanel.Result?) {
+        guard !didComplete else { return }
+        didComplete = true
+
+        let callback = onComplete
+        onComplete = nil
+
+        if window.isVisible {
+            window.orderOut(nil)
+            window.close()
+        }
+
+        GroupEditorPanel.clear(controller: self)
+        callback?(result)
+    }
+}
 
 @Observable
-private class GroupEditorViewModel {
+private final class GroupEditorViewModel {
     var name: String
     var selectedIcon: String
     var iconSearchText = ""
@@ -58,7 +146,6 @@ private class GroupEditorViewModel {
 
     var filteredIcons: [String] {
         if !iconSearchText.isEmpty {
-            // Search across all categories
             let allIcons = IconCategory.all[0].icons
             return allIcons.filter { $0.localizedCaseInsensitiveContains(iconSearchText) }
         }
@@ -66,11 +153,9 @@ private class GroupEditorViewModel {
     }
 
     var isConfirmDisabled: Bool {
-        name.trimmingCharacters(in: .whitespaces).isEmpty
+        name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 }
-
-// MARK: - Icon Categories
 
 private struct IconCategory: Identifiable, Hashable {
     let id: String
@@ -168,8 +253,6 @@ private struct IconCategory: Identifiable, Hashable {
     ]
 }
 
-// MARK: - SwiftUI View
-
 private struct GroupEditorView: View {
     @Bindable var viewModel: GroupEditorViewModel
 
@@ -182,6 +265,7 @@ private struct GroupEditorView: View {
             footerSection
         }
         .frame(width: 380, height: 420)
+        .background(Color(nsColor: .windowBackgroundColor))
     }
 
     private var headerSection: some View {
@@ -191,6 +275,7 @@ private struct GroupEditorView: View {
                 .foregroundStyle(.secondary)
                 .frame(width: 48, height: 48)
                 .background(Color.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: 10))
+
             TextField(L10n.tr("automation.action.assignGroup.placeholder"), text: $viewModel.name)
                 .textFieldStyle(.roundedBorder)
                 .font(.system(size: 14))
@@ -208,7 +293,9 @@ private struct GroupEditorView: View {
                     .textFieldStyle(.plain)
                     .font(.system(size: 12))
                 if !viewModel.iconSearchText.isEmpty {
-                    Button { viewModel.iconSearchText = "" } label: {
+                    Button {
+                        viewModel.iconSearchText = ""
+                    } label: {
                         Image(systemName: "xmark.circle.fill")
                             .font(.system(size: 10))
                             .foregroundStyle(.quaternary)
@@ -218,11 +305,14 @@ private struct GroupEditorView: View {
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 6)
+
             Divider()
+
             if viewModel.iconSearchText.isEmpty {
                 categoryTabs
                 Divider()
             }
+
             iconGrid
         }
         .frame(maxHeight: .infinity)
@@ -240,15 +330,11 @@ private struct GroupEditorView: View {
                             .padding(.horizontal, 8)
                             .padding(.vertical, 4)
                             .background(
-                                viewModel.selectedCategory == category
-                                    ? Color.accentColor.opacity(0.15)
-                                    : Color.clear,
+                                viewModel.selectedCategory == category ? Color.accentColor.opacity(0.15) : Color.clear,
                                 in: Capsule()
                             )
                             .foregroundStyle(
-                                viewModel.selectedCategory == category
-                                    ? Color.accentColor
-                                    : .secondary
+                                viewModel.selectedCategory == category ? Color.accentColor : .secondary
                             )
                     }
                     .buttonStyle(.plain)
@@ -261,28 +347,34 @@ private struct GroupEditorView: View {
 
     private var iconGrid: some View {
         ScrollView {
-            LazyVGrid(columns: Array(repeating: GridItem(.fixed(36), spacing: 6), count: 8), spacing: 6) {
-                ForEach(viewModel.filteredIcons, id: \.self) { symbol in
-                    Button {
-                        viewModel.selectedIcon = symbol
-                    } label: {
-                        Image(systemName: symbol)
-                            .font(.system(size: 16))
-                            .frame(width: 36, height: 36)
-                            .foregroundStyle(
-                                viewModel.selectedIcon == symbol ? .white : .primary
-                            )
-                            .background(
-                                viewModel.selectedIcon == symbol
-                                    ? Color.accentColor
-                                    : Color.primary.opacity(0.06),
-                                in: RoundedRectangle(cornerRadius: 6)
-                            )
+            if viewModel.filteredIcons.isEmpty {
+                ContentUnavailableView(
+                    "No matching icons",
+                    systemImage: "magnifyingglass",
+                    description: Text("Try another keyword or category.")
+                )
+                .padding(.top, 32)
+            } else {
+                LazyVGrid(columns: Array(repeating: GridItem(.fixed(36), spacing: 6), count: 8), spacing: 6) {
+                    ForEach(viewModel.filteredIcons, id: \.self) { symbol in
+                        Button {
+                            viewModel.selectedIcon = symbol
+                        } label: {
+                            Image(systemName: symbol)
+                                .font(.system(size: 16))
+                                .frame(width: 36, height: 36)
+                                .foregroundStyle(viewModel.selectedIcon == symbol ? .white : .primary)
+                                .background(
+                                    viewModel.selectedIcon == symbol ? Color.accentColor : Color.primary.opacity(0.06),
+                                    in: RoundedRectangle(cornerRadius: 6)
+                                )
+                        }
+                        .buttonStyle(.plain)
+                        .help(symbol)
                     }
-                    .buttonStyle(.plain)
                 }
+                .padding(12)
             }
-            .padding(12)
         }
     }
 
@@ -293,6 +385,7 @@ private struct GroupEditorView: View {
                 viewModel.onDismiss?()
             }
             .keyboardShortcut(.cancelAction)
+
             Button(L10n.tr("action.confirm")) {
                 viewModel.onConfirm?()
             }

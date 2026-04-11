@@ -94,6 +94,7 @@
 "detail.created" = "作成日時";
 "detail.group" = "グループ";
 "detail.lastUsed" = "最終使用";
+"quick.switchSort" = "並び順を切り替え";
 "detail.chars" = "文字数";
 "detail.lines" = "行数";
 "detail.aiPreview" = "AI用プレビュー";
@@ -163,6 +164,7 @@
 "pro.feature.customCategory" = "カスタムカテゴリ";
 "pro.feature.ignoreApps" = "特定アプリを除外";
 "pro.feature.automation" = "クリップボード自動化";
+"history.sort" = "並び順";
 
 /* Onboarding */
 "onboarding.back" = "戻る";
@@ -725,3 +727,40 @@
 "onboarding.analytics.title" = "使用統計";
 "onboarding.analytics.desc" = "匿名の使用データ（アプリバージョン、システム言語、macOS バージョン）を送信して PasteMemo の改善にご協力ください。個人情報は収集されません。";
 "onboarding.analytics.hint" = "設定 → プライバシーでいつでも変更できます。";
+
+"snippet.new" = "新規スニペット";
+"snippet.saveAs" = "スニペットとして保存";
+"snippet.saved" = "スニペットとして保存しました";
+"snippet.delete" = "スニペットを削除";
+"snippet.titlePlural" = "スニペット";
+"snippet.count" = "%d件のスニペット";
+"snippet.titlePlaceholder" = "スニペット名";
+"snippet.typeLabel" = "種類";
+"snippet.groupLabel" = "グループ";
+"snippet.groupPlaceholder" = "任意のグループ";
+"snippet.groupNone" = "グループなし";
+"snippet.groupChoose" = "グループを選択…";
+"snippet.groupClear" = "グループをクリア";
+"snippet.tagsLabel" = "タグ";
+"snippet.tagsPlaceholder" = "tag1, tag2";
+"snippet.tagsPrompt" = "タグをカンマ区切りで入力してください。";
+"snippet.addTags" = "タグを追加";
+"snippet.removeTags" = "タグを削除";
+"snippet.duplicateTitle" = "スニペットは既に存在します";
+"snippet.duplicateMessage" = "同じ内容のスニペットが既にあります: %@";
+"snippet.updateExisting" = "既存を更新";
+"snippet.createNew" = "新規作成";
+"snippet.contentLabel" = "内容";
+"snippet.empty" = "空のスニペット";
+"snippet.unused" = "未使用";
+"snippet.usedCount" = "%d回使用";
+"snippet.untitled" = "無題のスニペット";
+"snippet.badge" = "スニペット";
+"snippet.namePromptTitle" = "スニペットに名前を付ける";
+"snippet.namePromptMessage" = "後で見つけやすいように、このスニペットに名前を付けてください。";
+"quick.switchScope" = "範囲を切り替え";
+"quick.switchToSnippets" = "スニペットに切り替え";
+"quick.switchToHistory" = "履歴に切り替え";
+"quick.switchSearchSection" = "履歴とスニペットを切り替え";
+"quick.switchSnippetSort" = "スニペットの並び順を切り替え";
+"quick.snippetMove" = "スニペット選択を移動";
