@@ -53,12 +53,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         RelayManager.shared.clipboardController = ClipboardManager.shared
         RelayManager.shared.hotkeyController = HotkeyManager.shared
 
-        if !hasCompletedOnboarding || needsAccessibility {
+        if !hasCompletedOnboarding {
             let hideDock = UserDefaults.standard.bool(forKey: "hideDockIcon")
             if !hideDock {
                 NSApp.setActivationPolicy(.regular)
             }
             showOnboardingWindow()
+        } else if needsAccessibility {
+            let hideDock = UserDefaults.standard.bool(forKey: "hideDockIcon")
+            if !hideDock {
+                NSApp.setActivationPolicy(.regular)
+            }
+            showAccessibilityPrompt()
         }
 
         Task {
