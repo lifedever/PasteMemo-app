@@ -55,7 +55,7 @@ final class QuickPanelWindowController {
 
     private var positionMode: QuickPanelPositionMode {
         let rawValue = UserDefaults.standard.string(forKey: QuickPanelPositionSettings.modeKey)
-        return QuickPanelPositionMode(rawValue: rawValue ?? "") ?? .cursor
+        return QuickPanelPositionMode(rawValue: rawValue ?? "") ?? .screenCenter
     }
 
     private var screenTarget: QuickPanelScreenTarget {
@@ -302,18 +302,12 @@ final class QuickPanelWindowController {
     }
 
     private func positionAtMenuBarIcon(_ panel: NSPanel) {
-        if let frame = MenuBarAnchorStore.shared.frameInScreen {
-            let center = CGPoint(x: frame.midX, y: frame.midY)
-            let screen = ScreenLocator.screen(containing: center)
-                ?? MenuBarAnchorStore.shared.screenID.flatMap(ScreenLocator.screen(for:))
-                ?? resolveTargetScreen()
-            guard let screen else { return }
-
+        if let anchor = MenuBarIconLocator.iconFrame() {
             let origin = CGPoint(
-                x: frame.midX - panel.frame.width / 2,
-                y: frame.minY - panel.frame.height - 8
+                x: anchor.frame.midX - panel.frame.width / 2,
+                y: anchor.frame.minY - panel.frame.height - 8
             )
-            setClampedOrigin(origin, for: panel, on: screen)
+            setClampedOrigin(origin, for: panel, on: anchor.screen)
             return
         }
 

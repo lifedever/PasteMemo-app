@@ -87,7 +87,9 @@ enum ScreenLocator {
 enum ActiveWindowLocator {
     @MainActor
     static func focusedWindowFrame() -> CGRect? {
-        guard let app = NSWorkspace.shared.frontmostApplication else { return nil }
+        guard let app = NSWorkspace.shared.frontmostApplication else {
+            return nil
+        }
 
         let appElement = AXUIElementCreateApplication(app.processIdentifier)
         var windowRef: CFTypeRef?
@@ -97,6 +99,16 @@ enum ActiveWindowLocator {
             return nil
         }
         let window = windowRef as! AXUIElement
+
+        // Reject non-standard windows (e.g. Finder desktop pseudo-window, which spans all displays).
+        var subroleRef: CFTypeRef?
+        AXUIElementCopyAttributeValue(window, kAXSubroleAttribute as CFString, &subroleRef)
+        let subrole = subroleRef as? String
+        if subrole != kAXStandardWindowSubrole as String,
+           subrole != kAXDialogSubrole as String,
+           subrole != kAXFloatingWindowSubrole as String {
+            return nil
+        }
 
         var positionRef: CFTypeRef?
         var sizeRef: CFTypeRef?
@@ -118,7 +130,18 @@ enum ActiveWindowLocator {
             return nil
         }
 
-        return CGRect(origin: position, size: size)
+        return Self.axRectToCocoa(CGRect(origin: position, size: size))
+    }
+
+    /// Convert a rect from AX global coords (origin = top-left of primary screen, Y down)
+    /// to Cocoa screen coords (origin = bottom-left of primary screen, Y up).
+    @MainActor
+    static func axRectToCocoa(_ rect: CGRect) -> CGRect? {
+        guard let primary = NSScreen.screens.first(where: { $0.frame.origin == .zero })
+                ?? NSScreen.main
+        else { return nil }
+        let flippedY = primary.frame.height - rect.origin.y - rect.size.height
+        return CGRect(x: rect.origin.x, y: flippedY, width: rect.size.width, height: rect.size.height)
     }
 
     @MainActor
@@ -126,63 +149,24 @@ enum ActiveWindowLocator {
         if let frame = focusedWindowFrame(), let screen = ScreenLocator.screen(for: frame) {
             return screen
         }
-        return NSScreen.main ?? NSScreen.screenWithMouse ?? NSScreen.screens.first
+        return NSScreen.screenWithMouse ?? NSScreen.main ?? NSScreen.screens.first
     }
 }
 
-@MainActor
-final class MenuBarAnchorStore: ObservableObject {
-    static let shared = MenuBarAnchorStore()
-
-    @Published private(set) var frameInScreen: CGRect?
-    private(set) var screenID: String?
-
-    private init() {}
-
-    func update(frame: CGRect?, screenID: String?) {
-        frameInScreen = frame
-        self.screenID = screenID
-    }
-}
-
-struct MenuBarAnchorReporter: NSViewRepresentable {
-    func makeNSView(context: Context) -> MenuBarAnchorTrackingView {
-        MenuBarAnchorTrackingView()
-    }
-
-    func updateNSView(_ nsView: MenuBarAnchorTrackingView, context: Context) {
-        nsView.scheduleUpdate()
-    }
-}
-
-final class MenuBarAnchorTrackingView: NSView {
-    override func viewDidMoveToWindow() {
-        super.viewDidMoveToWindow()
-        scheduleUpdate()
-    }
-
-    override func layout() {
-        super.layout()
-        scheduleUpdate()
-    }
-
-    func scheduleUpdate() {
-        DispatchQueue.main.async { [weak self] in
-            self?.reportAnchor()
+enum MenuBarIconLocator {
+    @MainActor
+    static func iconFrame() -> (frame: CGRect, screen: NSScreen)? {
+        for window in NSApp.windows {
+            let className = String(describing: type(of: window))
+            guard className.contains("StatusBar") else { continue }
+            let frame = window.frame
+            guard frame.width > 0, frame.height > 0 else { continue }
+            let screen = window.screen
+                ?? ScreenLocator.screen(containing: CGPoint(x: frame.midX, y: frame.midY))
+            guard let screen else { continue }
+            return (frame, screen)
         }
-    }
-
-    private func reportAnchor() {
-        guard let window else { return }
-
-        let frameInWindow = convert(bounds, to: nil)
-        let frameInScreen = window.convertToScreen(frameInWindow)
-        let screen = window.screen ?? ScreenLocator.screen(containing: frameInScreen.center)
-
-        MenuBarAnchorStore.shared.update(
-            frame: frameInScreen,
-            screenID: screen.flatMap(ScreenLocator.identifier(for:))
-        )
+        return nil
     }
 }
 

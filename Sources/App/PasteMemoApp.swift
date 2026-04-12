@@ -103,10 +103,8 @@ struct PasteMemoApp: App {
         } label: {
             if let image = Self.menuBarIcon(paused: clipboardManager.isPaused, relay: RelayManager.shared.isActive, filled: menuBarIconStyle == "filled") {
                 Image(nsImage: image)
-                    .background(MenuBarAnchorReporter())
             } else {
                 Image(systemName: "doc.on.clipboard")
-                    .background(MenuBarAnchorReporter())
             }
         }
         .menuBarExtraStyle(.menu)
