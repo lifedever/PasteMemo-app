@@ -56,6 +56,11 @@ final class WebPreviewPool {
         config.userContentController.addUserScript(muteScript)
 
         webView = WKWebView(frame: .zero, configuration: config)
+        // Anti-bot guards on sites like baidu.com serve a blank body to the
+        // default WKWebView UA (it contains AppleWebKit without Version/…,
+        // matching no real Safari release). Pretend to be a stock macOS
+        // Safari so we receive the real page markup.
+        webView.customUserAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15"
         webView.allowsMagnification = true
         webView.allowsBackForwardNavigationGestures = false
         webView.setValue(false, forKey: "drawsBackground")
@@ -141,7 +146,10 @@ final class WebPreviewPool {
         }
 
         func webView(_ webView: WKWebView, didCommit navigation: WKNavigation!) {
-            pool?.markReadyAfterFirstPaint()
+            // Do not flip the ready state on commit — some sites (e.g.
+            // baidu.com) commit a navigation but then render blank or stall,
+            // leaving the viewer staring at an empty webview. Wait for
+            // didFinish which only fires after the document is fully loaded.
         }
 
         func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {

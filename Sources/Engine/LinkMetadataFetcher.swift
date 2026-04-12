@@ -40,14 +40,30 @@ actor LinkMetadataFetcher {
         return LinkMetadata(title: await titleResult, faviconData: await faviconResult)
     }
 
+    private static let userAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15"
+
     private func fetchTitle(url: URL) async -> String? {
         do {
             var request = URLRequest(url: url)
             request.timeoutInterval = 5
-            request.setValue("Mozilla/5.0", forHTTPHeaderField: "User-Agent")
+            // Anti-bot filters (baidu, many CDN WAFs) reject barebones UAs and
+            // serve an empty or interstitial body. Use a current Safari string
+            // so we receive the real HTML and can extract <title>.
+            request.setValue(Self.userAgent, forHTTPHeaderField: "User-Agent")
+            request.setValue("text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8", forHTTPHeaderField: "Accept")
+            request.setValue("zh-CN,zh;q=0.9,en;q=0.8", forHTTPHeaderField: "Accept-Language")
             let (data, _) = try await URLSession.shared.data(for: request)
-            guard let html = String(data: data.prefix(50000), encoding: .utf8) else { return nil }
-            return extractTitle(from: html)
+            let sliced = data.prefix(50000)
+            if let html = String(data: sliced, encoding: .utf8), let title = extractTitle(from: html) {
+                return title
+            }
+            // Fall back to GBK / GB18030 for legacy sites like baidu.com that
+            // still serve in that encoding when UA is not explicitly mobile.
+            let gbkEncoding = CFStringConvertEncodingToNSStringEncoding(CFStringEncoding(CFStringEncodings.GB_18030_2000.rawValue))
+            if let html = String(data: sliced, encoding: String.Encoding(rawValue: gbkEncoding)) {
+                return extractTitle(from: html)
+            }
+            return nil
         } catch {
             return nil
         }
