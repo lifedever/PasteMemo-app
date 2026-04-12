@@ -162,6 +162,26 @@ make dev
 This starts the app and automatically restarts `swift run` when files under `Sources/`, `Tests/`, or `Package.swift` change.
 If `fswatch` is installed, the script uses it. Otherwise it falls back to polling once per second.
 
+### Checks
+
+```bash
+make check
+```
+
+This runs repository-wide fast checks:
+
+- `swift build` when Swift sources are present
+- `plutil -lint` for `.strings` files
+- `bash -n` for shell scripts
+
+To enable commit-time staged checks:
+
+```bash
+make install-hooks
+```
+
+After that, each commit runs `.githooks/pre-commit`, which only checks the staged file set.
+
 ### Packaging
 
 ```bash

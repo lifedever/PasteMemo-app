@@ -120,6 +120,16 @@
 "settings.retentionDays.cleanConfirm" = "将删除 %d 条超出保留期的记录";
 "settings.retentionDays.cleanWarning" = "此操作不可恢复，确定要继续吗？";
 "settings.display" = "显示";
+"settings.quickPanelPosition" = "快捷面板位置";
+"settings.quickPanelPosition.remembered" = "记住上次位置";
+"settings.quickPanelPosition.cursor" = "光标";
+"settings.quickPanelPosition.menuBarIcon" = "菜单栏图标";
+"settings.quickPanelPosition.windowCenter" = "活动窗口中心";
+"settings.quickPanelPosition.screenCenter" = "屏幕中央";
+"settings.quickPanelTargetScreen" = "目标屏幕";
+"settings.quickPanelTargetScreen.active" = "活动屏幕";
+"settings.quickPanelTargetScreen.specified" = "指定屏幕";
+"settings.quickPanelSpecifiedScreen" = "指定显示器";
 "settings.behavior" = "行为";
 "settings.preferences" = "偏好";
 "settings.showLinkURL" = "链接显示原始网址而非页面标题";

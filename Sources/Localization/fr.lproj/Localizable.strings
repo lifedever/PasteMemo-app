@@ -135,6 +135,16 @@
 "settings.retentionDays.cleanConfirm" = "%d éléments au-delà de la période de rétention seront supprimés";
 "settings.retentionDays.cleanWarning" = "Cette action est irréversible. Continuer ?";
 "settings.display" = "Affichage";
+"settings.quickPanelPosition" = "Position du panneau rapide";
+"settings.quickPanelPosition.remembered" = "Mémoriser la dernière position";
+"settings.quickPanelPosition.cursor" = "Curseur";
+"settings.quickPanelPosition.menuBarIcon" = "Icône de la barre des menus";
+"settings.quickPanelPosition.windowCenter" = "Centre de la fenêtre active";
+"settings.quickPanelPosition.screenCenter" = "Centre de l'écran";
+"settings.quickPanelTargetScreen" = "Écran cible";
+"settings.quickPanelTargetScreen.active" = "Écran actif";
+"settings.quickPanelTargetScreen.specified" = "Écran choisi";
+"settings.quickPanelSpecifiedScreen" = "Moniteur choisi";
 "settings.behavior" = "Comportement";
 "settings.preferences" = "Préférences";
 "settings.showLinkURL" = "Afficher l'URL au lieu du titre pour les liens";

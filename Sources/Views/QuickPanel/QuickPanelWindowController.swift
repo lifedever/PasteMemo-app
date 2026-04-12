@@ -10,9 +10,10 @@ private let DEFAULT_WIDTH: CGFloat = 750
 private let DEFAULT_HEIGHT: CGFloat = 510
 private let MIN_WIDTH: CGFloat = 500
 private let MIN_HEIGHT: CGFloat = 350
-private let VERTICAL_OFFSET: CGFloat = 100
+private let TOP_INSET_RATIO: CGFloat = 0.15
 private let SIZE_KEY = "quickPanelSize"
 private let POSITION_KEY = "quickPanelPosition"
+private let POSITION_SCREEN_KEY = "quickPanelPosition.screenID"
 
 private class KeyablePanel: NSPanel {
     override var canBecomeKey: Bool { true }
@@ -50,6 +51,21 @@ final class QuickPanelWindowController {
     private var panelHeight: CGFloat {
         let saved = UserDefaults.standard.double(forKey: "\(SIZE_KEY).height")
         return saved > 0 ? max(saved, MIN_HEIGHT) : DEFAULT_HEIGHT
+    }
+
+    private var positionMode: QuickPanelPositionMode {
+        let rawValue = UserDefaults.standard.string(forKey: QuickPanelPositionSettings.modeKey)
+        return QuickPanelPositionMode(rawValue: rawValue ?? "") ?? .screenCenter
+    }
+
+    private var screenTarget: QuickPanelScreenTarget {
+        let rawValue = UserDefaults.standard.string(forKey: QuickPanelPositionSettings.screenTargetKey)
+        return QuickPanelScreenTarget(rawValue: rawValue ?? "") ?? .active
+    }
+
+    private var specifiedScreenID: String? {
+        let value = UserDefaults.standard.string(forKey: QuickPanelPositionSettings.specifiedScreenIDKey)
+        return value?.isEmpty == true ? nil : value
     }
 
     private init() {}
@@ -222,14 +238,27 @@ final class QuickPanelWindowController {
         return panel
     }
 
-    /// Position panel on the screen where the mouse is, using saved relative offset if available.
     private func positionPanel(_ panel: NSPanel) {
-        let screen = NSScreen.screenWithMouse ?? NSScreen.main ?? NSScreen.screens.first
-        guard let screen else { return }
-        let visibleFrame = screen.visibleFrame
+        switch positionMode {
+        case .remembered:
+            positionRemembered(panel)
+        case .cursor:
+            positionAtCursor(panel)
+        case .menuBarIcon:
+            positionAtMenuBarIcon(panel)
+        case .windowCenter:
+            positionAtWindowCenter(panel)
+        case .screenCenter:
+            positionAtScreenCenter(panel)
+        }
+    }
 
+    /// Position panel on the screen where the mouse is, using saved relative offset if available.
+    private func positionRemembered(_ panel: NSPanel) {
         let hasSaved = UserDefaults.standard.object(forKey: "\(POSITION_KEY).rx") != nil
-        if hasSaved {
+        if hasSaved,
+           let screen = rememberedScreen() ?? NSScreen.screenWithMouse ?? NSScreen.main ?? NSScreen.screens.first {
+            let visibleFrame = screen.visibleFrame
             // Saved offset is relative to the screen's visible frame (0.0~1.0 ratio)
             let rx = UserDefaults.standard.double(forKey: "\(POSITION_KEY).rx")
             let ry = UserDefaults.standard.double(forKey: "\(POSITION_KEY).ry")
@@ -237,24 +266,108 @@ final class QuickPanelWindowController {
             let y = visibleFrame.origin.y + ry * visibleFrame.height
             panel.setFrameOrigin(NSPoint(x: x, y: y))
         } else {
+            let screen = NSScreen.screenWithMouse ?? NSScreen.main ?? NSScreen.screens.first
+            guard let screen else { return }
             centerOnScreen(panel, screen: screen)
         }
     }
 
+    private func rememberedScreen() -> NSScreen? {
+        let screenID = UserDefaults.standard.string(forKey: POSITION_SCREEN_KEY)
+        return ScreenLocator.screen(for: screenID)
+    }
+
     private func centerOnScreen(_ panel: NSPanel, screen: NSScreen) {
         let frame = screen.visibleFrame
-        let x = frame.midX - panelWidth / 2
-        let y = frame.midY - panelHeight / 2 + VERTICAL_OFFSET
+        let x = frame.midX - panel.frame.width / 2
+        let y = preferredUpperCenterY(screen: screen, panelHeight: panel.frame.height)
         panel.setFrameOrigin(NSPoint(x: x, y: y))
+    }
+
+    private func centerOnScreenExact(_ panel: NSPanel, screen: NSScreen) {
+        let frame = screen.visibleFrame
+        let x = frame.midX - panel.frame.width / 2
+        let y = frame.midY - panel.frame.height / 2
+        panel.setFrameOrigin(NSPoint(x: x, y: y))
+    }
+
+    private func positionAtCursor(_ panel: NSPanel) {
+        guard let screen = NSScreen.screenWithMouse ?? resolveTargetScreen() else { return }
+        let mouse = NSEvent.mouseLocation
+        let origin = CGPoint(
+            x: mouse.x - panel.frame.width / 2,
+            y: mouse.y - panel.frame.height / 2
+        )
+        setClampedOrigin(origin, for: panel, on: screen)
+    }
+
+    private func positionAtMenuBarIcon(_ panel: NSPanel) {
+        if let anchor = MenuBarIconLocator.iconFrame() {
+            let origin = CGPoint(
+                x: anchor.frame.midX - panel.frame.width / 2,
+                y: anchor.frame.minY - panel.frame.height - 8
+            )
+            setClampedOrigin(origin, for: panel, on: anchor.screen)
+            return
+        }
+
+        guard let screen = resolveTargetScreen() else { return }
+        centerOnScreenExact(panel, screen: screen)
+    }
+
+    private func positionAtWindowCenter(_ panel: NSPanel) {
+        if let frame = ActiveWindowLocator.focusedWindowFrame(),
+           let screen = ScreenLocator.screen(for: frame) {
+            let origin = CGPoint(
+                x: frame.midX - panel.frame.width / 2,
+                y: frame.midY - panel.frame.height / 2
+            )
+            setClampedOrigin(origin, for: panel, on: screen)
+            return
+        }
+
+        guard let screen = resolveTargetScreen() else { return }
+        centerOnScreenExact(panel, screen: screen)
+    }
+
+    private func positionAtScreenCenter(_ panel: NSPanel) {
+        guard let screen = resolveTargetScreen() else { return }
+        centerOnScreen(panel, screen: screen)
+    }
+
+    private func resolveTargetScreen() -> NSScreen? {
+        switch screenTarget {
+        case .active:
+            ActiveWindowLocator.activeScreen()
+        case .specified:
+            ScreenLocator.screen(for: specifiedScreenID)
+                ?? ActiveWindowLocator.activeScreen()
+                ?? NSScreen.screenWithMouse
+                ?? NSScreen.main
+                ?? NSScreen.screens.first
+        }
+    }
+
+    private func setClampedOrigin(_ origin: CGPoint, for panel: NSPanel, on screen: NSScreen) {
+        let clamped = clampedOrigin(origin, panelSize: panel.frame.size, visibleFrame: screen.visibleFrame)
+        panel.setFrameOrigin(clamped)
+    }
+
+    private func clampedOrigin(_ origin: CGPoint, panelSize: CGSize, visibleFrame: CGRect) -> CGPoint {
+        let maxX = max(visibleFrame.minX, visibleFrame.maxX - panelSize.width)
+        let maxY = max(visibleFrame.minY, visibleFrame.maxY - panelSize.height)
+        return CGPoint(
+            x: min(max(origin.x, visibleFrame.minX), maxX),
+            y: min(max(origin.y, visibleFrame.minY), maxY)
+        )
     }
 
     func resetPosition() {
         UserDefaults.standard.removeObject(forKey: "\(POSITION_KEY).rx")
         UserDefaults.standard.removeObject(forKey: "\(POSITION_KEY).ry")
+        UserDefaults.standard.removeObject(forKey: POSITION_SCREEN_KEY)
         guard let panel, panel.isVisible else { return }
-        let screen = NSScreen.screenWithMouse ?? NSScreen.main ?? NSScreen.screens.first
-        guard let screen else { return }
-        centerOnScreen(panel, screen: screen)
+        positionPanel(panel)
     }
 
     private func savePosition(_ panel: NSPanel) {
@@ -266,6 +379,7 @@ final class QuickPanelWindowController {
         let ry = (panel.frame.origin.y - visibleFrame.origin.y) / visibleFrame.height
         UserDefaults.standard.set(rx, forKey: "\(POSITION_KEY).rx")
         UserDefaults.standard.set(ry, forKey: "\(POSITION_KEY).ry")
+        UserDefaults.standard.set(ScreenLocator.identifier(for: screen), forKey: POSITION_SCREEN_KEY)
     }
 
     private func installClickOutsideMonitor() {
@@ -363,7 +477,13 @@ final class QuickPanelWindowController {
     }
 
     private func recommendedTopY(screen: NSScreen, panelHeight: CGFloat) -> CGFloat {
-        screen.visibleFrame.maxY - VERTICAL_OFFSET - panelHeight
+        preferredUpperCenterY(screen: screen, panelHeight: panelHeight)
+    }
+
+    private func preferredUpperCenterY(screen: NSScreen, panelHeight: CGFloat) -> CGFloat {
+        let visibleFrame = screen.visibleFrame
+        let topInset = visibleFrame.height * TOP_INSET_RATIO
+        return visibleFrame.maxY - topInset - panelHeight
     }
 
     private func handleWindowMove() {
@@ -388,7 +508,7 @@ final class QuickPanelWindowController {
         if showV, !snappedV { hapticFeedback(); snappedV = true }
         if !showV { snappedV = false }
 
-        let guideTopY = visibleFrame.maxY - VERTICAL_OFFSET
+        let guideTopY = visibleFrame.maxY - visibleFrame.height * TOP_INSET_RATIO
         updateSnapGuide(on: screen, horizontal: showH, verticalCenter: showV && !nearTop, recommendedTop: showV && nearTop, guideTopY: guideTopY)
     }
 

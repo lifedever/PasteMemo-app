@@ -33,7 +33,8 @@ resolve_version() {
     fi
   fi
 
-  echo "VERSION is required. Example: make package VERSION=1.2.3" >&2
+  echo "VERSION is not set, and no git tag was found." >&2
+  echo "Use: make package VERSION=1.2.3" >&2
   exit 1
 }
 

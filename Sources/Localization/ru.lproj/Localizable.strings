@@ -110,6 +110,16 @@
 "settings.retentionDays.cleanConfirm" = "Будет удалено %d записей за пределами срока хранения";
 "settings.retentionDays.cleanWarning" = "Это действие нельзя отменить. Продолжить?";
 "settings.display" = "Отображение";
+"settings.quickPanelPosition" = "Положение быстрой панели";
+"settings.quickPanelPosition.remembered" = "Запоминать прошлую позицию";
+"settings.quickPanelPosition.cursor" = "Курсор";
+"settings.quickPanelPosition.menuBarIcon" = "Значок в строке меню";
+"settings.quickPanelPosition.windowCenter" = "Центр активного окна";
+"settings.quickPanelPosition.screenCenter" = "Центр экрана";
+"settings.quickPanelTargetScreen" = "Целевой экран";
+"settings.quickPanelTargetScreen.active" = "Активный экран";
+"settings.quickPanelTargetScreen.specified" = "Указанный экран";
+"settings.quickPanelSpecifiedScreen" = "Указанный дисплей";
 "settings.behavior" = "Поведение";
 "settings.preferences" = "Настройки";
 "settings.showLinkURL" = "Показывать URL вместо заголовка для ссылок";

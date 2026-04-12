@@ -225,11 +225,21 @@ struct PreferencesTab: View {
     @AppStorage("showLinkURL") private var showLinkURL = false
     @AppStorage("webPreviewEnabled") private var webPreviewEnabled = true
     @AppStorage("imageLinkPreviewEnabled") private var imageLinkPreviewEnabled = true
+    @AppStorage(QuickPanelPositionSettings.modeKey) private var quickPanelPositionMode = QuickPanelPositionMode.screenCenter.rawValue
+    @AppStorage(QuickPanelPositionSettings.screenTargetKey) private var quickPanelScreenTarget = QuickPanelScreenTarget.active.rawValue
+    @AppStorage(QuickPanelPositionSettings.specifiedScreenIDKey) private var quickPanelSpecifiedScreenID = ""
     private let allRetentionOptions = [1, 3, 7, 14, 30, 60, 90, 180, 365]
 
     private var availableOptions: [Int] { allRetentionOptions }
 
     private var showForever: Bool { true }
+    private var screenOptions: [ScreenOption] { ScreenLocator.options() }
+    private var currentPositionMode: QuickPanelPositionMode {
+        QuickPanelPositionMode(rawValue: quickPanelPositionMode) ?? .remembered
+    }
+    private var currentScreenTarget: QuickPanelScreenTarget {
+        QuickPanelScreenTarget(rawValue: quickPanelScreenTarget) ?? .active
+    }
 
     var body: some View {
         Form {
@@ -294,6 +304,67 @@ struct PreferencesTab: View {
                 }
             }
 
+            Section(L10n.tr("settings.display")) {
+                HStack {
+                    Text(L10n.tr("settings.quickPanelPosition"))
+                    Spacer()
+                    Menu {
+                        positionMenuItem(
+                            title: L10n.tr(QuickPanelPositionMode.cursor.titleKey),
+                            isSelected: currentPositionMode == .cursor
+                        ) {
+                            selectQuickPanelPosition(.cursor)
+                        }
+
+                        positionMenuItem(
+                            title: L10n.tr(QuickPanelPositionMode.menuBarIcon.titleKey),
+                            isSelected: currentPositionMode == .menuBarIcon
+                        ) {
+                            selectQuickPanelPosition(.menuBarIcon)
+                        }
+
+                        positionMenuItem(
+                            title: L10n.tr(QuickPanelPositionMode.windowCenter.titleKey),
+                            isSelected: currentPositionMode == .windowCenter
+                        ) {
+                            selectQuickPanelPosition(.windowCenter)
+                        }
+
+                        Menu(L10n.tr(QuickPanelPositionMode.screenCenter.titleKey)) {
+                            positionMenuItem(
+                                title: L10n.tr("settings.quickPanelTargetScreen.active"),
+                                isSelected: currentPositionMode == .screenCenter && currentScreenTarget == .active
+                            ) {
+                                selectQuickPanelPosition(.screenCenter, screenTarget: .active)
+                            }
+
+                            ForEach(screenOptions) { screen in
+                                positionMenuItem(
+                                    title: screen.name,
+                                    isSelected: currentPositionMode == .screenCenter
+                                        && currentScreenTarget == .specified
+                                        && quickPanelSpecifiedScreenID == screen.id
+                                ) {
+                                    selectQuickPanelPosition(.screenCenter, screenTarget: .specified, screenID: screen.id)
+                                }
+                            }
+                        }
+
+                        positionMenuItem(
+                            title: L10n.tr(QuickPanelPositionMode.remembered.titleKey),
+                            isSelected: currentPositionMode == .remembered
+                        ) {
+                            selectQuickPanelPosition(.remembered)
+                        }
+                    } label: {
+                        Text(currentPositionTitle)
+                            .foregroundStyle(.primary)
+                    }
+                    .menuStyle(.borderlessButton)
+                    .fixedSize()
+                }
+            }
+
             Section(L10n.tr("settings.behavior")) {
                 Toggle(L10n.tr("settings.autoPaste"), isOn: $quickPanelAutoPaste)
                 Toggle(L10n.tr("settings.addNewLine"), isOn: $addNewLineAfterPaste)
@@ -336,6 +407,15 @@ struct PreferencesTab: View {
         } message: {
             Text(L10n.tr("settings.retentionDays.cleanWarning"))
         }
+        .onAppear {
+            ensureSpecifiedScreenSelection()
+        }
+        .onChange(of: quickPanelPositionMode) {
+            ensureSpecifiedScreenSelection()
+        }
+        .onChange(of: quickPanelScreenTarget) {
+            ensureSpecifiedScreenSelection()
+        }
     }
 
     private func applyShortcut() {
@@ -373,6 +453,60 @@ struct PreferencesTab: View {
             }
         }
         ClipItemStore.deleteAndNotify(expiredItems, from: modelContext)
+    }
+
+    private func ensureSpecifiedScreenSelection() {
+        guard currentScreenTarget == .specified else { return }
+        guard ScreenLocator.screen(for: quickPanelSpecifiedScreenID) == nil else { return }
+        quickPanelSpecifiedScreenID = screenOptions.first?.id ?? ""
+    }
+
+    private var currentPositionTitle: String {
+        switch currentPositionMode {
+        case .remembered:
+            return L10n.tr(QuickPanelPositionMode.remembered.titleKey)
+        case .cursor:
+            return L10n.tr(QuickPanelPositionMode.cursor.titleKey)
+        case .menuBarIcon:
+            return L10n.tr(QuickPanelPositionMode.menuBarIcon.titleKey)
+        case .windowCenter:
+            return L10n.tr(QuickPanelPositionMode.windowCenter.titleKey)
+        case .screenCenter:
+            switch currentScreenTarget {
+            case .active:
+                return "\(L10n.tr(QuickPanelPositionMode.screenCenter.titleKey)) (\(L10n.tr("settings.quickPanelTargetScreen.active")))"
+            case .specified:
+                let screenName = screenOptions.first(where: { $0.id == quickPanelSpecifiedScreenID })?.name
+                    ?? L10n.tr("settings.quickPanelSpecifiedScreen")
+                return "\(L10n.tr(QuickPanelPositionMode.screenCenter.titleKey)) (\(screenName))"
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func positionMenuItem(title: String, isSelected: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            if isSelected {
+                Label(title, systemImage: "checkmark")
+            } else {
+                Text(title)
+            }
+        }
+    }
+
+    private func selectQuickPanelPosition(
+        _ mode: QuickPanelPositionMode,
+        screenTarget: QuickPanelScreenTarget = .active,
+        screenID: String? = nil
+    ) {
+        quickPanelPositionMode = mode.rawValue
+
+        if mode == .screenCenter {
+            quickPanelScreenTarget = screenTarget.rawValue
+            if screenTarget == .specified {
+                quickPanelSpecifiedScreenID = screenID ?? screenOptions.first?.id ?? ""
+            }
+        }
     }
 }
 

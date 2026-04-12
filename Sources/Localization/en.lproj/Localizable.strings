@@ -120,6 +120,16 @@
 "settings.retentionDays.cleanConfirm" = "%d items beyond the retention period will be deleted";
 "settings.retentionDays.cleanWarning" = "This action cannot be undone. Are you sure?";
 "settings.display" = "Display";
+"settings.quickPanelPosition" = "Quick Panel Position";
+"settings.quickPanelPosition.remembered" = "Remember Last Position";
+"settings.quickPanelPosition.cursor" = "Cursor";
+"settings.quickPanelPosition.menuBarIcon" = "Menu Bar Icon";
+"settings.quickPanelPosition.windowCenter" = "Active Window Center";
+"settings.quickPanelPosition.screenCenter" = "Screen Center";
+"settings.quickPanelTargetScreen" = "Target Screen";
+"settings.quickPanelTargetScreen.active" = "Active Screen";
+"settings.quickPanelTargetScreen.specified" = "Specified Screen";
+"settings.quickPanelSpecifiedScreen" = "Specified Display";
 "settings.behavior" = "Behavior";
 "settings.preferences" = "Preferences";
 "settings.showLinkURL" = "Show URL instead of page title for links";
