@@ -24,6 +24,7 @@ final class ClipItemStore {
 
     var searchText: String = "" {
         didSet {
+            guard !isApplyingBatchQuery else { return }
             guard searchText != oldValue else { return }
             cancelPendingSearchDebounce()
             let trimmed = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -41,6 +42,7 @@ final class ClipItemStore {
     }
 
     private var searchDebounceTask: Task<Void, Never>?
+    private var isApplyingBatchQuery = false
 
     private func cancelPendingSearchDebounce() {
         searchDebounceTask?.cancel()
@@ -77,6 +79,8 @@ final class ClipItemStore {
         groupName: QueryValue<String?> = .unchanged
     ) {
         cancelPendingSearchDebounce()
+        isApplyingBatchQuery = true
+        defer { isApplyingBatchQuery = false }
 
         let nextSearchText: String = switch searchText {
         case .unchanged: self.searchText
