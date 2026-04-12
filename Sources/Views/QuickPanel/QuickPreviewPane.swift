@@ -6,6 +6,16 @@ struct QuickPreviewPane: View {
     let item: ClipItem
     var searchText: String = ""
     @AppStorage(OCRTaskCoordinator.enableOCRKey) private var ocrEnabled = true
+    @State private var allowHeavyPreview = false
+
+    struct CodePreviewSummary: Equatable {
+        let language: CodeLanguage
+        let lineCount: Int
+        let characterCount: Int
+        let snippet: String
+        let isTruncated: Bool
+        let supportsExpandedPreview: Bool
+    }
 
     private var isContentImage: Bool {
         item.contentType == .image && item.imageData != nil
@@ -17,6 +27,19 @@ struct QuickPreviewPane: View {
 
     private var isSingleVideo: Bool {
         item.contentType == .video && !item.content.contains("\n")
+    }
+
+    private var heavyPreviewDelay: Duration {
+        switch item.contentType {
+        case .code, .link:
+            return .milliseconds(260)
+        default:
+            return .milliseconds(120)
+        }
+    }
+
+    private var codeSummary: CodePreviewSummary {
+        Self.buildCodeSummary(text: item.content, language: item.resolvedCodeLanguage)
     }
 
     @ViewBuilder
@@ -38,6 +61,12 @@ struct QuickPreviewPane: View {
             propertiesSection
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .task(id: item.persistentModelID) {
+            allowHeavyPreview = false
+            try? await Task.sleep(for: heavyPreviewDelay)
+            guard !Task.isCancelled else { return }
+            allowHeavyPreview = true
+        }
         } // isDeleted guard
     }
 
@@ -59,7 +88,7 @@ struct QuickPreviewPane: View {
             .padding(14)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else if item.contentType == .code {
-            CodePreviewView(code: item.content, language: item.resolvedCodeLanguage)
+            codePreview
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else if item.contentType == .text {
             previewContent
@@ -177,6 +206,7 @@ struct QuickPreviewPane: View {
             cacheKey: item.itemID,
             maxPixelSize: 1100,
             cornerRadius: 6,
+            thumbnailSize: 180,
             onDoubleClick: {
                 QuickLookHelper.shared.openInPreviewApp(item: item)
             }
@@ -318,46 +348,24 @@ struct QuickPreviewPane: View {
     private var linkPreview: some View {
         let trimmed = item.content.trimmingCharacters(in: .whitespacesAndNewlines)
         if let url = URL(string: trimmed) {
-            if (imageLinkPreviewEnabled && LinkMetadataFetcher.isImageURL(trimmed)) || webPreviewEnabled {
-                VStack(alignment: .leading, spacing: 0) {
-                    HStack(spacing: 6) {
-                        if let data = item.faviconData, let img = NSImage(data: data) {
-                            Image(nsImage: img)
-                                .resizable()
-                                .frame(width: 14, height: 14)
-                        } else {
-                            Image(systemName: "link")
-                                .font(.system(size: 12))
-                                .foregroundStyle(.secondary)
-                        }
-                        Text(trimmed)
-                            .font(.system(size: 12))
-                            .foregroundStyle(.secondary)
-                            .lineLimit(1)
-                            .textSelection(.enabled)
-                        Button {
-                            NSWorkspace.shared.open(url)
-                        } label: {
-                            Image(systemName: "arrow.up.right.square")
-                                .font(.system(size: 12))
-                                .foregroundStyle(.tertiary)
-                        }
-                        .buttonStyle(.plain)
-                        .help(L10n.tr("detail.openInBrowser"))
-                        Spacer()
-                    }
+            VStack(alignment: .leading, spacing: 0) {
+                linkSummaryHeader(url: url)
                     .padding(.horizontal, 14)
-                    .padding(.top, 10)
-                    .padding(.bottom, 8)
+                    .padding(.top, 12)
+                    .padding(.bottom, 10)
 
+                if ((imageLinkPreviewEnabled && LinkMetadataFetcher.isImageURL(trimmed)) || webPreviewEnabled), allowHeavyPreview {
+                    Divider().opacity(0.25)
                     WebPreviewView(url: url)
                         .id(url)
                         .clipShape(RoundedRectangle(cornerRadius: 6))
                         .padding(.horizontal, 10)
                         .padding(.bottom, 10)
+                } else {
+                    linkStaticPreview(url: url)
+                        .padding(.horizontal, 10)
+                        .padding(.bottom, 10)
                 }
-            } else {
-                linkStaticPreview(url: url)
             }
         } else {
             NativeTextView(text: item.content, richTextData: item.richTextData, richTextType: item.richTextType)
@@ -369,6 +377,145 @@ struct QuickPreviewPane: View {
     // MARK: - Link Static Preview
 
     @State private var isLinkButtonHovered = false
+
+    @ViewBuilder
+    private var codePreview: some View {
+        let summary = codeSummary
+
+        VStack(spacing: 0) {
+            codeSummaryHeader(summary)
+
+            Divider().opacity(0.25)
+
+            if allowHeavyPreview, summary.supportsExpandedPreview {
+                CodePreviewView(
+                    code: item.content,
+                    language: item.resolvedCodeLanguage,
+                    deferredHighlightDelayMs: 120,
+                    maximumHighlightedCharacters: 12_000
+                )
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else {
+                ScrollView {
+                    Text(summary.snippet)
+                        .font(.system(size: 12, design: .monospaced))
+                        .foregroundStyle(.secondary)
+                        .textSelection(.enabled)
+                        .frame(maxWidth: .infinity, alignment: .topLeading)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 12)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            }
+        }
+    }
+
+    private func codeSummaryHeader(_ summary: CodePreviewSummary) -> some View {
+        HStack(alignment: .top, spacing: 10) {
+            LanguageIcon(language: summary.language, size: 34)
+
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(spacing: 6) {
+                    quickMetadataBadge(summary.language.displayName)
+                    quickMetadataBadge("\(summary.lineCount)L")
+                    quickMetadataBadge("\(summary.characterCount)C")
+                }
+
+                if summary.isTruncated || !summary.supportsExpandedPreview {
+                    Text(summary.snippet)
+                        .font(.system(size: 11, design: .monospaced))
+                        .foregroundStyle(.tertiary)
+                        .lineLimit(3)
+                        .multilineTextAlignment(.leading)
+                }
+            }
+
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
+    }
+
+    private func linkSummaryHeader(url: URL) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .top, spacing: 10) {
+                if let img = validFavicon(minSize: 24) {
+                    Image(nsImage: img)
+                        .resizable()
+                        .interpolation(.high)
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: 28, height: 28)
+                } else {
+                    Image(systemName: "globe")
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundStyle(.secondary)
+                        .frame(width: 28, height: 28)
+                        .background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 8))
+                }
+
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack(spacing: 6) {
+                        quickMetadataBadge(Self.displayHost(for: url))
+                        if let scheme = url.scheme?.uppercased(), !scheme.isEmpty {
+                            quickMetadataBadge(scheme)
+                        }
+                    }
+
+                    if let title = item.linkTitle, !title.isEmpty {
+                        Text(title)
+                            .font(.system(size: 14, weight: .medium))
+                            .lineLimit(2)
+                    }
+
+                    let path = Self.displayPath(for: url)
+                    if !path.isEmpty {
+                        Text(path)
+                            .font(.system(size: 12))
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                    }
+
+                    Text(url.absoluteString)
+                        .font(.system(size: 11))
+                        .foregroundStyle(.tertiary)
+                        .lineLimit(2)
+                        .textSelection(.enabled)
+                }
+            }
+
+            HStack(spacing: 8) {
+                Button {
+                    NSWorkspace.shared.open(url)
+                } label: {
+                    Label(L10n.tr("detail.openInBrowser"), systemImage: "arrow.up.right.square")
+                        .font(.system(size: 12))
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+
+                Button {
+                    NSPasteboard.general.clearContents()
+                    NSPasteboard.general.setString(url.absoluteString, forType: .string)
+                } label: {
+                    Label(L10n.tr("action.copy"), systemImage: "doc.on.doc")
+                        .font(.system(size: 12))
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+
+                Spacer(minLength: 0)
+            }
+        }
+    }
+
+    private func quickMetadataBadge(_ text: String) -> some View {
+        Text(text)
+            .font(.system(size: 10, weight: .medium, design: .rounded))
+            .foregroundStyle(.secondary)
+            .padding(.horizontal, 7)
+            .padding(.vertical, 3)
+            .background(Color.primary.opacity(0.06), in: Capsule())
+    }
 
     @ViewBuilder
     private func linkStaticPreview(url: URL) -> some View {
@@ -430,6 +577,54 @@ struct QuickPreviewPane: View {
             return NSWorkspace.shared.icon(for: .html)
         }
         return NSWorkspace.shared.icon(forFile: browserURL.path)
+    }
+
+    static func buildCodeSummary(
+        text: String,
+        language: CodeLanguage?,
+        previewLineLimit: Int = 8,
+        previewCharacterLimit: Int = 420,
+        expandedPreviewCharacterLimit: Int = 20_000
+    ) -> CodePreviewSummary {
+        let resolvedLanguage = language ?? CodeDetector.detectLanguage(text) ?? .unknown
+        let lines = text.components(separatedBy: .newlines)
+        let lineCount = max(lines.count, 1)
+        let previewLines = Array(lines.prefix(previewLineLimit)).joined(separator: "\n")
+        var snippet = String(previewLines.prefix(previewCharacterLimit)).trimmingCharacters(in: .whitespacesAndNewlines)
+        let isTruncated = lineCount > previewLineLimit || previewLines.count > previewCharacterLimit
+
+        if snippet.isEmpty {
+            snippet = String(text.prefix(min(previewCharacterLimit, text.count))).trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+        if isTruncated, !snippet.isEmpty, !snippet.hasSuffix("…") {
+            snippet += "…"
+        }
+
+        return CodePreviewSummary(
+            language: resolvedLanguage,
+            lineCount: lineCount,
+            characterCount: text.count,
+            snippet: snippet,
+            isTruncated: isTruncated,
+            supportsExpandedPreview: text.count <= expandedPreviewCharacterLimit
+        )
+    }
+
+    static func displayHost(for url: URL) -> String {
+        let host = url.host(percentEncoded: false) ?? url.host ?? url.absoluteString
+        return host.replacingOccurrences(of: "^www\\.", with: "", options: .regularExpression)
+    }
+
+    static func displayPath(for url: URL) -> String {
+        var parts: [String] = []
+        let path = url.path
+        if !path.isEmpty, path != "/" {
+            parts.append(path)
+        }
+        if let query = URLComponents(url: url, resolvingAgainstBaseURL: false)?.query, !query.isEmpty {
+            parts.append("?\(query)")
+        }
+        return parts.joined()
     }
 
     // MARK: - Phone Preview

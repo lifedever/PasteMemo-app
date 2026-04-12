@@ -144,7 +144,9 @@ final class QuickPanelWindowController {
         let appToRestore = previousApp
         clipboardManager.writeToPasteboard(item, targetApp: appToRestore)
         item.lastUsedAt = Date()
-        try? item.modelContext?.save()
+        if let context = item.modelContext {
+            ClipItemStore.saveAndNotifyLastUsed(context)
+        }
         SoundManager.playPaste()
 
         dismiss()

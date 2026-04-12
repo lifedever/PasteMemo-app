@@ -85,13 +85,13 @@ final class OCRTaskCoordinator: ObservableObject {
                 item.ocrStatus = OCRStatus.skipped.rawValue
                 item.ocrErrorMessage = nil
                 item.ocrUpdatedAt = Date()
-                ClipItemStore.saveAndNotify(context)
+                ClipItemStore.saveAndNotifyContent(context)
                 return
             }
 
             item.ocrStatus = OCRStatus.processing.rawValue
             item.ocrErrorMessage = nil
-            ClipItemStore.saveAndNotify(context)
+            ClipItemStore.saveAndNotifyContent(context)
 
             do {
                 let result = try await ImageOCRService.shared.recognizeText(from: imageData)
@@ -101,7 +101,7 @@ final class OCRTaskCoordinator: ObservableObject {
                     refreshed.ocrStatus = result.hasText ? OCRStatus.done.rawValue : OCRStatus.skipped.rawValue
                     refreshed.ocrUpdatedAt = Date()
                     refreshed.ocrErrorMessage = nil
-                    ClipItemStore.saveAndNotify(context)
+                    ClipItemStore.saveAndNotifyContent(context)
                 }
             } catch {
                 await MainActor.run {
@@ -109,7 +109,7 @@ final class OCRTaskCoordinator: ObservableObject {
                     refreshed.ocrStatus = OCRStatus.failed.rawValue
                     refreshed.ocrUpdatedAt = Date()
                     refreshed.ocrErrorMessage = error.localizedDescription
-                    ClipItemStore.saveAndNotify(context)
+                    ClipItemStore.saveAndNotifyContent(context)
                 }
             }
         }

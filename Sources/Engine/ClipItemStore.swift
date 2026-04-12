@@ -9,6 +9,11 @@ extension Notification.Name {
 @MainActor
 @Observable
 final class ClipItemStore {
+    enum QueryValue<T> {
+        case unchanged
+        case set(T)
+    }
+
     /// All active store instances — used by deleteAndNotify to synchronously remove items
     private static var activeStores = NSHashTable<AnyObject>.weakObjects()
 
@@ -20,16 +25,27 @@ final class ClipItemStore {
     var searchText: String = "" {
         didSet {
             guard searchText != oldValue else { return }
-            searchDebounceTask?.cancel()
+            cancelPendingSearchDebounce()
+            let trimmed = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+            if trimmed.isEmpty {
+                executeSearch()
+                return
+            }
             searchDebounceTask = Task { @MainActor [weak self] in
                 try? await Task.sleep(for: .milliseconds(200))
                 guard !Task.isCancelled else { return }
                 self?.executeSearch()
+                self?.searchDebounceTask = nil
             }
         }
     }
 
     private var searchDebounceTask: Task<Void, Never>?
+
+    private func cancelPendingSearchDebounce() {
+        searchDebounceTask?.cancel()
+        searchDebounceTask = nil
+    }
 
     private func executeSearch() {
         currentOffset = 0
@@ -52,6 +68,67 @@ final class ClipItemStore {
         reload()
     }
 
+    func updateQuery(
+        searchText: QueryValue<String> = .unchanged,
+        filterType: QueryValue<ClipContentType?> = .unchanged,
+        pinnedOnly: Bool? = nil,
+        sensitiveOnly: Bool? = nil,
+        sourceApp: QueryValue<FilteredApp?> = .unchanged,
+        groupName: QueryValue<String?> = .unchanged
+    ) {
+        cancelPendingSearchDebounce()
+
+        let nextSearchText: String = switch searchText {
+        case .unchanged: self.searchText
+        case .set(let value): value
+        }
+        let nextFilterType: ClipContentType? = switch filterType {
+        case .unchanged: self.filterType
+        case .set(let value): value
+        }
+        let nextPinnedOnly = pinnedOnly ?? self.pinnedOnly
+        let nextSensitiveOnly = sensitiveOnly ?? self.sensitiveOnly
+        let nextSourceApp: FilteredApp? = switch sourceApp {
+        case .unchanged: self.sourceApp
+        case .set(let value): value
+        }
+        let nextGroupName: String? = switch groupName {
+        case .unchanged: self.groupName
+        case .set(let value): value
+        }
+
+        let changed =
+            nextSearchText != self.searchText ||
+            nextFilterType != self.filterType ||
+            nextPinnedOnly != self.pinnedOnly ||
+            nextSensitiveOnly != self.sensitiveOnly ||
+            nextSourceApp != self.sourceApp ||
+            nextGroupName != self.groupName
+
+        self.searchText = nextSearchText
+        self.filterType = nextFilterType
+        self.pinnedOnly = nextPinnedOnly
+        self.sensitiveOnly = nextSensitiveOnly
+        self.sourceApp = nextSourceApp
+        self.groupName = nextGroupName
+
+        guard changed else { return }
+        currentOffset = 0
+
+        let trimmed = nextSearchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmed.isEmpty {
+            reload()
+            return
+        }
+
+        searchDebounceTask = Task { @MainActor [weak self] in
+            try? await Task.sleep(for: .milliseconds(200))
+            guard !Task.isCancelled else { return }
+            self?.executeSearch()
+            self?.searchDebounceTask = nil
+        }
+    }
+
     var sortPinnedFirst = false
     var isActive = false
     /// Set true during bulk operations (import/restore) to suppress observer reloads
@@ -72,7 +149,7 @@ final class ClipItemStore {
 
     private var needsRefresh = true
 
-    func configure(modelContext: ModelContext) {
+    func configure(modelContext: ModelContext, reloadData: Bool = true) {
         let isFirstTime = self.modelContext == nil
         self.modelContext = modelContext
         if isFirstTime {
@@ -86,12 +163,15 @@ final class ClipItemStore {
             refreshSourceApps()
             needsRefresh = false
         }
-        reload()
+        if reloadData {
+            reload()
+        }
     }
 
     // MARK: - Public
 
     func reload() {
+        cancelPendingSearchDebounce()
         let loadCount = max(currentOffset, pageSize)
         currentOffset = 0
         hasMore = true
@@ -106,7 +186,8 @@ final class ClipItemStore {
         guard hasMore, !isLoadingMore else { return }
         isLoadingMore = true
         let ids = queryItemIDs(offset: currentOffset, limit: pageSize)
-        items.append(contentsOf: hydrateItems(ids: ids))
+        let hydrated = hydrateItems(ids: ids)
+        items.append(contentsOf: hydrated)
         hasMore = ids.count >= pageSize
         currentOffset += ids.count
         isLoadingMore = false
@@ -142,7 +223,7 @@ final class ClipItemStore {
             let predicate = #Predicate<ClipItem> { item in
                 chunkIDs.contains(item.itemID)
             }
-            var desc = FetchDescriptor<ClipItem>(predicate: predicate)
+            let desc = FetchDescriptor<ClipItem>(predicate: predicate)
             if let fetched = try? context.fetch(desc) {
                 for item in fetched {
                     map[item.itemID] = item
@@ -159,7 +240,7 @@ final class ClipItemStore {
         var params: [Any] = []
         addRetentionCondition(&conditions, &params)
         let whereClause = conditions.isEmpty ? "" : "WHERE " + conditions.joined(separator: " AND ")
-        return db.queryStrings("SELECT ZITEMID FROM ZCLIPITEM \(whereClause) ORDER BY ZLASTUSEDAT DESC LIMIT 1", params: params).first
+        return db.queryStrings("SELECT ZITEMID FROM ZCLIPITEM \(whereClause) \(orderByClause(pinnedFirst: false)) LIMIT 1", params: params).first
     }
 
     // MARK: - SQL Queries
@@ -176,9 +257,7 @@ final class ClipItemStore {
         addSearchCondition(&conditions, &params)
 
         let whereClause = conditions.isEmpty ? "" : "WHERE " + conditions.joined(separator: " AND ")
-        let orderBy = sortPinnedFirst
-            ? "ORDER BY ZISPINNED DESC, ZLASTUSEDAT DESC"
-            : "ORDER BY ZLASTUSEDAT DESC"
+        let orderBy = orderByClause(pinnedFirst: sortPinnedFirst)
 
         params.append(limit)
         params.append(offset)
@@ -201,6 +280,12 @@ final class ClipItemStore {
 
         let whereClause = conditions.isEmpty ? "" : "WHERE " + conditions.joined(separator: " AND ")
         return db.queryInt("SELECT COUNT(*) FROM ZCLIPITEM \(whereClause)", params: params)
+    }
+
+    private func orderByClause(pinnedFirst: Bool) -> String {
+        pinnedFirst
+            ? "ORDER BY ZISPINNED DESC, ZLASTUSEDAT DESC"
+            : "ORDER BY ZLASTUSEDAT DESC"
     }
 
     // MARK: - Condition Builders
@@ -276,26 +361,37 @@ final class ClipItemStore {
     func refreshSidebarCounts() {
         guard let db = openDB() else { return }
         var counts = SidebarCounts()
-        counts.all = db.queryInt("SELECT COUNT(*) FROM ZCLIPITEM")
-        counts.pinned = db.queryInt("SELECT COUNT(*) FROM ZCLIPITEM WHERE ZISPINNED = 1")
-        counts.sensitive = db.queryInt("SELECT COUNT(*) FROM ZCLIPITEM WHERE ZISSENSITIVE = 1")
-        for type in ClipContentType.visibleCases {
-            let c = db.queryInt("SELECT COUNT(*) FROM ZCLIPITEM WHERE ZCONTENTTYPERAW = ?", params: [type.rawValue])
-            if c > 0 { counts.byType[type] = c }
+        let summary = db.queryIntRow(
+            """
+            SELECT COUNT(*),
+                   COALESCE(SUM(CASE WHEN ZISPINNED = 1 THEN 1 ELSE 0 END), 0),
+                   COALESCE(SUM(CASE WHEN ZISSENSITIVE = 1 THEN 1 ELSE 0 END), 0)
+            FROM ZCLIPITEM
+            """,
+            columnCount: 3
+        )
+        counts.all = summary[0]
+        counts.pinned = summary[1]
+        counts.sensitive = summary[2]
+        let visibleTypes = Set(ClipContentType.visibleCases)
+        for (rawType, count) in db.queryStringIntPairs(
+            "SELECT ZCONTENTTYPERAW, COUNT(*) FROM ZCLIPITEM GROUP BY ZCONTENTTYPERAW"
+        ) {
+            guard count > 0,
+                  let type = ClipContentType(rawValue: rawType),
+                  visibleTypes.contains(type) else { continue }
+            counts.byType[type] = count
         }
-        let apps = db.queryStrings("SELECT DISTINCT ZSOURCEAPP FROM ZCLIPITEM WHERE ZSOURCEAPP IS NOT NULL ORDER BY ZSOURCEAPP")
-        for app in apps {
-            counts.byApp[app] = db.queryInt("SELECT COUNT(*) FROM ZCLIPITEM WHERE ZSOURCEAPP = ?", params: [app])
+        for (app, count) in db.queryStringIntPairs(
+            "SELECT ZSOURCEAPP, COUNT(*) FROM ZCLIPITEM WHERE ZSOURCEAPP IS NOT NULL GROUP BY ZSOURCEAPP ORDER BY ZSOURCEAPP"
+        ) {
+            counts.byApp[app] = count
         }
         let nullCount = db.queryInt("SELECT COUNT(*) FROM ZCLIPITEM WHERE ZSOURCEAPP IS NULL")
         if nullCount > 0 { counts.byApp[nil] = nullCount }
-        // Groups: read from SmartGroup table (count maintained by upsert/decrement)
-        let groupNames = db.queryStrings("SELECT ZNAME FROM ZSMARTGROUP ORDER BY ZSORTORDER")
-        for name in groupNames {
-            let icon = db.queryStrings("SELECT ZICON FROM ZSMARTGROUP WHERE ZNAME = ?", params: [name]).first ?? "folder"
-            let c = db.queryInt("SELECT ZCOUNT FROM ZSMARTGROUP WHERE ZNAME = ?", params: [name])
-            counts.byGroup.append((name: name, icon: icon, count: c))
-        }
+        counts.byGroup = db.queryStringStringIntTuples(
+            "SELECT ZNAME, COALESCE(ZICON, 'folder'), ZCOUNT FROM ZSMARTGROUP ORDER BY ZSORTORDER"
+        ).map { (name: $0.0, icon: $0.1, count: $0.2) }
         sidebarCounts = counts
     }
 
@@ -333,6 +429,10 @@ final class ClipItemStore {
 
     /// Post this notification after pin/sensitive/delete to trigger immediate reload
     static let itemDidUpdateNotification = Notification.Name("ClipItemStoreItemDidUpdate")
+    /// Post this notification after content/title/OCR updates that do not affect sidebar counts
+    static let itemContentDidUpdateNotification = Notification.Name("ClipItemStoreItemContentDidUpdate")
+    /// Post this notification after `lastUsedAt` updates to trigger a lightweight reorder refresh
+    static let itemLastUsedDidUpdateNotification = Notification.Name("ClipItemStoreItemLastUsedDidUpdate")
 
     /// Remove items from store, delete from context, save, and notify.
     /// This is the ONLY safe way to delete ClipItems — ensures store.items
@@ -365,7 +465,19 @@ final class ClipItemStore {
         NotificationCenter.default.post(name: itemDidUpdateNotification, object: nil)
     }
 
+    static func saveAndNotifyContent(_ context: ModelContext) {
+        try? context.save()
+        NotificationCenter.default.post(name: itemContentDidUpdateNotification, object: nil)
+    }
+
+    static func saveAndNotifyLastUsed(_ context: ModelContext) {
+        try? context.save()
+        NotificationCenter.default.post(name: itemLastUsedDidUpdateNotification, object: nil)
+    }
+
     private var immediateObserver: AnyCancellable?
+    private var lightweightObserver: AnyCancellable?
+    private var contentObserver: AnyCancellable?
 
     private func observeChanges() {
         observer = NotificationCenter.default
@@ -393,6 +505,24 @@ final class ClipItemStore {
                 self.performRefresh()
             }
 
+        lightweightObserver = NotificationCenter.default
+            .publisher(for: Self.itemLastUsedDidUpdateNotification)
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in
+                guard let self, self.isActive, !self.isRefreshing else { return }
+                self.skipNextThrottledRefresh = true
+                self.performLightweightRefresh()
+            }
+
+        contentObserver = NotificationCenter.default
+            .publisher(for: Self.itemContentDidUpdateNotification)
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in
+                guard let self, self.isActive, !self.isRefreshing else { return }
+                self.skipNextThrottledRefresh = true
+                self.performLightweightRefresh()
+            }
+
         typeOrderObserver = NotificationCenter.default
             .publisher(for: .typeOrderDidChange)
             .receive(on: RunLoop.main)
@@ -407,6 +537,14 @@ final class ClipItemStore {
         refreshAvailableTypes()
         refreshSidebarCounts()
         refreshSourceApps()
+        needsRefresh = false
+        reload()
+        isRefreshing = false
+    }
+
+    private func performLightweightRefresh() {
+        isRefreshing = true
+        invalidateDB()
         needsRefresh = false
         reload()
         isRefreshing = false

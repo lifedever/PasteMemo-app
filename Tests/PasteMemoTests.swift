@@ -76,6 +76,114 @@ struct PasteMemoTests {
         #expect(items[0].createdAt == originalDate)
     }
 
+    @Test("Plain text matches adjacent rich text duplicate and upgrades existing item")
+    @MainActor func richTextDuplicateUpgradesExistingPlainItem() throws {
+        let container = try ModelContainer(
+            for: ClipItem.self, SmartGroup.self, AutomationRule.self,
+            configurations: ModelConfiguration(isStoredInMemoryOnly: true)
+        )
+        let context = container.mainContext
+
+        let existing = ClipItem(
+            content: "hello",
+            contentType: .text,
+            sourceApp: "Old App",
+            createdAt: Date(timeIntervalSince1970: 100),
+            lastUsedAt: Date(timeIntervalSince1970: 100)
+        )
+        context.insert(existing)
+        try context.save()
+
+        let richData = Data("{\\rtf1 rich}".utf8)
+        let incoming = ClipItem(
+            content: "hello",
+            contentType: .text,
+            sourceApp: "New App",
+            createdAt: Date(timeIntervalSince1970: 200),
+            lastUsedAt: Date(timeIntervalSince1970: 200),
+            richTextData: richData,
+            richTextType: "rtf"
+        )
+
+        let matched = ClipboardManager.shared.findExistingDuplicate(for: incoming, in: context)
+        #expect(matched?.persistentModelID == existing.persistentModelID)
+
+        ClipboardManager.shared.reuseExistingDuplicate(existing, with: incoming, in: context)
+        try context.save()
+
+        #expect(existing.richTextData == richData)
+        #expect(existing.richTextType == "rtf")
+        #expect(existing.sourceApp == "New App")
+    }
+
+    @Test("Rich text matches adjacent plain text duplicate without losing formatting")
+    @MainActor func plainTextDuplicateKeepsExistingRichItem() throws {
+        let container = try ModelContainer(
+            for: ClipItem.self, SmartGroup.self, AutomationRule.self,
+            configurations: ModelConfiguration(isStoredInMemoryOnly: true)
+        )
+        let context = container.mainContext
+
+        let richData = Data("<b>hello</b>".utf8)
+        let existing = ClipItem(
+            content: "hello",
+            contentType: .text,
+            sourceApp: "Old App",
+            createdAt: Date(timeIntervalSince1970: 100),
+            lastUsedAt: Date(timeIntervalSince1970: 100),
+            richTextData: richData,
+            richTextType: "html"
+        )
+        context.insert(existing)
+        try context.save()
+
+        let incoming = ClipItem(
+            content: "hello",
+            contentType: .text,
+            sourceApp: "New App",
+            createdAt: Date(timeIntervalSince1970: 200),
+            lastUsedAt: Date(timeIntervalSince1970: 200)
+        )
+
+        let matched = ClipboardManager.shared.findExistingDuplicate(for: incoming, in: context)
+        #expect(matched?.persistentModelID == existing.persistentModelID)
+
+        ClipboardManager.shared.reuseExistingDuplicate(existing, with: incoming, in: context)
+        try context.save()
+
+        #expect(existing.richTextData == richData)
+        #expect(existing.richTextType == "html")
+        #expect(existing.sourceApp == "New App")
+    }
+
+    @Test("Different rich text payloads are not treated as duplicates")
+    @MainActor func differentRichTextPayloadsRemainDistinct() throws {
+        let container = try ModelContainer(
+            for: ClipItem.self, SmartGroup.self, AutomationRule.self,
+            configurations: ModelConfiguration(isStoredInMemoryOnly: true)
+        )
+        let context = container.mainContext
+
+        let existing = ClipItem(
+            content: "hello",
+            contentType: .text,
+            richTextData: Data("<b>hello</b>".utf8),
+            richTextType: "html"
+        )
+        context.insert(existing)
+        try context.save()
+
+        let incoming = ClipItem(
+            content: "hello",
+            contentType: .text,
+            richTextData: Data("<i>hello</i>".utf8),
+            richTextType: "html"
+        )
+
+        let matched = ClipboardManager.shared.findExistingDuplicate(for: incoming, in: context)
+        #expect(matched == nil)
+    }
+
     @Test("Retry OCR respects global OCR setting")
     @MainActor func retryOCRRespectsGlobalSetting() {
         let defaults = UserDefaults.standard
@@ -136,6 +244,54 @@ struct PasteMemoTests {
         let snippet = String(attributed.characters)
         #expect(snippet.contains("line 42"))
         #expect(snippet.contains("error happened"))
+    }
+
+    @Test("Quick preview OCR snippet falls back to compact prefix when query is missing")
+    @MainActor func quickPreviewOCRSnippetWithoutMatch() {
+        let text = Array(repeating: "0123456789", count: 30).joined()
+        let attributed = QuickPreviewPane.buildOCRSnippet(text: text, query: "missing")
+        let snippet = String(attributed.characters)
+
+        #expect(snippet.count <= 221)
+        #expect(snippet.hasPrefix("0123456789"))
+    }
+
+    @Test("Quick preview code summary captures language, counts and truncation")
+    @MainActor func quickPreviewCodeSummary() {
+        let code = """
+        import Foundation
+        struct Demo {
+            func run() {
+                print("hello")
+            }
+        }
+        """
+
+        let summary = QuickPreviewPane.buildCodeSummary(text: code, language: .swift, previewLineLimit: 3, previewCharacterLimit: 80)
+
+        #expect(summary.language == .swift)
+        #expect(summary.lineCount == 6)
+        #expect(summary.characterCount == code.count)
+        #expect(summary.isTruncated)
+        #expect(summary.snippet.contains("import Foundation"))
+        #expect(summary.snippet.hasSuffix("…"))
+    }
+
+    @Test("Quick preview code summary disables expanded preview for very large code")
+    @MainActor func quickPreviewCodeSummaryDisablesExpandedPreview() {
+        let code = Array(repeating: "let value = 1", count: 4000).joined(separator: "\n")
+
+        let summary = QuickPreviewPane.buildCodeSummary(text: code, language: .swift, expandedPreviewCharacterLimit: 5000)
+
+        #expect(!summary.supportsExpandedPreview)
+    }
+
+    @Test("Quick preview link summary strips www and preserves path/query")
+    @MainActor func quickPreviewLinkSummaryHelpers() {
+        let url = URL(string: "https://www.example.com/docs/page?ref=abc&lang=en")!
+
+        #expect(QuickPreviewPane.displayHost(for: url) == "example.com")
+        #expect(QuickPreviewPane.displayPath(for: url) == "/docs/page?ref=abc&lang=en")
     }
 
     @Test("OCR language list prioritizes Chinese when app language is Chinese")

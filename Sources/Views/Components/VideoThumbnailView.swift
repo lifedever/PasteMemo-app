@@ -71,38 +71,18 @@ struct VideoThumbnailView: View {
     }
 
     private func generateThumbnail() async {
-        let url = URL(fileURLWithPath: path)
-        guard FileManager.default.fileExists(atPath: path) else { return }
-
-        let asset = AVURLAsset(url: url)
-        let generator = AVAssetImageGenerator(asset: asset)
-        generator.appliesPreferredTrackTransform = true
-        generator.maximumSize = CGSize(width: 800, height: 800)
-
-        do {
-            let (cgImage, _) = try await generator.image(at: CMTime(seconds: 1, preferredTimescale: 600))
-            let image = NSImage(cgImage: cgImage, size: NSSize(width: cgImage.width, height: cgImage.height))
-
-            let totalSeconds = try await CMTimeGetSeconds(asset.load(.duration))
-            let formatted = formatDuration(totalSeconds)
-
-            await MainActor.run {
-                thumbnail = image
-                duration = formatted
-            }
-        } catch {
-            // Thumbnail generation failed — placeholder stays
+        if let cached = ImageCache.shared.videoThumbnail(forPath: path) {
+            thumbnail = cached
+            duration = ImageCache.shared.cachedVideoDuration(forPath: path) ?? ""
+            return
         }
-    }
 
-    private func formatDuration(_ seconds: Float64) -> String {
-        guard seconds.isFinite, seconds > 0 else { return "" }
-        let total = Int(seconds)
-        let h = total / 3600
-        let m = (total % 3600) / 60
-        let s = total % 60
-        if h > 0 { return String(format: "%d:%02d:%02d", h, m, s) }
-        return String(format: "%d:%02d", m, s)
+        let task = ImageCache.shared.videoThumbnailTask(forPath: path)
+        _ = await task.value
+
+        guard !Task.isCancelled else { return }
+        thumbnail = ImageCache.shared.videoThumbnail(forPath: path)
+        duration = ImageCache.shared.cachedVideoDuration(forPath: path) ?? ""
     }
 }
 

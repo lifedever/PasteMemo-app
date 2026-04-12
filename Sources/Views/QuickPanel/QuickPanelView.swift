@@ -1303,7 +1303,7 @@ struct QuickPanelView: View {
         pasteboard.setString(merged, forType: .string)
         clipboardManager.lastChangeCount = pasteboard.changeCount
         items.forEach { $0.lastUsedAt = Date() }
-        try? modelContext.save()
+        ClipItemStore.saveAndNotifyLastUsed(modelContext)
 
         if playSound {
             SoundManager.playCopy()
@@ -1506,7 +1506,9 @@ struct QuickPanelView: View {
         }
 
         item.lastUsedAt = Date()
-        try? item.modelContext?.save()
+        if let context = item.modelContext {
+            ClipItemStore.saveAndNotifyLastUsed(context)
+        }
         SoundManager.playCopy()
         QuickPanelWindowController.shared.dismiss()
         GlobalToast.show(L10n.tr("action.copied"))

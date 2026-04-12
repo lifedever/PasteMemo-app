@@ -6,9 +6,11 @@ struct AsyncPreviewImageView: View {
     let cacheKey: String
     var maxPixelSize: CGFloat = 1200
     var cornerRadius: CGFloat = 8
+    var thumbnailSize: CGFloat = 240
     var onDoubleClick: (() -> Void)? = nil
 
     @State private var image: NSImage?
+    @State private var thumbnail: NSImage?
     @State private var isLoading = false
 
     var body: some View {
@@ -17,6 +19,12 @@ struct AsyncPreviewImageView: View {
                 Image(nsImage: image)
                     .resizable()
                     .interpolation(.high)
+                    .aspectRatio(contentMode: .fit)
+                    .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
+            } else if let thumbnail {
+                Image(nsImage: thumbnail)
+                    .resizable()
+                    .interpolation(.medium)
                     .aspectRatio(contentMode: .fit)
                     .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
             } else if data != nil {
@@ -42,12 +50,14 @@ struct AsyncPreviewImageView: View {
     private func loadImage() async {
         guard let data else {
             image = nil
+            thumbnail = nil
             isLoading = false
             return
         }
 
         if let cached = ImageCache.shared.cachedPreview(for: cacheKey, maxDimension: maxPixelSize) {
             image = cached
+            thumbnail = nil
             isLoading = false
             return
         }
@@ -55,15 +65,21 @@ struct AsyncPreviewImageView: View {
         image = nil
         isLoading = true
 
-        await withCheckedContinuation { continuation in
-            DispatchQueue.global(qos: .userInitiated).async {
-                _ = ImageCache.shared.preview(for: data, key: cacheKey, maxDimension: maxPixelSize)
-                continuation.resume()
-            }
+        if let cachedThumbnail = ImageCache.shared.cachedThumbnail(for: cacheKey, size: thumbnailSize) {
+            thumbnail = cachedThumbnail
+        } else {
+            let thumbnailTask = ImageCache.shared.thumbnailTask(for: data, key: cacheKey, size: thumbnailSize)
+            _ = await thumbnailTask.value
+            guard !Task.isCancelled else { return }
+            thumbnail = ImageCache.shared.cachedThumbnail(for: cacheKey, size: thumbnailSize)
         }
+
+        let previewTask = ImageCache.shared.previewTask(for: data, key: cacheKey, maxDimension: maxPixelSize)
+        _ = await previewTask.value
 
         guard !Task.isCancelled else { return }
         image = ImageCache.shared.cachedPreview(for: cacheKey, maxDimension: maxPixelSize)
+        if image != nil { thumbnail = nil }
         isLoading = false
     }
 
