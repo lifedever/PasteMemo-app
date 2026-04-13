@@ -132,6 +132,7 @@
 "settings.shortcuts" = "ショートカット";
 "settings.quickPanelShortcut" = "クイックペースト";
 "settings.managerShortcut" = "Open Manager";
+"settings.relayShortcut" = "リレー開始";
 "settings.shortcut.none" = "未設定";
 "settings.paste" = "ペースト";
 "settings.autoPaste" = "Enterでアプリに直接ペースト";

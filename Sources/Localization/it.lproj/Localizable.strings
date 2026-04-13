@@ -97,6 +97,7 @@
 "settings.shortcuts" = "Scorciatoie";
 "settings.quickPanelShortcut" = "Incolla Rapido";
 "settings.managerShortcut" = "Open Manager";
+"settings.relayShortcut" = "Avvia staffetta";
 "settings.shortcut.none" = "Non impostata";
 "settings.shortcut.clickToRecord" = "Clicca per registrare";
 "settings.shortcut.pressKey" = "Premi scorciatoia…";

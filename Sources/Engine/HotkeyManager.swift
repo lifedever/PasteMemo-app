@@ -6,6 +6,7 @@ private let DEFAULT_KEY_CODE = 0x09 // V
 private let DEFAULT_MODIFIERS = cmdKey | shiftKey
 private let HOTKEY_ID_QUICK_PANEL: UInt32 = 1
 private let HOTKEY_ID_MANAGER: UInt32 = 2
+private let HOTKEY_ID_RELAY: UInt32 = 3
 
 @MainActor
 final class HotkeyManager: ObservableObject {
@@ -14,6 +15,7 @@ final class HotkeyManager: ObservableObject {
     @Published var isQuickPanelVisible = false
     private var hotKeyRef: EventHotKeyRef?
     private var managerHotKeyRef: EventHotKeyRef?
+    private var relayHotKeyRef: EventHotKeyRef?
     private var eventHandler: EventHandlerRef?
 
     // MARK: - Quick Panel Shortcut
@@ -84,6 +86,42 @@ final class HotkeyManager: ObservableObject {
         objectWillChange.send()
     }
 
+    // MARK: - Relay Shortcut
+
+    var isRelayCleared: Bool {
+        UserDefaults.standard.object(forKey: "relayHotkeyKeyCode") == nil
+            || UserDefaults.standard.integer(forKey: "relayHotkeyKeyCode") == -1
+    }
+
+    var relayKeyCode: Int {
+        let stored = UserDefaults.standard.integer(forKey: "relayHotkeyKeyCode")
+        if stored == -1 { return -1 }
+        guard UserDefaults.standard.object(forKey: "relayHotkeyKeyCode") != nil else { return -1 }
+        return stored
+    }
+
+    var relayModifiers: Int {
+        let stored = UserDefaults.standard.integer(forKey: "relayHotkeyModifiers")
+        if stored == -1 { return 0 }
+        guard UserDefaults.standard.object(forKey: "relayHotkeyModifiers") != nil else { return 0 }
+        return stored
+    }
+
+    func updateRelayShortcut(keyCode: Int, modifiers: Int) {
+        UserDefaults.standard.set(keyCode, forKey: "relayHotkeyKeyCode")
+        UserDefaults.standard.set(modifiers, forKey: "relayHotkeyModifiers")
+        unregisterRelayHotKey()
+        registerRelayHotKey()
+        objectWillChange.send()
+    }
+
+    func clearRelayShortcut() {
+        UserDefaults.standard.set(-1, forKey: "relayHotkeyKeyCode")
+        UserDefaults.standard.set(-1, forKey: "relayHotkeyModifiers")
+        unregisterRelayHotKey()
+        objectWillChange.send()
+    }
+
     // MARK: - Registration
 
     private init() {}
@@ -94,6 +132,7 @@ final class HotkeyManager: ObservableObject {
         // Clean up partial state
         unregisterHotKey()
         unregisterManagerHotKey()
+        unregisterRelayHotKey()
         if let handler = eventHandler { RemoveEventHandler(handler); eventHandler = nil }
 
         var eventType = EventTypeSpec()
@@ -111,6 +150,8 @@ final class HotkeyManager: ObservableObject {
                         HotkeyManager.shared.toggleQuickPanel()
                     case HOTKEY_ID_MANAGER:
                         AppAction.shared.openMainWindow?()
+                    case HOTKEY_ID_RELAY:
+                        RelayManager.shared.activate()
                     default:
                         break
                     }
@@ -125,6 +166,7 @@ final class HotkeyManager: ObservableObject {
 
         registerHotKey()
         registerManagerHotKey()
+        registerRelayHotKey()
         startDoubleTapDetector()
     }
 
@@ -139,6 +181,7 @@ final class HotkeyManager: ObservableObject {
     func unregister() {
         unregisterHotKey()
         unregisterManagerHotKey()
+        unregisterRelayHotKey()
         if let handler = eventHandler {
             RemoveEventHandler(handler)
             eventHandler = nil
@@ -182,6 +225,28 @@ final class HotkeyManager: ObservableObject {
         guard let ref = managerHotKeyRef else { return }
         UnregisterEventHotKey(ref)
         managerHotKeyRef = nil
+    }
+
+    private func registerRelayHotKey() {
+        guard !isRelayCleared else { return }
+        var hotKeyID = EventHotKeyID()
+        hotKeyID.signature = HOTKEY_SIGNATURE
+        hotKeyID.id = HOTKEY_ID_RELAY
+
+        RegisterEventHotKey(
+            UInt32(relayKeyCode),
+            UInt32(relayModifiers),
+            hotKeyID,
+            GetApplicationEventTarget(),
+            0,
+            &relayHotKeyRef
+        )
+    }
+
+    private func unregisterRelayHotKey() {
+        guard let ref = relayHotKeyRef else { return }
+        UnregisterEventHotKey(ref)
+        relayHotKeyRef = nil
     }
 
     private func startDoubleTapDetector() {

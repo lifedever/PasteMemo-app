@@ -105,6 +105,7 @@
 "settings.shortcuts" = "Shortcuts";
 "settings.quickPanelShortcut" = "Quick Paste";
 "settings.managerShortcut" = "Open Manager";
+"settings.relayShortcut" = "Start Relay";
 "settings.shortcut.none" = "Not set";
 "settings.shortcut.clickToRecord" = "Click to record";
 "settings.shortcut.pressKey" = "Press shortcut…";

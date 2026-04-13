@@ -124,6 +124,7 @@
 "settings.shortcuts" = "Raccourcis";
 "settings.quickPanelShortcut" = "Collage rapide";
 "settings.managerShortcut" = "Open Manager";
+"settings.relayShortcut" = "Démarrer le relais";
 "settings.shortcut.none" = "Non défini";
 "settings.paste" = "Collage";
 "settings.autoPaste" = "Coller dans l'app avec Entrée";

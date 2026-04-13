@@ -97,6 +97,7 @@
 "settings.shortcuts" = "Горячие клавиши";
 "settings.quickPanelShortcut" = "Быстрая вставка";
 "settings.managerShortcut" = "Open Manager";
+"settings.relayShortcut" = "Начать эстафету";
 "settings.shortcut.none" = "Не задано";
 "settings.shortcut.clickToRecord" = "Нажмите для записи";
 "settings.shortcut.pressKey" = "Нажмите клавиши…";

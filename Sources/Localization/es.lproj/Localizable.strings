@@ -124,6 +124,7 @@
 "settings.shortcuts" = "Atajos";
 "settings.quickPanelShortcut" = "Pegado rápido";
 "settings.managerShortcut" = "Open Manager";
+"settings.relayShortcut" = "Iniciar relevo";
 "settings.shortcut.none" = "No configurado";
 "settings.paste" = "Pegar";
 "settings.autoPaste" = "Pegar en la app con Enter";

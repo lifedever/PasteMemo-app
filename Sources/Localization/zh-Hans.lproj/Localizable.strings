@@ -105,6 +105,7 @@
 "settings.shortcuts" = "快捷键";
 "settings.quickPanelShortcut" = "打开快捷粘贴窗口";
 "settings.managerShortcut" = "打开管理器";
+"settings.relayShortcut" = "开启接力";
 "settings.shortcut.none" = "未设置";
 "settings.shortcut.clickToRecord" = "点击录入";
 "settings.shortcut.pressKey" = "请按快捷键…";

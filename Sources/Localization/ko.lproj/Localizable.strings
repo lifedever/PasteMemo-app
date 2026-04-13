@@ -124,6 +124,7 @@
 "settings.shortcuts" = "단축키";
 "settings.quickPanelShortcut" = "빠른 붙여넣기";
 "settings.managerShortcut" = "Open Manager";
+"settings.relayShortcut" = "릴레이 시작";
 "settings.shortcut.none" = "미설정";
 "settings.paste" = "붙여넣기";
 "settings.autoPaste" = "Enter로 앱에 바로 붙여넣기";

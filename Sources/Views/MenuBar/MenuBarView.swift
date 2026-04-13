@@ -56,8 +56,15 @@ struct MenuBarContent: View {
                 Text("\(L10n.tr("relay.title")) (\(RelayManager.shared.progressText)) — \(L10n.tr("relay.exitRelay"))")
             }
         } else {
-            Button(L10n.tr("relay.startRelay")) {
+            Button {
                 RelayManager.shared.activate()
+            } label: {
+                let shortcut = hotkeyManager.isRelayCleared ? "" : shortcutDisplayString(keyCode: hotkeyManager.relayKeyCode, modifiers: hotkeyManager.relayModifiers)
+                if shortcut.isEmpty {
+                    Text(L10n.tr("relay.startRelay"))
+                } else {
+                    Text("\(L10n.tr("relay.startRelay"))    \(shortcut)")
+                }
             }
         }
 

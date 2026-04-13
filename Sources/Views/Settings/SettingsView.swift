@@ -10,6 +10,8 @@ struct SettingsView: View {
                 .tabItem { Label(L10n.tr("settings.general"), systemImage: "gear") }
             PreferencesTab()
                 .tabItem { Label(L10n.tr("settings.preferences"), systemImage: "slider.horizontal.3") }
+            ShortcutsTab()
+                .tabItem { Label(L10n.tr("settings.shortcuts"), systemImage: "keyboard") }
             RelayTab()
                 .tabItem { Label(L10n.tr("relay.tab"), systemImage: "arrow.forward") }
             PrivacyTab()
@@ -25,7 +27,7 @@ struct SettingsView: View {
             AboutTab()
                 .tabItem { Label(L10n.tr("settings.about"), systemImage: "info.circle") }
         }
-        .frame(width: 540)
+        .frame(width: 620)
         .fixedSize(horizontal: false, vertical: true)
         .scrollDisabled(true)
         .localized()
@@ -207,39 +209,16 @@ struct DataTab: View {
 
 // MARK: - Preferences Tab
 
-struct PreferencesTab: View {
+struct ShortcutsTab: View {
     @ObservedObject private var hotkeyManager = HotkeyManager.shared
-    @Environment(\.modelContext) private var modelContext
     @AppStorage("hotkeyKeyCode") private var hotkeyKeyCode = 0x09
     @AppStorage("hotkeyModifiers") private var hotkeyModifiers = cmdKey | shiftKey
     @AppStorage("managerHotkeyKeyCode") private var managerKeyCode = -1
     @AppStorage("managerHotkeyModifiers") private var managerModifiers = -1
+    @AppStorage("relayHotkeyKeyCode") private var relayKeyCode = -1
+    @AppStorage("relayHotkeyModifiers") private var relayModifiers = -1
     @AppStorage("doubleTapEnabled") private var doubleTapEnabled = false
     @AppStorage("doubleTapModifier") private var doubleTapModifier = 0
-    @AppStorage("retentionDays") private var retentionDays = 90
-    @State private var pendingRetentionOldDays = 0
-    @State private var pendingExpiredCount = 0
-    @State private var showRetentionCleanConfirm = false
-    @AppStorage("quickPanelAutoPaste") private var quickPanelAutoPaste = true
-    @AppStorage("addNewLineAfterPaste") private var addNewLineAfterPaste = false
-    @AppStorage("showLinkURL") private var showLinkURL = false
-    @AppStorage("webPreviewEnabled") private var webPreviewEnabled = true
-    @AppStorage("imageLinkPreviewEnabled") private var imageLinkPreviewEnabled = true
-    @AppStorage(QuickPanelPositionSettings.modeKey) private var quickPanelPositionMode = QuickPanelPositionMode.screenCenter.rawValue
-    @AppStorage(QuickPanelPositionSettings.screenTargetKey) private var quickPanelScreenTarget = QuickPanelScreenTarget.active.rawValue
-    @AppStorage(QuickPanelPositionSettings.specifiedScreenIDKey) private var quickPanelSpecifiedScreenID = ""
-    private let allRetentionOptions = [1, 3, 7, 14, 30, 60, 90, 180, 365]
-
-    private var availableOptions: [Int] { allRetentionOptions }
-
-    private var showForever: Bool { true }
-    private var screenOptions: [ScreenOption] { ScreenLocator.options() }
-    private var currentPositionMode: QuickPanelPositionMode {
-        QuickPanelPositionMode(rawValue: quickPanelPositionMode) ?? .remembered
-    }
-    private var currentScreenTarget: QuickPanelScreenTarget {
-        QuickPanelScreenTarget(rawValue: quickPanelScreenTarget) ?? .active
-    }
 
     var body: some View {
         Form {
@@ -288,6 +267,28 @@ struct PreferencesTab: View {
                     .pointerCursor()
                 }
 
+                HStack {
+                    Text(L10n.tr("settings.relayShortcut"))
+                    Spacer()
+                    if hotkeyManager.isRelayCleared {
+                        Text(L10n.tr("settings.shortcut.none"))
+                            .foregroundStyle(.tertiary)
+                            .font(.callout)
+                    }
+                    ShortcutRecorder(keyCode: $relayKeyCode, modifiers: $relayModifiers, onChanged: applyRelayShortcut)
+                        .frame(width: 140, height: 24)
+                    Button {
+                        hotkeyManager.clearRelayShortcut()
+                        relayKeyCode = -1
+                        relayModifiers = -1
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .foregroundStyle(.secondary)
+                    }
+                    .buttonStyle(.plain)
+                    .pointerCursor()
+                }
+
                 Toggle(L10n.tr("settings.doubleTap"), isOn: $doubleTapEnabled)
                     .onChange(of: doubleTapEnabled) {
                         DoubleTapDetector.shared.restart()
@@ -303,7 +304,54 @@ struct PreferencesTab: View {
                     }
                 }
             }
+        }
+        .formStyle(.grouped)
+    }
 
+    private func applyShortcut() {
+        HotkeyManager.shared.updateShortcut(keyCode: hotkeyKeyCode, modifiers: hotkeyModifiers)
+    }
+
+    private func applyManagerShortcut() {
+        HotkeyManager.shared.updateManagerShortcut(keyCode: managerKeyCode, modifiers: managerModifiers)
+    }
+
+    private func applyRelayShortcut() {
+        HotkeyManager.shared.updateRelayShortcut(keyCode: relayKeyCode, modifiers: relayModifiers)
+    }
+}
+
+// MARK: - Preferences Tab
+
+struct PreferencesTab: View {
+    @Environment(\.modelContext) private var modelContext
+    @AppStorage("retentionDays") private var retentionDays = 90
+    @State private var pendingRetentionOldDays = 0
+    @State private var pendingExpiredCount = 0
+    @State private var showRetentionCleanConfirm = false
+    @AppStorage("quickPanelAutoPaste") private var quickPanelAutoPaste = true
+    @AppStorage("addNewLineAfterPaste") private var addNewLineAfterPaste = false
+    @AppStorage("showLinkURL") private var showLinkURL = false
+    @AppStorage("webPreviewEnabled") private var webPreviewEnabled = true
+    @AppStorage("imageLinkPreviewEnabled") private var imageLinkPreviewEnabled = true
+    @AppStorage(QuickPanelPositionSettings.modeKey) private var quickPanelPositionMode = QuickPanelPositionMode.screenCenter.rawValue
+    @AppStorage(QuickPanelPositionSettings.screenTargetKey) private var quickPanelScreenTarget = QuickPanelScreenTarget.active.rawValue
+    @AppStorage(QuickPanelPositionSettings.specifiedScreenIDKey) private var quickPanelSpecifiedScreenID = ""
+    private let allRetentionOptions = [1, 3, 7, 14, 30, 60, 90, 180, 365]
+
+    private var availableOptions: [Int] { allRetentionOptions }
+
+    private var showForever: Bool { true }
+    private var screenOptions: [ScreenOption] { ScreenLocator.options() }
+    private var currentPositionMode: QuickPanelPositionMode {
+        QuickPanelPositionMode(rawValue: quickPanelPositionMode) ?? .remembered
+    }
+    private var currentScreenTarget: QuickPanelScreenTarget {
+        QuickPanelScreenTarget(rawValue: quickPanelScreenTarget) ?? .active
+    }
+
+    var body: some View {
+        Form {
             Section(L10n.tr("settings.display")) {
                 HStack {
                     Text(L10n.tr("settings.quickPanelPosition"))
@@ -416,14 +464,6 @@ struct PreferencesTab: View {
         .onChange(of: quickPanelScreenTarget) {
             ensureSpecifiedScreenSelection()
         }
-    }
-
-    private func applyShortcut() {
-        HotkeyManager.shared.updateShortcut(keyCode: hotkeyKeyCode, modifiers: hotkeyModifiers)
-    }
-
-    private func applyManagerShortcut() {
-        HotkeyManager.shared.updateManagerShortcut(keyCode: managerKeyCode, modifiers: managerModifiers)
     }
 
     private func prepareRetentionCleanup(oldDays: Int, newDays: Int) {

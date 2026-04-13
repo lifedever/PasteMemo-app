@@ -97,6 +97,7 @@
 "settings.shortcuts" = "Pintasan";
 "settings.quickPanelShortcut" = "Tempel Cepat";
 "settings.managerShortcut" = "Open Manager";
+"settings.relayShortcut" = "Mulai relay";
 "settings.shortcut.none" = "Belum diatur";
 "settings.shortcut.clickToRecord" = "Klik untuk merekam";
 "settings.shortcut.pressKey" = "Tekan pintasan…";

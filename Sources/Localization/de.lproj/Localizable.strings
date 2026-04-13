@@ -124,6 +124,7 @@
 "settings.shortcuts" = "Tastenkürzel";
 "settings.quickPanelShortcut" = "Schnelles Einfügen";
 "settings.managerShortcut" = "Open Manager";
+"settings.relayShortcut" = "Relay starten";
 "settings.shortcut.none" = "Nicht festgelegt";
 "settings.paste" = "Einfügen";
 "settings.autoPaste" = "Mit Enter direkt in App einfügen";
