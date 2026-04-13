@@ -118,11 +118,7 @@ struct MenuBarContent: View {
     }
 
     private func handleOpenQuickPanel() {
-        HotkeyManager.shared.isQuickPanelVisible = true
-        QuickPanelWindowController.shared.show(
-            clipboardManager: ClipboardManager.shared,
-            modelContainer: PasteMemoApp.sharedModelContainer
-        )
+        HotkeyManager.shared.showQuickPanel()
     }
 
     private func openAccessibilitySettings() {
