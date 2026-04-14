@@ -243,9 +243,7 @@ struct RelayQueueView: View {
                         .background(Color.primary.opacity(0.08), in: RoundedRectangle(cornerRadius: 6))
                 }
                 .buttonStyle(.plain)
-            }
 
-            HStack(spacing: 8) {
                 Button {
                     manager.deactivate(clearQueue: true)
                 } label: {
