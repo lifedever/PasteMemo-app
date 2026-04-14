@@ -206,6 +206,13 @@ final class RelayManager {
     func activate() {
         guard !isActive else { return }
         isActive = true
+
+        if let persisted = RelayQueuePersistence.load() {
+            for pItem in persisted.items {
+                items.append(RelayItem(content: pItem.content))
+            }
+        }
+
         clipboardController?.pauseMonitoring(persistent: false)
         startMonitor()
         startHotkeys()
@@ -232,13 +239,25 @@ final class RelayManager {
         startHotkeys()
     }
 
-    func deactivate() {
+    func deactivate(clearQueue: Bool = false) {
         guard isActive else { return }
         isActive = false
         isPaused = false
         stopMonitor()
         stopHotkeys()
         dismissWindow()
+
+        if clearQueue {
+            RelayQueuePersistence.delete()
+        } else {
+            let toSave = items.compactMap { item -> PersistedRelayItem? in
+                guard item.state == .pending || item.state == .current else { return nil }
+                guard !item.isImage && !item.isFile else { return nil }
+                return PersistedRelayItem(id: item.id, content: item.content)
+            }
+            RelayQueuePersistence.save(toSave)
+        }
+
         items.removeAll()
         currentIndex = 0
         clipboardController?.resumeMonitoring(persistent: false)
