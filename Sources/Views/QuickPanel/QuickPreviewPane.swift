@@ -405,27 +405,32 @@ struct QuickPreviewPane: View {
         if let url = URL(string: trimmed) {
             let webviewActive = ((imageLinkPreviewEnabled && LinkMetadataFetcher.isImageURL(trimmed)) || webPreviewEnabled) && allowHeavyPreview
             if webviewActive {
-                VStack(alignment: .leading, spacing: 0) {
-                    linkSummaryHeader(url: url)
-                        .padding(.horizontal, 14)
-                        .padding(.top, 12)
-                        .padding(.bottom, 10)
+                ZStack {
+                    // WebView 始终驻留，加载完成前透明
+                    VStack(alignment: .leading, spacing: 0) {
+                        linkSummaryHeader(url: url)
+                            .padding(.horizontal, 14)
+                            .padding(.top, 12)
+                            .padding(.bottom, 10)
 
-                    Divider().opacity(0.25)
-                    ZStack {
+                        Divider().opacity(0.25)
+
                         WebPreviewView(url: url) { ready in
                             webPreviewReady = ready
                         }
                         .id(url)
                         .clipShape(RoundedRectangle(cornerRadius: 6))
-                        .opacity(webPreviewReady ? 1 : 0)
-
-                        if !webPreviewReady {
-                            linkStaticPreview(url: url)
-                        }
+                        .padding(.horizontal, 10)
+                        .padding(.bottom, 10)
                     }
-                    .padding(.horizontal, 10)
-                    .padding(.bottom, 10)
+                    .opacity(webPreviewReady ? 1 : 0)
+
+                    // 加载态只显示居中大卡，不显示上方 header/按钮
+                    if !webPreviewReady {
+                        linkStaticPreview(url: url)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 10)
+                    }
                 }
             } else {
                 linkStaticPreview(url: url)

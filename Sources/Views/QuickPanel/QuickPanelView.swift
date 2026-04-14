@@ -152,7 +152,7 @@ struct QuickPanelView: View {
             Divider().opacity(0.3)
             footerBar
         }
-        .frame(minWidth: 500, minHeight: 350)
+        .frame(minWidth: 800, minHeight: 555)
         .overlay {
             if showCopiedToast {
                 VStack {

@@ -8,8 +8,8 @@ extension Notification.Name {
 
 private let DEFAULT_WIDTH: CGFloat = 750
 private let DEFAULT_HEIGHT: CGFloat = 510
-private let MIN_WIDTH: CGFloat = 500
-private let MIN_HEIGHT: CGFloat = 350
+private let MIN_WIDTH: CGFloat = 800
+private let MIN_HEIGHT: CGFloat = 555
 private let TOP_INSET_RATIO: CGFloat = 0.15
 private let SIZE_KEY = "quickPanelSize"
 private let POSITION_KEY = "quickPanelPosition"
@@ -18,6 +18,14 @@ private let POSITION_SCREEN_KEY = "quickPanelPosition.screenID"
 private class KeyablePanel: NSPanel {
     override var canBecomeKey: Bool { true }
     override var canBecomeMain: Bool { true }
+
+    // borderless + titled 混合 styleMask 下系统不强制 minSize，手动 clamp
+    override func setFrame(_ frameRect: NSRect, display flag: Bool) {
+        var clamped = frameRect
+        clamped.size.width = max(clamped.size.width, minSize.width)
+        clamped.size.height = max(clamped.size.height, minSize.height)
+        super.setFrame(clamped, display: flag)
+    }
 }
 
 /// Transparent view that absorbs titlebar clicks so they become background drags
@@ -79,6 +87,15 @@ final class QuickPanelWindowController {
         panel.alphaValue = 0
         panel.orderFrontRegardless()
         panel.displayIfNeeded()
+
+        // 把缩放动画的 anchor point 提前设好，show 时就不会再跳
+        if let contentView = panel.contentView {
+            contentView.wantsLayer = true
+            let bounds = contentView.bounds
+            contentView.layer?.anchorPoint = CGPoint(x: 0.5, y: 0.5)
+            contentView.layer?.position = CGPoint(x: bounds.midX, y: bounds.midY)
+        }
+
         panel.orderOut(nil)
         self.panel = panel
         isWarmedUp = true
@@ -99,30 +116,40 @@ final class QuickPanelWindowController {
         guard let panel else { return }
 
         positionPanel(panel)
-        panel.alphaValue = 1
+
+        // 起始状态：alpha 0 + scale 0.96
+        panel.alphaValue = 0
+        if let layer = panel.contentView?.layer {
+            CATransaction.begin()
+            CATransaction.setDisableActions(true)
+            layer.transform = CATransform3DMakeScale(0.96, 0.96, 1)
+            CATransaction.commit()
+        }
+
         panel.orderFrontRegardless()
         panel.makeKey()
+
+        // 动画到 alpha 1 + scale 1.0
+        NSAnimationContext.runAnimationGroup { ctx in
+            ctx.duration = 0.15
+            ctx.timingFunction = CAMediaTimingFunction(name: .easeOut)
+            panel.animator().alphaValue = 1
+        }
+        if let layer = panel.contentView?.layer {
+            let anim = CABasicAnimation(keyPath: "transform")
+            anim.fromValue = CATransform3DMakeScale(0.96, 0.96, 1)
+            anim.toValue = CATransform3DIdentity
+            anim.duration = 0.15
+            anim.timingFunction = CAMediaTimingFunction(name: .easeOut)
+            layer.add(anim, forKey: "showScale")
+            layer.transform = CATransform3DIdentity
+        }
+
         installClickOutsideMonitor()
         installDeactivationObserver()
         installMoveObserver()
         NotificationCenter.default.post(name: .quickPanelDidShow, object: nil)
         UsageTracker.pingIfNeeded(source: .quick)
-
-        // Bouncy scale-in effect
-        guard let contentView = panel.contentView else { return }
-        contentView.wantsLayer = true
-        let center = CGPoint(x: contentView.bounds.midX, y: contentView.bounds.midY)
-        contentView.layer?.anchorPoint = CGPoint(x: 0.5, y: 0.5)
-        contentView.layer?.position = center
-
-        let anim = CASpringAnimation(keyPath: "transform.scale")
-        anim.fromValue = 0.95
-        anim.toValue = 1.0
-        anim.damping = 28
-        anim.stiffness = 600
-        anim.mass = 0.6
-        anim.duration = anim.settlingDuration
-        contentView.layer?.add(anim, forKey: "bounceIn")
     }
 
     func dismiss() {
@@ -179,6 +206,7 @@ final class QuickPanelWindowController {
         )
         panel.isFloatingPanel = true
         panel.level = .floating
+        panel.animationBehavior = .none
         panel.isMovableByWindowBackground = true
         panel.backgroundColor = .clear
         panel.isOpaque = false
