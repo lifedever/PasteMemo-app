@@ -57,6 +57,7 @@
 "settings.language.restart_now" = "Jetzt neu starten";
 "settings.language.restart_later" = "Später";
 "settings.launchAtLogin" = "Bei Anmeldung starten";
+"settings.clipboardMonitoring" = "Zwischenablage-Überwachung aktivieren";
 "settings.hideDockIcon" = "Dock-Symbol ausblenden";
 "settings.hideDockIcon.hint" = "Wenn aktiviert, ist die App nur über das Menüleisten-Symbol erreichbar.";
 "settings.hideDockIcon.confirm.title" = "Dock-Symbol ausblenden?";
@@ -510,11 +511,11 @@ Verwenden Sie %@ zum Einfügen.";
 
 /* Menu (additional) */
 "menu.openMain" = "Hauptfenster öffnen";
-"menu.pause" = "Überwachung pausieren";
+"menu.pause" = "Zwischenablage-Überwachung pausieren";
 "menu.quickPanel" = "Schnelles Einfügen";
 "menu.quit" = "%@ beenden";
 "menu.accessibility.grant" = "⚠ Bedienungshilfen-Berechtigung erteilen";
-"menu.resume" = "Überwachung fortsetzen";
+"menu.resume" = "Zwischenablage-Überwachung fortsetzen";
 "menu.settings" = "Einstellungen";
 
 /* Quick Panel */

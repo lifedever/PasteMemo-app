@@ -84,6 +84,7 @@
 "settings.language.restart_now" = "Riavvia ora";
 "settings.language.restart_later" = "Più tardi";
 "settings.launchAtLogin" = "Avvia al login";
+"settings.clipboardMonitoring" = "Abilita monitoraggio appunti";
 "settings.hideDockIcon" = "Nascondi icona Dock";
 "settings.hideDockIcon.hint" = "Se attivato, l'app è accessibile solo dall'icona nella barra dei menu.";
 "settings.hideDockIcon.confirm.title" = "Nascondere l'icona del Dock?";
@@ -208,8 +209,8 @@
 /* Menu */
 "menu.openMain" = "Apri finestra principale";
 "menu.quickPanel" = "Incolla Rapido";
-"menu.pause" = "Sospendi monitoraggio";
-"menu.resume" = "Riprendi monitoraggio";
+"menu.pause" = "Sospendi monitoraggio appunti";
+"menu.resume" = "Riprendi monitoraggio appunti";
 "menu.settings" = "Impostazioni";
 "menu.quit" = "Esci da %@";
 "menu.accessibility.grant" = "⚠ Concedi permesso di accessibilità";

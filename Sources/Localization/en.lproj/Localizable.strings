@@ -92,6 +92,7 @@
 "settings.language.restart_now" = "Restart Now";
 "settings.language.restart_later" = "Later";
 "settings.launchAtLogin" = "Launch at Login";
+"settings.clipboardMonitoring" = "Enable Clipboard Monitoring";
 "settings.hideDockIcon" = "Hide Dock Icon";
 "settings.hideDockIcon.hint" = "When enabled, the app can only be accessed from the menu bar icon.";
 "settings.hideDockIcon.confirm.title" = "Hide Dock Icon?";
@@ -232,8 +233,8 @@
 /* Menu */
 "menu.openMain" = "Open Main Window";
 "menu.quickPanel" = "Quick Paste";
-"menu.pause" = "Pause Monitoring";
-"menu.resume" = "Resume Monitoring";
+"menu.pause" = "Pause Clipboard Monitoring";
+"menu.resume" = "Resume Clipboard Monitoring";
 "menu.settings" = "Settings";
 "menu.quit" = "Quit %@";
 "menu.accessibility.grant" = "⚠ Grant Accessibility Permission";

@@ -57,6 +57,7 @@
 "settings.language.restart_now" = "지금 재시작";
 "settings.language.restart_later" = "나중에";
 "settings.launchAtLogin" = "로그인 시 실행";
+"settings.clipboardMonitoring" = "클립보드 모니터링 사용";
 "settings.hideDockIcon" = "Dock 아이콘 숨기기";
 "settings.hideDockIcon.hint" = "활성화하면 메뉴 막대 아이콘에서만 앱에 접근할 수 있습니다.";
 "settings.hideDockIcon.confirm.title" = "Dock 아이콘을 숨기시겠습니까?";
@@ -514,11 +515,11 @@
 
 /* Menu - Additional */
 "menu.openMain" = "메인 윈도우 열기";
-"menu.pause" = "모니터링 일시 정지";
+"menu.pause" = "클립보드 모니터링 일시 정지";
 "menu.quickPanel" = "빠른 붙여넣기";
 "menu.quit" = "%@ 종료";
 "menu.accessibility.grant" = "⚠ 손쉬운 사용 권한 부여";
-"menu.resume" = "모니터링 재개";
+"menu.resume" = "클립보드 모니터링 재개";
 "menu.settings" = "설정";
 
 /* Quick Panel */

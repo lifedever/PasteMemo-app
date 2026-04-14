@@ -57,6 +57,7 @@
 "settings.language.restart_now" = "Reiniciar ahora";
 "settings.language.restart_later" = "Más tarde";
 "settings.launchAtLogin" = "Iniciar al arrancar";
+"settings.clipboardMonitoring" = "Activar monitoreo del portapapeles";
 "settings.hideDockIcon" = "Ocultar icono del Dock";
 "settings.hideDockIcon.hint" = "Cuando está activado, solo se puede acceder a la app desde el icono de la barra de menús.";
 "settings.hideDockIcon.confirm.title" = "¿Ocultar icono del Dock?";
@@ -514,11 +515,11 @@ Usa %@ para pegar uno por uno.";
 
 /* Menu - Additional */
 "menu.openMain" = "Abrir ventana principal";
-"menu.pause" = "Pausar monitoreo";
+"menu.pause" = "Pausar monitoreo del portapapeles";
 "menu.quickPanel" = "Pegado rápido";
 "menu.quit" = "Salir de %@";
 "menu.accessibility.grant" = "⚠ Conceder permiso de accesibilidad";
-"menu.resume" = "Reanudar monitoreo";
+"menu.resume" = "Reanudar monitoreo del portapapeles";
 "menu.settings" = "Ajustes";
 
 /* Quick Panel */

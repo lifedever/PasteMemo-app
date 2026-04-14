@@ -92,6 +92,7 @@
 "settings.language.restart_now" = "立即重启";
 "settings.language.restart_later" = "稍后";
 "settings.launchAtLogin" = "开机启动";
+"settings.clipboardMonitoring" = "启用剪贴板监听";
 "settings.hideDockIcon" = "隐藏 Dock 图标";
 "settings.hideDockIcon.hint" = "开启后，只能通过状态栏图标访问应用。";
 "settings.hideDockIcon.confirm.title" = "隐藏 Dock 图标？";
@@ -232,8 +233,8 @@
 /* Menu */
 "menu.openMain" = "打开主窗口";
 "menu.quickPanel" = "快捷粘贴";
-"menu.pause" = "暂停监听";
-"menu.resume" = "恢复监听";
+"menu.pause" = "暂停剪贴板监听";
+"menu.resume" = "恢复剪贴板监听";
 "menu.settings" = "设置";
 "menu.quit" = "退出 %@";
 "menu.accessibility.grant" = "⚠ 授权辅助功能权限";

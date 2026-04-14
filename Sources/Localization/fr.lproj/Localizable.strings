@@ -57,6 +57,7 @@
 "settings.language.restart_now" = "Redémarrer maintenant";
 "settings.language.restart_later" = "Plus tard";
 "settings.launchAtLogin" = "Lancer au démarrage";
+"settings.clipboardMonitoring" = "Activer la surveillance du presse-papiers";
 "settings.hideDockIcon" = "Masquer l'icône du Dock";
 "settings.hideDockIcon.hint" = "Lorsque activé, l'application n'est accessible que depuis l'icône de la barre des menus.";
 "settings.hideDockIcon.confirm.title" = "Masquer l'icône du Dock ?";
@@ -514,11 +515,11 @@ Utilisez %@ pour coller un par un.";
 
 /* Menu */
 "menu.openMain" = "Ouvrir la fenêtre principale";
-"menu.pause" = "Suspendre la surveillance";
+"menu.pause" = "Suspendre la surveillance du presse-papiers";
 "menu.quickPanel" = "Collage rapide";
 "menu.quit" = "Quitter %@";
 "menu.accessibility.grant" = "⚠ Autoriser l'accessibilité";
-"menu.resume" = "Reprendre la surveillance";
+"menu.resume" = "Reprendre la surveillance du presse-papiers";
 "menu.settings" = "Réglages";
 
 /* Quick Panel */

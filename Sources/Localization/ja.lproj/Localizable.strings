@@ -57,6 +57,7 @@
 "settings.language.restart_now" = "今すぐ再起動";
 "settings.language.restart_later" = "後で";
 "settings.launchAtLogin" = "ログイン時に起動";
+"settings.clipboardMonitoring" = "クリップボード監視を有効にする";
 "settings.hideDockIcon" = "Dockアイコンを非表示";
 "settings.hideDockIcon.hint" = "有効にすると、メニューバーのアイコンからのみアプリにアクセスできます。";
 "settings.hideDockIcon.confirm.title" = "Dockアイコンを非表示にしますか？";
@@ -530,11 +531,11 @@
 
 /* Menu - Additional */
 "menu.openMain" = "メインウィンドウを開く";
-"menu.pause" = "監視を一時停止";
+"menu.pause" = "クリップボード監視を一時停止";
 "menu.quickPanel" = "クイックペースト";
 "menu.quit" = "%@ を終了";
 "menu.accessibility.grant" = "⚠ アクセシビリティ権限を許可";
-"menu.resume" = "監視を再開";
+"menu.resume" = "クリップボード監視を再開";
 "menu.settings" = "設定";
 
 /* Quick Panel */

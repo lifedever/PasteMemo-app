@@ -84,6 +84,7 @@
 "settings.language.restart_now" = "Mulai Ulang Sekarang";
 "settings.language.restart_later" = "Nanti";
 "settings.launchAtLogin" = "Jalankan saat Login";
+"settings.clipboardMonitoring" = "Aktifkan Pemantauan Papan Klip";
 "settings.hideDockIcon" = "Sembunyikan Ikon Dock";
 "settings.hideDockIcon.hint" = "Jika diaktifkan, aplikasi hanya dapat diakses dari ikon bilah menu.";
 "settings.hideDockIcon.confirm.title" = "Sembunyikan Ikon Dock?";
@@ -208,8 +209,8 @@
 /* Menu */
 "menu.openMain" = "Buka Jendela Utama";
 "menu.quickPanel" = "Tempel Cepat";
-"menu.pause" = "Jeda Pemantauan";
-"menu.resume" = "Lanjutkan Pemantauan";
+"menu.pause" = "Jeda Pemantauan Papan Klip";
+"menu.resume" = "Lanjutkan Pemantauan Papan Klip";
 "menu.settings" = "Pengaturan";
 "menu.quit" = "Keluar %@";
 "menu.accessibility.grant" = "⚠ Berikan Izin Aksesibilitas";

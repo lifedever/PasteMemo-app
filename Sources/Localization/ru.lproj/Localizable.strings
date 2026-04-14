@@ -84,6 +84,7 @@
 "settings.language.restart_now" = "Перезапустить сейчас";
 "settings.language.restart_later" = "Позже";
 "settings.launchAtLogin" = "Запускать при входе";
+"settings.clipboardMonitoring" = "Включить мониторинг буфера обмена";
 "settings.hideDockIcon" = "Скрыть значок Dock";
 "settings.hideDockIcon.hint" = "При включении приложение доступно только через значок в строке меню.";
 "settings.hideDockIcon.confirm.title" = "Скрыть значок Dock?";
@@ -208,8 +209,8 @@
 /* Menu */
 "menu.openMain" = "Открыть главное окно";
 "menu.quickPanel" = "Быстрая вставка";
-"menu.pause" = "Приостановить мониторинг";
-"menu.resume" = "Возобновить мониторинг";
+"menu.pause" = "Приостановить мониторинг буфера обмена";
+"menu.resume" = "Возобновить мониторинг буфера обмена";
 "menu.settings" = "Настройки";
 "menu.quit" = "Завершить %@";
 "menu.accessibility.grant" = "⚠ Предоставить разрешение на универсальный доступ";
