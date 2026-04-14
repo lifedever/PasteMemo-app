@@ -211,6 +211,7 @@ final class RelayManager {
             for pItem in persisted.items {
                 items.append(RelayItem(content: pItem.content))
             }
+            markCurrentIfNeeded()
         }
 
         clipboardController?.pauseMonitoring(persistent: false)
