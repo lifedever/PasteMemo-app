@@ -37,7 +37,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if ProManager.AUTOMATION_ENABLED {
             BuiltInRules.seedIfNeeded(context: PasteMemoApp.sharedModelContainer.mainContext)
         }
-        ClipboardManager.shared.startMonitoring()
+        if ClipboardManager.shared.isMonitoringEnabled {
+            ClipboardManager.shared.startMonitoring()
+        }
         UsageTracker.pingIfNeeded()
 
         // Hide SwiftUI auto-created windows
