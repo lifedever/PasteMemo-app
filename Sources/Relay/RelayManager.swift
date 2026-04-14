@@ -253,6 +253,16 @@ final class RelayManager {
         HotkeyManager.shared.register()
     }
 
+    // MARK: - External API
+
+    /// Tells the relay clipboard monitor to ignore the next pasteboard change.
+    /// Called from external paste paths (e.g. quick panel) to prevent their
+    /// clipboard writes from polluting the relay queue while relay is active.
+    func skipMonitorNextChange() {
+        guard isActive else { return }
+        monitor?.skipNextChange()
+    }
+
     // MARK: - Orchestration
 
     private func startMonitor() {
