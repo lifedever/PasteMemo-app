@@ -551,6 +551,7 @@ final class ClipboardManager: ObservableObject {
     func paste(_ item: ClipItem) {
         writeToPasteboard(item)
         lastChangeCount = NSPasteboard.general.changeCount
+        skipRelayMonitorIfActive()
         SoundManager.playPaste()
 
         Task { @MainActor in
@@ -779,6 +780,7 @@ final class ClipboardManager: ObservableObject {
                 }
 
                 lastChangeCount = pasteboard.changeCount
+                skipRelayMonitorIfActive()
                 try? await Task.sleep(for: PASTE_SIMULATION_DELAY)
                 simulateCommandV()
             }
@@ -835,6 +837,7 @@ final class ClipboardManager: ObservableObject {
         pasteboard.clearContents()
         pasteboard.setString(merged, forType: .string)
         lastChangeCount = pasteboard.changeCount
+        skipRelayMonitorIfActive()
 
         Task { @MainActor in
             try? await Task.sleep(for: PASTE_SIMULATION_DELAY)
@@ -847,11 +850,18 @@ final class ClipboardManager: ObservableObject {
         pasteboard.clearContents()
         pasteboard.setString(item.content, forType: .string)
         lastChangeCount = pasteboard.changeCount
+        skipRelayMonitorIfActive()
         SoundManager.playPaste()
 
         Task { @MainActor in
             try? await Task.sleep(for: PASTE_SIMULATION_DELAY)
             simulateCommandV()
+        }
+    }
+
+    private func skipRelayMonitorIfActive() {
+        if RelayManager.shared.isActive {
+            RelayManager.shared.skipMonitorNextChange()
         }
     }
 
