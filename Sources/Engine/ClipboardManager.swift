@@ -91,12 +91,7 @@ final class ClipboardManager: ObservableObject {
     }
 
     func togglePause() {
-        isPaused.toggle()
-        if isPaused {
-            stopMonitoring()
-        } else {
-            startMonitoring()
-        }
+        isMonitoringEnabled.toggle()
     }
 
     private func checkClipboard() {
@@ -958,15 +953,31 @@ extension ClipboardManager: ClipboardControllable {
     var isMonitoringPaused: Bool { isPaused }
 
     func pauseMonitoring() {
-        guard !isPaused else { return }
-        isPaused = true
-        stopMonitoring()
+        pauseMonitoring(persistent: true)
     }
 
     func resumeMonitoring() {
-        guard isPaused else { return }
-        isPaused = false
-        startMonitoring()
+        resumeMonitoring(persistent: true)
+    }
+
+    func pauseMonitoring(persistent: Bool) {
+        if persistent {
+            guard isMonitoringEnabled else { return }
+            isMonitoringEnabled = false
+        } else {
+            guard !isTemporarilyPaused else { return }
+            isTemporarilyPaused = true
+        }
+    }
+
+    func resumeMonitoring(persistent: Bool) {
+        if persistent {
+            guard !isMonitoringEnabled else { return }
+            isMonitoringEnabled = true
+        } else {
+            guard isTemporarilyPaused else { return }
+            isTemporarilyPaused = false
+        }
     }
 
     private func applyAutomationActions(_ actions: [RuleAction], processed: String, to item: ClipItem, context: ModelContext) {
