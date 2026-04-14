@@ -108,6 +108,11 @@ cat > "$APP_DIR/Contents/Info.plist" <<EOF
   <string>Copyright © ${CURRENT_YEAR} lifedever. All rights reserved.</string>
   <key>NSAppleEventsUsageDescription</key>
   <string>PasteMemo needs to communicate with Finder to save images to folders.</string>
+  <key>NSAppTransportSecurity</key>
+  <dict>
+    <key>NSAllowsArbitraryLoads</key>
+    <true/>
+  </dict>
 </dict>
 </plist>
 EOF
