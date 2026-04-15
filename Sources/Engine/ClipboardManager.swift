@@ -13,7 +13,21 @@ final class ClipboardManager: ObservableObject {
     var lastChangeCount: Int = 0
     private var timer: Timer?
     var modelContainer: ModelContainer?
-    @Published var isPaused = false
+
+    private static let MONITORING_ENABLED_KEY = "clipboardMonitoringEnabled"
+
+    @Published var isMonitoringEnabled: Bool {
+        didSet {
+            UserDefaults.standard.set(isMonitoringEnabled, forKey: Self.MONITORING_ENABLED_KEY)
+            applyMonitoringState()
+        }
+    }
+
+    @Published private(set) var isTemporarilyPaused: Bool = false {
+        didSet { applyMonitoringState() }
+    }
+
+    var isPaused: Bool { !isMonitoringEnabled || isTemporarilyPaused }
 
     // Track app switches to determine the real source app
     private var appBeforeSwitch: (name: String?, bundleID: String?) = (nil, nil)
@@ -21,7 +35,24 @@ final class ClipboardManager: ObservableObject {
     private var appSwitchObserver: Any?
     private static let APP_SWITCH_THRESHOLD: TimeInterval = 1.0
 
-    private init() {}
+    private init() {
+        let stored = UserDefaults.standard.object(forKey: Self.MONITORING_ENABLED_KEY) as? Bool
+        self.isMonitoringEnabled = stored ?? true
+
+        NotificationCenter.default.addObserver(
+            forName: UserDefaults.didChangeNotification,
+            object: UserDefaults.standard,
+            queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                let current = UserDefaults.standard.object(forKey: Self.MONITORING_ENABLED_KEY) as? Bool ?? true
+                if current != self.isMonitoringEnabled {
+                    self.isMonitoringEnabled = current
+                }
+            }
+        }
+    }
 
     // MARK: - Monitoring
 
@@ -32,6 +63,14 @@ final class ClipboardManager: ObservableObject {
             Task { @MainActor in
                 self?.checkClipboard()
             }
+        }
+    }
+
+    private func applyMonitoringState() {
+        if isPaused {
+            stopMonitoring()
+        } else if timer == nil {
+            startMonitoring()
         }
     }
 
@@ -66,12 +105,7 @@ final class ClipboardManager: ObservableObject {
     }
 
     func togglePause() {
-        isPaused.toggle()
-        if isPaused {
-            stopMonitoring()
-        } else {
-            startMonitoring()
-        }
+        isMonitoringEnabled.toggle()
     }
 
     private func checkClipboard() {
@@ -517,6 +551,7 @@ final class ClipboardManager: ObservableObject {
     func paste(_ item: ClipItem) {
         writeToPasteboard(item)
         lastChangeCount = NSPasteboard.general.changeCount
+        skipRelayMonitorIfActive()
         SoundManager.playPaste()
 
         Task { @MainActor in
@@ -599,6 +634,7 @@ final class ClipboardManager: ObservableObject {
             }
         }
         lastChangeCount = NSPasteboard.general.changeCount
+        skipRelayMonitorIfActive()
     }
 
     func writeFileURLsToPasteboard(_ pasteboard: NSPasteboard, paths: [String]) {
@@ -745,6 +781,7 @@ final class ClipboardManager: ObservableObject {
                 }
 
                 lastChangeCount = pasteboard.changeCount
+                skipRelayMonitorIfActive()
                 try? await Task.sleep(for: PASTE_SIMULATION_DELAY)
                 simulateCommandV()
             }
@@ -801,6 +838,7 @@ final class ClipboardManager: ObservableObject {
         pasteboard.clearContents()
         pasteboard.setString(merged, forType: .string)
         lastChangeCount = pasteboard.changeCount
+        skipRelayMonitorIfActive()
 
         Task { @MainActor in
             try? await Task.sleep(for: PASTE_SIMULATION_DELAY)
@@ -813,11 +851,18 @@ final class ClipboardManager: ObservableObject {
         pasteboard.clearContents()
         pasteboard.setString(item.content, forType: .string)
         lastChangeCount = pasteboard.changeCount
+        skipRelayMonitorIfActive()
         SoundManager.playPaste()
 
         Task { @MainActor in
             try? await Task.sleep(for: PASTE_SIMULATION_DELAY)
             simulateCommandV()
+        }
+    }
+
+    private func skipRelayMonitorIfActive() {
+        if RelayManager.shared.isActive {
+            RelayManager.shared.skipMonitorNextChange()
         }
     }
 
@@ -933,15 +978,31 @@ extension ClipboardManager: ClipboardControllable {
     var isMonitoringPaused: Bool { isPaused }
 
     func pauseMonitoring() {
-        guard !isPaused else { return }
-        isPaused = true
-        stopMonitoring()
+        pauseMonitoring(persistent: true)
     }
 
     func resumeMonitoring() {
-        guard isPaused else { return }
-        isPaused = false
-        startMonitoring()
+        resumeMonitoring(persistent: true)
+    }
+
+    func pauseMonitoring(persistent: Bool) {
+        if persistent {
+            guard isMonitoringEnabled else { return }
+            isMonitoringEnabled = false
+        } else {
+            guard !isTemporarilyPaused else { return }
+            isTemporarilyPaused = true
+        }
+    }
+
+    func resumeMonitoring(persistent: Bool) {
+        if persistent {
+            guard !isMonitoringEnabled else { return }
+            isMonitoringEnabled = true
+        } else {
+            guard isTemporarilyPaused else { return }
+            isTemporarilyPaused = false
+        }
     }
 
     private func applyAutomationActions(_ actions: [RuleAction], processed: String, to item: ClipItem, context: ModelContext) {

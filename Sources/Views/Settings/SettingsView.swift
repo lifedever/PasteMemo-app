@@ -331,6 +331,7 @@ struct PreferencesTab: View {
     @State private var showRetentionCleanConfirm = false
     @AppStorage("quickPanelAutoPaste") private var quickPanelAutoPaste = true
     @AppStorage("addNewLineAfterPaste") private var addNewLineAfterPaste = false
+    @AppStorage("clipboardMonitoringEnabled") private var clipboardMonitoringEnabled = true
     @AppStorage("showLinkURL") private var showLinkURL = false
     @AppStorage("webPreviewEnabled") private var webPreviewEnabled = true
     @AppStorage("imageLinkPreviewEnabled") private var imageLinkPreviewEnabled = true
@@ -414,6 +415,7 @@ struct PreferencesTab: View {
             }
 
             Section(L10n.tr("settings.behavior")) {
+                Toggle(L10n.tr("settings.clipboardMonitoring"), isOn: $clipboardMonitoringEnabled)
                 Toggle(L10n.tr("settings.autoPaste"), isOn: $quickPanelAutoPaste)
                 Toggle(L10n.tr("settings.addNewLine"), isOn: $addNewLineAfterPaste)
                 Toggle(L10n.tr("settings.showLinkURL"), isOn: $showLinkURL)

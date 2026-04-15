@@ -57,6 +57,7 @@
 "settings.language.restart_now" = "Redémarrer maintenant";
 "settings.language.restart_later" = "Plus tard";
 "settings.launchAtLogin" = "Lancer au démarrage";
+"settings.clipboardMonitoring" = "Activer la surveillance du presse-papiers";
 "settings.hideDockIcon" = "Masquer l'icône du Dock";
 "settings.hideDockIcon.hint" = "Lorsque activé, l'application n'est accessible que depuis l'icône de la barre des menus.";
 "settings.hideDockIcon.confirm.title" = "Masquer l'icône du Dock ?";
@@ -397,6 +398,7 @@
 "relay.title" = "Mode Relais";
 "relay.tab" = "Relais";
 "relay.exit" = "Quitter";
+"relay.clearAndExit" = "Vider et quitter";
 "relay.close" = "Fermer";
 "relay.exitRelay" = "Quitter le relais";
 "relay.startRelay" = "Démarrer le relais";
@@ -415,6 +417,25 @@ Utilisez %@ pour coller un par un.";
 "relay.settings.pasteKeyNote" = "Certaines apps (Terminal, Emacs) peuvent utiliser le même raccourci. Personnalisez si nécessaire.";
 "relay.settings.pauseToChange" = "Mettez en pause ou quittez le mode relais pour modifier le raccourci.";
 "relay.settings.resetAlert" = "Réafficher le conseil d'activation";
+"relay.settings.plainText" = "Coller en texte brut";
+"relay.settings.plainText.desc" = "Supprimer le formatage";
+"relay.settings.automation" = "Automatisation";
+"relay.settings.automation.desc" = "Appliquer la règle au collage";
+"relay.settings.automation.none" = "Aucune";
+"relay.settings.preview" = "Aperçu";
+"relay.settings.preview.desc" = "La liste affiche le texte traité";
+"relay.settings.tooltip.default" = "Paramètres";
+"relay.settings.tooltip.active" = "Actif";
+"relay.settings.postPasteKey" = "Touche après collage";
+"relay.settings.postPasteKey.desc" = "Utile pour la saisie rapide";
+"relay.settings.postPasteKey.none" = "Aucune";
+"relay.settings.postPasteKey.return" = "Return";
+"relay.settings.postPasteKey.tab" = "Tab";
+"relay.settings.postPasteKey.down" = "Bas";
+"relay.settings.postPasteKey.up" = "Haut";
+"relay.settings.postPasteKey.left" = "Gauche";
+"relay.settings.postPasteKey.right" = "Droite";
+"relay.settings.postPasteKey.space" = "Space";
 "relay.settings.description" = "Le mode relais permet de copier plusieurs éléments et de les coller un par un. Idéal pour copier une liste de noms depuis une page web et les coller ligne par ligne dans Excel.";
 "relay.settings.shortcuts" = "Raccourcis";
 "relay.settings.operations" = "Opérations";
@@ -514,11 +535,11 @@ Utilisez %@ pour coller un par un.";
 
 /* Menu */
 "menu.openMain" = "Ouvrir la fenêtre principale";
-"menu.pause" = "Suspendre la surveillance";
+"menu.pause" = "Suspendre la surveillance du presse-papiers";
 "menu.quickPanel" = "Collage rapide";
 "menu.quit" = "Quitter %@";
 "menu.accessibility.grant" = "⚠ Autoriser l'accessibilité";
-"menu.resume" = "Reprendre la surveillance";
+"menu.resume" = "Reprendre la surveillance du presse-papiers";
 "menu.settings" = "Réglages";
 
 /* Quick Panel */

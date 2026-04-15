@@ -1,9 +1,69 @@
+import SwiftData
 import SwiftUI
 
 struct RelayQueueView: View {
     @Bindable var manager: RelayManager
     @State private var splitTargetIndex: Int?
     @State private var draggingItem: RelayItem?
+    @State private var showSettingsPopover = false
+    @AppStorage("relayPasteAsPlainText") private var settingPlainText = false
+    @AppStorage(RelayPostPasteKey.userDefaultsKey) private var settingPostPasteKey = RelayPostPasteKey.none.rawValue
+    @AppStorage("relayAutomationRuleId") private var settingAutomationRuleId = ""
+    @AppStorage("relayPreviewEnabled") private var settingPreviewEnabled = false
+    @Query(filter: #Predicate<AutomationRule> { $0.enabled == true })
+    private var enabledRules: [AutomationRule]
+
+    /// Actions to apply when previewing / rendering list text. Empty when preview is off
+    /// or no rule is selected.
+    private var previewActions: [RuleAction] {
+        guard settingPreviewEnabled, !settingAutomationRuleId.isEmpty else { return [] }
+        return enabledRules.first(where: { $0.ruleID == settingAutomationRuleId })?.actions ?? []
+    }
+
+    /// Localized name of the currently selected rule, or nil when none.
+    private var activeRuleDisplayName: String? {
+        guard !settingAutomationRuleId.isEmpty,
+              let rule = enabledRules.first(where: { $0.ruleID == settingAutomationRuleId })
+        else { return nil }
+        let translated = L10n.tr(rule.name)
+        return translated == rule.name && rule.name.hasPrefix("automation.") ? rule.name : translated
+    }
+
+    private var hasActiveSettings: Bool {
+        settingPlainText
+            || (RelayPostPasteKey(rawValue: settingPostPasteKey) ?? .none) != .none
+            || !settingAutomationRuleId.isEmpty
+    }
+
+    private var settingsTooltip: String {
+        var parts: [String] = []
+        if settingPlainText {
+            parts.append(L10n.tr("relay.settings.plainText"))
+        }
+        if !settingAutomationRuleId.isEmpty {
+            parts.append(L10n.tr("relay.settings.automation"))
+        }
+        if let key = RelayPostPasteKey(rawValue: settingPostPasteKey), key != .none {
+            parts.append(L10n.tr("relay.settings.postPasteKey") + ": " + postPasteKeyDisplay(key))
+        }
+        if parts.isEmpty {
+            return L10n.tr("relay.settings.tooltip.default")
+        }
+        return L10n.tr("relay.settings.tooltip.active") + ": " + parts.joined(separator: " · ")
+    }
+
+    private func postPasteKeyDisplay(_ key: RelayPostPasteKey) -> String {
+        switch key {
+        case .none: return L10n.tr("relay.settings.postPasteKey.none")
+        case .return: return L10n.tr("relay.settings.postPasteKey.return")
+        case .tab: return L10n.tr("relay.settings.postPasteKey.tab")
+        case .space: return L10n.tr("relay.settings.postPasteKey.space")
+        case .up: return L10n.tr("relay.settings.postPasteKey.up")
+        case .down: return L10n.tr("relay.settings.postPasteKey.down")
+        case .left: return L10n.tr("relay.settings.postPasteKey.left")
+        case .right: return L10n.tr("relay.settings.postPasteKey.right")
+        }
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -11,7 +71,7 @@ struct RelayQueueView: View {
             queueList
             footerBar
         }
-        .frame(width: 320)
+        // Width is controlled by parent (RelayPanelWidthWrapper)
         .background(Color.clear)
         .onChange(of: splitTargetIndex) {
             guard let index = splitTargetIndex, index < manager.items.count else { return }
@@ -50,6 +110,57 @@ struct RelayQueueView: View {
                 .disabled(manager.items.isEmpty)
 
                 Spacer()
+
+                Button {
+                    showSettingsPopover.toggle()
+                } label: {
+                    ZStack(alignment: .topTrailing) {
+                        Image(systemName: "gearshape")
+                            .font(.system(size: 11))
+                            .foregroundStyle(.secondary)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 3)
+                            .background(Color.primary.opacity(0.06), in: Capsule())
+
+                        if hasActiveSettings {
+                            Circle()
+                                .fill(Color.blue)
+                                .frame(width: 6, height: 6)
+                                .overlay(
+                                    Circle()
+                                        .stroke(Color(NSColor.windowBackgroundColor), lineWidth: 1)
+                                )
+                                .offset(x: 2, y: -2)
+                        }
+                    }
+                }
+                .buttonStyle(.plain)
+                .help(settingsTooltip)
+                .popover(isPresented: $showSettingsPopover, arrowEdge: .top) {
+                    RelaySettingsPopover()
+                        .modelContainer(PasteMemoApp.sharedModelContainer)
+                }
+            }
+
+            if let name = activeRuleDisplayName {
+                HStack(spacing: 4) {
+                    Image(systemName: "bolt.fill")
+                        .font(.system(size: 9))
+                    Text(L10n.tr("relay.settings.automation") + ": " + name)
+                        .font(.system(size: 11))
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+                    if settingPreviewEnabled {
+                        Text("· " + L10n.tr("relay.settings.preview"))
+                            .font(.system(size: 11))
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                }
+                .foregroundStyle(Color.accentColor)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(Color.accentColor.opacity(0.12), in: RoundedRectangle(cornerRadius: 5))
             }
         }
         .padding(.horizontal, 14)
@@ -99,7 +210,7 @@ struct RelayQueueView: View {
                 ScrollView {
                     LazyVStack(spacing: 2) {
                         ForEach(Array(manager.items.enumerated()), id: \.element.id) { index, item in
-                            RelayQueueRow(item: item, onDelete: {
+                            RelayQueueRow(item: item, previewActions: previewActions, onDelete: {
                                 manager.deleteItem(at: index)
                             }, onSplit: {
                                 splitTargetIndex = index
@@ -165,16 +276,6 @@ struct RelayQueueView: View {
                     }
                     .toggleStyle(.checkbox)
                     .controlSize(.small)
-
-                    if manager.items.contains(where: { $0.isFile || $0.isImage }) {
-                        Toggle(isOn: $manager.pasteAsPlainText) {
-                            Text(L10n.tr("relay.pasteAsText"))
-                                .font(.system(size: 11))
-                                .foregroundStyle(.secondary)
-                        }
-                        .toggleStyle(.checkbox)
-                        .controlSize(.small)
-                    }
                 }
 
                 Spacer()
@@ -235,7 +336,19 @@ struct RelayQueueView: View {
                 Button {
                     manager.deactivate()
                 } label: {
-                    Text(L10n.tr("relay.exitRelay"))
+                    Text(L10n.tr("relay.exit"))
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundStyle(.primary)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 5)
+                        .background(Color.primary.opacity(0.08), in: RoundedRectangle(cornerRadius: 6))
+                }
+                .buttonStyle(.plain)
+
+                Button {
+                    manager.deactivate(clearQueue: true)
+                } label: {
+                    Text(L10n.tr("relay.clearAndExit"))
                         .font(.system(size: 11, weight: .medium))
                         .foregroundStyle(.red)
                         .frame(maxWidth: .infinity)
@@ -243,6 +356,7 @@ struct RelayQueueView: View {
                         .background(Color.red.opacity(0.1), in: RoundedRectangle(cornerRadius: 6))
                 }
                 .buttonStyle(.plain)
+                .disabled(manager.items.isEmpty)
             }
         }
         .padding(.horizontal, 12)
@@ -256,10 +370,16 @@ struct RelayQueueView: View {
 
 private struct RelayQueueRow: View {
     let item: RelayItem
+    let previewActions: [RuleAction]
     var onDelete: (() -> Void)?
     var onSplit: (() -> Void)?
     var onEdit: ((String) -> Void)?
     @State private var isHovering = false
+    @AppStorage(RelayPostPasteKey.userDefaultsKey) private var postPasteKeyRaw = RelayPostPasteKey.none.rawValue
+
+    private var displayText: String {
+        previewActions.isEmpty ? item.content : AutomationEngine.apply(previewActions, to: item.content)
+    }
 
     var body: some View {
         HStack(spacing: 8) {
@@ -288,7 +408,7 @@ private struct RelayQueueRow: View {
                     .foregroundStyle(textColor)
                     .strikethrough(item.state == .skipped, color: .secondary)
             } else {
-                Text(item.content.replacingOccurrences(of: "\n", with: " ↵ "))
+                Text(displayText.replacingOccurrences(of: "\n", with: " ↵ "))
                     .lineLimit(1)
                     .truncationMode(.middle)
                     .font(.system(size: 13))
@@ -297,6 +417,15 @@ private struct RelayQueueRow: View {
                     .onTapGesture(count: 2) { showEditAlert() }
             }
             Spacer(minLength: 0)
+            if item.state == .current, !isHovering, let glyph = postPasteKeyGlyph {
+                Text(glyph)
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal, 5)
+                    .padding(.vertical, 1)
+                    .background(Color.primary.opacity(0.08), in: RoundedRectangle(cornerRadius: 4))
+                    .transition(.opacity)
+            }
             if isHovering {
                 if !item.isImage, !item.isFile, item.content.count > 1 {
                     Button { onSplit?() } label: {
@@ -330,6 +459,20 @@ private struct RelayQueueRow: View {
         .background(RoundedRectangle(cornerRadius: 6).fill(rowBackground))
         .onHover { isHovering = $0 }
         .animation(.easeOut(duration: 0.1), value: isHovering)
+    }
+
+    private var postPasteKeyGlyph: String? {
+        guard let key = RelayPostPasteKey(rawValue: postPasteKeyRaw), key != .none else { return nil }
+        switch key {
+        case .none: return nil
+        case .return: return "⏎"
+        case .tab: return "⇥"
+        case .space: return "␣"
+        case .up: return "↑"
+        case .down: return "↓"
+        case .left: return "←"
+        case .right: return "→"
+        }
     }
 
     private func showEditAlert() {
@@ -423,4 +566,5 @@ private final class DraggableView: NSView {
         window?.performDrag(with: event)
     }
 }
+
 

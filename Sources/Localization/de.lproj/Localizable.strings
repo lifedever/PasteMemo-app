@@ -57,6 +57,7 @@
 "settings.language.restart_now" = "Jetzt neu starten";
 "settings.language.restart_later" = "Später";
 "settings.launchAtLogin" = "Bei Anmeldung starten";
+"settings.clipboardMonitoring" = "Zwischenablage-Überwachung aktivieren";
 "settings.hideDockIcon" = "Dock-Symbol ausblenden";
 "settings.hideDockIcon.hint" = "Wenn aktiviert, ist die App nur über das Menüleisten-Symbol erreichbar.";
 "settings.hideDockIcon.confirm.title" = "Dock-Symbol ausblenden?";
@@ -397,6 +398,7 @@
 "relay.title" = "Relay-Modus";
 "relay.tab" = "Relay";
 "relay.exit" = "Beenden";
+"relay.clearAndExit" = "Leeren & beenden";
 "relay.close" = "Schließen";
 "relay.exitRelay" = "Relay beenden";
 "relay.startRelay" = "Relay starten";
@@ -415,6 +417,25 @@ Verwenden Sie %@ zum Einfügen.";
 "relay.settings.pasteKeyNote" = "Einige Apps (Terminal, Emacs) verwenden möglicherweise das gleiche Tastenkürzel.";
 "relay.settings.pauseToChange" = "Pausieren oder beenden Sie den Relay-Modus, um das Tastenkürzel zu ändern.";
 "relay.settings.resetAlert" = "Aktivierungshinweis erneut anzeigen";
+"relay.settings.plainText" = "Als Klartext einfügen";
+"relay.settings.plainText.desc" = "Formatierung entfernen";
+"relay.settings.automation" = "Automatisierung";
+"relay.settings.automation.desc" = "Regel beim Einfügen anwenden";
+"relay.settings.automation.none" = "Keine";
+"relay.settings.preview" = "Vorschau";
+"relay.settings.preview.desc" = "Liste zeigt verarbeiteten Text";
+"relay.settings.tooltip.default" = "Einstellungen";
+"relay.settings.tooltip.active" = "Aktiv";
+"relay.settings.postPasteKey" = "Taste nach Einfügen";
+"relay.settings.postPasteKey.desc" = "Nützlich für schnelle Eingabe";
+"relay.settings.postPasteKey.none" = "Keine";
+"relay.settings.postPasteKey.return" = "Return";
+"relay.settings.postPasteKey.tab" = "Tab";
+"relay.settings.postPasteKey.down" = "Runter";
+"relay.settings.postPasteKey.up" = "Hoch";
+"relay.settings.postPasteKey.left" = "Links";
+"relay.settings.postPasteKey.right" = "Rechts";
+"relay.settings.postPasteKey.space" = "Space";
 "relay.settings.description" = "Im Relay-Modus können Sie mehrere Elemente kopieren und nacheinander einfügen. Ideal zum Kopieren einer Namensliste und zeilenweises Einfügen in Excel.";
 "relay.settings.shortcuts" = "Tastenkürzel";
 "relay.settings.operations" = "Bedienung";
@@ -510,11 +531,11 @@ Verwenden Sie %@ zum Einfügen.";
 
 /* Menu (additional) */
 "menu.openMain" = "Hauptfenster öffnen";
-"menu.pause" = "Überwachung pausieren";
+"menu.pause" = "Zwischenablage-Überwachung pausieren";
 "menu.quickPanel" = "Schnelles Einfügen";
 "menu.quit" = "%@ beenden";
 "menu.accessibility.grant" = "⚠ Bedienungshilfen-Berechtigung erteilen";
-"menu.resume" = "Überwachung fortsetzen";
+"menu.resume" = "Zwischenablage-Überwachung fortsetzen";
 "menu.settings" = "Einstellungen";
 
 /* Quick Panel */

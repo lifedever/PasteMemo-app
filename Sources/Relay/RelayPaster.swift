@@ -8,12 +8,16 @@ enum RelayPaster {
 
     /// Write text to system pasteboard and simulate Cmd+V.
     static func paste(_ text: String, monitor: RelayClipboardMonitor) async {
+        let actions = RelayRuleResolver.currentRuleActions()
+        let transformed = actions.isEmpty ? text : AutomationEngine.apply(actions, to: text)
         let pasteboard = NSPasteboard.general
         pasteboard.clearContents()
-        pasteboard.setString(text, forType: .string)
+        pasteboard.setString(transformed, forType: .string)
         monitor.skipNextChange()
         try? await Task.sleep(for: PASTE_DELAY)
         simulateCommandV()
+        try? await Task.sleep(for: .milliseconds(100))
+        simulatePostPasteKey()
     }
 
     /// Write image data to system pasteboard and simulate Cmd+V.
@@ -29,6 +33,8 @@ enum RelayPaster {
         monitor.skipNextChange()
         try? await Task.sleep(for: PASTE_DELAY)
         simulateCommandV()
+        try? await Task.sleep(for: .milliseconds(100))
+        simulatePostPasteKey()
     }
 
     /// Write file URLs to system pasteboard and simulate Cmd+V.
@@ -43,6 +49,8 @@ enum RelayPaster {
         monitor.skipNextChange()
         try? await Task.sleep(for: PASTE_DELAY)
         simulateCommandV()
+        try? await Task.sleep(for: .milliseconds(100))
+        simulatePostPasteKey()
     }
 
     private static func simulateCommandV() {
@@ -51,6 +59,20 @@ enum RelayPaster {
               let keyUp = CGEvent(keyboardEventSource: source, virtualKey: V_KEY_CODE, keyDown: false) else { return }
         keyDown.flags = .maskCommand
         keyUp.flags = .maskCommand
+        keyDown.post(tap: .cgAnnotatedSessionEventTap)
+        keyUp.post(tap: .cgAnnotatedSessionEventTap)
+    }
+
+    private static func simulatePostPasteKey() {
+        guard let keyCode = RelayPostPasteKey.current.keyCode else { return }
+        // Use privateState source so the event doesn't inherit currently-held
+        // physical modifiers (e.g. user holding Ctrl during Ctrl+V relay paste).
+        let source = CGEventSource(stateID: .privateState)
+        guard let keyDown = CGEvent(keyboardEventSource: source, virtualKey: keyCode, keyDown: true),
+              let keyUp = CGEvent(keyboardEventSource: source, virtualKey: keyCode, keyDown: false) else { return }
+        // Explicitly clear any modifier flags so arrow keys don't become Ctrl+Arrow etc.
+        keyDown.flags = []
+        keyUp.flags = []
         keyDown.post(tap: .cgAnnotatedSessionEventTap)
         keyUp.post(tap: .cgAnnotatedSessionEventTap)
     }

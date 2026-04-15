@@ -6,12 +6,13 @@ struct MenuBarContent: View {
     @Environment(\.openSettings) private var openSettings
     @ObservedObject private var hotkeyManager = HotkeyManager.shared
     @ObservedObject private var clipboardManager = ClipboardManager.shared
+    @ObservedObject private var axMonitor = AccessibilityMonitor.shared
     @AppStorage("hideDockIcon") private var hideDockIcon = false
 
     var body: some View {
         let _ = storeOpenWindowAction()
 
-        if !AXIsProcessTrusted() {
+        if !axMonitor.isTrusted {
             Button {
                 openAccessibilitySettings()
             } label: {
@@ -45,7 +46,7 @@ struct MenuBarContent: View {
         Button {
             clipboardManager.togglePause()
         } label: {
-            Text(clipboardManager.isPaused ? L10n.tr("menu.resume") : L10n.tr("menu.pause"))
+            Text(clipboardManager.isMonitoringEnabled ? L10n.tr("menu.pause") : L10n.tr("menu.resume"))
         }
         .disabled(RelayManager.shared.isActive)
 

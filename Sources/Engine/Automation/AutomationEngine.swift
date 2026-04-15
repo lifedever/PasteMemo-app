@@ -73,6 +73,12 @@ final class AutomationEngine {
         action.execute(on: content)
     }
 
+    /// Apply a sequence of actions to content. Pure text transformation, no SwiftData needed.
+    /// Used by Relay mode to transform queue items at paste time / for preview.
+    nonisolated static func apply(_ actions: [RuleAction], to content: String) -> String {
+        actions.reduce(content) { $1.execute(on: $0) }
+    }
+
     // MARK: - Static Helpers (testable without ModelContext)
 
     nonisolated static func matchesConditions(

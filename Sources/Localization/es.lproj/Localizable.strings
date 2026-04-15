@@ -57,6 +57,7 @@
 "settings.language.restart_now" = "Reiniciar ahora";
 "settings.language.restart_later" = "Más tarde";
 "settings.launchAtLogin" = "Iniciar al arrancar";
+"settings.clipboardMonitoring" = "Activar monitoreo del portapapeles";
 "settings.hideDockIcon" = "Ocultar icono del Dock";
 "settings.hideDockIcon.hint" = "Cuando está activado, solo se puede acceder a la app desde el icono de la barra de menús.";
 "settings.hideDockIcon.confirm.title" = "¿Ocultar icono del Dock?";
@@ -397,6 +398,7 @@
 "relay.title" = "Modo Relevo";
 "relay.tab" = "Relevo";
 "relay.exit" = "Salir";
+"relay.clearAndExit" = "Vaciar y salir";
 "relay.close" = "Cerrar";
 "relay.exitRelay" = "Salir del relevo";
 "relay.startRelay" = "Iniciar relevo";
@@ -415,6 +417,25 @@ Usa %@ para pegar uno por uno.";
 "relay.settings.pasteKeyNote" = "Algunas apps (Terminal, Emacs) pueden usar el mismo atajo.";
 "relay.settings.pauseToChange" = "Pausa o sal del modo relevo para cambiar el atajo.";
 "relay.settings.resetAlert" = "Mostrar consejo de activación de nuevo";
+"relay.settings.plainText" = "Pegar como texto sin formato";
+"relay.settings.plainText.desc" = "Eliminar formato enriquecido";
+"relay.settings.automation" = "Automatización";
+"relay.settings.automation.desc" = "Aplicar regla al pegar";
+"relay.settings.automation.none" = "Ninguna";
+"relay.settings.preview" = "Vista previa";
+"relay.settings.preview.desc" = "La lista muestra texto procesado";
+"relay.settings.tooltip.default" = "Configuración";
+"relay.settings.tooltip.active" = "Activo";
+"relay.settings.postPasteKey" = "Tecla tras pegar";
+"relay.settings.postPasteKey.desc" = "Útil para entrada rápida";
+"relay.settings.postPasteKey.none" = "Ninguna";
+"relay.settings.postPasteKey.return" = "Return";
+"relay.settings.postPasteKey.tab" = "Tab";
+"relay.settings.postPasteKey.down" = "Abajo";
+"relay.settings.postPasteKey.up" = "Arriba";
+"relay.settings.postPasteKey.left" = "Izquierda";
+"relay.settings.postPasteKey.right" = "Derecha";
+"relay.settings.postPasteKey.space" = "Space";
 "relay.settings.description" = "El modo relevo permite copiar varios elementos y pegarlos uno por uno. Ideal para copiar una lista de nombres y pegarlos fila por fila en Excel.";
 "relay.settings.shortcuts" = "Atajos";
 "relay.settings.operations" = "Operaciones";
@@ -514,11 +535,11 @@ Usa %@ para pegar uno por uno.";
 
 /* Menu - Additional */
 "menu.openMain" = "Abrir ventana principal";
-"menu.pause" = "Pausar monitoreo";
+"menu.pause" = "Pausar monitoreo del portapapeles";
 "menu.quickPanel" = "Pegado rápido";
 "menu.quit" = "Salir de %@";
 "menu.accessibility.grant" = "⚠ Conceder permiso de accesibilidad";
-"menu.resume" = "Reanudar monitoreo";
+"menu.resume" = "Reanudar monitoreo del portapapeles";
 "menu.settings" = "Ajustes";
 
 /* Quick Panel */

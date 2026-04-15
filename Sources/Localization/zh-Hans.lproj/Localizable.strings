@@ -92,6 +92,7 @@
 "settings.language.restart_now" = "立即重启";
 "settings.language.restart_later" = "稍后";
 "settings.launchAtLogin" = "开机启动";
+"settings.clipboardMonitoring" = "启用剪贴板监听";
 "settings.hideDockIcon" = "隐藏 Dock 图标";
 "settings.hideDockIcon.hint" = "开启后，只能通过状态栏图标访问应用。";
 "settings.hideDockIcon.confirm.title" = "隐藏 Dock 图标？";
@@ -232,8 +233,8 @@
 /* Menu */
 "menu.openMain" = "打开主窗口";
 "menu.quickPanel" = "快捷粘贴";
-"menu.pause" = "暂停监听";
-"menu.resume" = "恢复监听";
+"menu.pause" = "暂停剪贴板监听";
+"menu.resume" = "恢复剪贴板监听";
 "menu.settings" = "设置";
 "menu.quit" = "退出 %@";
 "menu.accessibility.grant" = "⚠ 授权辅助功能权限";
@@ -615,6 +616,7 @@
 "relay.title" = "接力模式";
 "relay.tab" = "接力";
 "relay.exit" = "退出";
+"relay.clearAndExit" = "清空并退出";
 "relay.close" = "关闭";
 "relay.exitRelay" = "退出接力";
 "relay.startRelay" = "开启接力";
@@ -631,6 +633,25 @@
 "relay.settings.pasteKeyNote" = "部分应用（终端、Emacs）可能使用相同快捷键，如有冲突请自定义。";
 "relay.settings.pauseToChange" = "请先暂停或退出接力模式再修改快捷键。";
 "relay.settings.resetAlert" = "重新显示开启提示";
+"relay.settings.plainText" = "纯文本粘贴";
+"relay.settings.plainText.desc" = "去除富文本格式";
+"relay.settings.automation" = "自动化";
+"relay.settings.automation.desc" = "粘贴时应用所选规则";
+"relay.settings.automation.none" = "无";
+"relay.settings.preview" = "启用预览";
+"relay.settings.preview.desc" = "列表显示处理后文本";
+"relay.settings.tooltip.default" = "设置";
+"relay.settings.tooltip.active" = "已启用";
+"relay.settings.postPasteKey" = "粘贴后按键";
+"relay.settings.postPasteKey.desc" = "连续录入使用";
+"relay.settings.postPasteKey.none" = "无";
+"relay.settings.postPasteKey.return" = "Return";
+"relay.settings.postPasteKey.tab" = "Tab";
+"relay.settings.postPasteKey.down" = "下";
+"relay.settings.postPasteKey.up" = "上";
+"relay.settings.postPasteKey.left" = "左";
+"relay.settings.postPasteKey.right" = "右";
+"relay.settings.postPasteKey.space" = "Space";
 "relay.settings.description" = "接力模式可以连续复制多条内容，然后按顺序逐条粘贴。适合从网页复制一批用户名，再切到 Excel 逐行粘贴的场景。";
 "relay.settings.shortcuts" = "快捷键";
 "relay.settings.operations" = "操作说明";

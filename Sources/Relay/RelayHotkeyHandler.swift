@@ -70,6 +70,11 @@ final class RelayHotkeyHandler {
                     nil,
                     &hotKeyID
                 )
+                // Only respond to our own hotkey signature; other handlers
+                // (e.g. quick panel) use the same id space with different signatures.
+                guard hotKeyID.signature == RELAY_HOTKEY_SIGNATURE else {
+                    return OSStatus(eventNotHandledErr)
+                }
                 Task { @MainActor in
                     switch hotKeyID.id {
                     case 1: RelayHotkeyHandler.current?.onPaste?()

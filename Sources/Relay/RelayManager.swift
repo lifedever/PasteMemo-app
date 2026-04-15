@@ -13,7 +13,10 @@ final class RelayManager {
     var isActive = false
     var isPaused = false
     var autoExitOnEmpty = true
-    var pasteAsPlainText = false
+    var pasteAsPlainText: Bool {
+        get { UserDefaults.standard.bool(forKey: "relayPasteAsPlainText") }
+        set { UserDefaults.standard.set(newValue, forKey: "relayPasteAsPlainText") }
+    }
 
     weak var clipboardController: (any ClipboardControllable)?
     weak var hotkeyController: (any HotkeyControllable)?
@@ -200,18 +203,25 @@ final class RelayManager {
     private var monitor: RelayClipboardMonitor?
     private var hotkeyHandler: RelayHotkeyHandler?
     private var windowController: RelayFloatingWindowController?
-    private var wasMonitoringPausedBeforeRelay = false
 
     // MARK: - Mode Lifecycle
 
     func activate() {
         guard !isActive else { return }
         isActive = true
-        wasMonitoringPausedBeforeRelay = clipboardController?.isMonitoringPaused ?? false
-        clipboardController?.pauseMonitoring()
-        hotkeyController?.disableHotkey()
-        // Defensive: ensure quick panel hotkey is fully unregistered
-        HotkeyManager.shared.unregister()
+
+        if let persisted = RelayQueuePersistence.load() {
+            for pItem in persisted.items {
+                var item = RelayItem(content: pItem.content)
+                item.state = parseItemState(pItem.state)
+                items.append(item)
+            }
+            currentIndex = min(max(persisted.currentIndex, 0), max(0, items.count - 1))
+            // If no .current exists (e.g. queue fully consumed last time), promote next pending
+            markCurrentIfNeeded()
+        }
+
+        clipboardController?.pauseMonitoring(persistent: false)
         startMonitor()
         startHotkeys()
         showWindow()
@@ -226,37 +236,62 @@ final class RelayManager {
         isPaused = true
         stopMonitor()
         stopHotkeys()
-        if !wasMonitoringPausedBeforeRelay {
-            clipboardController?.resumeMonitoring()
-        }
-        HotkeyManager.shared.register()
+        clipboardController?.resumeMonitoring(persistent: false)
     }
 
     func resume() {
         guard isActive, isPaused else { return }
         isPaused = false
-        clipboardController?.pauseMonitoring()
-        HotkeyManager.shared.unregister()
-        QuickPanelWindowController.shared.dismiss()
+        clipboardController?.pauseMonitoring(persistent: false)
         startMonitor()
         startHotkeys()
     }
 
-    func deactivate() {
+    func deactivate(clearQueue: Bool = false) {
         guard isActive else { return }
         isActive = false
         isPaused = false
         stopMonitor()
         stopHotkeys()
-        QuickPanelWindowController.shared.dismiss()
         dismissWindow()
+
+        if clearQueue {
+            RelayQueuePersistence.delete()
+        } else {
+            // Persist all text items including done/skipped so history is visible
+            // on next activation. Image/file items are not persisted.
+            let textItems = items.filter { !$0.isImage && !$0.isFile }
+            let toSave = textItems.map { item in
+                PersistedRelayItem(
+                    id: item.id,
+                    content: item.content,
+                    state: stateRawValue(item.state)
+                )
+            }
+            // Compute currentIndex in the filtered list (text-only)
+            let savedIndex: Int
+            if currentIndex < items.count,
+               let filteredIndex = textItems.firstIndex(where: { $0.id == items[currentIndex].id }) {
+                savedIndex = filteredIndex
+            } else {
+                savedIndex = min(currentIndex, max(0, textItems.count - 1))
+            }
+            RelayQueuePersistence.save(toSave, currentIndex: savedIndex)
+        }
+
         items.removeAll()
         currentIndex = 0
-        if !wasMonitoringPausedBeforeRelay {
-            clipboardController?.resumeMonitoring()
-        }
-        hotkeyController?.enableHotkey()
-        HotkeyManager.shared.register()
+        clipboardController?.resumeMonitoring(persistent: false)
+    }
+
+    // MARK: - External API
+
+    /// Tells the relay clipboard monitor to ignore the next pasteboard change.
+    /// Called from external paste paths (e.g. quick panel) to prevent their
+    /// clipboard writes from polluting the relay queue while relay is active.
+    func skipMonitorNextChange() {
+        guard isActive else { return }
+        monitor?.skipNextChange()
     }
 
     // MARK: - Orchestration
@@ -357,6 +392,24 @@ final class RelayManager {
         if let idx = items.firstIndex(where: { $0.state == .pending }) {
             items[idx].state = .current
             currentIndex = idx
+        }
+    }
+
+    private func stateRawValue(_ state: RelayItem.ItemState) -> String {
+        switch state {
+        case .pending: return "pending"
+        case .current: return "current"
+        case .done: return "done"
+        case .skipped: return "skipped"
+        }
+    }
+
+    private func parseItemState(_ raw: String) -> RelayItem.ItemState {
+        switch raw {
+        case "current": return .current
+        case "done": return .done
+        case "skipped": return .skipped
+        default: return .pending
         }
     }
 }

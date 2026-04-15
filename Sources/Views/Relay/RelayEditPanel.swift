@@ -25,16 +25,18 @@ enum RelayEditPanel {
 
         let contentView = NSView(frame: NSRect(x: 0, y: 0, width: panelWidth, height: panelHeight))
 
-        // Text view with scroll
-        let textView = NSTextView(frame: .zero)
+        let scrollView = NSTextView.scrollableTextView()
+        scrollView.frame = NSRect(x: 16, y: 50, width: panelWidth - 32, height: panelHeight - 66)
+
+        let textView = scrollView.documentView as! NSTextView
         textView.string = content
         textView.font = .systemFont(ofSize: 13)
         textView.isEditable = true
         textView.isRichText = false
+        textView.allowsUndo = true
         textView.isAutomaticQuoteSubstitutionEnabled = false
         textView.isAutomaticDashSubstitutionEnabled = false
 
-        let scrollView = NSScrollView(frame: NSRect(x: 16, y: 50, width: panelWidth - 32, height: panelHeight - 66))
         scrollView.documentView = textView
         scrollView.hasVerticalScroller = true
         scrollView.borderType = .bezelBorder

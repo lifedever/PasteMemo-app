@@ -57,6 +57,7 @@
 "settings.language.restart_now" = "지금 재시작";
 "settings.language.restart_later" = "나중에";
 "settings.launchAtLogin" = "로그인 시 실행";
+"settings.clipboardMonitoring" = "클립보드 모니터링 사용";
 "settings.hideDockIcon" = "Dock 아이콘 숨기기";
 "settings.hideDockIcon.hint" = "활성화하면 메뉴 막대 아이콘에서만 앱에 접근할 수 있습니다.";
 "settings.hideDockIcon.confirm.title" = "Dock 아이콘을 숨기시겠습니까?";
@@ -397,6 +398,7 @@
 "relay.title" = "릴레이 모드";
 "relay.tab" = "릴레이";
 "relay.exit" = "종료";
+"relay.clearAndExit" = "비우고 종료";
 "relay.close" = "닫기";
 "relay.exitRelay" = "릴레이 종료";
 "relay.startRelay" = "릴레이 시작";
@@ -415,6 +417,25 @@
 "relay.settings.pasteKeyNote" = "일부 앱(터미널, Emacs)이 같은 단축키를 사용할 수 있습니다. 충돌 시 사용자 지정하세요.";
 "relay.settings.pauseToChange" = "단축키를 변경하려면 릴레이 모드를 일시 정지하거나 종료하세요.";
 "relay.settings.resetAlert" = "활성화 팁 다시 표시";
+"relay.settings.plainText" = "일반 텍스트로 붙여넣기";
+"relay.settings.plainText.desc" = "서식 제거";
+"relay.settings.automation" = "자동화";
+"relay.settings.automation.desc" = "붙여넣을 때 규칙 적용";
+"relay.settings.automation.none" = "없음";
+"relay.settings.preview" = "미리보기";
+"relay.settings.preview.desc" = "처리된 텍스트를 목록에 표시";
+"relay.settings.tooltip.default" = "설정";
+"relay.settings.tooltip.active" = "활성";
+"relay.settings.postPasteKey" = "붙여넣기 후 키";
+"relay.settings.postPasteKey.desc" = "연속 입력에 유용";
+"relay.settings.postPasteKey.none" = "없음";
+"relay.settings.postPasteKey.return" = "Return";
+"relay.settings.postPasteKey.tab" = "Tab";
+"relay.settings.postPasteKey.down" = "아래";
+"relay.settings.postPasteKey.up" = "위";
+"relay.settings.postPasteKey.left" = "왼쪽";
+"relay.settings.postPasteKey.right" = "오른쪽";
+"relay.settings.postPasteKey.space" = "Space";
 "relay.settings.description" = "릴레이 모드는 여러 항목을 복사한 후 순서대로 하나씩 붙여넣을 수 있습니다. 웹페이지에서 이름 목록을 복사하여 Excel에 행별로 붙여넣기에 적합합니다.";
 "relay.settings.shortcuts" = "단축키";
 "relay.settings.operations" = "작업 설명";
@@ -514,11 +535,11 @@
 
 /* Menu - Additional */
 "menu.openMain" = "메인 윈도우 열기";
-"menu.pause" = "모니터링 일시 정지";
+"menu.pause" = "클립보드 모니터링 일시 정지";
 "menu.quickPanel" = "빠른 붙여넣기";
 "menu.quit" = "%@ 종료";
 "menu.accessibility.grant" = "⚠ 손쉬운 사용 권한 부여";
-"menu.resume" = "모니터링 재개";
+"menu.resume" = "클립보드 모니터링 재개";
 "menu.settings" = "설정";
 
 /* Quick Panel */
