@@ -2,12 +2,15 @@ import Foundation
 
 struct PersistedRelayQueue: Codable {
     let items: [PersistedRelayItem]
+    let currentIndex: Int
     let savedAt: Date
 }
 
 struct PersistedRelayItem: Codable {
     let id: UUID
     let content: String
+    /// Raw value of RelayItem.ItemState: "pending" / "current" / "done" / "skipped".
+    let state: String
 }
 
 @MainActor
@@ -23,13 +26,13 @@ enum RelayQueuePersistence {
         return pasteMemoDir.appendingPathComponent("relay-queue.json")
     }
 
-    static func save(_ items: [PersistedRelayItem]) {
+    static func save(_ items: [PersistedRelayItem], currentIndex: Int) {
         guard let url = fileURL else { return }
         if items.isEmpty {
             delete()
             return
         }
-        let queue = PersistedRelayQueue(items: items, savedAt: Date())
+        let queue = PersistedRelayQueue(items: items, currentIndex: currentIndex, savedAt: Date())
         let encoder = JSONEncoder()
         encoder.outputFormatting = .prettyPrinted
         do {

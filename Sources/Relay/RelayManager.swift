@@ -212,8 +212,12 @@ final class RelayManager {
 
         if let persisted = RelayQueuePersistence.load() {
             for pItem in persisted.items {
-                items.append(RelayItem(content: pItem.content))
+                var item = RelayItem(content: pItem.content)
+                item.state = parseItemState(pItem.state)
+                items.append(item)
             }
+            currentIndex = min(max(persisted.currentIndex, 0), max(0, items.count - 1))
+            // If no .current exists (e.g. queue fully consumed last time), promote next pending
             markCurrentIfNeeded()
         }
 
@@ -254,12 +258,25 @@ final class RelayManager {
         if clearQueue {
             RelayQueuePersistence.delete()
         } else {
-            let toSave = items.compactMap { item -> PersistedRelayItem? in
-                guard item.state == .pending || item.state == .current else { return nil }
-                guard !item.isImage && !item.isFile else { return nil }
-                return PersistedRelayItem(id: item.id, content: item.content)
+            // Persist all text items including done/skipped so history is visible
+            // on next activation. Image/file items are not persisted.
+            let textItems = items.filter { !$0.isImage && !$0.isFile }
+            let toSave = textItems.map { item in
+                PersistedRelayItem(
+                    id: item.id,
+                    content: item.content,
+                    state: stateRawValue(item.state)
+                )
             }
-            RelayQueuePersistence.save(toSave)
+            // Compute currentIndex in the filtered list (text-only)
+            let savedIndex: Int
+            if currentIndex < items.count,
+               let filteredIndex = textItems.firstIndex(where: { $0.id == items[currentIndex].id }) {
+                savedIndex = filteredIndex
+            } else {
+                savedIndex = min(currentIndex, max(0, textItems.count - 1))
+            }
+            RelayQueuePersistence.save(toSave, currentIndex: savedIndex)
         }
 
         items.removeAll()
@@ -375,6 +392,24 @@ final class RelayManager {
         if let idx = items.firstIndex(where: { $0.state == .pending }) {
             items[idx].state = .current
             currentIndex = idx
+        }
+    }
+
+    private func stateRawValue(_ state: RelayItem.ItemState) -> String {
+        switch state {
+        case .pending: return "pending"
+        case .current: return "current"
+        case .done: return "done"
+        case .skipped: return "skipped"
+        }
+    }
+
+    private func parseItemState(_ raw: String) -> RelayItem.ItemState {
+        switch raw {
+        case "current": return .current
+        case "done": return .done
+        case "skipped": return .skipped
+        default: return .pending
         }
     }
 }
