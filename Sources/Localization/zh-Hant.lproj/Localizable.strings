@@ -500,6 +500,11 @@
 "relay.settings.resetAlert" = "重新顯示開啟提示";
 "relay.settings.plainText" = "純文字貼上";
 "relay.settings.plainText.desc" = "去除富文字格式";
+"relay.settings.automation" = "自動化";
+"relay.settings.automation.desc" = "貼上時套用所選規則";
+"relay.settings.automation.none" = "無";
+"relay.settings.preview" = "啟用預覽";
+"relay.settings.preview.desc" = "清單顯示處理後文字";
 "relay.settings.tooltip.default" = "設定";
 "relay.settings.tooltip.active" = "已啟用";
 "relay.settings.postPasteKey" = "貼上後按鍵";

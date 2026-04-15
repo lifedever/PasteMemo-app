@@ -634,6 +634,11 @@
 "relay.settings.resetAlert" = "Show activation tip again";
 "relay.settings.plainText" = "Paste as Plain Text";
 "relay.settings.plainText.desc" = "Strip rich formatting";
+"relay.settings.automation" = "Automation";
+"relay.settings.automation.desc" = "Apply rule when pasting";
+"relay.settings.automation.none" = "None";
+"relay.settings.preview" = "Preview";
+"relay.settings.preview.desc" = "List shows processed text";
 "relay.settings.tooltip.default" = "Settings";
 "relay.settings.tooltip.active" = "Active";
 "relay.settings.postPasteKey" = "Post-paste Key";

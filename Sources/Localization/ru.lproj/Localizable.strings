@@ -500,6 +500,11 @@
 "relay.settings.resetAlert" = "Показать подсказку снова";
 "relay.settings.plainText" = "Вставить как обычный текст";
 "relay.settings.plainText.desc" = "Удалить форматирование";
+"relay.settings.automation" = "Автоматизация";
+"relay.settings.automation.desc" = "Применять правило при вставке";
+"relay.settings.automation.none" = "Нет";
+"relay.settings.preview" = "Предпросмотр";
+"relay.settings.preview.desc" = "Список показывает обработанный текст";
 "relay.settings.tooltip.default" = "Настройки";
 "relay.settings.tooltip.active" = "Активно";
 "relay.settings.postPasteKey" = "Клавиша после вставки";

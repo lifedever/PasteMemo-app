@@ -635,6 +635,11 @@
 "relay.settings.resetAlert" = "重新显示开启提示";
 "relay.settings.plainText" = "纯文本粘贴";
 "relay.settings.plainText.desc" = "去除富文本格式";
+"relay.settings.automation" = "自动化";
+"relay.settings.automation.desc" = "粘贴时应用所选规则";
+"relay.settings.automation.none" = "无";
+"relay.settings.preview" = "启用预览";
+"relay.settings.preview.desc" = "列表显示处理后文本";
 "relay.settings.tooltip.default" = "设置";
 "relay.settings.tooltip.active" = "已启用";
 "relay.settings.postPasteKey" = "粘贴后按键";

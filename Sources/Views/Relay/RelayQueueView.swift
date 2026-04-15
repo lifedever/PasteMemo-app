@@ -113,6 +113,7 @@ struct RelayQueueView: View {
                 .help(settingsTooltip)
                 .popover(isPresented: $showSettingsPopover, arrowEdge: .top) {
                     RelaySettingsPopover()
+                        .modelContainer(PasteMemoApp.sharedModelContainer)
                 }
             }
         }

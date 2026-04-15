@@ -1,8 +1,16 @@
 import SwiftUI
+import SwiftData
 
 struct RelaySettingsPopover: View {
     @AppStorage("relayPasteAsPlainText") private var pasteAsPlainText = false
     @AppStorage(RelayPostPasteKey.userDefaultsKey) private var postPasteKeyRaw = RelayPostPasteKey.none.rawValue
+    @AppStorage("relayAutomationRuleId") private var automationRuleId = ""
+    @AppStorage("relayPreviewEnabled") private var previewEnabled = false
+
+    @Query(
+        filter: #Predicate<AutomationRule> { $0.enabled == true },
+        sort: \AutomationRule.sortOrder
+    ) private var enabledRules: [AutomationRule]
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -14,6 +22,37 @@ struct RelaySettingsPopover: View {
                     .labelsHidden()
                     .toggleStyle(.switch)
                     .controlSize(.small)
+            }
+
+            Divider().padding(.leading, 12)
+
+            settingRow(
+                title: L10n.tr("relay.settings.automation"),
+                subtitle: L10n.tr("relay.settings.automation.desc")
+            ) {
+                Picker("", selection: $automationRuleId) {
+                    Text(L10n.tr("relay.settings.automation.none")).tag("")
+                    ForEach(enabledRules) { rule in
+                        Text(rule.name).tag(rule.ruleID)
+                    }
+                }
+                .labelsHidden()
+                .pickerStyle(.menu)
+                .controlSize(.small)
+                .frame(width: 140)
+            }
+
+            Divider().padding(.leading, 12)
+
+            settingRow(
+                title: L10n.tr("relay.settings.preview"),
+                subtitle: L10n.tr("relay.settings.preview.desc")
+            ) {
+                Toggle("", isOn: $previewEnabled)
+                    .labelsHidden()
+                    .toggleStyle(.switch)
+                    .controlSize(.small)
+                    .disabled(automationRuleId.isEmpty)
             }
 
             Divider().padding(.leading, 12)
@@ -34,7 +73,7 @@ struct RelaySettingsPopover: View {
             }
         }
         .padding(.vertical, 4)
-        .frame(width: 280)
+        .frame(width: 300)
     }
 
     private func settingRow<Control: View>(
