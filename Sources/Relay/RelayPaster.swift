@@ -63,9 +63,14 @@ enum RelayPaster {
 
     private static func simulatePostPasteKey() {
         guard let keyCode = RelayPostPasteKey.current.keyCode else { return }
-        let source = CGEventSource(stateID: .hidSystemState)
+        // Use privateState source so the event doesn't inherit currently-held
+        // physical modifiers (e.g. user holding Ctrl during Ctrl+V relay paste).
+        let source = CGEventSource(stateID: .privateState)
         guard let keyDown = CGEvent(keyboardEventSource: source, virtualKey: keyCode, keyDown: true),
               let keyUp = CGEvent(keyboardEventSource: source, virtualKey: keyCode, keyDown: false) else { return }
+        // Explicitly clear any modifier flags so arrow keys don't become Ctrl+Arrow etc.
+        keyDown.flags = []
+        keyUp.flags = []
         keyDown.post(tap: .cgAnnotatedSessionEventTap)
         keyUp.post(tap: .cgAnnotatedSessionEventTap)
     }

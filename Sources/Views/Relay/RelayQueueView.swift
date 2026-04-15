@@ -110,7 +110,7 @@ struct RelayQueueView: View {
                     }
                 }
                 .buttonStyle(.plain)
-                .help(settingsTooltip)
+                .background(ToolTipView(text: settingsTooltip))
                 .popover(isPresented: $showSettingsPopover, arrowEdge: .top) {
                     RelaySettingsPopover()
                 }
@@ -488,6 +488,24 @@ private struct WindowDragArea: NSViewRepresentable {
 private final class DraggableView: NSView {
     override func mouseDown(with event: NSEvent) {
         window?.performDrag(with: event)
+    }
+}
+
+// MARK: - Native tooltip helper
+
+/// NSView-backed tooltip that works on nonactivating panels where SwiftUI's
+/// `.help()` modifier sometimes stays silent.
+struct ToolTipView: NSViewRepresentable {
+    let text: String
+
+    func makeNSView(context: Context) -> NSView {
+        let view = NSView()
+        view.toolTip = text
+        return view
+    }
+
+    func updateNSView(_ nsView: NSView, context: Context) {
+        nsView.toolTip = text
     }
 }
 
