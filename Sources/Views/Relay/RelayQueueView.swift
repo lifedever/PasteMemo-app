@@ -327,6 +327,7 @@ private struct RelayQueueRow: View {
     var onSplit: (() -> Void)?
     var onEdit: ((String) -> Void)?
     @State private var isHovering = false
+    @AppStorage(RelayPostPasteKey.userDefaultsKey) private var postPasteKeyRaw = RelayPostPasteKey.none.rawValue
 
     var body: some View {
         HStack(spacing: 8) {
@@ -364,6 +365,15 @@ private struct RelayQueueRow: View {
                     .onTapGesture(count: 2) { showEditAlert() }
             }
             Spacer(minLength: 0)
+            if item.state == .current, !isHovering, let glyph = postPasteKeyGlyph {
+                Text(glyph)
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal, 5)
+                    .padding(.vertical, 1)
+                    .background(Color.primary.opacity(0.08), in: RoundedRectangle(cornerRadius: 4))
+                    .transition(.opacity)
+            }
             if isHovering {
                 if !item.isImage, !item.isFile, item.content.count > 1 {
                     Button { onSplit?() } label: {
@@ -397,6 +407,20 @@ private struct RelayQueueRow: View {
         .background(RoundedRectangle(cornerRadius: 6).fill(rowBackground))
         .onHover { isHovering = $0 }
         .animation(.easeOut(duration: 0.1), value: isHovering)
+    }
+
+    private var postPasteKeyGlyph: String? {
+        guard let key = RelayPostPasteKey(rawValue: postPasteKeyRaw), key != .none else { return nil }
+        switch key {
+        case .none: return nil
+        case .return: return "⏎"
+        case .tab: return "⇥"
+        case .space: return "␣"
+        case .up: return "↑"
+        case .down: return "↓"
+        case .left: return "←"
+        case .right: return "→"
+        }
     }
 
     private func showEditAlert() {
