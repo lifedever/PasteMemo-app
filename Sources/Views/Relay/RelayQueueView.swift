@@ -10,6 +10,15 @@ struct RelayQueueView: View {
     @AppStorage(RelayPostPasteKey.userDefaultsKey) private var settingPostPasteKey = RelayPostPasteKey.none.rawValue
     @AppStorage("relayAutomationRuleId") private var settingAutomationRuleId = ""
     @AppStorage("relayPreviewEnabled") private var settingPreviewEnabled = false
+    @Query(filter: #Predicate<AutomationRule> { $0.enabled == true })
+    private var enabledRules: [AutomationRule]
+
+    /// Actions to apply when previewing / rendering list text. Empty when preview is off
+    /// or no rule is selected.
+    private var previewActions: [RuleAction] {
+        guard settingPreviewEnabled, !settingAutomationRuleId.isEmpty else { return [] }
+        return enabledRules.first(where: { $0.ruleID == settingAutomationRuleId })?.actions ?? []
+    }
 
     private var hasActiveSettings: Bool {
         settingPlainText
@@ -171,7 +180,7 @@ struct RelayQueueView: View {
                 ScrollView {
                     LazyVStack(spacing: 2) {
                         ForEach(Array(manager.items.enumerated()), id: \.element.id) { index, item in
-                            RelayQueueRow(item: item, onDelete: {
+                            RelayQueueRow(item: item, previewActions: previewActions, onDelete: {
                                 manager.deleteItem(at: index)
                             }, onSplit: {
                                 splitTargetIndex = index
@@ -331,20 +340,15 @@ struct RelayQueueView: View {
 
 private struct RelayQueueRow: View {
     let item: RelayItem
+    let previewActions: [RuleAction]
     var onDelete: (() -> Void)?
     var onSplit: (() -> Void)?
     var onEdit: ((String) -> Void)?
     @State private var isHovering = false
     @AppStorage(RelayPostPasteKey.userDefaultsKey) private var postPasteKeyRaw = RelayPostPasteKey.none.rawValue
-    @AppStorage("relayAutomationRuleId") private var automationRuleId = ""
-    @AppStorage("relayPreviewEnabled") private var previewEnabled = false
-    @Query(filter: #Predicate<AutomationRule> { $0.enabled == true })
-    private var enabledRules: [AutomationRule]
 
     private var displayText: String {
-        guard previewEnabled, !automationRuleId.isEmpty else { return item.content }
-        guard let rule = enabledRules.first(where: { $0.ruleID == automationRuleId }) else { return item.content }
-        return AutomationEngine.apply(rule.actions, to: item.content)
+        previewActions.isEmpty ? item.content : AutomationEngine.apply(previewActions, to: item.content)
     }
 
     var body: some View {

@@ -22,6 +22,7 @@ struct RelaySettingsPopover: View {
                     .labelsHidden()
                     .toggleStyle(.switch)
                     .controlSize(.small)
+                    .frame(width: 140, alignment: .trailing)
             }
 
             Divider().padding(.leading, 12)
@@ -33,13 +34,13 @@ struct RelaySettingsPopover: View {
                 Picker("", selection: $automationRuleId) {
                     Text(L10n.tr("relay.settings.automation.none")).tag("")
                     ForEach(enabledRules) { rule in
-                        Text(rule.name).tag(rule.ruleID)
+                        Text(ruleDisplayName(rule)).tag(rule.ruleID)
                     }
                 }
                 .labelsHidden()
                 .pickerStyle(.menu)
                 .controlSize(.small)
-                .frame(width: 140)
+                .frame(width: 140, alignment: .trailing)
             }
 
             Divider().padding(.leading, 12)
@@ -53,6 +54,7 @@ struct RelaySettingsPopover: View {
                     .toggleStyle(.switch)
                     .controlSize(.small)
                     .disabled(automationRuleId.isEmpty)
+                    .frame(width: 140, alignment: .trailing)
             }
 
             Divider().padding(.leading, 12)
@@ -69,7 +71,7 @@ struct RelaySettingsPopover: View {
                 .labelsHidden()
                 .pickerStyle(.menu)
                 .controlSize(.small)
-                .frame(width: 130)
+                .frame(width: 140, alignment: .trailing)
             }
         }
         .padding(.vertical, 4)
@@ -91,6 +93,13 @@ struct RelaySettingsPopover: View {
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
+    }
+
+    private func ruleDisplayName(_ rule: AutomationRule) -> String {
+        // Built-in rules use L10n keys (e.g. "automation.builtIn.cleanTracking")
+        // as their name. Custom rules use literal names typed by the user.
+        let translated = L10n.tr(rule.name)
+        return translated == rule.name && rule.name.hasPrefix("automation.") ? rule.name : translated
     }
 
     private func displayName(for key: RelayPostPasteKey) -> String {
