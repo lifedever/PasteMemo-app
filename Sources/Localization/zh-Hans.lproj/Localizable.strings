@@ -642,7 +642,10 @@
 "relay.settings.postPasteKey.none" = "无";
 "relay.settings.postPasteKey.return" = "Return";
 "relay.settings.postPasteKey.tab" = "Tab";
-"relay.settings.postPasteKey.down" = "↓";
+"relay.settings.postPasteKey.down" = "下";
+"relay.settings.postPasteKey.up" = "上";
+"relay.settings.postPasteKey.left" = "左";
+"relay.settings.postPasteKey.right" = "右";
 "relay.settings.postPasteKey.space" = "Space";
 "relay.settings.description" = "接力模式可以连续复制多条内容，然后按顺序逐条粘贴。适合从网页复制一批用户名，再切到 Excel 逐行粘贴的场景。";
 "relay.settings.shortcuts" = "快捷键";

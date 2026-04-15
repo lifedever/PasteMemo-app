@@ -641,7 +641,10 @@
 "relay.settings.postPasteKey.none" = "None";
 "relay.settings.postPasteKey.return" = "Return";
 "relay.settings.postPasteKey.tab" = "Tab";
-"relay.settings.postPasteKey.down" = "↓";
+"relay.settings.postPasteKey.down" = "Down";
+"relay.settings.postPasteKey.up" = "Up";
+"relay.settings.postPasteKey.left" = "Left";
+"relay.settings.postPasteKey.right" = "Right";
 "relay.settings.postPasteKey.space" = "Space";
 "relay.settings.description" = "Relay Mode lets you copy multiple items and paste them one by one in order. Ideal for copying a list of names from a webpage and pasting them row by row into Excel.";
 "relay.settings.shortcuts" = "Shortcuts";

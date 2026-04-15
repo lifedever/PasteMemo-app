@@ -442,7 +442,10 @@
 "relay.settings.postPasteKey.none" = "なし";
 "relay.settings.postPasteKey.return" = "Return";
 "relay.settings.postPasteKey.tab" = "Tab";
-"relay.settings.postPasteKey.down" = "↓";
+"relay.settings.postPasteKey.down" = "下";
+"relay.settings.postPasteKey.up" = "上";
+"relay.settings.postPasteKey.left" = "左";
+"relay.settings.postPasteKey.right" = "右";
 "relay.settings.postPasteKey.space" = "Space";
 "relay.settings.description" = "リレーモードでは複数のアイテムをコピーして順番に1つずつペーストできます。Webページから名前のリストをコピーして Excel に行ごとにペーストするのに最適です。";
 "relay.settings.shortcuts" = "ショートカット";

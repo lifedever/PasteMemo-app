@@ -507,7 +507,10 @@
 "relay.settings.postPasteKey.none" = "Нет";
 "relay.settings.postPasteKey.return" = "Return";
 "relay.settings.postPasteKey.tab" = "Tab";
-"relay.settings.postPasteKey.down" = "↓";
+"relay.settings.postPasteKey.down" = "Вниз";
+"relay.settings.postPasteKey.up" = "Вверх";
+"relay.settings.postPasteKey.left" = "Влево";
+"relay.settings.postPasteKey.right" = "Вправо";
 "relay.settings.postPasteKey.space" = "Space";
 "relay.settings.description" = "Режим эстафеты позволяет копировать несколько элементов и вставлять их по одному. Идеально для копирования списка имён и построчной вставки в Excel.";
 "relay.settings.shortcuts" = "Горячие клавиши";

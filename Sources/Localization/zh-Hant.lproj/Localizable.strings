@@ -507,7 +507,10 @@
 "relay.settings.postPasteKey.none" = "無";
 "relay.settings.postPasteKey.return" = "Return";
 "relay.settings.postPasteKey.tab" = "Tab";
-"relay.settings.postPasteKey.down" = "↓";
+"relay.settings.postPasteKey.down" = "下";
+"relay.settings.postPasteKey.up" = "上";
+"relay.settings.postPasteKey.left" = "左";
+"relay.settings.postPasteKey.right" = "右";
 "relay.settings.postPasteKey.space" = "Space";
 "relay.settings.description" = "接力模式可以連續複製多條內容，然後按順序逐條貼上。適合從網頁複製一批使用者名稱，再切到 Excel 逐行貼上的場景。";
 "relay.settings.shortcuts" = "快捷鍵";
