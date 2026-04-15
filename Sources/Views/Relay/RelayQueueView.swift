@@ -20,6 +20,15 @@ struct RelayQueueView: View {
         return enabledRules.first(where: { $0.ruleID == settingAutomationRuleId })?.actions ?? []
     }
 
+    /// Localized name of the currently selected rule, or nil when none.
+    private var activeRuleDisplayName: String? {
+        guard !settingAutomationRuleId.isEmpty,
+              let rule = enabledRules.first(where: { $0.ruleID == settingAutomationRuleId })
+        else { return nil }
+        let translated = L10n.tr(rule.name)
+        return translated == rule.name && rule.name.hasPrefix("automation.") ? rule.name : translated
+    }
+
     private var hasActiveSettings: Bool {
         settingPlainText
             || (RelayPostPasteKey(rawValue: settingPostPasteKey) ?? .none) != .none
@@ -131,6 +140,27 @@ struct RelayQueueView: View {
                     RelaySettingsPopover()
                         .modelContainer(PasteMemoApp.sharedModelContainer)
                 }
+            }
+
+            if let name = activeRuleDisplayName {
+                HStack(spacing: 4) {
+                    Image(systemName: "bolt.fill")
+                        .font(.system(size: 9))
+                    Text(L10n.tr("relay.settings.automation") + ": " + name)
+                        .font(.system(size: 11))
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+                    if settingPreviewEnabled {
+                        Text("· " + L10n.tr("relay.settings.preview"))
+                            .font(.system(size: 11))
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                }
+                .foregroundStyle(Color.accentColor)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(Color.accentColor.opacity(0.12), in: RoundedRectangle(cornerRadius: 5))
             }
         }
         .padding(.horizontal, 14)
