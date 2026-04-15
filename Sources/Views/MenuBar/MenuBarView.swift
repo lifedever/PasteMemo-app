@@ -6,12 +6,13 @@ struct MenuBarContent: View {
     @Environment(\.openSettings) private var openSettings
     @ObservedObject private var hotkeyManager = HotkeyManager.shared
     @ObservedObject private var clipboardManager = ClipboardManager.shared
+    @ObservedObject private var axMonitor = AccessibilityMonitor.shared
     @AppStorage("hideDockIcon") private var hideDockIcon = false
 
     var body: some View {
         let _ = storeOpenWindowAction()
 
-        if !AXIsProcessTrusted() {
+        if !axMonitor.isTrusted {
             Button {
                 openAccessibilitySettings()
             } label: {
