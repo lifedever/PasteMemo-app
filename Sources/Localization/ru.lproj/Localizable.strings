@@ -500,6 +500,8 @@
 "relay.settings.resetAlert" = "Показать подсказку снова";
 "relay.settings.plainText" = "Вставить как обычный текст";
 "relay.settings.plainText.desc" = "Удалить форматирование";
+"relay.settings.tooltip.default" = "Настройки";
+"relay.settings.tooltip.active" = "Активно";
 "relay.settings.postPasteKey" = "Клавиша после вставки";
 "relay.settings.postPasteKey.desc" = "Для быстрого ввода";
 "relay.settings.postPasteKey.none" = "Нет";

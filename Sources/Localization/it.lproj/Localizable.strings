@@ -498,6 +498,8 @@ Usa %@ per incollare uno per uno.";
 "relay.settings.resetAlert" = "Mostra di nuovo il suggerimento";
 "relay.settings.plainText" = "Incolla come testo semplice";
 "relay.settings.plainText.desc" = "Rimuovi formattazione";
+"relay.settings.tooltip.default" = "Impostazioni";
+"relay.settings.tooltip.active" = "Attivo";
 "relay.settings.postPasteKey" = "Tasto dopo l'incollaggio";
 "relay.settings.postPasteKey.desc" = "Utile per inserimento rapido";
 "relay.settings.postPasteKey.none" = "Nessuno";

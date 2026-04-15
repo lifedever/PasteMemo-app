@@ -419,6 +419,8 @@ Usa %@ para pegar uno por uno.";
 "relay.settings.resetAlert" = "Mostrar consejo de activación de nuevo";
 "relay.settings.plainText" = "Pegar como texto sin formato";
 "relay.settings.plainText.desc" = "Eliminar formato enriquecido";
+"relay.settings.tooltip.default" = "Configuración";
+"relay.settings.tooltip.active" = "Activo";
 "relay.settings.postPasteKey" = "Tecla tras pegar";
 "relay.settings.postPasteKey.desc" = "Útil para entrada rápida";
 "relay.settings.postPasteKey.none" = "Ninguna";

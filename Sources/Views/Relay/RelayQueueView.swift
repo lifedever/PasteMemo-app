@@ -5,6 +5,37 @@ struct RelayQueueView: View {
     @State private var splitTargetIndex: Int?
     @State private var draggingItem: RelayItem?
     @State private var showSettingsPopover = false
+    @AppStorage("relayPasteAsPlainText") private var settingPlainText = false
+    @AppStorage(RelayPostPasteKey.userDefaultsKey) private var settingPostPasteKey = RelayPostPasteKey.none.rawValue
+
+    private var hasActiveSettings: Bool {
+        settingPlainText
+            || (RelayPostPasteKey(rawValue: settingPostPasteKey) ?? .none) != .none
+    }
+
+    private var settingsTooltip: String {
+        var parts: [String] = []
+        if settingPlainText {
+            parts.append(L10n.tr("relay.settings.plainText"))
+        }
+        if let key = RelayPostPasteKey(rawValue: settingPostPasteKey), key != .none {
+            parts.append(L10n.tr("relay.settings.postPasteKey") + ": " + postPasteKeyDisplay(key))
+        }
+        if parts.isEmpty {
+            return L10n.tr("relay.settings.tooltip.default")
+        }
+        return L10n.tr("relay.settings.tooltip.active") + ": " + parts.joined(separator: " · ")
+    }
+
+    private func postPasteKeyDisplay(_ key: RelayPostPasteKey) -> String {
+        switch key {
+        case .none: return L10n.tr("relay.settings.postPasteKey.none")
+        case .return: return L10n.tr("relay.settings.postPasteKey.return")
+        case .tab: return L10n.tr("relay.settings.postPasteKey.tab")
+        case .down: return L10n.tr("relay.settings.postPasteKey.down")
+        case .space: return L10n.tr("relay.settings.postPasteKey.space")
+        }
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -55,14 +86,28 @@ struct RelayQueueView: View {
                 Button {
                     showSettingsPopover.toggle()
                 } label: {
-                    Image(systemName: "gearshape")
-                        .font(.system(size: 11))
-                        .foregroundStyle(.secondary)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 3)
-                        .background(Color.primary.opacity(0.06), in: Capsule())
+                    ZStack(alignment: .topTrailing) {
+                        Image(systemName: "gearshape")
+                            .font(.system(size: 11))
+                            .foregroundStyle(.secondary)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 3)
+                            .background(Color.primary.opacity(0.06), in: Capsule())
+
+                        if hasActiveSettings {
+                            Circle()
+                                .fill(Color.blue)
+                                .frame(width: 6, height: 6)
+                                .overlay(
+                                    Circle()
+                                        .stroke(Color(NSColor.windowBackgroundColor), lineWidth: 1)
+                                )
+                                .offset(x: 2, y: -2)
+                        }
+                    }
                 }
                 .buttonStyle(.plain)
+                .help(settingsTooltip)
                 .popover(isPresented: $showSettingsPopover, arrowEdge: .top) {
                     RelaySettingsPopover()
                 }

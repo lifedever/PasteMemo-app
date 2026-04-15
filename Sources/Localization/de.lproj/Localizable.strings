@@ -419,6 +419,8 @@ Verwenden Sie %@ zum Einfügen.";
 "relay.settings.resetAlert" = "Aktivierungshinweis erneut anzeigen";
 "relay.settings.plainText" = "Als Klartext einfügen";
 "relay.settings.plainText.desc" = "Formatierung entfernen";
+"relay.settings.tooltip.default" = "Einstellungen";
+"relay.settings.tooltip.active" = "Aktiv";
 "relay.settings.postPasteKey" = "Taste nach Einfügen";
 "relay.settings.postPasteKey.desc" = "Nützlich für schnelle Eingabe";
 "relay.settings.postPasteKey.none" = "Keine";

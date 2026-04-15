@@ -634,6 +634,8 @@
 "relay.settings.resetAlert" = "Show activation tip again";
 "relay.settings.plainText" = "Paste as Plain Text";
 "relay.settings.plainText.desc" = "Strip rich formatting";
+"relay.settings.tooltip.default" = "Settings";
+"relay.settings.tooltip.active" = "Active";
 "relay.settings.postPasteKey" = "Post-paste Key";
 "relay.settings.postPasteKey.desc" = "Useful for rapid entry";
 "relay.settings.postPasteKey.none" = "None";

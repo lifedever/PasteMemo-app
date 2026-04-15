@@ -435,6 +435,8 @@
 "relay.settings.resetAlert" = "起動時のヒントを再表示";
 "relay.settings.plainText" = "プレーンテキストで貼り付け";
 "relay.settings.plainText.desc" = "リッチテキスト書式を削除";
+"relay.settings.tooltip.default" = "設定";
+"relay.settings.tooltip.active" = "有効";
 "relay.settings.postPasteKey" = "貼り付け後のキー";
 "relay.settings.postPasteKey.desc" = "連続入力に便利";
 "relay.settings.postPasteKey.none" = "なし";

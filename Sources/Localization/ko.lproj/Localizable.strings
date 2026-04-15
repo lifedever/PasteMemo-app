@@ -419,6 +419,8 @@
 "relay.settings.resetAlert" = "활성화 팁 다시 표시";
 "relay.settings.plainText" = "일반 텍스트로 붙여넣기";
 "relay.settings.plainText.desc" = "서식 제거";
+"relay.settings.tooltip.default" = "설정";
+"relay.settings.tooltip.active" = "활성";
 "relay.settings.postPasteKey" = "붙여넣기 후 키";
 "relay.settings.postPasteKey.desc" = "연속 입력에 유용";
 "relay.settings.postPasteKey.none" = "없음";

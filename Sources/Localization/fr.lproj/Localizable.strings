@@ -419,6 +419,8 @@ Utilisez %@ pour coller un par un.";
 "relay.settings.resetAlert" = "Réafficher le conseil d'activation";
 "relay.settings.plainText" = "Coller en texte brut";
 "relay.settings.plainText.desc" = "Supprimer le formatage";
+"relay.settings.tooltip.default" = "Paramètres";
+"relay.settings.tooltip.active" = "Actif";
 "relay.settings.postPasteKey" = "Touche après collage";
 "relay.settings.postPasteKey.desc" = "Utile pour la saisie rapide";
 "relay.settings.postPasteKey.none" = "Aucune";
