@@ -632,6 +632,15 @@
 "relay.settings.pasteKeyNote" = "Some apps (Terminal, Emacs) may use the same shortcut. Customize if there's a conflict.";
 "relay.settings.pauseToChange" = "Pause or exit Relay Mode to change the shortcut.";
 "relay.settings.resetAlert" = "Show activation tip again";
+"relay.settings.plainText" = "Paste as Plain Text";
+"relay.settings.plainText.desc" = "Strip rich formatting";
+"relay.settings.postPasteKey" = "Post-paste Key";
+"relay.settings.postPasteKey.desc" = "Useful for rapid entry";
+"relay.settings.postPasteKey.none" = "None";
+"relay.settings.postPasteKey.return" = "Return";
+"relay.settings.postPasteKey.tab" = "Tab";
+"relay.settings.postPasteKey.down" = "↓";
+"relay.settings.postPasteKey.space" = "Space";
 "relay.settings.description" = "Relay Mode lets you copy multiple items and paste them one by one in order. Ideal for copying a list of names from a webpage and pasting them row by row into Excel.";
 "relay.settings.shortcuts" = "Shortcuts";
 "relay.settings.operations" = "Operations";

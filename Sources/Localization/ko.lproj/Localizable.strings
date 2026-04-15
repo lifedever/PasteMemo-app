@@ -417,6 +417,15 @@
 "relay.settings.pasteKeyNote" = "일부 앱(터미널, Emacs)이 같은 단축키를 사용할 수 있습니다. 충돌 시 사용자 지정하세요.";
 "relay.settings.pauseToChange" = "단축키를 변경하려면 릴레이 모드를 일시 정지하거나 종료하세요.";
 "relay.settings.resetAlert" = "활성화 팁 다시 표시";
+"relay.settings.plainText" = "일반 텍스트로 붙여넣기";
+"relay.settings.plainText.desc" = "서식 제거";
+"relay.settings.postPasteKey" = "붙여넣기 후 키";
+"relay.settings.postPasteKey.desc" = "연속 입력에 유용";
+"relay.settings.postPasteKey.none" = "없음";
+"relay.settings.postPasteKey.return" = "Return";
+"relay.settings.postPasteKey.tab" = "Tab";
+"relay.settings.postPasteKey.down" = "↓";
+"relay.settings.postPasteKey.space" = "Space";
 "relay.settings.description" = "릴레이 모드는 여러 항목을 복사한 후 순서대로 하나씩 붙여넣을 수 있습니다. 웹페이지에서 이름 목록을 복사하여 Excel에 행별로 붙여넣기에 적합합니다.";
 "relay.settings.shortcuts" = "단축키";
 "relay.settings.operations" = "작업 설명";

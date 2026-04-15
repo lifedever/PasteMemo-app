@@ -498,6 +498,15 @@
 "relay.settings.pasteKey" = "Горячая клавиша вставки";
 "relay.settings.pasteKeyNote" = "Некоторые приложения (Терминал, Emacs) могут использовать ту же клавишу.";
 "relay.settings.resetAlert" = "Показать подсказку снова";
+"relay.settings.plainText" = "Вставить как обычный текст";
+"relay.settings.plainText.desc" = "Удалить форматирование";
+"relay.settings.postPasteKey" = "Клавиша после вставки";
+"relay.settings.postPasteKey.desc" = "Для быстрого ввода";
+"relay.settings.postPasteKey.none" = "Нет";
+"relay.settings.postPasteKey.return" = "Return";
+"relay.settings.postPasteKey.tab" = "Tab";
+"relay.settings.postPasteKey.down" = "↓";
+"relay.settings.postPasteKey.space" = "Space";
 "relay.settings.description" = "Режим эстафеты позволяет копировать несколько элементов и вставлять их по одному. Идеально для копирования списка имён и построчной вставки в Excel.";
 "relay.settings.shortcuts" = "Горячие клавиши";
 "relay.settings.operations" = "Операции";

@@ -13,7 +13,10 @@ final class RelayManager {
     var isActive = false
     var isPaused = false
     var autoExitOnEmpty = true
-    var pasteAsPlainText = false
+    var pasteAsPlainText: Bool {
+        get { UserDefaults.standard.bool(forKey: "relayPasteAsPlainText") }
+        set { UserDefaults.standard.set(newValue, forKey: "relayPasteAsPlainText") }
+    }
 
     weak var clipboardController: (any ClipboardControllable)?
     weak var hotkeyController: (any HotkeyControllable)?

@@ -433,6 +433,15 @@
 "relay.settings.pasteKeyNote" = "一部のアプリ（ターミナル、Emacs）が同じショートカットを使用する場合があります。競合する場合はカスタマイズしてください。";
 "relay.settings.pauseToChange" = "ショートカットを変更するにはリレーモードを一時停止または終了してください。";
 "relay.settings.resetAlert" = "起動時のヒントを再表示";
+"relay.settings.plainText" = "プレーンテキストで貼り付け";
+"relay.settings.plainText.desc" = "リッチテキスト書式を削除";
+"relay.settings.postPasteKey" = "貼り付け後のキー";
+"relay.settings.postPasteKey.desc" = "連続入力に便利";
+"relay.settings.postPasteKey.none" = "なし";
+"relay.settings.postPasteKey.return" = "Return";
+"relay.settings.postPasteKey.tab" = "Tab";
+"relay.settings.postPasteKey.down" = "↓";
+"relay.settings.postPasteKey.space" = "Space";
 "relay.settings.description" = "リレーモードでは複数のアイテムをコピーして順番に1つずつペーストできます。Webページから名前のリストをコピーして Excel に行ごとにペーストするのに最適です。";
 "relay.settings.shortcuts" = "ショートカット";
 "relay.settings.operations" = "操作説明";
