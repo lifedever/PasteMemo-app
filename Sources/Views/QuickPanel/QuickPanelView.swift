@@ -1079,6 +1079,18 @@ struct QuickPanelView: View {
                     handlePaste()
                 }
                 return nil
+            case 44:
+                // 中文输入法下 `/` 会被吞成 `、`，这里在搜索框空、无 IME 组字、
+                // 无修饰键时手动把搜索框置为 `/` 触发分组过滤，绕过 IME
+                if hasShift || hasCmd || hasControl { return event }
+                if !isSearchFocused { return event }
+                if !searchText.isEmpty { return event }
+                if let textView = event.window?.firstResponder as? NSTextView,
+                   textView.hasMarkedText() {
+                    return event
+                }
+                searchText = Self.GROUP_SEARCH_PREFIX
+                return nil
             default:
                 if hasCmd, let digit = Self.digitKeyMap[Int(event.keyCode)] {
                     handleShortcutPaste(index: digit)
