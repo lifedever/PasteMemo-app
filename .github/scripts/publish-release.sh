@@ -42,11 +42,6 @@ X86_SHA=$(jq -r .checksums.x86_64.sha256 "$META")
 ARM_SIZE=$(jq -r .checksums.arm64.size "$META")
 X86_SIZE=$(jq -r .checksums.x86_64.size "$META")
 
-echo "🚀 Publishing GitHub draft..."
-# release-meta.json is an internal artifact; strip it before going public
-gh release delete-asset "$TAG" "release-meta.json" --repo "$REPO" --yes || true
-gh release edit "$TAG" --repo "$REPO" --draft=false
-
 echo "🌐 Updating site repo ($SITE_REPO)..."
 SITE_DIR="$WORK/site"
 git clone "https://x-access-token:${CROSS_REPO_PAT}@github.com/${SITE_REPO}.git" "$SITE_DIR"
@@ -77,8 +72,18 @@ print(json.dumps(obj, ensure_ascii=False, indent=2))
 PY
 
 git add latest.json downloads/
-git commit -m "release: v$VERSION"
-git tag "v$VERSION"
+# If nothing changed (e.g. retry after partial success), skip commit gracefully
+if git diff --cached --quiet; then
+    echo "   site repo: no changes to commit"
+else
+    git commit -m "release: v$VERSION"
+fi
+
+# Create tag if it doesn't exist yet
+if ! git rev-parse "v$VERSION" >/dev/null 2>&1; then
+    git tag "v$VERSION"
+fi
+
 git push origin main
 git push origin "v$VERSION"
 
@@ -91,21 +96,32 @@ cd -
 
 echo "🔁 Creating Gitee release..."
 GITEE_BODY=$(printf '## 更新内容\n\n%s\n\n## What'"'"'s New\n\n%s' "$NOTES_ZH" "$NOTES_EN")
-RESP=$(curl -sf -X POST "https://gitee.com/api/v5/repos/${SITE_REPO_GITEE}/releases" \
-    --data-urlencode "access_token=${GITEE_TOKEN}" \
-    --data-urlencode "tag_name=v${VERSION}" \
-    --data-urlencode "name=v${VERSION}" \
-    --data-urlencode "body=${GITEE_BODY}" \
-    --data-urlencode "target_commitish=main" \
-    --data-urlencode "prerelease=false")
-GITEE_RELEASE_ID=$(echo "$RESP" | jq -r .id)
-if [ -z "$GITEE_RELEASE_ID" ] || [ "$GITEE_RELEASE_ID" = "null" ]; then
-    echo "Error: Gitee release creation failed" >&2
-    echo "$RESP" >&2
-    exit 1
+
+# Idempotent: reuse existing release if retry after partial success
+EXISTING=$(curl -sf "https://gitee.com/api/v5/repos/${SITE_REPO_GITEE}/releases/tags/v${VERSION}?access_token=${GITEE_TOKEN}" 2>/dev/null || echo '{}')
+GITEE_RELEASE_ID=$(echo "$EXISTING" | jq -r '.id // empty')
+
+if [ -z "$GITEE_RELEASE_ID" ]; then
+    RESP=$(curl -sf -X POST "https://gitee.com/api/v5/repos/${SITE_REPO_GITEE}/releases" \
+        --data-urlencode "access_token=${GITEE_TOKEN}" \
+        --data-urlencode "tag_name=v${VERSION}" \
+        --data-urlencode "name=v${VERSION}" \
+        --data-urlencode "body=${GITEE_BODY}" \
+        --data-urlencode "target_commitish=main" \
+        --data-urlencode "prerelease=false")
+    GITEE_RELEASE_ID=$(echo "$RESP" | jq -r .id)
+    if [ -z "$GITEE_RELEASE_ID" ] || [ "$GITEE_RELEASE_ID" = "null" ]; then
+        echo "Error: Gitee release creation failed" >&2
+        echo "$RESP" >&2
+        exit 1
+    fi
+    echo "   Gitee release id $GITEE_RELEASE_ID"
+else
+    echo "   Gitee release $GITEE_RELEASE_ID already exists, reusing"
 fi
 
-echo "   Gitee release id $GITEE_RELEASE_ID; uploading DMGs..."
+# attach_files is idempotent on Gitee: uploading same filename replaces it
+echo "   uploading DMGs..."
 curl -sf -X POST "https://gitee.com/api/v5/repos/${SITE_REPO_GITEE}/releases/${GITEE_RELEASE_ID}/attach_files" \
     -F "access_token=${GITEE_TOKEN}" \
     -F "file=@${ARM_DMG}"
@@ -133,8 +149,18 @@ p.write_text(txt)
 PY
 
 git add Casks/pastememo.rb
-git commit -m "Update PasteMemo cask to v$VERSION"
-git push origin main
+if git diff --cached --quiet; then
+    echo "   cask: no changes to commit (already at v$VERSION)"
+else
+    git commit -m "Update PasteMemo cask to v$VERSION"
+    git push origin main
+fi
 cd -
+
+# Everything downstream succeeded → publish the draft on GitHub and strip
+# the internal metadata asset. Done last so any failure above can safely retry.
+echo "🚀 Publishing GitHub draft..."
+gh release delete-asset "$TAG" "release-meta.json" --repo "$REPO" --yes || true
+gh release edit "$TAG" --repo "$REPO" --draft=false
 
 echo "✅ $TAG published everywhere"
