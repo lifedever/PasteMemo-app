@@ -1,0 +1,45 @@
+name: Auto-release staged drafts
+
+on:
+  schedule:
+    # 23:30 Asia/Shanghai (UTC+8) = 15:30 UTC
+    - cron: '30 15 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out workflow scripts
+        uses: actions/checkout@v4
+
+      - name: Find draft releases with release-meta.json
+        id: drafts
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          gh api "/repos/$REPO/releases" \
+              --jq '[.[] | select(.draft == true) | select([.assets[].name] | index("release-meta.json")) | .tag_name]' \
+              > drafts.json
+          echo "tags=$(jq -c . drafts.json)" >> "$GITHUB_OUTPUT"
+          cat drafts.json
+
+      - name: Publish each staged draft
+        if: steps.drafts.outputs.tags != '[]'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITEE_TOKEN: ${{ secrets.GITEE_TOKEN }}
+          CROSS_REPO_PAT: ${{ secrets.CROSS_REPO_PAT }}
+          REPO: ${{ github.repository }}
+        run: |
+          # Publish each staged draft sequentially. If one fails the job
+          # fails loudly — no silent skip.
+          jq -r '.[]' drafts.json | while read -r tag; do
+              echo "::group::Publishing $tag"
+              ./.github/scripts/publish-release.sh "$tag"
+              echo "::endgroup::"
+          done

@@ -1,0 +1,140 @@
+#!/bin/bash
+# Publish one staged draft release: turn it public on GitHub, push DMGs +
+# latest.json to the site repo (mirrored to Gitee), create a Gitee release,
+# and bump the Homebrew cask.
+#
+# Called by the auto-release workflow. Expects these env vars:
+#   GH_TOKEN         — set by the workflow for ops on this repo
+#   CROSS_REPO_PAT   — PAT that can push to lifedever/PasteMemo and lifedever/homebrew-tap
+#   GITEE_TOKEN      — Gitee PAT for API + HTTPS git push
+#   REPO             — owner/repo of this repo (the draft lives here)
+set -euo pipefail
+
+TAG="${1:?Usage: $0 <tag>}"
+VERSION="${TAG#v}"
+REPO="${REPO:-lifedever/PasteMemo-app}"
+SITE_REPO="lifedever/PasteMemo"
+SITE_REPO_GITEE="lifedever/pastememo"
+TAP_REPO="lifedever/homebrew-tap"
+APP_NAME="PasteMemo"
+
+: "${CROSS_REPO_PAT:?CROSS_REPO_PAT secret not set}"
+: "${GITEE_TOKEN:?GITEE_TOKEN secret not set}"
+
+WORK=$(mktemp -d)
+trap 'rm -rf "$WORK"' EXIT
+
+echo "📥 Downloading assets for $TAG..."
+gh release download "$TAG" --repo "$REPO" --dir "$WORK/assets"
+
+META="$WORK/assets/release-meta.json"
+ARM_DMG="$WORK/assets/$APP_NAME-$VERSION-arm64.dmg"
+X86_DMG="$WORK/assets/$APP_NAME-$VERSION-x86_64.dmg"
+
+for f in "$META" "$ARM_DMG" "$X86_DMG"; do
+    [ -f "$f" ] || { echo "Error: missing asset $f" >&2; exit 1; }
+done
+
+NOTES_ZH=$(jq -r .notes_zh "$META")
+NOTES_EN=$(jq -r .notes_en "$META")
+ARM_SHA=$(jq -r .checksums.arm64.sha256 "$META")
+X86_SHA=$(jq -r .checksums.x86_64.sha256 "$META")
+ARM_SIZE=$(jq -r .checksums.arm64.size "$META")
+X86_SIZE=$(jq -r .checksums.x86_64.size "$META")
+
+echo "🚀 Publishing GitHub draft..."
+# release-meta.json is an internal artifact; strip it before going public
+gh release delete-asset "$TAG" "release-meta.json" --repo "$REPO" --yes || true
+gh release edit "$TAG" --repo "$REPO" --draft=false
+
+echo "🌐 Updating site repo ($SITE_REPO)..."
+SITE_DIR="$WORK/site"
+git clone "https://x-access-token:${CROSS_REPO_PAT}@github.com/${SITE_REPO}.git" "$SITE_DIR"
+cd "$SITE_DIR"
+git config user.name "lifedever-bot"
+git config user.email "bot@lifedever.com"
+
+rm -f downloads/PasteMemo-*.dmg
+cp "$ARM_DMG" "downloads/"
+cp "$X86_DMG" "downloads/"
+
+python3 - "$VERSION" "$NOTES_ZH" "$NOTES_EN" "$ARM_SHA" "$X86_SHA" "$ARM_SIZE" "$X86_SIZE" > latest.json << 'PY'
+import json, sys
+version, notes_zh, notes_en, arm_sha, x86_sha, arm_size, x86_size = sys.argv[1:]
+arm_url = f"https://www.lifedever.com/PasteMemo/downloads/PasteMemo-{version}-arm64.dmg"
+x86_url = f"https://www.lifedever.com/PasteMemo/downloads/PasteMemo-{version}-x86_64.dmg"
+obj = {
+    "version": version,
+    "notes_zh": notes_zh,
+    "notes_en": notes_en,
+    "downloads": {"arm64": arm_url, "x86_64": x86_url},
+    "checksums": {
+        "arm64": {"url": arm_url, "size": int(arm_size), "sha256": arm_sha},
+        "x86_64": {"url": x86_url, "size": int(x86_size), "sha256": x86_sha},
+    },
+}
+print(json.dumps(obj, ensure_ascii=False, indent=2))
+PY
+
+git add latest.json downloads/
+git commit -m "release: v$VERSION"
+git tag "v$VERSION"
+git push origin main
+git push origin "v$VERSION"
+
+# Mirror to Gitee; append as a separate remote so credentials stay scoped
+git remote add gitee "https://oauth2:${GITEE_TOKEN}@gitee.com/${SITE_REPO_GITEE}.git"
+git push gitee main
+git push gitee "v$VERSION"
+
+cd -
+
+echo "🔁 Creating Gitee release..."
+GITEE_BODY=$(printf '## 更新内容\n\n%s\n\n## What'"'"'s New\n\n%s' "$NOTES_ZH" "$NOTES_EN")
+RESP=$(curl -sf -X POST "https://gitee.com/api/v5/repos/${SITE_REPO_GITEE}/releases" \
+    --data-urlencode "access_token=${GITEE_TOKEN}" \
+    --data-urlencode "tag_name=v${VERSION}" \
+    --data-urlencode "name=v${VERSION}" \
+    --data-urlencode "body=${GITEE_BODY}" \
+    --data-urlencode "target_commitish=main" \
+    --data-urlencode "prerelease=false")
+GITEE_RELEASE_ID=$(echo "$RESP" | jq -r .id)
+if [ -z "$GITEE_RELEASE_ID" ] || [ "$GITEE_RELEASE_ID" = "null" ]; then
+    echo "Error: Gitee release creation failed" >&2
+    echo "$RESP" >&2
+    exit 1
+fi
+
+echo "   Gitee release id $GITEE_RELEASE_ID; uploading DMGs..."
+curl -sf -X POST "https://gitee.com/api/v5/repos/${SITE_REPO_GITEE}/releases/${GITEE_RELEASE_ID}/attach_files" \
+    -F "access_token=${GITEE_TOKEN}" \
+    -F "file=@${ARM_DMG}"
+curl -sf -X POST "https://gitee.com/api/v5/repos/${SITE_REPO_GITEE}/releases/${GITEE_RELEASE_ID}/attach_files" \
+    -F "access_token=${GITEE_TOKEN}" \
+    -F "file=@${X86_DMG}"
+
+echo "🍺 Updating Homebrew cask..."
+TAP_DIR="$WORK/tap"
+git clone "https://x-access-token:${CROSS_REPO_PAT}@github.com/${TAP_REPO}.git" "$TAP_DIR"
+cd "$TAP_DIR"
+git config user.name "lifedever-bot"
+git config user.email "bot@lifedever.com"
+
+python3 - "$VERSION" "$ARM_SHA" "$X86_SHA" << 'PY'
+import re, sys
+from pathlib import Path
+version, arm_sha, x86_sha = sys.argv[1:]
+p = Path("Casks/pastememo.rb")
+txt = p.read_text()
+txt = re.sub(r'version\s+"[^"]*"', f'version "{version}"', txt, count=1)
+txt = re.sub(r'arm:\s*"[^"]*"', f'arm:   "{arm_sha}"', txt, count=1)
+txt = re.sub(r'intel:\s*"[^"]*"', f'intel: "{x86_sha}"', txt, count=1)
+p.write_text(txt)
+PY
+
+git add Casks/pastememo.rb
+git commit -m "Update PasteMemo cask to v$VERSION"
+git push origin main
+cd -
+
+echo "✅ $TAG published everywhere"
