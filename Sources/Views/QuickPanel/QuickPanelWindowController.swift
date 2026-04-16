@@ -4,6 +4,7 @@ import SwiftData
 
 extension Notification.Name {
     static let quickPanelDidShow = Notification.Name("quickPanelDidShow")
+    static let quickPanelWillDismiss = Notification.Name("quickPanelWillDismiss")
 }
 
 private let DEFAULT_WIDTH: CGFloat = 750
@@ -117,12 +118,12 @@ final class QuickPanelWindowController {
 
         positionPanel(panel)
 
-        // 起始状态：alpha 0 + scale 0.96
+        // 起始状态：alpha 0 + scale 0.995（极轻微缩放）
         panel.alphaValue = 0
         if let layer = panel.contentView?.layer {
             CATransaction.begin()
             CATransaction.setDisableActions(true)
-            layer.transform = CATransform3DMakeScale(0.96, 0.96, 1)
+            layer.transform = CATransform3DMakeScale(0.995, 0.995, 1)
             CATransaction.commit()
         }
 
@@ -131,15 +132,15 @@ final class QuickPanelWindowController {
 
         // 动画到 alpha 1 + scale 1.0
         NSAnimationContext.runAnimationGroup { ctx in
-            ctx.duration = 0.15
+            ctx.duration = 0.1
             ctx.timingFunction = CAMediaTimingFunction(name: .easeOut)
             panel.animator().alphaValue = 1
         }
         if let layer = panel.contentView?.layer {
             let anim = CABasicAnimation(keyPath: "transform")
-            anim.fromValue = CATransform3DMakeScale(0.96, 0.96, 1)
+            anim.fromValue = CATransform3DMakeScale(0.995, 0.995, 1)
             anim.toValue = CATransform3DIdentity
-            anim.duration = 0.15
+            anim.duration = 0.1
             anim.timingFunction = CAMediaTimingFunction(name: .easeOut)
             layer.add(anim, forKey: "showScale")
             layer.transform = CATransform3DIdentity
@@ -163,6 +164,9 @@ final class QuickPanelWindowController {
         removeMoveObserver()
         snapGuide?.orderOut(nil)
         savePosition(panel)
+        // 先通知视图清理状态（搜索文本、分组筛选等），再隐藏 panel，
+        // 下次打开时首帧就是干净状态，避免残留的 "/" 分组建议卡片闪现
+        NotificationCenter.default.post(name: .quickPanelWillDismiss, object: nil)
         panel.orderOut(nil)
         HotkeyManager.shared.isQuickPanelVisible = false
     }

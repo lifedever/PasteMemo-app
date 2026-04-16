@@ -205,6 +205,14 @@ struct QuickPanelView: View {
             removeKeyMonitor()
             store.isActive = false
         }
+        .onReceive(NotificationCenter.default.publisher(for: .quickPanelWillDismiss)) { _ in
+            // 关闭前清空 "/" 触发的分组建议及相关状态，避免下次打开首帧闪现
+            searchText = ""
+            groupSuggestionIndex = -1
+            selectedGroupFilter = nil
+            isAppFilter = false
+            showCommandPalette = false
+        }
         .onReceive(NotificationCenter.default.publisher(for: .quickPanelDidShow)) { _ in
             showCommandPalette = false
             searchText = ""
