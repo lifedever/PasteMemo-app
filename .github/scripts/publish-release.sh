@@ -121,14 +121,26 @@ else
 fi
 
 # Uploading DMGs to Gitee is best-effort: the GitHub Actions runner's
-# network path to Gitee is unreliable. The site-repo push + source mirror
-# already give Chinese users a working download path, so skip on failure.
-# If it fails, re-run `.github/scripts/upload-gitee-dmg.sh <version>` from
-# a local macOS shell where Gitee responds in seconds.
+# network path to Gitee is very slow. Re-runs of a partially-completed
+# release would wait out the same timeout again, so skip any DMG that
+# is already attached to the Gitee release.
+EXISTING_ASSETS=$(echo "${EXISTING:-{}}" | jq -r '[.assets[]?.name] // []' 2>/dev/null || echo '[]')
+# Fall back to a live fetch if we didn't query the existing release above
+if [ "$EXISTING_ASSETS" = "[]" ] || [ -z "$EXISTING_ASSETS" ]; then
+    EXISTING_ASSETS=$(curl -sf --max-time 15 "https://gitee.com/api/v5/repos/${SITE_REPO_GITEE}/releases/${GITEE_RELEASE_ID}?access_token=${GITEE_TOKEN}" 2>/dev/null \
+        | jq -c '[.assets[]?.name]' 2>/dev/null || echo '[]')
+fi
+
 upload_gitee_asset() {
     local dmg="$1"
-    echo "   uploading $(basename "$dmg")..."
-    if curl -sf --max-time 120 --retry 2 --retry-delay 5 \
+    local name
+    name=$(basename "$dmg")
+    if echo "$EXISTING_ASSETS" | jq -e --arg n "$name" 'index($n)' >/dev/null 2>&1; then
+        echo "   ✓ $name already on Gitee, skip"
+        return 0
+    fi
+    echo "   uploading $name..."
+    if curl -sf --max-time 45 \
         -X POST "https://gitee.com/api/v5/repos/${SITE_REPO_GITEE}/releases/${GITEE_RELEASE_ID}/attach_files" \
         -F "access_token=${GITEE_TOKEN}" \
         -F "file=@${dmg}" \
