@@ -166,9 +166,22 @@ from pathlib import Path
 version, arm_sha, x86_sha = sys.argv[1:]
 p = Path("Casks/pastememo.rb")
 txt = p.read_text()
-txt = re.sub(r'version\s+"[^"]*"', f'version "{version}"', txt, count=1)
-txt = re.sub(r'arm:\s*"[^"]*"', f'arm:   "{arm_sha}"', txt, count=1)
-txt = re.sub(r'intel:\s*"[^"]*"', f'intel: "{x86_sha}"', txt, count=1)
+
+# Bump version line (match only `version "..."`, indentation stays intact)
+txt, n = re.subn(r'version\s+"[^"]*"', f'version "{version}"', txt, count=1)
+assert n == 1, f"failed to update version (matched {n} times)"
+
+# Replace the full sha256 block (both arm and intel together) so the regex
+# can't accidentally hit the `arch arm: "arm64", intel: "x86_64"` line.
+new_sha_block = f'sha256 arm:   "{arm_sha}",\n         intel: "{x86_sha}"'
+txt, n = re.subn(
+    r'sha256\s+arm:\s*"[^"]*",\s*\n\s*intel:\s*"[^"]*"',
+    new_sha_block,
+    txt,
+    count=1,
+)
+assert n == 1, f"failed to update sha256 block (matched {n} times)"
+
 p.write_text(txt)
 PY
 
