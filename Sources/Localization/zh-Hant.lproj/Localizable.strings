@@ -437,6 +437,7 @@
 "backup.frequency" = "備份頻率";
 "backup.maxSlots" = "備份數量";
 "backup.destination" = "備份方式";
+"backup.frequency.twoHours" = "每 2 小時";
 "backup.frequency.sixHours" = "每 6 小時";
 "backup.frequency.daily" = "每天";
 "backup.frequency.threeDays" = "每 3 天";

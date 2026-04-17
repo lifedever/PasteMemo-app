@@ -435,6 +435,7 @@
 "backup.frequency" = "Frekuensi pencadangan";
 "backup.maxSlots" = "Jumlah cadangan";
 "backup.destination" = "Metode pencadangan";
+"backup.frequency.twoHours" = "Setiap 2 jam";
 "backup.frequency.sixHours" = "Setiap 6 jam";
 "backup.frequency.daily" = "Harian";
 "backup.frequency.threeDays" = "Setiap 3 hari";

@@ -370,6 +370,7 @@
 "backup.frequency" = "バックアップ頻度";
 "backup.maxSlots" = "バックアップ数";
 "backup.destination" = "バックアップ方法";
+"backup.frequency.twoHours" = "2時間ごと";
 "backup.frequency.sixHours" = "6時間ごと";
 "backup.frequency.daily" = "毎日";
 "backup.frequency.threeDays" = "3日ごと";

@@ -11,6 +11,7 @@ struct BackupMetadata {
 }
 
 enum BackupFrequency: String, CaseIterable {
+    case twoHours = "2h"
     case sixHours = "6h"
     case daily = "1d"
     case threeDays = "3d"
@@ -19,6 +20,7 @@ enum BackupFrequency: String, CaseIterable {
 
     var interval: TimeInterval {
         switch self {
+        case .twoHours: return 2 * 3600
         case .sixHours: return 6 * 3600
         case .daily: return 24 * 3600
         case .threeDays: return 3 * 24 * 3600
@@ -30,6 +32,7 @@ enum BackupFrequency: String, CaseIterable {
     @MainActor
     var displayName: String {
         switch self {
+        case .twoHours: return L10n.tr("backup.frequency.twoHours")
         case .sixHours: return L10n.tr("backup.frequency.sixHours")
         case .daily: return L10n.tr("backup.frequency.daily")
         case .threeDays: return L10n.tr("backup.frequency.threeDays")

@@ -435,6 +435,7 @@
 "backup.frequency" = "Частота копирования";
 "backup.maxSlots" = "Количество копий";
 "backup.destination" = "Способ копирования";
+"backup.frequency.twoHours" = "Каждые 2 часа";
 "backup.frequency.sixHours" = "Каждые 6 часов";
 "backup.frequency.daily" = "Ежедневно";
 "backup.frequency.threeDays" = "Каждые 3 дня";

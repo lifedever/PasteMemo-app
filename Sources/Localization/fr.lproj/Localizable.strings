@@ -356,6 +356,7 @@
 "backup.frequency" = "Fréquence de sauvegarde";
 "backup.maxSlots" = "Nombre de sauvegardes";
 "backup.destination" = "Méthode de sauvegarde";
+"backup.frequency.twoHours" = "Toutes les 2 heures";
 "backup.frequency.sixHours" = "Toutes les 6 heures";
 "backup.frequency.daily" = "Quotidienne";
 "backup.frequency.threeDays" = "Tous les 3 jours";

@@ -356,6 +356,7 @@
 "backup.frequency" = "백업 주기";
 "backup.maxSlots" = "백업 수";
 "backup.destination" = "백업 방식";
+"backup.frequency.twoHours" = "2시간마다";
 "backup.frequency.sixHours" = "6시간마다";
 "backup.frequency.daily" = "매일";
 "backup.frequency.threeDays" = "3일마다";
