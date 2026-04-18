@@ -35,7 +35,7 @@ enum ClipContentType: String, Codable, CaseIterable {
     }
 
     static let defaultVisibleCases: [ClipContentType] = [
-        .text, .code, .link, .image, .video, .audio, .document, .archive, .application, .color, .file, .mixed
+        .text, .code, .link, .image, .video, .audio, .document, .archive, .application, .color, .file
     ]
 
     static var visibleCases: [ClipContentType] {
