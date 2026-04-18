@@ -512,6 +512,12 @@
 "relay.settings.resetAlert" = "Показать подсказку снова";
 "relay.settings.plainText" = "Вставить как обычный текст";
 "relay.settings.plainText.desc" = "Удалить форматирование";
+"relay.settings.allowRepeatCopy" = "Разрешить повторы";
+"relay.settings.allowRepeatCopy.desc" = "Добавлять одинаковые подряд элементы";
+"relay.settings.completeSound" = "Звук завершения";
+"relay.settings.completeSound.desc" = "Воспроизводить по завершении эстафеты";
+"relay.settings.completeSound.mute" = "Без звука";
+"relay.banner.clickToClear" = "Клик — очистить · ПКМ — переключить";
 "relay.settings.automation" = "Автоматизация";
 "relay.settings.automation.desc" = "Применять правило при вставке";
 "relay.settings.automation.none" = "Нет";

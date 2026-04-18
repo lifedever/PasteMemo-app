@@ -440,6 +440,12 @@
 "relay.settings.resetAlert" = "起動時のヒントを再表示";
 "relay.settings.plainText" = "プレーンテキストで貼り付け";
 "relay.settings.plainText.desc" = "リッチテキスト書式を削除";
+"relay.settings.allowRepeatCopy" = "重複コピーを許可";
+"relay.settings.allowRepeatCopy.desc" = "連続する重複項目もキューに追加";
+"relay.settings.completeSound" = "完了音";
+"relay.settings.completeSound.desc" = "リレー完了時に再生";
+"relay.settings.completeSound.mute" = "ミュート";
+"relay.banner.clickToClear" = "クリックで解除・右クリックで切替";
 "relay.settings.automation" = "自動化";
 "relay.settings.automation.desc" = "ペースト時にルールを適用";
 "relay.settings.automation.none" = "なし";

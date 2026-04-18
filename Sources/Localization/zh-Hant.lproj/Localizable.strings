@@ -509,6 +509,12 @@
 "relay.settings.resetAlert" = "重新顯示開啟提示";
 "relay.settings.plainText" = "純文字貼上";
 "relay.settings.plainText.desc" = "去除富文字格式";
+"relay.settings.allowRepeatCopy" = "允許重複複製";
+"relay.settings.allowRepeatCopy.desc" = "連續相同內容也入隊";
+"relay.settings.completeSound" = "完成提示音";
+"relay.settings.completeSound.desc" = "接力完成時播放";
+"relay.settings.completeSound.mute" = "靜音";
+"relay.banner.clickToClear" = "點擊關閉自動化 · 右鍵切換規則";
 "relay.settings.automation" = "自動化";
 "relay.settings.automation.desc" = "貼上時套用所選規則";
 "relay.settings.automation.none" = "無";

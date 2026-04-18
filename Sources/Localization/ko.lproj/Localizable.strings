@@ -424,6 +424,12 @@
 "relay.settings.resetAlert" = "활성화 팁 다시 표시";
 "relay.settings.plainText" = "일반 텍스트로 붙여넣기";
 "relay.settings.plainText.desc" = "서식 제거";
+"relay.settings.allowRepeatCopy" = "중복 복사 허용";
+"relay.settings.allowRepeatCopy.desc" = "연속된 중복 항목 대기열에 추가";
+"relay.settings.completeSound" = "완료음";
+"relay.settings.completeSound.desc" = "릴레이 완료 시 재생";
+"relay.settings.completeSound.mute" = "음소거";
+"relay.banner.clickToClear" = "클릭하여 해제 · 우클릭으로 전환";
 "relay.settings.automation" = "자동화";
 "relay.settings.automation.desc" = "붙여넣을 때 규칙 적용";
 "relay.settings.automation.none" = "없음";
