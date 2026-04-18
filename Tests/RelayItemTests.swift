@@ -48,9 +48,18 @@ struct RelayItemTests {
         #expect(item?.pasteboardSnapshot == snapshot)
     }
 
-    @Test("Finder .file ClipItem is rejected")
-    @MainActor func rejectsFile() {
+    @Test("Finder .file ClipItem becomes .file kind (not rejected)")
+    @MainActor func fileBecomesFileKind() {
         let clip = ClipItem(content: "/tmp/foo.txt", contentType: .file)
+        let item = RelayItem.from(clip)
+        #expect(item?.contentKind == .file)
+        #expect(item?.content == "/tmp/foo.txt")
+        #expect(item?.imageData == nil)
+    }
+
+    @Test("empty .file ClipItem is rejected")
+    @MainActor func rejectsEmptyFile() {
+        let clip = ClipItem(content: "   ", contentType: .file)
         #expect(RelayItem.from(clip) == nil)
     }
 

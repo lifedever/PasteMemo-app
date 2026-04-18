@@ -49,40 +49,40 @@ struct RelayItem: Identifiable {
         self.pasteboardSnapshot = pasteboardSnapshot
     }
 
-    /// Factory converting a ClipItem into a RelayItem. Returns nil for generic Finder file
-    /// clips (non-image files — not a relay use-case) and empty content.
+    /// Factory converting a ClipItem into a RelayItem. Returns nil for empty content.
     ///
-    /// Image handling:
-    /// - Pure-image clips (`content == "[Image]"`, typically screenshots or web images with
-    ///   no local file path) → `.image` kind; paster writes NSImage directly.
-    /// - Finder-copied image files (content is a file path or newline-joined paths) →
-    ///   `.file` kind with `imageData` preserved; paster writes file URLs + inline NSImage
-    ///   together so targets like Word embed the image instead of falling back to the
-    ///   filename string.
+    /// - Pure-image clips (`content == "[Image]"`) → `.image` kind; paster writes NSImage.
+    /// - Any file-based clip (image / file / video / audio / document / archive / application
+    ///   with content holding file path(s)) → `.file` kind; paster writes file URLs plus an
+    ///   inline NSImage when `imageData` is available. Targets like Finder and Messages
+    ///   receive real files; text targets fall back to the filename string.
+    /// - Everything else → `.text` kind.
     @MainActor
     static func from(_ clip: ClipItem) -> RelayItem? {
-        if clip.contentType == .file { return nil }
+        // Pure image (screenshot / web-copied PNG with no file path)
+        if clip.contentType == .image, clip.content == "[Image]", let data = clip.imageData {
+            return RelayItem(
+                content: clip.content,
+                imageData: data,
+                contentKind: .image,
+                pasteboardSnapshot: clip.pasteboardSnapshot
+            )
+        }
 
-        if clip.contentType == .image {
-            if clip.content == "[Image]", let data = clip.imageData {
-                return RelayItem(
-                    content: clip.content,
-                    imageData: data,
-                    contentKind: .image,
-                    pasteboardSnapshot: clip.pasteboardSnapshot
-                )
-            }
-            // File-backed image(s): treat as file so paster writes URLs + inline image.
+        // File-based clips (Finder-copied anything: PDF / docx / zip / video / audio /
+        // app bundle, or an image file with a path on disk). All paste as real files.
+        if clip.contentType.isFileBased {
             let trimmedPath = clip.content.trimmingCharacters(in: .whitespacesAndNewlines)
             guard !trimmedPath.isEmpty else { return nil }
             return RelayItem(
                 content: trimmedPath,
-                imageData: clip.imageData,
+                imageData: clip.imageData,  // nil for non-image files, thumbnail for single image file
                 contentKind: .file,
                 pasteboardSnapshot: clip.pasteboardSnapshot
             )
         }
 
+        // Text / code / link / color / etc.
         let trimmed = clip.content.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return nil }
         return RelayItem(
