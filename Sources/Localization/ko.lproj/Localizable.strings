@@ -448,6 +448,9 @@
 "relay.settings.op.skip" = "현재 항목 건너뛰기";
 "relay.settings.op.previous" = "이전 항목으로 돌아가기";
 "relay.autoExit.short" = "완료 후 자동 종료";
+"relay.loop" = "반복";
+"relay.loop.tooltip.on" = "반복: 켜짐 (대기열 종료 후 처음부터 다시 시작)";
+"relay.loop.tooltip.off" = "반복: 꺼짐";
 "relay.pasteAsText" = "텍스트로 붙여넣기";
 "relay.autoExit" = "대기열이 비면 자동 종료";
 "relay.previous" = "이전";

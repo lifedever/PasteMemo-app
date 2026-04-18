@@ -664,6 +664,9 @@
 "relay.settings.op.skip" = "跳过当前条";
 "relay.settings.op.previous" = "回退上一条";
 "relay.autoExit.short" = "结束后自动退出";
+"relay.loop" = "循环";
+"relay.loop.tooltip.on" = "循环接力：开（队列结束后自动从头开始）";
+"relay.loop.tooltip.off" = "循环接力：关";
 "relay.pasteAsText" = "粘贴为文本";
 "relay.autoExit" = "队列清空后自动退出";
 "relay.previous" = "上一条";

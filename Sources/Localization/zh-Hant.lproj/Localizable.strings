@@ -529,6 +529,9 @@
 "relay.settings.op.skip" = "跳過當前條";
 "relay.settings.op.previous" = "回退上一條";
 "relay.autoExit.short" = "結束後自動退出";
+"relay.loop" = "循環";
+"relay.loop.tooltip.on" = "循環接力：開（佇列結束後自動從頭開始）";
+"relay.loop.tooltip.off" = "循環接力：關";
 "relay.pasteAsText" = "貼上為文字";
 "relay.autoExit" = "佇列清空後自動退出";
 "relay.previous" = "上一條";

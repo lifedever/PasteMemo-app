@@ -17,6 +17,10 @@ final class RelayManager {
         get { UserDefaults.standard.bool(forKey: "relayPasteAsPlainText") }
         set { UserDefaults.standard.set(newValue, forKey: "relayPasteAsPlainText") }
     }
+    var loopEnabled: Bool {
+        get { UserDefaults.standard.bool(forKey: "relayLoopEnabled") }
+        set { UserDefaults.standard.set(newValue, forKey: "relayLoopEnabled") }
+    }
 
     weak var clipboardController: (any ClipboardControllable)?
     weak var hotkeyController: (any HotkeyControllable)?
@@ -217,8 +221,15 @@ final class RelayManager {
                 items.append(item)
             }
             currentIndex = min(max(persisted.currentIndex, 0), max(0, items.count - 1))
-            // If no .current exists (e.g. queue fully consumed last time), promote next pending
-            markCurrentIfNeeded()
+            // If the persisted queue was fully consumed last time (no pending items),
+            // start fresh rather than showing a wall of checkmarks with nothing actionable.
+            if !items.isEmpty, items.allSatisfy({ $0.state == .done || $0.state == .skipped }) {
+                items.removeAll()
+                currentIndex = 0
+                RelayQueuePersistence.delete()
+            } else {
+                markCurrentIfNeeded()
+            }
         }
 
         clipboardController?.pauseMonitoring(persistent: false)
@@ -379,9 +390,20 @@ final class RelayManager {
 
     private func handleQueueExhausted() {
         NSSound(named: "Glass")?.play()
-        if autoExitOnEmpty {
-            deactivate()
+        if loopEnabled {
+            restartQueue()
+            return
         }
+        if autoExitOnEmpty {
+            deactivate(clearQueue: true)
+        }
+    }
+
+    private func restartQueue() {
+        guard !items.isEmpty else { return }
+        for i in items.indices { items[i].state = .pending }
+        currentIndex = 0
+        items[0].state = .current
     }
 
     // MARK: - Private

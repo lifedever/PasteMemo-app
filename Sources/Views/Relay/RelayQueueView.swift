@@ -10,6 +10,7 @@ struct RelayQueueView: View {
     @AppStorage(RelayPostPasteKey.userDefaultsKey) private var settingPostPasteKey = RelayPostPasteKey.none.rawValue
     @AppStorage("relayAutomationRuleId") private var settingAutomationRuleId = ""
     @AppStorage("relayPreviewEnabled") private var settingPreviewEnabled = false
+    @AppStorage("relayLoopEnabled") private var settingLoopEnabled = false
     @Query(filter: #Predicate<AutomationRule> { $0.enabled == true })
     private var enabledRules: [AutomationRule]
 
@@ -110,6 +111,28 @@ struct RelayQueueView: View {
                 .disabled(manager.items.isEmpty)
 
                 Spacer()
+
+                Button {
+                    settingLoopEnabled.toggle()
+                } label: {
+                    HStack(spacing: 3) {
+                        Image(systemName: "arrow.triangle.2.circlepath")
+                            .font(.system(size: 9))
+                        Text(L10n.tr("relay.loop"))
+                            .font(.system(size: 11))
+                    }
+                    .foregroundStyle(settingLoopEnabled ? Color.accentColor : .secondary)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 3)
+                    .background(
+                        settingLoopEnabled
+                            ? AnyShapeStyle(Color.accentColor.opacity(0.15))
+                            : AnyShapeStyle(Color.primary.opacity(0.06)),
+                        in: Capsule()
+                    )
+                }
+                .buttonStyle(.plain)
+                .help(settingLoopEnabled ? L10n.tr("relay.loop.tooltip.on") : L10n.tr("relay.loop.tooltip.off"))
 
                 Button {
                     showSettingsPopover.toggle()

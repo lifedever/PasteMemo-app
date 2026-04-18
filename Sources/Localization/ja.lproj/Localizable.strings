@@ -464,6 +464,9 @@
 "relay.settings.op.skip" = "現在のアイテムをスキップ";
 "relay.settings.op.previous" = "1つ前に戻る";
 "relay.autoExit.short" = "完了後に自動終了";
+"relay.loop" = "ループ";
+"relay.loop.tooltip.on" = "ループ：オン（キュー完了後に先頭から再開）";
+"relay.loop.tooltip.off" = "ループ：オフ";
 "relay.pasteAsText" = "テキストとして貼り付け";
 "relay.autoExit" = "キューが空になったら自動終了";
 "relay.previous" = "前へ";

@@ -487,6 +487,9 @@
 "relay.delimiter.custom" = "Kustom";
 "relay.exitRelay" = "Keluar relay";
 "relay.autoExit.short" = "Keluar otomatis saat selesai";
+"relay.loop" = "Perulangan";
+"relay.loop.tooltip.on" = "Perulangan: Aktif (Mulai dari awal saat antrian selesai)";
+"relay.loop.tooltip.off" = "Perulangan: Mati";
 "relay.pasteAsText" = "Tempel sebagai teks";
 "relay.startRelay" = "Mulai relay";
 "relay.pause" = "Jeda";

@@ -487,6 +487,9 @@
 "relay.delimiter.custom" = "Пользовательский";
 "relay.exitRelay" = "Выйти из эстафеты";
 "relay.autoExit.short" = "Авто-выход по завершении";
+"relay.loop" = "Цикл";
+"relay.loop.tooltip.on" = "Цикл: Вкл. (перезапуск с начала после окончания очереди)";
+"relay.loop.tooltip.off" = "Цикл: Выкл.";
 "relay.pasteAsText" = "Вставить как текст";
 "relay.startRelay" = "Начать эстафету";
 "relay.pause" = "Пауза";
