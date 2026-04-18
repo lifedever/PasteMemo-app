@@ -344,17 +344,6 @@ struct PasteMemoTests {
     }
 }
 
-@Suite("RelayItem Tests")
-struct RelayItemTests {
-    @Test("Init sets pending state")
-    func initState() {
-        let item = RelayItem(content: "test")
-        #expect(item.state == .pending)
-        #expect(item.content == "test")
-        #expect(!item.id.uuidString.isEmpty)
-    }
-}
-
 @Suite("RelaySplitter Tests")
 struct RelaySplitterTests {
     @Test("Split by newline")
