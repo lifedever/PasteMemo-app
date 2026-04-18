@@ -363,7 +363,7 @@ final class RelayManager {
                         await RelayPaster.paste(item.content, monitor: mon)
                     }
                 case .file:
-                    await RelayPaster.pasteFile(item.content, monitor: mon)
+                    await RelayPaster.pasteFile(item.content, imageData: item.imageData, monitor: mon)
                 case .text:
                     await RelayPaster.paste(item.content, monitor: mon)
                 }

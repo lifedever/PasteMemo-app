@@ -37,15 +37,28 @@ enum RelayPaster {
         simulatePostPasteKey()
     }
 
-    /// Write file URLs to system pasteboard and simulate Cmd+V.
-    static func pasteFile(_ pathsContent: String, monitor: RelayClipboardMonitor) async {
+    /// Write file URLs to system pasteboard and simulate Cmd+V. When `imageData` is provided
+    /// (single image file case), also attach the decoded NSImage in the same writeObjects
+    /// call so targets like Word embed the image rather than pasting a filename string.
+    static func pasteFile(_ pathsContent: String, imageData: Data? = nil, monitor: RelayClipboardMonitor) async {
         let paths = pathsContent.components(separatedBy: "\n").filter { !$0.isEmpty }
         let pasteboard = NSPasteboard.general
         pasteboard.clearContents()
-        let urls = paths.map { URL(fileURLWithPath: $0) as NSURL }
-        pasteboard.writeObjects(urls)
+
+        // writeObjects clears the pasteboard on each call — combine URLs + image into one
+        // invocation to avoid losing either. Mirrors the pattern in
+        // ClipboardManager.writeToPasteboard's .image branch.
+        var writables: [NSPasteboardWriting] = paths.map { URL(fileURLWithPath: $0) as NSURL }
+        if let imageData, let image = NSImage(data: imageData) {
+            writables.append(image)
+        }
+        if !writables.isEmpty {
+            pasteboard.writeObjects(writables)
+        }
+
         let pboardType = NSPasteboard.PasteboardType("NSFilenamesPboardType")
         pasteboard.setPropertyList(paths, forType: pboardType)
+
         monitor.skipNextChange()
         try? await Task.sleep(for: PASTE_DELAY)
         simulateCommandV()

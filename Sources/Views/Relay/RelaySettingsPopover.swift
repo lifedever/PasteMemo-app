@@ -88,6 +88,10 @@ struct RelaySettingsPopover: View {
                 .pickerStyle(.menu)
                 .controlSize(.small)
                 .frame(width: 140, alignment: .trailing)
+                // Preview the sound the user just chose so they can compare options.
+                .onChange(of: completeSoundName) { _, newValue in
+                    SoundManager.previewRelayCompleteSound(newValue)
+                }
             }
 
             Divider().padding(.leading, 12)

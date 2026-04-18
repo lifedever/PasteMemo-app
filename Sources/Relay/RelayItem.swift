@@ -49,19 +49,36 @@ struct RelayItem: Identifiable {
         self.pasteboardSnapshot = pasteboardSnapshot
     }
 
-    /// Factory converting a ClipItem into a RelayItem. Returns nil for Finder file clips
-    /// (they're not a relay use-case) and empty content.
+    /// Factory converting a ClipItem into a RelayItem. Returns nil for generic Finder file
+    /// clips (non-image files — not a relay use-case) and empty content.
+    ///
+    /// Image handling:
+    /// - Pure-image clips (`content == "[Image]"`, typically screenshots or web images with
+    ///   no local file path) → `.image` kind; paster writes NSImage directly.
+    /// - Finder-copied image files (content is a file path or newline-joined paths) →
+    ///   `.file` kind with `imageData` preserved; paster writes file URLs + inline NSImage
+    ///   together so targets like Word embed the image instead of falling back to the
+    ///   filename string.
     @MainActor
     static func from(_ clip: ClipItem) -> RelayItem? {
         if clip.contentType == .file { return nil }
 
-        if clip.contentType == .image,
-           clip.content == "[Image]",
-           let data = clip.imageData {
+        if clip.contentType == .image {
+            if clip.content == "[Image]", let data = clip.imageData {
+                return RelayItem(
+                    content: clip.content,
+                    imageData: data,
+                    contentKind: .image,
+                    pasteboardSnapshot: clip.pasteboardSnapshot
+                )
+            }
+            // File-backed image(s): treat as file so paster writes URLs + inline image.
+            let trimmedPath = clip.content.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !trimmedPath.isEmpty else { return nil }
             return RelayItem(
-                content: clip.content,
-                imageData: data,
-                contentKind: .image,
+                content: trimmedPath,
+                imageData: clip.imageData,
+                contentKind: .file,
                 pasteboardSnapshot: clip.pasteboardSnapshot
             )
         }

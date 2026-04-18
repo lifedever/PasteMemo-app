@@ -83,6 +83,13 @@ enum SoundManager {
         NSSound(named: name)?.play()
     }
 
+    /// Plays a named system sound immediately — used by the settings picker so the user
+    /// hears what they just selected. Empty name is a no-op (mute selection).
+    static func previewRelayCompleteSound(_ name: String) {
+        guard !name.isEmpty else { return }
+        NSSound(named: name)?.play()
+    }
+
     static func preview(_ source: SoundSource) {
         play(source)
     }

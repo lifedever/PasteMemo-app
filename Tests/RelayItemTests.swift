@@ -54,6 +54,20 @@ struct RelayItemTests {
         #expect(RelayItem.from(clip) == nil)
     }
 
+    @Test("image ClipItem with file path becomes .file kind")
+    @MainActor func imageWithPathBecomesFile() {
+        let data = Data([0x89, 0x50])
+        let clip = ClipItem(
+            content: "/Users/me/Downloads/photo.png",
+            contentType: .image,
+            imageData: data
+        )
+        let item = RelayItem.from(clip)
+        #expect(item?.contentKind == .file)
+        #expect(item?.content == "/Users/me/Downloads/photo.png")
+        #expect(item?.imageData == data)
+    }
+
     @Test("empty-text ClipItem is rejected")
     @MainActor func rejectsEmpty() {
         let clip = ClipItem(content: "   \n  ", contentType: .text)
