@@ -752,19 +752,33 @@ final class ClipboardManager: ObservableObject {
                     pasteboard.setData(data, forType: .png)
                 }
             } else {
-                // File-based images: write file URLs first (writeObjects clears pasteboard)
-                if item.content != "[Image]" {
-                    writeFilePathsToPasteboard(pasteboard, content: item.content)
-                }
-                // Write as NSImage — system provides PNG/TIFF lazily on demand
-                // Note: writeObjects clears the pasteboard, so text fallback must come after
+                // writeObjects clears the pasteboard on each call, so combine URLs + image into a
+                // single writeObjects invocation. Otherwise the URL disappears and apps like Word
+                // fall back to pasting the filename string instead of embedding the image.
+                let paths: [String] = item.content == "[Image]"
+                    ? []
+                    : item.content.components(separatedBy: "\n").filter { !$0.isEmpty }
+
+                var writables: [NSPasteboardWriting] = paths.map { URL(fileURLWithPath: $0) as NSURL }
                 if let data = item.imageData, let image = NSImage(data: data) {
-                    pasteboard.writeObjects([image])
-                } else if let data = item.imageData {
+                    writables.append(image)
+                }
+                if !writables.isEmpty {
+                    pasteboard.writeObjects(writables)
+                }
+
+                // Legacy file-names pboard type for apps that still read it.
+                if !paths.isEmpty {
+                    let pboardType = NSPasteboard.PasteboardType("NSFilenamesPboardType")
+                    pasteboard.setPropertyList(paths, forType: pboardType)
+                }
+                // Raw bytes for apps that don't read NSImage.
+                if writables.first(where: { $0 is NSImage }) == nil,
+                   let data = item.imageData {
                     pasteboard.setData(data, forType: .png)
                 }
-                // Add text fallback for unknown apps (after writeObjects which clears pasteboard)
-                if item.content != "[Image]", let names = filenamesFromContent(item.content) {
+                // Text fallback filename for unknown apps.
+                if !paths.isEmpty, let names = filenamesFromContent(item.content) {
                     pasteboard.setString(names, forType: .string)
                 }
             }
