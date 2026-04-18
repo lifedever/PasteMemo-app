@@ -329,7 +329,12 @@ struct ClipDetailView: View {
     @State private var textRefreshID = UUID()
 
     private var textPreviewContent: some View {
-        NativeTextView(text: item.content, richTextData: item.richTextData, richTextType: item.richTextType)
+        NativeTextView(
+            text: item.content,
+            richTextData: item.richTextData,
+            richTextType: item.richTextType,
+            itemID: item.itemID
+        )
             .id("\(item.persistentModelID)-\(textRefreshID)-\(item.content.hashValue)")
             .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
@@ -542,7 +547,6 @@ struct ClipDetailView: View {
             .frame(maxWidth: .infinity, alignment: .topLeading)
         }
     }
-
 
     // MARK: - Phone Preview
 

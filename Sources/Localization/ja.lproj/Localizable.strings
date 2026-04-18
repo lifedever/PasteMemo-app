@@ -520,6 +520,10 @@
 "type.document" = "ドキュメント";
 "type.archive" = "アーカイブ";
 "type.application" = "アプリ";
+"type.mixed" = "ミックス";
+"mixed.section.image" = "画像";
+"mixed.section.text" = "テキスト";
+"mixed.section.files" = "ファイル (%d)";
 
 /* Phone Actions */
 "phone.call" = "電話をかける";

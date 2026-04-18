@@ -20,6 +20,9 @@ enum ClipContentType: String, Codable, CaseIterable {
     case document = "document"
     case archive = "archive"
     case application = "application"
+    /// Multiple independent representations in one clip (e.g. text + image + files).
+    /// Mirrors NSPasteboard multi-type semantics.
+    case mixed = "mixed"
     // Legacy types — kept for database compatibility, hidden from UI
     case code = "code"
     case color = "color"
@@ -32,7 +35,7 @@ enum ClipContentType: String, Codable, CaseIterable {
     }
 
     static let defaultVisibleCases: [ClipContentType] = [
-        .text, .code, .link, .image, .video, .audio, .document, .archive, .application, .color, .file
+        .text, .code, .link, .image, .video, .audio, .document, .archive, .application, .color, .file, .mixed
     ]
 
     static var visibleCases: [ClipContentType] {
@@ -68,7 +71,7 @@ enum ClipContentType: String, Codable, CaseIterable {
     var isMergeable: Bool {
         switch self {
         case .text, .code, .link, .color, .email, .phone: return true
-        case .image, .file, .video, .audio, .document, .archive, .application: return false
+        case .image, .file, .video, .audio, .document, .archive, .application, .mixed: return false
         }
     }
 
@@ -87,6 +90,7 @@ enum ClipContentType: String, Codable, CaseIterable {
         case .color: return "paintpalette.fill"
         case .email: return "envelope"
         case .phone: return "phone"
+        case .mixed: return "square.stack.3d.up.fill"
         }
     }
 
@@ -106,6 +110,7 @@ enum ClipContentType: String, Codable, CaseIterable {
         case .color: return L10n.tr("type.color")
         case .email: return L10n.tr("type.email")
         case .phone: return L10n.tr("type.phone")
+        case .mixed: return L10n.tr("type.mixed")
         }
     }
 }
@@ -134,6 +139,14 @@ final class ClipItem {
     @Attribute(.externalStorage) var richTextData: Data?
     /// Original rich text format type: "rtf" or "html"
     var richTextType: String?
+    /// Newline-joined file paths when the clip contains file URLs alongside other representations
+    /// (used primarily by `.mixed` items). Nil for legacy items and non-file-carrying clips.
+    var filePaths: String?
+    /// Full NSPasteboard snapshot (binary plist of `[String: Data]`) captured when the source
+    /// exposed rich formatting. On paste, writing this back verbatim reproduces system-native
+    /// paste behaviour — the target app (Word, Mail, browsers, etc.) picks whichever UTI it
+    /// prefers. Nil for simple text/image/file clips where full-fidelity isn't needed.
+    @Attribute(.externalStorage) var pasteboardSnapshot: Data?
     var groupName: String?
     var ocrText: String?
     var ocrStatus: String = OCRStatus.skipped.rawValue
@@ -154,7 +167,9 @@ final class ClipItem {
         lastUsedAt: Date = Date(),
         codeLanguage: String? = nil,
         richTextData: Data? = nil,
-        richTextType: String? = nil
+        richTextType: String? = nil,
+        filePaths: String? = nil,
+        pasteboardSnapshot: Data? = nil
     ) {
         self.content = content
         self.contentTypeRaw = contentType.rawValue
@@ -168,10 +183,18 @@ final class ClipItem {
         self.codeLanguage = codeLanguage
         self.richTextData = richTextData
         self.richTextType = richTextType
-        self.displayTitle = Self.buildTitle(content: content, contentType: contentType, imageData: imageData)
-        if contentType == .image, imageData != nil {
+        self.filePaths = filePaths
+        self.pasteboardSnapshot = pasteboardSnapshot
+        self.displayTitle = Self.buildTitle(content: content, contentType: contentType, imageData: imageData, filePaths: filePaths)
+        if (contentType == .image || contentType == .mixed), imageData != nil {
             self.ocrStatus = OCRStatus.pending.rawValue
         }
+    }
+
+    /// Parsed file paths from `filePaths` (newline-separated). Empty array if nil/empty.
+    var resolvedFilePaths: [String] {
+        guard let raw = filePaths, !raw.isEmpty else { return [] }
+        return raw.components(separatedBy: "\n").filter { !$0.isEmpty }
     }
 
     /// Computed enum accessor — never crashes because contentTypeRaw is a plain String.
@@ -214,7 +237,7 @@ final class ClipItem {
     }
 
     @MainActor
-    static func buildTitle(content: String, contentType: ClipContentType, imageData: Data? = nil) -> String {
+    static func buildTitle(content: String, contentType: ClipContentType, imageData: Data? = nil, filePaths: String? = nil) -> String {
         switch contentType {
         case .image:
             if content != "[Image]" {
@@ -240,6 +263,22 @@ final class ClipItem {
             return content
         case .color:
             return content
+        case .mixed:
+            // Prefer text content; fallback to first file name; finally [Mixed]
+            let trimmedContent = content.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !trimmedContent.isEmpty, trimmedContent != "[Image]" {
+                let prefix = String(trimmedContent.prefix(200))
+                let normalized = prefix.components(separatedBy: .whitespacesAndNewlines)
+                    .filter { !$0.isEmpty }.joined(separator: " ")
+                if !normalized.isEmpty { return normalized }
+            }
+            if let raw = filePaths, !raw.isEmpty {
+                let paths = raw.components(separatedBy: "\n").filter { !$0.isEmpty }
+                if let first = paths.first {
+                    return URL(fileURLWithPath: first).lastPathComponent
+                }
+            }
+            return "[Mixed]"
         default:
             let prefix = String(content.prefix(200))
             let trimmed = prefix.components(separatedBy: .whitespacesAndNewlines)

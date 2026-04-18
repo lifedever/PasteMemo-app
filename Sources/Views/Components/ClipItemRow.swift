@@ -29,15 +29,29 @@ struct ClipItemRow: View {
                                 .font(.callout)
                         }
                     } else {
-                        Text(item.content)
+                        Text(primaryPreviewText)
                             .font(.callout)
                             .lineLimit(2)
                     }
 
-                    if let app = item.sourceApp {
-                        Text(app)
-                            .font(.caption2)
-                            .foregroundStyle(.tertiary)
+                    HStack(spacing: 4) {
+                        if let app = item.sourceApp {
+                            Text(app)
+                                .font(.caption2)
+                                .foregroundStyle(.tertiary)
+                        }
+                        if item.contentType == .mixed {
+                            if item.imageData != nil {
+                                Image(systemName: "photo")
+                                    .font(.system(size: 9))
+                                    .foregroundStyle(.tertiary)
+                            }
+                            if !item.resolvedFilePaths.isEmpty {
+                                Image(systemName: "doc")
+                                    .font(.system(size: 9))
+                                    .foregroundStyle(.tertiary)
+                            }
+                        }
                     }
                 }
 
@@ -87,8 +101,20 @@ struct ClipItemRow: View {
         case .phone: return .mint
         case .video: return .red
         case .audio: return .pink
+        case .mixed: return .orange
         default: return .primary
         }
+    }
+
+    /// Line-1 preview text. For `.mixed` we fall back to the first filename when content is
+    /// the `[Mixed]` placeholder (image+files without text), so the row still shows something meaningful.
+    private var primaryPreviewText: String {
+        if item.contentType == .mixed, item.content == "[Mixed]" {
+            if let firstPath = item.resolvedFilePaths.first {
+                return URL(fileURLWithPath: firstPath).lastPathComponent
+            }
+        }
+        return item.content
     }
 }
 

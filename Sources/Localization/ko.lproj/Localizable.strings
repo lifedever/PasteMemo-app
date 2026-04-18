@@ -504,6 +504,10 @@
 "type.document" = "문서";
 "type.archive" = "아카이브";
 "type.application" = "앱";
+"type.mixed" = "혼합";
+"mixed.section.image" = "이미지";
+"mixed.section.text" = "텍스트";
+"mixed.section.files" = "파일 (%d)";
 
 /* Phone Actions */
 "phone.call" = "전화";

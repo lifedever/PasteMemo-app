@@ -504,6 +504,10 @@ Usa %@ para pegar uno por uno.";
 "type.document" = "Documento";
 "type.archive" = "Archivo comprimido";
 "type.application" = "App";
+"type.mixed" = "Mixto";
+"mixed.section.image" = "Imagen";
+"mixed.section.text" = "Texto";
+"mixed.section.files" = "Archivos (%d)";
 
 /* Phone Actions */
 "phone.call" = "Llamar";

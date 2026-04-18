@@ -322,6 +322,9 @@ struct ClipRow: View {
                 ? FileIconInfo(symbol: "square.stack.3d.up.fill", color: .cyan)
                 : fileIconInfo(firstPath)
         }
+        if item.contentType == .mixed {
+            return FileIconInfo(symbol: "square.stack.3d.up.fill", color: .orange)
+        }
         return FileIconInfo(symbol: item.contentType.icon, color: .secondary)
     }
 

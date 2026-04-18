@@ -46,6 +46,10 @@
 "type.document" = "Документ";
 "type.archive" = "Архив";
 "type.application" = "Приложение";
+"type.mixed" = "Смешанное";
+"mixed.section.image" = "Изображение";
+"mixed.section.text" = "Текст";
+"mixed.section.files" = "Файлы (%d)";
 "detail.openInFinder" = "Показать в Finder";
 
 /* Filter */

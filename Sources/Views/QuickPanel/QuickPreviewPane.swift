@@ -196,7 +196,13 @@ struct QuickPreviewPane: View {
             case .color:
                 colorPreview
             default:
-                NativeTextView(text: item.content, richTextData: item.richTextData, richTextType: item.richTextType)
+                NativeTextView(
+                    text: item.content,
+                    richTextData: item.richTextData,
+                    richTextType: item.richTextType,
+                    allowRichRender: allowHeavyPreview,
+                    itemID: item.itemID
+                )
                     .id(item.persistentModelID)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
@@ -375,6 +381,7 @@ struct QuickPreviewPane: View {
         )
     }
 
+
     @ViewBuilder
     private var filePreview: some View {
         let paths = item.content.components(separatedBy: "\n").filter { !$0.isEmpty }
@@ -438,7 +445,13 @@ struct QuickPreviewPane: View {
                     .padding(.vertical, 10)
             }
         } else {
-            NativeTextView(text: item.content, richTextData: item.richTextData, richTextType: item.richTextType)
+            NativeTextView(
+                text: item.content,
+                richTextData: item.richTextData,
+                richTextType: item.richTextType,
+                allowRichRender: allowHeavyPreview,
+                itemID: item.itemID
+            )
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .padding(14)
         }

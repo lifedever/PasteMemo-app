@@ -54,6 +54,10 @@
 "type.document" = "文档";
 "type.archive" = "压缩包";
 "type.application" = "应用";
+"type.mixed" = "混合";
+"mixed.section.image" = "图片";
+"mixed.section.text" = "文本";
+"mixed.section.files" = "文件 (%d)";
 "detail.openInFinder" = "在访达中显示";
 
 /* Filter */

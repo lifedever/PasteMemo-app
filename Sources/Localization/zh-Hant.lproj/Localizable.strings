@@ -47,6 +47,10 @@
 "type.document" = "文件";
 "type.archive" = "壓縮檔";
 "type.application" = "應用程式";
+"type.mixed" = "混合";
+"mixed.section.image" = "圖片";
+"mixed.section.text" = "文字";
+"mixed.section.files" = "檔案 (%d)";
 "detail.openInFinder" = "在 Finder 中顯示";
 
 /* Filter */

@@ -46,6 +46,10 @@
 "type.document" = "Dokumen";
 "type.archive" = "Arsip";
 "type.application" = "Aplikasi";
+"type.mixed" = "Campuran";
+"mixed.section.image" = "Gambar";
+"mixed.section.text" = "Teks";
+"mixed.section.files" = "Berkas (%d)";
 "detail.openInFinder" = "Tampilkan di Finder";
 
 /* Filter */

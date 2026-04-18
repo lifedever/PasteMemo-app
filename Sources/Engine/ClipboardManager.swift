@@ -202,13 +202,32 @@ final class ClipboardManager: ObservableObject {
     func captureCurrentClipboard(sourceApp: String? = nil) -> ClipItem? {
         let pasteboard = NSPasteboard.general
 
-        // File URLs (copied files/folders from Finder)
-        if let fileURLs = pasteboard.readObjects(forClasses: [NSURL.self], options: [.urlReadingFileURLsOnly: true]) as? [URL],
-           !fileURLs.isEmpty {
+        // Parallel capture of every independent representation on the pasteboard.
+        // `richText` is attached to text (not counted as an independent representation for .mixed judgement).
+        let fileURLs = (pasteboard.readObjects(forClasses: [NSURL.self], options: [.urlReadingFileURLsOnly: true]) as? [URL]) ?? []
+        let rawImageData = pasteboard.data(forType: .png) ?? pasteboard.data(forType: .tiff)
+        let rawText = pasteboard.string(forType: .string)?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let richText = captureRichTextData(from: pasteboard)
+
+        let hasFiles = !fileURLs.isEmpty
+        let rawHasImage = rawImageData != nil
+        let hasRawText = rawText != nil && !(rawText!.isEmpty)
+
+        // Take a full pasteboard snapshot whenever the source exposed rich content. This lets
+        // us replay the exact bytes the origin app put on the pasteboard, so Word / Mail /
+        // Notes / browsers pick their preferred UTI exactly like with a native Cmd+C → Cmd+V.
+        // Plain-text / plain-image / plain-file clips don't need it — the legacy path is fine
+        // and skipping the snapshot keeps the database lean.
+        let snapshot: Data? = richText.data != nil
+            ? capturePasteboardSnapshot(from: pasteboard)
+            : nil
+
+        // File URLs only (copied files/folders from Finder)
+        if hasFiles {
             let paths = fileURLs.map(\.path)
             let content = paths.joined(separator: "\n")
             let fileType = detectFileType(paths)
-            // For image files, also load thumbnail data for preview
+            // For single image files, load thumbnail data for preview (not a pasteboard-level image).
             var imageData: Data?
             if fileType == .image, paths.count == 1,
                let data = try? Data(contentsOf: fileURLs[0]),
@@ -218,49 +237,163 @@ final class ClipboardManager: ObservableObject {
             return ClipItem(content: content, contentType: fileType, imageData: imageData, sourceApp: sourceApp)
         }
 
-        // Check what's available
-        let imageData = pasteboard.data(forType: .png) ?? pasteboard.data(forType: .tiff)
-        let textContent = pasteboard.string(forType: .string)?.trimmingCharacters(in: .whitespacesAndNewlines)
-        let hasText = textContent != nil && !textContent!.isEmpty
-        let hasImage = imageData != nil
-
-        // Capture rich text data (RTF or HTML) for text-containing items
-        let richText = captureRichTextData(from: pasteboard)
-
-        // Both text and image (e.g. Excel, rich content) → text as primary, image as preview
-        if hasText, hasImage {
-            let content = textContent!
-            let detected = detectContentType(content)
+        // Rich-text content (browser, Word, Excel, Notes, TextEdit, ...) — prefer the text
+        // path so we retain RTFD/HTML/RTF. The raw PNG that some sources expose alongside
+        // (e.g. Excel rendering the selection as an image) is redundant for preview — the
+        // rich text already conveys the content — and the pasteboard snapshot preserves it
+        // byte-for-byte for paste-back.
+        if hasRawText, richText.data != nil {
+            let content = rawText!
+            var detected = detectContentType(content)
+            // Rich text sources are prose, not code — skip code-language detection which would
+            // otherwise misread `--` / `->` as SQL/code.
+            if detected.type == .code {
+                detected = DetectedContent(type: .text, language: nil)
+            }
             return ClipItem(
-                content: content, contentType: detected.type, imageData: imageData,
+                content: content, contentType: detected.type,
                 sourceApp: sourceApp, codeLanguage: detected.language,
-                richTextData: richText.data, richTextType: richText.type
+                richTextData: richText.data, richTextType: richText.type,
+                pasteboardSnapshot: snapshot
             )
         }
 
-        // Image only (screenshots, copy image)
-        if hasImage {
-            return ClipItem(content: "[Image]", contentType: .image, imageData: imageData, sourceApp: sourceApp)
+        // Image only (screenshots, copy image from apps that don't expose a file URL)
+        if rawHasImage {
+            return ClipItem(content: "[Image]", contentType: .image, imageData: rawImageData, sourceApp: sourceApp)
         }
 
-        // Text only
-        guard let content = textContent, !content.isEmpty else { return nil }
+        // Plain text (no rich formatting)
+        guard let content = rawText, !content.isEmpty else { return nil }
         let detected = detectContentType(content)
         return ClipItem(
             content: content, contentType: detected.type,
-            sourceApp: sourceApp, codeLanguage: detected.language,
-            richTextData: richText.data, richTextType: richText.type
+            sourceApp: sourceApp, codeLanguage: detected.language
         )
     }
 
+    private static let FLAT_RTFD_TYPE = NSPasteboard.PasteboardType("com.apple.flat-rtfd")
+    /// Upper bound on the total bytes we'll persist in a single pasteboard snapshot.
+    /// Protects the database from pathological clipboards (huge embedded PDFs, etc.).
+    private static let MAX_SNAPSHOT_BYTES = 50 * 1024 * 1024
+
+    /// Captures every type on the pasteboard as a binary-plist dictionary. Returns nil if
+    /// nothing readable is available, or if the total size exceeds MAX_SNAPSHOT_BYTES.
+    /// Replaying this via `restorePasteboardSnapshot` reproduces the original pasteboard
+    /// verbatim — that's how we achieve system-native paste in rich-content apps (Word,
+    /// Mail, browsers, Notes) that pick UTIs outside the small set we decode ourselves.
+    private func capturePasteboardSnapshot(from pasteboard: NSPasteboard) -> Data? {
+        guard let types = pasteboard.types, !types.isEmpty else { return nil }
+        var dict: [String: Data] = [:]
+        var totalBytes = 0
+        for type in types {
+            guard let data = pasteboard.data(forType: type) else { continue }
+            totalBytes += data.count
+            if totalBytes > Self.MAX_SNAPSHOT_BYTES { return nil }
+            dict[type.rawValue] = data
+        }
+        guard !dict.isEmpty else { return nil }
+        return try? PropertyListSerialization.data(fromPropertyList: dict, format: .binary, options: 0)
+    }
+
+    /// Restores a pasteboard snapshot produced by `capturePasteboardSnapshot`. Returns true
+    /// on success (caller should skip any legacy per-type writes); false on malformed/empty
+    /// snapshots so the caller can fall through to the fallback path.
+    @discardableResult
+    private func restorePasteboardSnapshot(_ data: Data, to pasteboard: NSPasteboard) -> Bool {
+        guard
+            let plist = try? PropertyListSerialization.propertyList(from: data, options: [], format: nil),
+            let dict = plist as? [String: Data],
+            !dict.isEmpty
+        else { return false }
+        pasteboard.clearContents()
+        for (typeRaw, bytes) in dict {
+            pasteboard.setData(bytes, forType: NSPasteboard.PasteboardType(typeRaw))
+        }
+        return true
+    }
+
     private func captureRichTextData(from pasteboard: NSPasteboard) -> (data: Data?, type: String?) {
-        if let rtfData = pasteboard.data(forType: .rtf) {
-            return (rtfData, "rtf")
+        // Priority: RTFD (carries inline images — Notes, Pages, Word, TextEdit) >
+        //           HTML (browsers, most modern apps) > RTF (legacy, no images).
+        // Capturing the richest container and writing it back verbatim gives native pasting
+        // behaviour: the destination app decodes whatever it prefers.
+        if let rtfdData = pasteboard.data(forType: Self.FLAT_RTFD_TYPE) {
+            return (rtfdData, "rtfd")
         }
         if let htmlData = pasteboard.data(forType: .html) {
             return (htmlData, "html")
         }
+        if let rtfData = pasteboard.data(forType: .rtf) {
+            return (rtfData, "rtf")
+        }
         return (nil, nil)
+    }
+
+    /// Writes a previously-captured rich-text blob back to the pasteboard under its original type,
+    /// and — when it's an RTFD container — also fills in HTML / RTF fallbacks so apps
+    /// that can't read RTFD (e.g. Word, most browsers) still receive an equivalent representation.
+    private func writeRichTextData(_ data: Data, type: String?, to pasteboard: NSPasteboard) {
+        switch type {
+        case "rtfd":
+            pasteboard.setData(data, forType: Self.FLAT_RTFD_TYPE)
+            // Derive HTML (with inline base64 images) and RTF fallbacks. Apps that can't read
+            // RTFD will pick HTML — Word, Mail, browsers, etc.
+            if let attr = try? NSAttributedString(
+                data: data,
+                options: [.documentType: NSAttributedString.DocumentType.rtfd],
+                documentAttributes: nil
+            ) {
+                let range = NSRange(location: 0, length: attr.length)
+                // AppKit's HTML exporter drops fileWrapper-based image attachments, so build
+                // our own HTML string with base64-inlined <img> tags.
+                if pasteboard.data(forType: .html) == nil,
+                   let html = Self.htmlWithInlineImages(from: attr) {
+                    pasteboard.setData(html, forType: .html)
+                }
+                if pasteboard.data(forType: .rtf) == nil,
+                   let rtf = try? attr.data(from: range, documentAttributes: [.documentType: NSAttributedString.DocumentType.rtf]) {
+                    pasteboard.setData(rtf, forType: .rtf)
+                }
+            }
+        case "html":
+            pasteboard.setData(data, forType: .html)
+        default:
+            pasteboard.setData(data, forType: .rtf)
+        }
+    }
+
+    /// Builds a minimal HTML document from an NSAttributedString where image attachments
+    /// are encoded inline as base64 `data:` URIs. AppKit's native HTML export drops such
+    /// attachments, so we produce them manually. Formatting is intentionally simple — the
+    /// goal is to keep *images* intact for apps like Word that read HTML but not RTFD.
+    private static func htmlWithInlineImages(from attr: NSAttributedString) -> Data? {
+        var html = "<html><body>"
+        let fullRange = NSRange(location: 0, length: attr.length)
+        attr.enumerateAttribute(.attachment, in: fullRange, options: []) { value, range, _ in
+            if let attachment = value as? NSTextAttachment,
+               let image = attachment.image
+                ?? (attachment.fileWrapper?.regularFileContents).flatMap(NSImage.init(data:)),
+               let tiff = image.tiffRepresentation,
+               let bitmap = NSBitmapImageRep(data: tiff),
+               let png = bitmap.representation(using: .png, properties: [:]) {
+                let base64 = png.base64EncodedString()
+                html += "<img src=\"data:image/png;base64,\(base64)\" />"
+            } else {
+                let substring = attr.attributedSubstring(from: range).string
+                html += escapeHTML(substring)
+            }
+        }
+        html += "</body></html>"
+        return html.data(using: .utf8)
+    }
+
+    private static func escapeHTML(_ s: String) -> String {
+        s.replacingOccurrences(of: "&", with: "&amp;")
+            .replacingOccurrences(of: "<", with: "&lt;")
+            .replacingOccurrences(of: ">", with: "&gt;")
+            .replacingOccurrences(of: "\"", with: "&quot;")
+            .replacingOccurrences(of: "\n", with: "<br/>")
     }
 
     private static let VIDEO_EXTENSIONS: Set<String> = [
@@ -370,6 +503,13 @@ final class ClipboardManager: ObservableObject {
 
         if existingItem.contentType == newItem.contentType {
             if existingItem.contentType == .image, existingItem.imageData != newItem.imageData { return false }
+            if existingItem.contentType == .mixed {
+                // Mixed items carry multiple independent representations; any difference in
+                // image bytes or file path list means it's a distinct clip.
+                if existingItem.imageData != newItem.imageData { return false }
+                if existingItem.filePaths != newItem.filePaths { return false }
+                return true
+            }
             if existingIsRelaxedText && newIsRelaxedText {
                 let existingHasRichText = existingItem.richTextData != nil
                 let newHasRichText = newItem.richTextData != nil
@@ -576,6 +716,21 @@ final class ClipboardManager: ObservableObject {
         let textOnly = isTextOnlyApp(targetApp)
         let terminal = isTerminalApp(targetApp)
 
+        // Full-fidelity path: if we captured a pasteboard snapshot at copy time, replay it
+        // verbatim. That's exactly what the system does between Cmd+C and Cmd+V, so the target
+        // app (Word / Mail / Notes / browsers) receives the original bytes for every UTI it
+        // may prefer.
+        //
+        // Exception: if the target is a plain-text-only app (terminals, editors), skip the
+        // snapshot — it might carry file URLs / images the target can't use, and the text-only
+        // fallback below picks the best textual representation.
+        if !textOnly, let snapshot = item.pasteboardSnapshot,
+           restorePasteboardSnapshot(snapshot, to: pasteboard) {
+            lastChangeCount = pasteboard.changeCount
+            skipRelayMonitorIfActive()
+            return
+        }
+
         switch item.contentType {
         case .image:
             if textOnly {
@@ -628,14 +783,71 @@ final class ClipboardManager: ObservableObject {
                     pasteboard.setString(names, forType: .string)
                 }
             }
+        case .mixed:
+            let paths = item.resolvedFilePaths
+            let hasFiles = !paths.isEmpty
+            let hasImage = item.imageData != nil
+            let textContent = item.content
+            let hasText = !textContent.isEmpty && textContent != "[Mixed]"
+
+            if textOnly {
+                // Plain-text-only targets get the best textual representation available.
+                if hasText {
+                    pasteboard.setString(textContent, forType: .string)
+                } else if hasFiles {
+                    if terminal {
+                        pasteboard.setString(paths.joined(separator: "\n"), forType: .string)
+                    } else if let names = filenamesFromContent(paths.joined(separator: "\n")) {
+                        pasteboard.setString(names, forType: .string)
+                    }
+                }
+                // No image handling for text-only apps — they can't accept it.
+            } else {
+                // General targets: expose every representation so the target app can pick what it reads.
+                // NSPasteboard.writeObjects internally preserves previously-written content when followed
+                // by setData/setString, but earlier setData calls are cleared by subsequent writeObjects.
+                // Therefore: do writeObjects first (combined), then setData/setString as additive layers.
+                var writables: [NSPasteboardWriting] = []
+                if hasFiles {
+                    writables.append(contentsOf: paths.map { URL(fileURLWithPath: $0) as NSURL })
+                }
+                if hasImage, let data = item.imageData, let image = NSImage(data: data) {
+                    writables.append(image)
+                }
+                if !writables.isEmpty {
+                    pasteboard.writeObjects(writables)
+                }
+                // Legacy NSFilenamesPboardType for file-aware apps that still read the old type.
+                if hasFiles {
+                    let pboardType = NSPasteboard.PasteboardType("NSFilenamesPboardType")
+                    pasteboard.setPropertyList(paths, forType: pboardType)
+                }
+                // Raw image bytes for apps that don't read NSImage.
+                if hasImage, let data = item.imageData, NSImage(data: data) == nil {
+                    pasteboard.setData(data, forType: .png)
+                }
+                // Text + rich text layer (setString/setData are additive).
+                if hasText {
+                    pasteboard.setString(textContent, forType: .string)
+                } else if hasFiles, let names = filenamesFromContent(paths.joined(separator: "\n")) {
+                    pasteboard.setString(names, forType: .string)
+                }
+                if let rtfData = item.richTextData {
+                    writeRichTextData(rtfData, type: item.richTextType, to: pasteboard)
+                }
+            }
         default:
+            // writeObjects clears the pasteboard, so image (if present) goes first, then string/rtf are additive.
+            if let imgData = item.imageData {
+                if let image = NSImage(data: imgData) {
+                    pasteboard.writeObjects([image])
+                } else {
+                    pasteboard.setData(imgData, forType: .png)
+                }
+            }
             pasteboard.setString(item.content, forType: .string)
             if let rtfData = item.richTextData {
-                if item.richTextType == "html" {
-                    pasteboard.setData(rtfData, forType: .html)
-                } else {
-                    pasteboard.setData(rtfData, forType: .rtf)
-                }
+                writeRichTextData(rtfData, type: item.richTextType, to: pasteboard)
             }
         }
         lastChangeCount = NSPasteboard.general.changeCount
@@ -761,10 +973,14 @@ final class ClipboardManager: ObservableObject {
                 }
 
                 let pasteboard = NSPasteboard.general
-                pasteboard.clearContents()
 
                 switch group {
+                case .clipItem(let item):
+                    // Delegate to the single-item pipeline, which already knows about snapshots,
+                    // mixed content, terminal/text-only overrides, etc.
+                    writeToPasteboard(item, targetApp: targetApp)
                 case .files(let paths):
+                    pasteboard.clearContents()
                     if textOnly {
                         // Terminal: full paths; Editor: filenames
                         let text = terminal
@@ -775,12 +991,13 @@ final class ClipboardManager: ObservableObject {
                         writeFileURLsToPasteboard(pasteboard, paths: paths)
                     }
                 case .text(let content, let rtfData, let rtfType):
+                    pasteboard.clearContents()
                     pasteboard.setString(content, forType: .string)
                     if let rtfData {
-                        let type: NSPasteboard.PasteboardType = rtfType == "html" ? .html : .rtf
-                        pasteboard.setData(rtfData, forType: type)
+                        writeRichTextData(rtfData, type: rtfType, to: pasteboard)
                     }
                 case .image(let data):
+                    pasteboard.clearContents()
                     if let image = NSImage(data: data) {
                         pasteboard.writeObjects([image])
                     } else {
@@ -805,12 +1022,24 @@ final class ClipboardManager: ObservableObject {
         case files([String])
         case text(String, richTextData: Data?, richTextType: String?)
         case image(Data)
+        /// Full-fidelity single-item group — defer to `writeToPasteboard(item)` so the single-clip
+        /// pipeline (snapshot restore, mixed handling, etc.) is reused verbatim instead of
+        /// reimplemented here. Prevents drift between single-paste and multi-paste behaviour.
+        case clipItem(ClipItem)
     }
 
     /// Group consecutive same-type items: files merge; texts and images each get their own group to preserve formatting.
     private func buildPasteGroups(_ items: [ClipItem], downgradeRichText: Bool = false) -> [PasteGroup] {
         var groups: [PasteGroup] = []
         for item in items {
+            // Items carrying a full pasteboard snapshot or multi-representation (.mixed) content
+            // must go through the single-paste pipeline — their bytes can't be meaningfully
+            // inlined into a PasteGroup.text without garbling binary data (e.g. RTFD bytes
+            // getting treated as a utf8 string).
+            if (item.pasteboardSnapshot != nil && !downgradeRichText) || item.contentType == .mixed {
+                groups.append(.clipItem(item))
+                continue
+            }
             if isFileBasedContent(item) {
                 let paths = item.content.components(separatedBy: "\n").filter { !$0.isEmpty }
                 if case .files = groups.last {

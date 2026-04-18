@@ -147,7 +147,7 @@ struct CommandPaletteContent: View {
 
     private func cmdEnterLabel(for item: ClipItem) -> String {
         switch item.contentType {
-        case .text, .code, .color, .email, .phone:
+        case .text, .code, .color, .email, .phone, .mixed:
             L10n.tr("cmd.pasteAsPlainText")
         case .link: L10n.tr("cmd.openLink")
         case .image, .file, .document, .archive, .application, .video, .audio:

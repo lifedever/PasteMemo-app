@@ -507,6 +507,10 @@ Verwenden Sie %@ zum Einfügen.";
 "type.document" = "Dokument";
 "type.archive" = "Archiv";
 "type.application" = "App";
+"type.mixed" = "Gemischt";
+"mixed.section.image" = "Bild";
+"mixed.section.text" = "Text";
+"mixed.section.files" = "Dateien (%d)";
 
 /* Detail (additional) */
 "detail.dimensions" = "Abmessungen";

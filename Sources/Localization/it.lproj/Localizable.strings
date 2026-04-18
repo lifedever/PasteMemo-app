@@ -46,6 +46,10 @@
 "type.document" = "Documento";
 "type.archive" = "Archivio";
 "type.application" = "App";
+"type.mixed" = "Misto";
+"mixed.section.image" = "Immagine";
+"mixed.section.text" = "Testo";
+"mixed.section.files" = "File (%d)";
 "detail.openInFinder" = "Mostra nel Finder";
 
 /* Filter */

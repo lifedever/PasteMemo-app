@@ -504,6 +504,10 @@ Utilisez %@ pour coller un par un.";
 "type.document" = "Document";
 "type.archive" = "Archive";
 "type.application" = "App";
+"type.mixed" = "Mixte";
+"mixed.section.image" = "Image";
+"mixed.section.text" = "Texte";
+"mixed.section.files" = "Fichiers (%d)";
 
 /* Phone Actions */
 "phone.call" = "Appeler";

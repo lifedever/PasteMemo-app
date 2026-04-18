@@ -310,7 +310,13 @@ final class ClipItemStore {
 
     private func addFilterConditions(_ conditions: inout [String], _ params: inout [Any]) {
         if let type = filterType {
-            conditions.append("ZCONTENTTYPERAW = ?")
+            // Mixed items carry multiple independent representations — they should appear
+            // under every category whose corresponding auxiliary field is populated.
+            if let mixedClause = Self.mixedCrossoverSQL(for: type) {
+                conditions.append("(ZCONTENTTYPERAW = ? OR \(mixedClause))")
+            } else {
+                conditions.append("ZCONTENTTYPERAW = ?")
+            }
             params.append(type.rawValue)
         }
         if pinnedOnly { conditions.append("ZISPINNED = 1") }
@@ -327,6 +333,21 @@ final class ClipItemStore {
         if let groupName {
             conditions.append("ZGROUPNAME = ?")
             params.append(groupName)
+        }
+    }
+
+    /// Extra SQL (parameter-less) that lets `.mixed` items surface under cross-category filters
+    /// based on which auxiliary representation they carry. Nil means strict match only.
+    static func mixedCrossoverSQL(for type: ClipContentType) -> String? {
+        switch type {
+        case .image:
+            return "(ZCONTENTTYPERAW = 'mixed' AND ZIMAGEDATA IS NOT NULL)"
+        case .file:
+            return "(ZCONTENTTYPERAW = 'mixed' AND ZFILEPATHS IS NOT NULL AND ZFILEPATHS != '')"
+        case .text:
+            return "(ZCONTENTTYPERAW = 'mixed' AND ZCONTENT IS NOT NULL AND ZCONTENT != '' AND ZCONTENT != '[Mixed]')"
+        default:
+            return nil
         }
     }
 
@@ -350,7 +371,20 @@ final class ClipItemStore {
         guard let db = openDB() else { return }
 
         let rawTypes = db.queryStrings("SELECT DISTINCT ZCONTENTTYPERAW FROM ZCLIPITEM")
-        let existingTypes = Set(rawTypes.compactMap { ClipContentType(rawValue: $0) })
+        var existingTypes = Set(rawTypes.compactMap { ClipContentType(rawValue: $0) })
+        // A mixed item grants visibility to every crossover category its auxiliary fields populate,
+        // so the sidebar exposes an entry point even when no strict-typed item exists yet.
+        if existingTypes.contains(.mixed) {
+            for (type, clause) in [
+                (ClipContentType.image, "ZIMAGEDATA IS NOT NULL"),
+                (ClipContentType.file,  "ZFILEPATHS IS NOT NULL AND ZFILEPATHS != ''"),
+                (ClipContentType.text,  "ZCONTENT IS NOT NULL AND ZCONTENT != '' AND ZCONTENT != '[Mixed]'"),
+            ] {
+                if db.queryInt("SELECT COUNT(*) FROM ZCLIPITEM WHERE ZCONTENTTYPERAW = 'mixed' AND \(clause)") > 0 {
+                    existingTypes.insert(type)
+                }
+            }
+        }
         availableTypes = ClipContentType.visibleCases.filter { type in
             ProManager.shared.canUseContentType(type) && existingTypes.contains(type)
         }
@@ -392,6 +426,17 @@ final class ClipItemStore {
                   let type = ClipContentType(rawValue: rawType),
                   visibleTypes.contains(type) else { continue }
             counts.byType[type] = count
+        }
+        // Mixed items contribute to every category whose corresponding representation is present.
+        for (type, clause) in [
+            (ClipContentType.image, "ZIMAGEDATA IS NOT NULL"),
+            (ClipContentType.file,  "ZFILEPATHS IS NOT NULL AND ZFILEPATHS != ''"),
+            (ClipContentType.text,  "ZCONTENT IS NOT NULL AND ZCONTENT != '' AND ZCONTENT != '[Mixed]'"),
+        ] where visibleTypes.contains(type) {
+            let extra = db.queryInt("SELECT COUNT(*) FROM ZCLIPITEM WHERE ZCONTENTTYPERAW = 'mixed' AND \(clause)")
+            if extra > 0 {
+                counts.byType[type, default: 0] += extra
+            }
         }
         for (app, count) in db.queryStringIntPairs(
             "SELECT ZSOURCEAPP, COUNT(*) FROM ZCLIPITEM WHERE ZSOURCEAPP IS NOT NULL GROUP BY ZSOURCEAPP ORDER BY ZSOURCEAPP"
