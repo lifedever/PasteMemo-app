@@ -645,6 +645,9 @@
 "relay.settings.plainText.desc" = "Strip rich formatting";
 "relay.settings.allowRepeatCopy" = "Allow duplicate copies";
 "relay.settings.allowRepeatCopy.desc" = "Queue duplicate consecutive items";
+"relay.settings.completeSound" = "Completion sound";
+"relay.settings.completeSound.desc" = "Play when relay finishes";
+"relay.settings.completeSound.mute" = "Mute";
 "relay.settings.automation" = "Automation";
 "relay.settings.automation.desc" = "Apply rule when pasting";
 "relay.settings.automation.none" = "None";

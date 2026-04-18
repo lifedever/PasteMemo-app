@@ -74,6 +74,15 @@ enum SoundManager {
         play(pasteSoundSource)
     }
 
+    /// System sound names available for the relay-complete chime. Empty string = muted.
+    static let relayCompleteSoundOptions: [String] = ["", "Pop", "Tink", "Bottle", "Glass", "Ping"]
+
+    static func playRelayComplete() {
+        let name = UserDefaults.standard.string(forKey: "relayCompleteSoundName") ?? "Pop"
+        guard !name.isEmpty else { return }
+        NSSound(named: name)?.play()
+    }
+
     static func preview(_ source: SoundSource) {
         play(source)
     }

@@ -646,6 +646,9 @@
 "relay.settings.plainText.desc" = "去除富文本格式";
 "relay.settings.allowRepeatCopy" = "允许重复复制";
 "relay.settings.allowRepeatCopy.desc" = "连续相同内容也入队";
+"relay.settings.completeSound" = "完成提示音";
+"relay.settings.completeSound.desc" = "接力完成时播放";
+"relay.settings.completeSound.mute" = "静音";
 "relay.settings.automation" = "自动化";
 "relay.settings.automation.desc" = "粘贴时应用所选规则";
 "relay.settings.automation.none" = "无";

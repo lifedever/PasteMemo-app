@@ -376,7 +376,7 @@ final class RelayManager {
     }
 
     private func handleQueueExhausted() {
-        NSSound(named: "Glass")?.play()
+        SoundManager.playRelayComplete()
         if loopEnabled {
             restartQueue()
             return

@@ -7,6 +7,7 @@ struct RelaySettingsPopover: View {
     @AppStorage(RelayPostPasteKey.userDefaultsKey) private var postPasteKeyRaw = RelayPostPasteKey.none.rawValue
     @AppStorage("relayAutomationRuleId") private var automationRuleId = ""
     @AppStorage("relayPreviewEnabled") private var previewEnabled = false
+    @AppStorage("relayCompleteSoundName") private var completeSoundName: String = "Pop"
 
     @Query(
         filter: #Predicate<AutomationRule> { $0.enabled == true },
@@ -69,6 +70,24 @@ struct RelaySettingsPopover: View {
                     .controlSize(.small)
                     .disabled(automationRuleId.isEmpty)
                     .frame(width: 140, alignment: .trailing)
+            }
+
+            Divider().padding(.leading, 12)
+
+            settingRow(
+                title: L10n.tr("relay.settings.completeSound"),
+                subtitle: L10n.tr("relay.settings.completeSound.desc")
+            ) {
+                Picker("", selection: $completeSoundName) {
+                    Text(L10n.tr("relay.settings.completeSound.mute")).tag("")
+                    ForEach(SoundManager.relayCompleteSoundOptions.filter { !$0.isEmpty }, id: \.self) { name in
+                        Text(name).tag(name)
+                    }
+                }
+                .labelsHidden()
+                .pickerStyle(.menu)
+                .controlSize(.small)
+                .frame(width: 140, alignment: .trailing)
             }
 
             Divider().padding(.leading, 12)
