@@ -53,6 +53,18 @@ enum RelayPaster {
         simulatePostPasteKey()
     }
 
+    /// Replay a captured pasteboard snapshot verbatim, then simulate ⌘V.
+    /// Used for rich-text clips (备忘录/Word/Excel/网页图文) to achieve native-fidelity paste.
+    static func pasteSnapshot(_ snapshot: Data, monitor: RelayClipboardMonitor) async {
+        let pasteboard = NSPasteboard.general
+        _ = ClipboardManager.shared.restorePasteboardSnapshot(snapshot, to: pasteboard)
+        monitor.skipNextChange()
+        try? await Task.sleep(for: PASTE_DELAY)
+        simulateCommandV()
+        try? await Task.sleep(for: .milliseconds(100))
+        simulatePostPasteKey()
+    }
+
     private static func simulateCommandV() {
         let source = CGEventSource(stateID: .hidSystemState)
         guard let keyDown = CGEvent(keyboardEventSource: source, virtualKey: V_KEY_CODE, keyDown: true),

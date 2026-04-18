@@ -300,7 +300,7 @@ final class ClipboardManager: ObservableObject {
     /// on success (caller should skip any legacy per-type writes); false on malformed/empty
     /// snapshots so the caller can fall through to the fallback path.
     @discardableResult
-    private func restorePasteboardSnapshot(_ data: Data, to pasteboard: NSPasteboard) -> Bool {
+    func restorePasteboardSnapshot(_ data: Data, to pasteboard: NSPasteboard) -> Bool {
         guard
             let plist = try? PropertyListSerialization.propertyList(from: data, options: [], format: nil),
             let dict = plist as? [String: Data],

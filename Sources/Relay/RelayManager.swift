@@ -363,8 +363,12 @@ final class RelayManager {
         }
         guard let mon = monitor else { return }
         Task {
+            // Plain-text override takes precedence — user explicitly chose string-only paste.
             if pasteAsPlainText {
                 await RelayPaster.paste(item.content, monitor: mon)
+            } else if let snapshot = item.pasteboardSnapshot {
+                // Rich-text / native-fidelity path: replay the source's original pasteboard bytes.
+                await RelayPaster.pasteSnapshot(snapshot, monitor: mon)
             } else {
                 switch item.contentKind {
                 case .image:
@@ -380,7 +384,6 @@ final class RelayManager {
                 }
             }
             SoundManager.playPaste()
-            // Check if queue just became exhausted after this paste
             if isQueueExhausted {
                 handleQueueExhausted()
             }
