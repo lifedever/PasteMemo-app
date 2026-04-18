@@ -61,22 +61,7 @@ final class RelayManager {
     func enqueue(clipItems: [ClipItem]) {
         let capacity = Self.MAX_QUEUE_SIZE - items.count
         guard capacity > 0 else { return }
-        let newItems: [RelayItem] = clipItems.prefix(capacity).compactMap { clip in
-            // Pure image (screenshot/clipboard capture)
-            if clip.contentType == .image, clip.content == "[Image]", let data = clip.imageData {
-                return RelayItem(content: clip.content, imageData: data, contentKind: .image)
-            }
-            // File-based items (files copied from Finder, including image/video/audio files)
-            if clip.contentType.isFileBased {
-                let text = clip.content.trimmingCharacters(in: .whitespacesAndNewlines)
-                guard !text.isEmpty else { return nil }
-                return RelayItem(content: text, contentKind: .file)
-            }
-            // Plain text
-            let text = clip.content.trimmingCharacters(in: .whitespacesAndNewlines)
-            guard !text.isEmpty else { return nil }
-            return RelayItem(content: text)
-        }
+        let newItems = clipItems.prefix(capacity).compactMap(RelayItem.from)
         guard !newItems.isEmpty else { return }
         windowController?.updateSize(for: items.count + newItems.count)
         items.append(contentsOf: newItems)
