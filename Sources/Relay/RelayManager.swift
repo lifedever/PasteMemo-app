@@ -216,7 +216,12 @@ final class RelayManager {
 
         if let persisted = RelayQueuePersistence.load() {
             for pItem in persisted.items {
-                var item = RelayItem(content: pItem.content)
+                var item = RelayItem(
+                    content: pItem.content,
+                    imageData: pItem.imageData,
+                    contentKind: parseContentKind(pItem.contentKind),
+                    pasteboardSnapshot: pItem.pasteboardSnapshot
+                )
                 item.state = parseItemState(pItem.state)
                 items.append(item)
             }
@@ -269,24 +274,18 @@ final class RelayManager {
         if clearQueue {
             RelayQueuePersistence.delete()
         } else {
-            // Persist all text items including done/skipped so history is visible
-            // on next activation. Image/file items are not persisted.
-            let textItems = items.filter { !$0.isImage && !$0.isFile }
-            let toSave = textItems.map { item in
+            // Persist every item (including image/rich-text) so nothing is lost across restarts.
+            let toSave = items.map { item in
                 PersistedRelayItem(
                     id: item.id,
                     content: item.content,
+                    imageData: item.imageData,
+                    contentKind: contentKindRawValue(item.contentKind),
+                    pasteboardSnapshot: item.pasteboardSnapshot,
                     state: stateRawValue(item.state)
                 )
             }
-            // Compute currentIndex in the filtered list (text-only)
-            let savedIndex: Int
-            if currentIndex < items.count,
-               let filteredIndex = textItems.firstIndex(where: { $0.id == items[currentIndex].id }) {
-                savedIndex = filteredIndex
-            } else {
-                savedIndex = min(currentIndex, max(0, textItems.count - 1))
-            }
+            let savedIndex = min(max(currentIndex, 0), max(0, items.count - 1))
             RelayQueuePersistence.save(toSave, currentIndex: savedIndex)
         }
 
@@ -432,6 +431,22 @@ final class RelayManager {
         case "done": return .done
         case "skipped": return .skipped
         default: return .pending
+        }
+    }
+
+    private func contentKindRawValue(_ kind: RelayItem.ContentKind) -> String {
+        switch kind {
+        case .text: return "text"
+        case .image: return "image"
+        case .file: return "file"
+        }
+    }
+
+    private func parseContentKind(_ raw: String?) -> RelayItem.ContentKind {
+        switch raw {
+        case "image": return .image
+        case "file": return .file
+        default: return .text
         }
     }
 }

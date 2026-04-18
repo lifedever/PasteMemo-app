@@ -9,6 +9,11 @@ struct PersistedRelayQueue: Codable {
 struct PersistedRelayItem: Codable {
     let id: UUID
     let content: String
+    let imageData: Data?
+    /// Raw value of RelayItem.ContentKind: "text" / "image" / "file"
+    let contentKind: String?
+    /// Full pasteboard snapshot (binary plist of [String: Data]).
+    let pasteboardSnapshot: Data?
     /// Raw value of RelayItem.ItemState: "pending" / "current" / "done" / "skipped".
     let state: String
 }
