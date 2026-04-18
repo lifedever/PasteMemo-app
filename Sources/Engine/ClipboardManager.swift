@@ -581,6 +581,11 @@ final class ClipboardManager: ObservableObject {
             if textOnly {
                 // Text-only app: terminal gets full path, editor gets filename
                 if item.content != "[Image]" {
+                    // File-based image: write file URLs FIRST so tool windows that accept
+                    // file drops (e.g. IDEA project tree) can paste the file, then add the
+                    // filename string so editor buffers paste text. setString doesn't clear
+                    // existing types, so both coexist on the pasteboard.
+                    writeFilePathsToPasteboard(pasteboard, content: item.content)
                     if terminal {
                         pasteboard.setString(item.content, forType: .string)
                     } else if let names = filenamesFromContent(item.content) {
