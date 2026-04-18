@@ -13,7 +13,8 @@ struct ClipDetailView: View {
     @AppStorage(OCRTaskCoordinator.enableOCRKey) private var ocrEnabled = true
 
     private var isEditableType: Bool {
-        item.contentType == .text || item.contentType == .code
+        (item.contentType == .text || item.contentType == .code)
+            && item.richTextData == nil
     }
 
     @ViewBuilder
