@@ -5,7 +5,7 @@ import SwiftUI
 /// 原来在此文件里的 header / list / footer / row 已拆到独立文件。
 struct RelayQueueView: View {
     @Bindable var manager: RelayManager
-    @State private var drawerOpen: Bool = false
+    @AppStorage("relayDrawerOpen") private var drawerOpen: Bool = true
     @AppStorage("relayAutomationRuleId") private var settingAutomationRuleId = ""
     @AppStorage("relayPreviewEnabled") private var settingPreviewEnabled = false
     @Query(filter: #Predicate<AutomationRule> { $0.enabled == true })
