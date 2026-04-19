@@ -6,7 +6,8 @@ import SwiftUI
 /// 进度色块 / 上一条·跳过 / 循环·结束后自动退出 / 暂停·退出·清空退出 + 抽屉把手。
 struct RelayHeroCard: View {
     @Bindable var manager: RelayManager
-    @Binding var drawerOpen: Bool
+    let drawerOpen: Bool
+    let onToggleDrawer: () -> Void
     @State private var showSettingsPopover = false
     @AppStorage("relayAutomationRuleId") private var settingAutomationRuleId = ""
     @AppStorage("relayPreviewEnabled") private var settingPreviewEnabled = false
@@ -294,7 +295,7 @@ struct RelayHeroCard: View {
             Spacer()
 
             Button {
-                drawerOpen.toggle()
+                onToggleDrawer()
             } label: {
                 HStack(spacing: 3) {
                     Image(systemName: drawerOpen ? "chevron.up" : "chevron.down")

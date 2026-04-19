@@ -5,11 +5,19 @@ import SwiftUI
 /// 原来在此文件里的 header / list / footer / row 已拆到独立文件。
 struct RelayQueueView: View {
     @Bindable var manager: RelayManager
-    @AppStorage("relayDrawerOpen") private var drawerOpen: Bool = true
+    /// Sticky "closed" flag. When true, the drawer is always closed regardless of
+    /// queue size; user must click "展开" to clear it. When false, the drawer
+    /// auto-follows queue size (>=1 item = open, empty = closed).
+    @AppStorage("relayDrawerUserSuppressed") private var userSuppressed: Bool = false
     @AppStorage("relayAutomationRuleId") private var settingAutomationRuleId = ""
     @AppStorage("relayPreviewEnabled") private var settingPreviewEnabled = false
     @Query(filter: #Predicate<AutomationRule> { $0.enabled == true })
     private var enabledRules: [AutomationRule]
+
+    /// Actual drawer visibility: auto-follow mode + at least one item in queue.
+    private var drawerOpen: Bool {
+        !userSuppressed && manager.items.count >= 1
+    }
 
     /// 预览 diff 只在启用预览且规则选中时生效。
     private var previewRule: AutomationRule? {
@@ -17,9 +25,15 @@ struct RelayQueueView: View {
         return enabledRules.first { $0.ruleID == settingAutomationRuleId }
     }
 
+    /// Toggles between "sticky closed" and "auto-follow". Called from the Hero's
+    /// drawer chevron button.
+    private func toggleDrawer() {
+        userSuppressed.toggle()
+    }
+
     var body: some View {
         VStack(spacing: 0) {
-            RelayHeroCard(manager: manager, drawerOpen: $drawerOpen)
+            RelayHeroCard(manager: manager, drawerOpen: drawerOpen, onToggleDrawer: toggleDrawer)
             drawerContent
         }
         .background(
