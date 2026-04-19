@@ -456,6 +456,7 @@
 "automation.condition.regexMatch" = "内容匹配正则";
 "automation.condition.containsText" = "内容包含";
 "automation.condition.sourceApp" = "来源应用是";
+"automation.condition.anyText" = "任意文本";
 "automation.action.title" = "执行以下动作（按顺序）";
 "automation.action.add" = "+ 添加动作";
 "automation.action.lowercased" = "转小写";
@@ -474,6 +475,7 @@
 "automation.action.addSuffix" = "添加后缀";
 "automation.preview" = "测试规则";
 "automation.preview.input" = "粘贴或输入内容以测试规则...";
+"automation.preview.useClipboard" = "使用当前剪贴板";
 "automation.preview.output" = "结果预览";
 "automation.preview.notMatched" = "条件未匹配";
 "automation.action.delete" = "删除规则";
@@ -489,6 +491,14 @@
 "automation.action.markSensitive" = "标记为敏感";
 "automation.action.pin" = "置顶";
 "automation.action.skipCapture" = "不复制";
+"automation.action.section.external" = "外部";
+"automation.action.runShortcut" = "运行快捷指令";
+"automation.action.runShortcut.placeholder" = "快捷指令名称";
+"automation.action.runShortcut.empty" = "未选择快捷指令";
+"automation.action.runShortcut.pick" = "从列表选择";
+"automation.action.runShortcut.openInApp" = "在快捷指令中打开";
+"automation.action.runShortcut.failed" = "快捷指令执行失败";
+"automation.action.runShortcut.loading" = "加载中…";
 "automation.rule.notifyOnTrigger" = "触发时发送通知";
 "automation.notification.title" = "自动化";
 "automation.applied" = "自动化已执行";
@@ -506,6 +516,9 @@
 "automation.condition.sourceApp.empty" = "暂无已选应用";
 "automation.editor.definition" = "规则定义";
 "automation.editor.settings" = "设置";
+"automation.editor.triggerAndNotification" = "触发与通知";
+"automation.rule.status.active" = "已启用";
+"automation.rule.status.inactive" = "未启用";
 "automation.editor.save" = "保存";
 "automation.editor.cancel" = "取消";
 "automation.editor.edit" = "编辑";

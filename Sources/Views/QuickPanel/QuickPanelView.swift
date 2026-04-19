@@ -712,6 +712,7 @@ struct QuickPanelView: View {
                                         CommandPaletteContent(
                                             item: item,
                                             isMultiSelected: isMultiSelected,
+                                            manualRules: manualRulesForPalette(item: item),
                                             onAction: { handleCommandAction($0) },
                                             onDismiss: { showCommandPalette = false; isSearchFocused = true }
                                         )
@@ -772,9 +773,11 @@ struct QuickPanelView: View {
                                                 copyItemsToClipboard([item])
                                                 selectItem(itemID)
                                             }
-                                            if itemContentType.isMergeable,
-                                               ProManager.AUTOMATION_ENABLED {
+                                            if ProManager.AUTOMATION_ENABLED {
+                                                // Only manual-trigger rules here — automatic rules
+                                                // fire on capture, no need to let the user re-fire them.
                                                 let manualRules = fetchEnabledRules()
+                                                    .filter { $0.triggerMode == .manual && $0.matches(item: item) }
                                                 if !manualRules.isEmpty {
                                                     Divider()
                                                     Menu(L10n.tr("cmd.automation")) {
@@ -1347,7 +1350,30 @@ struct QuickPanelView: View {
             }
         case .delete:
             handleDeleteSelected()
+        case .runRule(let ruleID, _):
+            guard let item = currentItem else { return }
+            let descriptor = FetchDescriptor<AutomationRule>(
+                predicate: #Predicate { $0.ruleID == ruleID }
+            )
+            if let rule = try? modelContext.fetch(descriptor).first {
+                applyRule(rule, to: item)
+            }
         }
+    }
+
+    /// Manual-trigger rules visible in the ⌘K palette for this clip. Capped
+    /// at 5 so a rule-heavy setup doesn't drown out built-in actions.
+    private func manualRulesForPalette(item: ClipItem) -> [AutomationRule] {
+        guard ProManager.AUTOMATION_ENABLED else { return [] }
+        let descriptor = FetchDescriptor<AutomationRule>(
+            predicate: #Predicate { $0.enabled },
+            sortBy: [SortDescriptor(\.sortOrder)]
+        )
+        let enabled = (try? modelContext.fetch(descriptor)) ?? []
+        let filtered = enabled.filter {
+            $0.triggerMode == .manual && $0.matches(item: item)
+        }
+        return Array(filtered.prefix(5))
     }
 
     private func removeKeyMonitor() {
@@ -1533,9 +1559,11 @@ struct QuickPanelView: View {
 
     private func applyTransform(_ action: RuleAction, to item: ClipItem) {
         let processed = AutomationEngine.shared.applyAction(action, to: item.content)
+        let contentChanged = processed != item.content
         item.content = processed
         item.displayTitle = ClipItem.buildTitle(content: processed, contentType: item.contentType)
-        if action == .stripRichText {
+        // Clear rich text whenever content changed (or user explicitly asked).
+        if contentChanged || action == .stripRichText {
             item.richTextData = nil
             item.richTextType = nil
         }
@@ -1553,15 +1581,59 @@ struct QuickPanelView: View {
     private func applyRule(_ rule: AutomationRule, to item: ClipItem) {
         let actions = rule.actions
         guard !actions.isEmpty else { return }
+
+        // If the rule contains runShortcut, take the async path: transform
+        // through text actions first, then invoke the shortcut, and write the
+        // shortcut's output to NSPasteboard so it shows up as a new clip.
+        if actions.contains(where: { if case .runShortcut = $0 { return true }; return false }) {
+            Task { @MainActor in
+                await runRuleViaShortcut(rule, on: item)
+            }
+            return
+        }
+
         let processed = AutomationEngine.executeActions(actions, on: item.content)
-        guard processed != item.content || actions.contains(.stripRichText) else { return }
+        let contentChanged = processed != item.content
+        guard contentChanged || actions.contains(.stripRichText) else { return }
         item.content = processed
         item.displayTitle = ClipItem.buildTitle(content: processed, contentType: item.contentType)
-        if actions.contains(.stripRichText) {
+        // Clear rich text if content changed — otherwise stale rich formatting
+        // shows through in the preview pane even though content has been updated.
+        if contentChanged || actions.contains(.stripRichText) {
             item.richTextData = nil
             item.richTextType = nil
         }
         ClipItemStore.saveAndNotify(modelContext)
+    }
+
+    @MainActor
+    private func runRuleViaShortcut(_ rule: AutomationRule, on item: ClipItem) async {
+        // PasteMemo pipes the clip in and triggers the Shortcut. The Shortcut
+        // itself handles output (Copy to Clipboard, Post webhook, Show
+        // Notification, etc). We never mutate NSPasteboard here.
+        var currentContent = item.content
+        let currentImageData = item.imageData
+        let currentContentType = item.contentType
+
+        for action in rule.actions {
+            if case .runShortcut(let name) = action {
+                do {
+                    _ = try await ShortcutRunner.run(
+                        name: name,
+                        content: currentContent,
+                        imageData: currentImageData,
+                        contentType: currentContentType
+                    )
+                } catch {
+                    ShortcutNotifier.showFailure(ruleName: name, error: error)
+                    return
+                }
+            } else {
+                currentContent = action.execute(on: currentContent)
+            }
+        }
+        let displayName = rule.isBuiltIn ? L10n.tr(rule.name) : rule.name
+        ShortcutNotifier.showSuccess(ruleName: displayName)
     }
 
     private func deleteItems(_ itemsToDelete: [ClipItem]) {
@@ -1890,7 +1962,19 @@ struct QuickPanelView: View {
             return
         }
 
-        guard let savedURL = clipboardManager.saveImageToFolder(imageData, folder: folder) else {
+        // If the clip carries an original file path, reuse its filename so the
+        // saved file keeps its real extension (e.g. `.jpg` stays `.jpg`).
+        // Otherwise saveImageToFolder sniffs the bytes and picks an extension.
+        let preferredName: String? = {
+            guard item.content != "[Image]",
+                  let firstPath = item.content
+                    .components(separatedBy: "\n")
+                    .first(where: { !$0.isEmpty }) else { return nil }
+            return (firstPath as NSString).lastPathComponent
+        }()
+        guard let savedURL = clipboardManager.saveImageToFolder(
+            imageData, folder: folder, preferredFilename: preferredName
+        ) else {
             // Save failed, fallback to paste image
             handlePasteImage()
             return

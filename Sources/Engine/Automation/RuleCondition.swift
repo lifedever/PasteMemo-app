@@ -2,6 +2,10 @@ import Foundation
 
 enum RuleCondition: Equatable, Sendable {
     case contentType(ClipContentType)
+    /// Matches any text-like content type (text / code / link / color / legacy email, phone).
+    /// Useful when a rule should apply to plain text regardless of the specific subtype
+    /// that PasteMemo detected.
+    case anyText
     case regexMatch(pattern: String)
     case containsText(text: String)
     case sourceApp(bundleIDs: [String])
@@ -10,6 +14,8 @@ enum RuleCondition: Equatable, Sendable {
         switch self {
         case .contentType(let expected):
             return contentType == expected
+        case .anyText:
+            return contentType.isMergeable
         case .regexMatch(let pattern):
             guard !pattern.isEmpty else { return true }
             guard let regex = try? NSRegularExpression(pattern: pattern) else { return false }
@@ -40,6 +46,8 @@ extension RuleCondition: Codable {
         case .contentType(let v):
             try container.encode("contentType", forKey: .type)
             try container.encode(v, forKey: .contentType)
+        case .anyText:
+            try container.encode("anyText", forKey: .type)
         case .regexMatch(let v):
             try container.encode("regexMatch", forKey: .type)
             try container.encode(v, forKey: .pattern)
@@ -58,6 +66,8 @@ extension RuleCondition: Codable {
         switch type {
         case "contentType":
             self = .contentType(try container.decode(ClipContentType.self, forKey: .contentType))
+        case "anyText":
+            self = .anyText
         case "regexMatch":
             self = .regexMatch(pattern: try container.decode(String.self, forKey: .pattern))
         case "containsText":

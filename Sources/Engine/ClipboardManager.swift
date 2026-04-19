@@ -1197,10 +1197,22 @@ final class ClipboardManager: ObservableObject {
         return URL(fileURLWithPath: path)
     }
 
-    func saveImageToFolder(_ imageData: Data, folder: URL) -> URL? {
-        let timestamp = Int(Date().timeIntervalSince1970 * 1000)
-        let filename = "PasteMemo_\(timestamp).png"
-        let fileURL = folder.appendingPathComponent(filename)
+    func saveImageToFolder(
+        _ imageData: Data,
+        folder: URL,
+        preferredFilename: String? = nil
+    ) -> URL? {
+        let filename: String
+        if let preferred = preferredFilename?.trimmingCharacters(in: .whitespacesAndNewlines),
+           !preferred.isEmpty {
+            filename = preferred
+        } else {
+            let ext = Self.sniffImageExtension(from: imageData)
+            let timestamp = Int(Date().timeIntervalSince1970 * 1000)
+            filename = "PasteMemo_\(timestamp).\(ext)"
+        }
+
+        let fileURL = Self.uniqueDestination(folder.appendingPathComponent(filename))
 
         do {
             try imageData.write(to: fileURL)
@@ -1208,6 +1220,43 @@ final class ClipboardManager: ObservableObject {
         } catch {
             return nil
         }
+    }
+
+    /// Sniff the real image format from magic bytes (PNG / JPEG / GIF / WebP /
+    /// HEIC) so saved files match their actual content — avoids shipping a
+    /// JPEG payload under a `.png` extension.
+    private static func sniffImageExtension(from data: Data) -> String {
+        let bytes = [UInt8](data.prefix(12))
+        guard bytes.count >= 3 else { return "png" }
+        if bytes.count >= 4, bytes[0] == 0x89, bytes[1] == 0x50,
+           bytes[2] == 0x4E, bytes[3] == 0x47 { return "png" }
+        if bytes[0] == 0xFF, bytes[1] == 0xD8, bytes[2] == 0xFF { return "jpg" }
+        if bytes.count >= 4, bytes[0] == 0x47, bytes[1] == 0x49,
+           bytes[2] == 0x46, bytes[3] == 0x38 { return "gif" }
+        if bytes.count >= 12,
+           Array(bytes[0..<4]) == [0x52, 0x49, 0x46, 0x46],
+           Array(bytes[8..<12]) == [0x57, 0x45, 0x42, 0x50] { return "webp" }
+        if bytes.count >= 12,
+           Array(bytes[4..<8]) == [0x66, 0x74, 0x79, 0x70] {
+            let brand = String(bytes: Array(bytes[8..<12]), encoding: .ascii) ?? ""
+            if ["heic", "heix", "hevc", "mif1", "msf1"].contains(brand) { return "heic" }
+        }
+        return "png"
+    }
+
+    /// Return a destination URL that doesn't collide with an existing file —
+    /// `foo.jpg` → `foo 1.jpg` / `foo 2.jpg` etc.
+    private static func uniqueDestination(_ url: URL) -> URL {
+        let fm = FileManager.default
+        guard fm.fileExists(atPath: url.path) else { return url }
+        let base = url.deletingPathExtension().lastPathComponent
+        let ext = url.pathExtension
+        let folder = url.deletingLastPathComponent()
+        for i in 1...999 {
+            let candidate = folder.appendingPathComponent("\(base) \(i).\(ext)")
+            if !fm.fileExists(atPath: candidate.path) { return candidate }
+        }
+        return url
     }
 
     func saveTextToFolder(_ text: String, folder: URL, fileExtension: String = "txt") -> URL? {

@@ -71,4 +71,25 @@ final class AutomationRule {
         self.conditions = conditions
         self.actions = actions
     }
+
+    /// Whether this rule should surface as an option for `item` in ⌘K / right-
+    /// click menus. Two gates:
+    /// 1. The rule's own conditions must match the clip (empty = always match).
+    /// 2. Non-text clips (image, file, …) only surface rules that include at
+    ///    least one `.runShortcut` action — built-in text transforms like
+    ///    `lowercased` or `urlEncode` are meaningless on binary data.
+    func matches(item: ClipItem) -> Bool {
+        if !conditions.isEmpty {
+            let ok = AutomationEngine.matchesConditions(
+                conditions,
+                logic: conditionLogic,
+                content: item.content,
+                contentType: item.contentType,
+                sourceApp: item.sourceAppBundleID
+            )
+            guard ok else { return false }
+        }
+        if item.contentType.isMergeable { return true }
+        return actions.contains { if case .runShortcut = $0 { return true }; return false }
+    }
 }

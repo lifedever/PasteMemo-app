@@ -620,6 +620,7 @@
 "automation.condition.regexMatch" = "內容符合正規表達式";
 "automation.condition.containsText" = "內容包含";
 "automation.condition.sourceApp" = "來源應用程式是";
+"automation.condition.anyText" = "任意文字";
 "automation.action.title" = "執行以下動作（依序）";
 "automation.action.add" = "+ 新增動作";
 "automation.action.lowercased" = "轉小寫";
@@ -643,6 +644,7 @@
 "automation.action.addSuffix.placeholder" = "請輸入後綴文字";
 "automation.preview" = "測試規則";
 "automation.preview.input" = "貼上或輸入內容以測試規則…";
+"automation.preview.useClipboard" = "使用目前剪貼簿";
 "automation.preview.output" = "結果預覽";
 "automation.preview.notMatched" = "條件未匹配";
 
@@ -661,6 +663,14 @@
 "automation.action.markSensitive" = "Mark as Sensitive";
 "automation.action.pin" = "Pin";
 "automation.action.skipCapture" = "Skip Capture";
+"automation.action.section.external" = "外部";
+"automation.action.runShortcut" = "執行捷徑";
+"automation.action.runShortcut.placeholder" = "捷徑名稱";
+"automation.action.runShortcut.empty" = "未選擇捷徑";
+"automation.action.runShortcut.pick" = "從列表選擇";
+"automation.action.runShortcut.openInApp" = "在捷徑中開啟";
+"automation.action.runShortcut.failed" = "捷徑執行失敗";
+"automation.action.runShortcut.loading" = "載入中…";
 "automation.rule.notifyOnTrigger" = "Send notification on trigger";
 "automation.notification.title" = "Automation";
 "automation.applied" = "Automation applied";
@@ -676,6 +686,9 @@
 "automation.condition.sourceApp.empty" = "暫無已選應用程式";
 "automation.editor.definition" = "規則定義";
 "automation.editor.settings" = "設定";
+"automation.editor.triggerAndNotification" = "觸發與通知";
+"automation.rule.status.active" = "已啟用";
+"automation.rule.status.inactive" = "未啟用";
 "automation.editor.save" = "儲存";
 "automation.editor.cancel" = "取消";
 "automation.editor.edit" = "編輯";

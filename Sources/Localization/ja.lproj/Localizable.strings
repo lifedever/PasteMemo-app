@@ -655,6 +655,9 @@
 "automation.editor.selectRule" = "編集するルールを選択";
 "automation.editor.definition" = "ルール定義";
 "automation.editor.settings" = "設定";
+"automation.editor.triggerAndNotification" = "トリガーと通知";
+"automation.rule.status.active" = "有効";
+"automation.rule.status.inactive" = "無効";
 "automation.editor.save" = "保存";
 "automation.editor.cancel" = "キャンセル";
 "automation.editor.edit" = "編集";
@@ -675,6 +678,7 @@
 "automation.condition.regexMatch" = "正規表現に一致";
 "automation.condition.containsText" = "テキストを含む";
 "automation.condition.sourceApp" = "コピー元アプリが";
+"automation.condition.anyText" = "任意のテキスト";
 "automation.condition.sourceApp.select" = "アプリを選択";
 "automation.condition.sourceApp.add" = "アプリを追加";
 "automation.condition.sourceApp.empty" = "アプリが選択されていません";
@@ -715,6 +719,14 @@
 "automation.action.markSensitive" = "Mark as Sensitive";
 "automation.action.pin" = "Pin";
 "automation.action.skipCapture" = "Skip Capture";
+"automation.action.section.external" = "外部";
+"automation.action.runShortcut" = "ショートカットを実行";
+"automation.action.runShortcut.placeholder" = "ショートカット名";
+"automation.action.runShortcut.empty" = "ショートカット未選択";
+"automation.action.runShortcut.pick" = "リストから選択";
+"automation.action.runShortcut.openInApp" = "ショートカットアプリで開く";
+"automation.action.runShortcut.failed" = "ショートカット実行失敗";
+"automation.action.runShortcut.loading" = "読み込み中…";
 "automation.rule.notifyOnTrigger" = "Send notification on trigger";
 "automation.notification.title" = "Automation";
 "automation.applied" = "Automation applied";
@@ -731,6 +743,7 @@
 /* Automation Preview */
 "automation.preview" = "ルールをテスト";
 "automation.preview.input" = "内容をペーストまたは入力してルールをテスト…";
+"automation.preview.useClipboard" = "現在のクリップボードを使用";
 "automation.preview.output" = "結果プレビュー";
 "automation.preview.notMatched" = "条件に一致しませんでした";
 

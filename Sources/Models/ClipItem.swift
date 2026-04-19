@@ -38,6 +38,15 @@ enum ClipContentType: String, Codable, CaseIterable {
         .text, .code, .link, .image, .video, .audio, .document, .archive, .application, .color, .file
     ]
 
+    /// Content types shown in the automation rule editor's content-type picker.
+    /// Grouped by semantic bucket (text → media → files) and omits legacy types
+    /// (`.email`, `.phone`) plus `.mixed` (too broad to target directly).
+    static let ruleEditorVisibleCases: [ClipContentType] = [
+        .text, .code, .link, .color,
+        .image, .video, .audio,
+        .document, .archive, .application, .file
+    ]
+
     static var visibleCases: [ClipContentType] {
         guard let saved = UserDefaults.standard.stringArray(forKey: "typeOrder") else {
             return defaultVisibleCases

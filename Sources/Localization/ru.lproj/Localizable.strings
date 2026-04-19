@@ -632,6 +632,7 @@
 "automation.condition.regexMatch" = "Содержимое соответствует регулярному выражению";
 "automation.condition.containsText" = "Содержимое содержит";
 "automation.condition.sourceApp" = "Приложение-источник";
+"automation.condition.anyText" = "Любой текст";
 "automation.action.title" = "Действия (по порядку)";
 "automation.action.add" = "+ Добавить действие";
 "automation.action.lowercased" = "В нижний регистр";
@@ -655,6 +656,7 @@
 "automation.action.addSuffix.placeholder" = "Введите текст суффикса";
 "automation.preview" = "Тестировать правило";
 "automation.preview.input" = "Вставьте или введите содержимое для тестирования правила…";
+"automation.preview.useClipboard" = "Использовать буфер обмена";
 "automation.preview.output" = "Предпросмотр результата";
 "automation.preview.notMatched" = "Условия не выполнены";
 
@@ -673,6 +675,14 @@
 "automation.action.markSensitive" = "Mark as Sensitive";
 "automation.action.pin" = "Pin";
 "automation.action.skipCapture" = "Skip Capture";
+"automation.action.section.external" = "External";
+"automation.action.runShortcut" = "Run Shortcut";
+"automation.action.runShortcut.placeholder" = "Shortcut name";
+"automation.action.runShortcut.empty" = "No shortcut selected";
+"automation.action.runShortcut.pick" = "Pick from list";
+"automation.action.runShortcut.openInApp" = "Open in Shortcuts";
+"automation.action.runShortcut.failed" = "Shortcut failed";
+"automation.action.runShortcut.loading" = "Loading…";
 "automation.rule.notifyOnTrigger" = "Send notification on trigger";
 "automation.notification.title" = "Automation";
 "automation.applied" = "Automation applied";
@@ -688,6 +698,9 @@
 "automation.condition.sourceApp.empty" = "Приложения не выбраны";
 "automation.editor.definition" = "Определение правила";
 "automation.editor.settings" = "Настройки";
+"automation.editor.triggerAndNotification" = "Trigger & Notification";
+"automation.rule.status.active" = "Active";
+"automation.rule.status.inactive" = "Inactive";
 "automation.editor.save" = "Сохранить";
 "automation.editor.cancel" = "Отмена";
 "automation.editor.edit" = "Редактировать";

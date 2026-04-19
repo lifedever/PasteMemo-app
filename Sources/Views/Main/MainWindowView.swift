@@ -576,6 +576,7 @@ struct MainWindowView: View {
                 CommandPaletteContent(
                     item: item,
                     isMultiSelected: selectedItems.count > 1,
+                    manualRules: manualRulesForPalette(item: item),
                     onAction: { handleMainCommandAction($0, item: item) },
                     onDismiss: { showCommandPalette = false }
                 )
@@ -620,13 +621,18 @@ struct MainWindowView: View {
                 if selectedItems.count > 1, selectedClipItems.allSatisfy({ $0.contentType.isMergeable }) {
                     Button(L10n.tr("action.merge")) { mergeSelectedItems() }
                 }
-                if contentType.isMergeable,
-                   ProManager.AUTOMATION_ENABLED {
-                    let rules = fetchEnabledAutomationRules()
-                    if !rules.isEmpty {
+                if ProManager.AUTOMATION_ENABLED {
+                    // Only manual-trigger rules belong in this menu — automatic
+                    // rules already fire on capture, surfacing them here would
+                    // just confuse the user. Rule.matches then filters by
+                    // conditions + action applicability so rules scoped to
+                    // "contentType == image" stay off text clips.
+                    let applicableRules = fetchEnabledAutomationRules()
+                        .filter { $0.triggerMode == .manual && $0.matches(item: item) }
+                    if !applicableRules.isEmpty {
                         Divider()
                         Menu(L10n.tr("cmd.automation")) {
-                            ForEach(rules) { rule in
+                            ForEach(applicableRules) { rule in
                                 Button(rule.isBuiltIn ? L10n.tr(rule.name) : rule.name) {
                                     applyAutomationRule(rule, to: item)
                                 }
@@ -841,16 +847,38 @@ struct MainWindowView: View {
             }
         case .transform(let ruleAction):
             let processed = AutomationEngine.shared.applyAction(ruleAction, to: item.content)
+            let contentChanged = processed != item.content
             item.content = processed
             item.displayTitle = ClipItem.buildTitle(content: processed, contentType: item.contentType)
-            if ruleAction == .stripRichText {
+            if contentChanged || ruleAction == .stripRichText {
                 item.richTextData = nil
                 item.richTextType = nil
             }
             ClipItemStore.saveAndNotify(modelContext)
         case .delete:
             deleteSelectedItems()
+        case .runRule(let ruleID, _):
+            let descriptor = FetchDescriptor<AutomationRule>(
+                predicate: #Predicate { $0.ruleID == ruleID }
+            )
+            if let rule = try? modelContext.fetch(descriptor).first {
+                applyAutomationRule(rule, to: item)
+            }
         }
+    }
+
+    /// Manual-trigger rules surfaced inline in the ⌘K palette. Capped to 5.
+    private func manualRulesForPalette(item: ClipItem) -> [AutomationRule] {
+        guard ProManager.AUTOMATION_ENABLED else { return [] }
+        let descriptor = FetchDescriptor<AutomationRule>(
+            predicate: #Predicate { $0.enabled },
+            sortBy: [SortDescriptor(\.sortOrder)]
+        )
+        let enabled = (try? modelContext.fetch(descriptor)) ?? []
+        let filtered = enabled.filter {
+            $0.triggerMode == .manual && $0.matches(item: item)
+        }
+        return Array(filtered.prefix(5))
     }
 
     private func copySelectedToClipboard() {
@@ -891,6 +919,16 @@ struct MainWindowView: View {
         let actions = rule.actions
         guard !actions.isEmpty else { return }
 
+        // runShortcut is async, targets a single clip, and writes its output to
+        // the pasteboard (so the next capture becomes a new item). It bypasses
+        // the in-place text mutation path entirely.
+        if actions.contains(where: { if case .runShortcut = $0 { return true }; return false }) {
+            Task { @MainActor in
+                await runRuleViaShortcut(rule, on: items.first ?? item)
+            }
+            return
+        }
+
         let hasSpecialActions = actions.contains { action in
             switch action {
             case .stripRichText, .assignGroup, .markSensitive, .pin, .skipCapture: return true
@@ -901,10 +939,14 @@ struct MainWindowView: View {
         ClipItemStore.isBulkOperation = true
         for target in items {
             let processed = AutomationEngine.executeActions(actions, on: target.content)
-            guard processed != target.content || hasSpecialActions else { continue }
+            let contentChanged = processed != target.content
+            guard contentChanged || hasSpecialActions else { continue }
             target.content = processed
             target.displayTitle = ClipItem.buildTitle(content: processed, contentType: target.contentType)
-            if actions.contains(.stripRichText) {
+            // Clear rich text if content changed — the stale rich formatting
+            // no longer matches the new plain text and would leak through the
+            // preview pane (which prefers rich content when present).
+            if contentChanged || actions.contains(.stripRichText) {
                 target.richTextData = nil
                 target.richTextType = nil
             }
@@ -929,6 +971,38 @@ struct MainWindowView: View {
         toastMessage = L10n.tr("automation.applied")
         showCopiedToast = true
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { showCopiedToast = false; toastMessage = "" }
+    }
+
+    @MainActor
+    private func runRuleViaShortcut(_ rule: AutomationRule, on item: ClipItem) async {
+        // Run the shortcut (plus any preceding text transforms). The Shortcut
+        // itself is responsible for whatever output handling it wants — copy
+        // to clipboard, post to a webhook, speak, write a file… PasteMemo just
+        // pipes the clip in and triggers. We never touch NSPasteboard here.
+        var currentContent = item.content
+        let currentImageData = item.imageData
+        let currentContentType = item.contentType
+
+        for action in rule.actions {
+            if case .runShortcut(let name) = action {
+                do {
+                    _ = try await ShortcutRunner.run(
+                        name: name,
+                        content: currentContent,
+                        imageData: currentImageData,
+                        contentType: currentContentType
+                    )
+                } catch {
+                    ShortcutErrorNotifier.show(name: name, error: error)
+                    return
+                }
+            } else {
+                currentContent = action.execute(on: currentContent)
+            }
+        }
+
+        let displayName = rule.isBuiltIn ? L10n.tr(rule.name) : rule.name
+        ShortcutNotifier.showSuccess(ruleName: displayName)
     }
 
     private func changeGroupIcon(name: String) {

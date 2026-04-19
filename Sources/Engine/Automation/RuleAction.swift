@@ -16,6 +16,11 @@ enum RuleAction: Codable, Equatable, Hashable, Sendable {
     case markSensitive
     case pin
     case skipCapture
+    /// Manual-trigger only. Runs the named macOS Shortcut with the current clip
+    /// as input (image → --input-path, text → stdin, file → --input-path). The
+    /// Shortcut's output is written to NSPasteboard so PasteMemo captures it as
+    /// a new clip.
+    case runShortcut(name: String)
 
     @MainActor var displayLabel: String {
         switch self {
@@ -34,6 +39,7 @@ enum RuleAction: Codable, Equatable, Hashable, Sendable {
         case .markSensitive: L10n.tr("automation.action.markSensitive")
         case .pin: L10n.tr("automation.action.pin")
         case .skipCapture: L10n.tr("automation.action.skipCapture")
+        case .runShortcut(let name): L10n.tr("automation.action.runShortcut") + ": " + name
         }
     }
 
@@ -72,6 +78,8 @@ enum RuleAction: Codable, Equatable, Hashable, Sendable {
             return content  // Handled at ClipboardManager level (sets isPinned)
         case .skipCapture:
             return content  // Handled at ClipboardManager level (skips insert)
+        case .runShortcut:
+            return content  // Manual-only; executed asynchronously via ShortcutRunner
         }
     }
 

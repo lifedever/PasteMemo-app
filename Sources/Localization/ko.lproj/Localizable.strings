@@ -638,6 +638,9 @@
 "automation.editor.selectRule" = "편집할 규칙을 선택하세요";
 "automation.editor.definition" = "규칙 정의";
 "automation.editor.settings" = "설정";
+"automation.editor.triggerAndNotification" = "트리거 및 알림";
+"automation.rule.status.active" = "활성";
+"automation.rule.status.inactive" = "비활성";
 "automation.editor.save" = "저장";
 "automation.editor.cancel" = "취소";
 "automation.editor.edit" = "편집";
@@ -658,6 +661,7 @@
 "automation.condition.regexMatch" = "콘텐츠가 정규식과 일치";
 "automation.condition.containsText" = "콘텐츠에 포함";
 "automation.condition.sourceApp" = "원본 앱이";
+"automation.condition.anyText" = "모든 텍스트";
 "automation.condition.sourceApp.select" = "앱 선택";
 "automation.condition.sourceApp.add" = "앱 추가";
 "automation.condition.sourceApp.empty" = "선택된 앱 없음";
@@ -698,6 +702,14 @@
 "automation.action.markSensitive" = "Mark as Sensitive";
 "automation.action.pin" = "Pin";
 "automation.action.skipCapture" = "Skip Capture";
+"automation.action.section.external" = "외부";
+"automation.action.runShortcut" = "단축어 실행";
+"automation.action.runShortcut.placeholder" = "단축어 이름";
+"automation.action.runShortcut.empty" = "선택된 단축어 없음";
+"automation.action.runShortcut.pick" = "목록에서 선택";
+"automation.action.runShortcut.openInApp" = "단축어 앱에서 열기";
+"automation.action.runShortcut.failed" = "단축어 실행 실패";
+"automation.action.runShortcut.loading" = "불러오는 중…";
 "automation.rule.notifyOnTrigger" = "Send notification on trigger";
 "automation.notification.title" = "Automation";
 "automation.applied" = "Automation applied";
@@ -714,6 +726,7 @@
 /* Automation Preview */
 "automation.preview" = "규칙 테스트";
 "automation.preview.input" = "규칙을 테스트할 콘텐츠를 붙여넣거나 입력하세요…";
+"automation.preview.useClipboard" = "현재 클립보드 사용";
 "automation.preview.output" = "결과 미리보기";
 "automation.preview.notMatched" = "조건이 일치하지 않습니다";
 

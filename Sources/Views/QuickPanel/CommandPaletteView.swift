@@ -15,6 +15,10 @@ enum CommandAction: Hashable {
     case pin(isPinned: Bool)
     case toggleSensitive(isSensitive: Bool)
     case delete
+    /// Trigger a manual-trigger automation rule. Carries the rule's ID so the
+    /// host can refetch and execute without keeping a SwiftData reference in
+    /// a Hashable enum.
+    case runRule(ruleID: String, displayName: String)
 
     var icon: String {
         switch self {
@@ -31,6 +35,7 @@ enum CommandAction: Hashable {
         case .pin(let pinned): pinned ? "pin.slash" : "pin"
         case .toggleSensitive(let sensitive): sensitive ? "lock.open" : "lock.shield"
         case .delete: "trash"
+        case .runRule: "sparkles"
         }
     }
 
@@ -49,6 +54,7 @@ enum CommandAction: Hashable {
         case .pin(let pinned): pinned ? L10n.tr("action.unpin") : L10n.tr("action.pin")
         case .toggleSensitive(let sensitive): sensitive ? L10n.tr("sensitive.unmarkSensitive") : L10n.tr("sensitive.markSensitive")
         case .delete: L10n.tr("cmd.delete")
+        case .runRule(_, let displayName): displayName
         }
     }
 
@@ -67,6 +73,7 @@ enum CommandAction: Hashable {
         case .pin: "T"
         case .toggleSensitive: "E"
         case .delete: "D"
+        case .runRule: nil
         }
     }
 
@@ -85,6 +92,7 @@ enum CommandAction: Hashable {
         case .pin: 17        // T
         case .toggleSensitive: 14 // E
         case .delete: 2      // D
+        case .runRule: nil
         }
     }
 
@@ -99,6 +107,9 @@ enum CommandAction: Hashable {
 struct CommandPaletteContent: View {
     let item: ClipItem?
     let isMultiSelected: Bool
+    /// Manual-trigger rules shown inline in the palette. Capped to 5 at the
+    /// call site so a big rule list doesn't drown out built-in actions.
+    var manualRules: [AutomationRule] = []
     let onAction: (CommandAction) -> Void
     let onDismiss: () -> Void
 
@@ -106,6 +117,9 @@ struct CommandPaletteContent: View {
     @State private var keyMonitor: Any?
     @State private var flagsMonitor: Any?
     @State private var isOptionPressed = false
+
+    // keyCodes for digits 1..5 on an ANSI keyboard
+    private static let digitKeyCodes: [Int] = [18, 19, 20, 21, 23]
 
     private var actions: [CommandAction] {
         var list: [CommandAction] = [.paste]
@@ -142,7 +156,26 @@ struct CommandPaletteContent: View {
         list.append(.pin(isPinned: isPinned))
         list.append(.toggleSensitive(isSensitive: isSensitive))
         list.append(.delete)
+        // Manual-trigger automation rules, appended after built-in actions so
+        // they don't displace high-use commands (Paste, Copy, etc).
+        for rule in manualRules {
+            let displayName = rule.isBuiltIn ? L10n.tr(rule.name) : rule.name
+            list.append(.runRule(ruleID: rule.ruleID, displayName: displayName))
+        }
         return list
+    }
+
+    /// Digit shortcut to display next to a rule row (1-indexed). Only rules
+    /// map to digits 1–5; earlier built-in commands keep their letter keys.
+    private func digitForAction(at index: Int) -> String? {
+        let action = actions[index]
+        guard case .runRule = action else { return nil }
+        let ruleIndex = actions[..<index].reduce(0) { count, a in
+            if case .runRule = a { return count + 1 }
+            return count
+        }
+        guard ruleIndex < Self.digitKeyCodes.count else { return nil }
+        return String(ruleIndex + 1)
     }
 
     private func cmdEnterLabel(for item: ClipItem) -> String {
@@ -162,7 +195,7 @@ struct CommandPaletteContent: View {
     var body: some View {
         VStack(spacing: 1) {
             ForEach(Array(actions.enumerated()), id: \.element) { index, action in
-                commandRow(action: action, isSelected: selectedIndex == index)
+                commandRow(action: action, isSelected: selectedIndex == index, index: index)
                     .onTapGesture { execute(action) }
                     .onHover { if $0 { selectedIndex = index } }
             }
@@ -187,17 +220,26 @@ struct CommandPaletteContent: View {
         }
     }
 
-    private func commandRow(action: CommandAction, isSelected: Bool) -> some View {
-        HStack(spacing: 8) {
+    private func commandRow(action: CommandAction, isSelected: Bool, index: Int) -> some View {
+        let isRuleRow: Bool = {
+            if case .runRule = action { return true }
+            return false
+        }()
+        let ruleDigit = digitForAction(at: index)
+        return HStack(spacing: 8) {
             Image(systemName: action.icon)
                 .font(.system(size: 11))
                 .frame(width: 16)
-                .foregroundStyle(action.isDestructive ? .red : .secondary)
+                .foregroundStyle(
+                    action.isDestructive ? .red : (isRuleRow ? .purple : .secondary)
+                )
             Text(displayLabel(for: action))
                 .font(.system(size: 12))
                 .foregroundStyle(action.isDestructive ? .red : .primary)
+                .lineLimit(1)
+                .truncationMode(.tail)
             Spacer()
-            if let key = action.shortcutKey {
+            if let key = action.shortcutKey ?? ruleDigit {
                 Text(key)
                     .font(.system(size: 9, weight: .medium, design: .monospaced))
                     .foregroundStyle(.secondary)
@@ -255,6 +297,17 @@ struct CommandPaletteContent: View {
             default:
                 if let match = actions.first(where: { $0.keyCode == code }) {
                     execute(match); return nil
+                }
+                // Digits 1–5 trigger the Nth manual-trigger rule inline.
+                if let digitIndex = Self.digitKeyCodes.firstIndex(of: code) {
+                    let ruleActions = actions.filter {
+                        if case .runRule = $0 { return true }
+                        return false
+                    }
+                    if digitIndex < ruleActions.count {
+                        execute(ruleActions[digitIndex])
+                        return nil
+                    }
                 }
                 return event
             }

@@ -455,6 +455,7 @@
 "automation.condition.regexMatch" = "Content matches regex";
 "automation.condition.containsText" = "Content contains";
 "automation.condition.sourceApp" = "Source app is";
+"automation.condition.anyText" = "Any text";
 "automation.action.title" = "Actions (in order)";
 "automation.action.add" = "+ Add Action";
 "automation.action.lowercased" = "Lowercase";
@@ -473,6 +474,7 @@
 "automation.action.addSuffix" = "Add suffix";
 "automation.preview" = "Live Preview";
 "automation.preview.input" = "Paste or type content to test rule...";
+"automation.preview.useClipboard" = "Use current clipboard";
 "automation.preview.output" = "Output:";
 "automation.preview.notMatched" = "Conditions not matched";
 "automation.action.delete" = "Delete rule";
@@ -488,6 +490,14 @@
 "automation.action.markSensitive" = "Mark as Sensitive";
 "automation.action.pin" = "Pin";
 "automation.action.skipCapture" = "Skip Capture";
+"automation.action.section.external" = "External";
+"automation.action.runShortcut" = "Run Shortcut";
+"automation.action.runShortcut.placeholder" = "Shortcut name";
+"automation.action.runShortcut.empty" = "No shortcut selected";
+"automation.action.runShortcut.pick" = "Pick from list";
+"automation.action.runShortcut.openInApp" = "Open in Shortcuts";
+"automation.action.runShortcut.failed" = "Shortcut failed";
+"automation.action.runShortcut.loading" = "Loading…";
 "automation.rule.notifyOnTrigger" = "Send notification on trigger";
 "automation.notification.title" = "Automation";
 "automation.applied" = "Automation applied";
@@ -505,6 +515,9 @@
 "automation.condition.sourceApp.empty" = "No apps selected";
 "automation.editor.definition" = "Rule Definition";
 "automation.editor.settings" = "Settings";
+"automation.editor.triggerAndNotification" = "Trigger & Notification";
+"automation.rule.status.active" = "Active";
+"automation.rule.status.inactive" = "Inactive";
 "automation.editor.save" = "Save";
 "automation.editor.cancel" = "Cancel";
 "automation.editor.edit" = "Edit";
