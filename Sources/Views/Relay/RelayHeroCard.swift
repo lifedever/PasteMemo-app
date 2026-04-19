@@ -294,7 +294,7 @@ struct RelayHeroCard: View {
             Spacer()
 
             Button {
-                withAnimation(.easeOut(duration: 0.2)) { drawerOpen.toggle() }
+                drawerOpen.toggle()
             } label: {
                 HStack(spacing: 3) {
                     Image(systemName: drawerOpen ? "chevron.up" : "chevron.down")

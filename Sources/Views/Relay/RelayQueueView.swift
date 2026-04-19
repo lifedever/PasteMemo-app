@@ -20,11 +20,7 @@ struct RelayQueueView: View {
     var body: some View {
         VStack(spacing: 0) {
             RelayHeroCard(manager: manager, drawerOpen: $drawerOpen)
-            if drawerOpen {
-                Divider().opacity(0.4)
-                RelayQueueList(manager: manager, previewRule: previewRule)
-                    .transition(.move(edge: .top).combined(with: .opacity))
-            }
+            drawerContent
         }
         .background(
             RoundedRectangle(cornerRadius: 12)
@@ -42,7 +38,20 @@ struct RelayQueueView: View {
                 .id(handle.relayItem.id)
             }
         }
+        .animation(.easeOut(duration: 0.2), value: drawerOpen)
         .animation(.easeOut(duration: 0.2), value: manager.lastRecirculation?.relayItem.id)
+    }
+
+    /// Drawer stays in the view tree always; its height collapses to 0 when closed.
+    /// This keeps Hero's layout slot stable — no move transition, no VStack reflow.
+    @ViewBuilder private var drawerContent: some View {
+        VStack(spacing: 0) {
+            Divider().opacity(0.4)
+            RelayQueueList(manager: manager, previewRule: previewRule)
+        }
+        .frame(maxHeight: drawerOpen ? nil : 0, alignment: .top)
+        .opacity(drawerOpen ? 1 : 0)
+        .clipped()
     }
 }
 
