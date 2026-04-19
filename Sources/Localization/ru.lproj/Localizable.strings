@@ -501,6 +501,9 @@
 "relay.resume" = "Продолжить";
 "relay.paused" = "На паузе";
 "relay.emptyHint" = "Скопируйте содержимое для добавления в очередь";
+"relay.deleted.recirculated" = "Удалено из реле, сохранено в истории";
+"relay.deleted.undo" = "Отменить";
+"relay.queue.heading" = "Очередь %d";
 "relay.quickPastePaused" = "Быстрая вставка приостановлена в режиме эстафеты";
 "relay.alert.title" = "Режим Эстафеты активирован";
 "relay.alert.message" = "Быстрая вставка приостановлена. Скопированное содержимое будет добавлено в очередь.

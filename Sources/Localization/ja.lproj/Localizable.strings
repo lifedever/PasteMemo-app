@@ -428,6 +428,9 @@
 "relay.resume" = "再開";
 "relay.paused" = "一時停止中";
 "relay.emptyHint" = "コピーした内容がキューに追加されます";
+"relay.deleted.recirculated" = "リレーから削除（クリップボード履歴に保持）";
+"relay.deleted.undo" = "元に戻す";
+"relay.queue.heading" = "キュー %d";
 "relay.quickPastePaused" = "リレーモード中はクイックペーストが一時停止しています";
 "relay.alert.title" = "リレーモードが有効になりました";
 "relay.alert.message" = "クイックペーストが一時停止しました。コピーした内容はリレーキューに追加されます。

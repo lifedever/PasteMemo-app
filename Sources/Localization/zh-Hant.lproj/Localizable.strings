@@ -497,6 +497,9 @@
 "relay.resume" = "繼續接力";
 "relay.paused" = "接力已暫停";
 "relay.emptyHint" = "複製內容自動加入佇列";
+"relay.deleted.recirculated" = "已從接力刪除，保留在剪貼簿歷史";
+"relay.deleted.undo" = "撤銷";
+"relay.queue.heading" = "佇列 %d";
 "relay.quickPastePaused" = "接力模式下快捷貼上已暫停";
 "relay.alert.title" = "接力模式已開啟";
 "relay.alert.message" = "快捷貼上已暫停，複製的內容將自動加入接力佇列。

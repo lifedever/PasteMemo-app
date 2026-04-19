@@ -646,6 +646,9 @@
 "relay.resume" = "Resume";
 "relay.paused" = "Relay Paused";
 "relay.emptyHint" = "Copy something to add to queue";
+"relay.deleted.recirculated" = "Removed from relay, kept in clipboard history";
+"relay.deleted.undo" = "Undo";
+"relay.queue.heading" = "Queue %d";
 "relay.quickPastePaused" = "Quick Paste is paused during Relay Mode";
 "relay.alert.title" = "Relay Mode Activated";
 "relay.alert.message" = "Quick Paste is now paused. Copied content will be added to the relay queue.\n\nUse %@ to paste items one by one.";

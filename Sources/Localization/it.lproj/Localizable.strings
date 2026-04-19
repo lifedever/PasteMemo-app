@@ -495,6 +495,9 @@
 "relay.resume" = "Riprendi";
 "relay.paused" = "In pausa";
 "relay.emptyHint" = "Copia contenuti per aggiungerli alla coda";
+"relay.deleted.recirculated" = "Rimosso dal relay, conservato nella cronologia";
+"relay.deleted.undo" = "Annulla";
+"relay.queue.heading" = "Coda %d";
 "relay.quickPastePaused" = "Incolla rapido in pausa durante la modalità staffetta";
 "relay.alert.title" = "Modalità Staffetta attivata";
 "relay.alert.message" = "Incolla rapido in pausa. I contenuti copiati verranno aggiunti alla coda.

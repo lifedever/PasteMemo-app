@@ -412,6 +412,9 @@
 "relay.resume" = "Reprendre";
 "relay.paused" = "En pause";
 "relay.emptyHint" = "Copiez du contenu pour l'ajouter à la file";
+"relay.deleted.recirculated" = "Retiré du relais, conservé dans l'historique";
+"relay.deleted.undo" = "Annuler";
+"relay.queue.heading" = "File %d";
 "relay.quickPastePaused" = "Le collage rapide est en pause pendant le mode relais";
 "relay.alert.title" = "Mode Relais activé";
 "relay.alert.message" = "Le collage rapide est en pause. Le contenu copié sera ajouté à la file relais.

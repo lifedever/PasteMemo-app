@@ -647,6 +647,9 @@
 "relay.resume" = "继续接力";
 "relay.paused" = "接力已暂停";
 "relay.emptyHint" = "复制内容自动加入队列";
+"relay.deleted.recirculated" = "已从接力删除，保留在剪贴板历史";
+"relay.deleted.undo" = "撤销";
+"relay.queue.heading" = "队列 %d";
 "relay.quickPastePaused" = "接力模式下快捷粘贴已暂停";
 "relay.alert.title" = "接力模式已开启";
 "relay.alert.message" = "快捷粘贴已暂停，复制的内容将自动加入接力队列。\n\n使用 %@ 逐条粘贴队列内容。";

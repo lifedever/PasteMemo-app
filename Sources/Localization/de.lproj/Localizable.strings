@@ -412,6 +412,9 @@
 "relay.resume" = "Fortsetzen";
 "relay.paused" = "Pausiert";
 "relay.emptyHint" = "Kopierte Inhalte werden der Warteschlange hinzugefügt";
+"relay.deleted.recirculated" = "Aus Relay entfernt, in Zwischenablage-Verlauf erhalten";
+"relay.deleted.undo" = "Rückgängig";
+"relay.queue.heading" = "Warteschlange %d";
 "relay.quickPastePaused" = "Schnelles Einfügen ist im Relay-Modus pausiert";
 "relay.alert.title" = "Relay-Modus aktiviert";
 "relay.alert.message" = "Schnelles Einfügen ist pausiert. Kopierte Inhalte werden der Relay-Warteschlange hinzugefügt.

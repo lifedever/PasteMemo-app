@@ -412,6 +412,9 @@
 "relay.resume" = "Reanudar";
 "relay.paused" = "En pausa";
 "relay.emptyHint" = "Copia contenido para añadirlo a la cola";
+"relay.deleted.recirculated" = "Eliminado de relay, guardado en historial del portapapeles";
+"relay.deleted.undo" = "Deshacer";
+"relay.queue.heading" = "Cola %d";
 "relay.quickPastePaused" = "Pegado rápido pausado durante el modo relevo";
 "relay.alert.title" = "Modo Relevo activado";
 "relay.alert.message" = "El pegado rápido está en pausa. El contenido copiado se añadirá a la cola.
