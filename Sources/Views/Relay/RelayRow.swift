@@ -120,12 +120,16 @@ struct RelayRow: View {
                     }
                     .buttonStyle(.plain)
                     .foregroundStyle(.secondary)
+                    .help(L10n.tr("relay.split"))
+                    .accessibilityLabel(L10n.tr("relay.split"))
                 }
                 Button { onDelete?() } label: {
                     Image(systemName: "trash").font(.system(size: 10))
                 }
                 .buttonStyle(.plain)
                 .foregroundStyle(.red.opacity(0.8))
+                .help(L10n.tr("relay.delete"))
+                .accessibilityLabel(L10n.tr("relay.delete"))
             }
         } else if item.state == .current, let glyph = postPasteKeyGlyph {
             Text(glyph)
