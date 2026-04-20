@@ -748,6 +748,13 @@ struct QuickPanelView: View {
                                                 copyItemsToClipboard(items)
                                             }
                                             Divider()
+                                            quickPanelGroupMenu(items: items)
+                                            if items.contains(where: { $0.groupName != nil }) {
+                                                Button(L10n.tr("action.removeFromGroup")) {
+                                                    removeFromGroup(items: items)
+                                                }
+                                            }
+                                            Divider()
                                             Button(L10n.tr("relay.addToQueue")) {
                                                 RelayManager.shared.enqueue(clipItems: items)
                                                 if !RelayManager.shared.isActive {
@@ -787,6 +794,14 @@ struct QuickPanelView: View {
                                                             }
                                                         }
                                                     }
+                                                }
+                                            }
+                                            Divider()
+                                            quickPanelGroupMenu(items: [item])
+                                            if item.groupName != nil {
+                                                Button(L10n.tr("action.removeFromGroup")) {
+                                                    removeFromGroup(items: [item])
+                                                    selectItem(itemID)
                                                 }
                                             }
                                             Divider()
@@ -900,6 +915,7 @@ struct QuickPanelView: View {
                     footerKey("←→", L10n.tr("quick.switchType"))
                     footerKey("↑↓", L10n.tr("quick.navigate"))
                     footerKey("⌘O", currentItem?.contentType == .link ? L10n.tr("quick.openLink") : L10n.tr("quick.preview"))
+                    footerKey("⌘M", L10n.tr("menu.openMain"))
                     footerKey("⌘⌫", L10n.tr("quick.delete"))
                 }
                 .padding(.horizontal, 16)
@@ -1136,6 +1152,13 @@ struct QuickPanelView: View {
                 if hasCmd {
                     showCommandPalette.toggle()
                     if showCommandPalette { isSearchFocused = false }
+                    return nil
+                }
+                return event
+            case 46: // Cmd+M
+                if hasCmd && !hasControl {
+                    handleDismiss()
+                    AppAction.shared.openMainWindow?()
                     return nil
                 }
                 return event
@@ -1396,6 +1419,33 @@ struct QuickPanelView: View {
         handlePaste()
     }
 
+    @ViewBuilder
+    private func quickPanelGroupMenu(items: [ClipItem]) -> some View {
+        let groupNames = Set(items.compactMap(\.groupName))
+        let currentGroup = groupNames.count == 1 ? groupNames.first : nil
+        Menu(L10n.tr("action.assignGroup")) {
+            ForEach(store.sidebarCounts.byGroup, id: \.name) { group in
+                if group.name == currentGroup {
+                    Button {
+                        // Already in this group — no-op
+                    } label: {
+                        Label(group.name, systemImage: "checkmark")
+                    }
+                } else {
+                    Button(group.name) {
+                        assignToGroup(items: items, name: group.name)
+                    }
+                }
+            }
+            if !store.sidebarCounts.byGroup.isEmpty {
+                Divider()
+            }
+            Button(L10n.tr("action.newGroup")) {
+                showNewGroupAlert(for: items)
+            }
+        }
+    }
+
     private func isFileBasedItem(_ item: ClipItem) -> Bool {
         item.contentType.isFileBased && !(item.contentType == .image && item.content == "[Image]")
     }
@@ -1555,6 +1605,42 @@ struct QuickPanelView: View {
 
     private func deleteItem(_ item: ClipItem) {
         deleteItems([item])
+    }
+
+    private func assignToGroup(items: [ClipItem], name: String) {
+        for item in items {
+            let oldGroup = item.groupName
+            item.groupName = name
+            ClipboardManager.shared.upsertSmartGroup(name: name, context: modelContext)
+            if let oldGroup, !oldGroup.isEmpty {
+                ClipboardManager.shared.decrementSmartGroup(name: oldGroup, context: modelContext)
+            }
+        }
+        ClipItemStore.saveAndNotify(modelContext)
+    }
+
+    private func removeFromGroup(items: [ClipItem]) {
+        for item in items {
+            guard let name = item.groupName, !name.isEmpty else { continue }
+            item.groupName = nil
+            ClipboardManager.shared.decrementSmartGroup(name: name, context: modelContext)
+        }
+        ClipItemStore.saveAndNotify(modelContext)
+    }
+
+    private func showNewGroupAlert(for items: [ClipItem]) {
+        guard let result = GroupEditorPanel.show() else { return }
+        let name = result.name
+        let descriptor = FetchDescriptor<SmartGroup>(predicate: #Predicate { $0.name == name })
+        if let existing = try? modelContext.fetch(descriptor).first {
+            existing.icon = result.icon
+        } else {
+            let maxOrder = (try? modelContext.fetch(FetchDescriptor<SmartGroup>()))?.map(\.sortOrder).max() ?? -1
+            let group = SmartGroup(name: result.name, icon: result.icon, sortOrder: maxOrder + 1)
+            modelContext.insert(group)
+        }
+        try? modelContext.save()
+        assignToGroup(items: items, name: result.name)
     }
 
     private func applyTransform(_ action: RuleAction, to item: ClipItem) {
