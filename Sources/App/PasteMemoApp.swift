@@ -338,6 +338,11 @@ struct PasteMemoApp: App {
         // Drop legacy index on old column name before recreating on correct column
         db.execute("DROP INDEX IF EXISTS idx_clip_type")
 
+        // Defensive: ensure ZPRESERVESITEMS column exists on older stores where
+        // SwiftData's lightweight migration may not have run yet. SQLite errors
+        // on duplicate column are silently swallowed by execute().
+        db.execute("ALTER TABLE ZSMARTGROUP ADD COLUMN ZPRESERVESITEMS INTEGER DEFAULT 0")
+
         // Regular indexes
         let indexes = [
             "CREATE INDEX IF NOT EXISTS idx_clip_lastused ON ZCLIPITEM (ZLASTUSEDAT DESC)",

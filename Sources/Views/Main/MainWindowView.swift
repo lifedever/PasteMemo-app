@@ -268,7 +268,9 @@ struct MainWindowView: View {
                     predicate: #Predicate { !$0.isPinned }
                 )
                 if let items = try? modelContext.fetch(descriptor) {
-                    ClipItemStore.deleteAndNotify(items, from: modelContext)
+                    let preserved = SmartGroupRetention.preservedGroupNames(in: modelContext)
+                    let deletable = SmartGroupRetention.filterDeletableItems(items, preservedGroupNames: preserved)
+                    ClipItemStore.deleteAndNotify(deletable, from: modelContext)
                 }
                 ClipboardManager.shared.recalculateAllGroupCounts(context: modelContext)
             }
