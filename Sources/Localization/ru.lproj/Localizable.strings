@@ -205,6 +205,9 @@
 "action.deleteGroup" = "Удалить группу";
 "action.deleteGroupConfirm" = "Вы уверены, что хотите удалить группу «%@»? Элементы в группе не будут удалены.";
 "action.removeFromGroup" = "Убрать из группы";
+"group.preserveItems" = "Хранить элементы этой группы постоянно";
+"group.preserveItems.help" = "Если включено, элементы этой группы не будут удаляться автоматической очисткой по сроку хранения и командой очистки данных.";
+"group.preserveItems.badge" = "Постоянно";
 "action.changeIcon" = "Изменить значок…";
 "action.clearConfirm" = "Все незакреплённые элементы будут удалены.";
 "action.copy" = "Копировать";

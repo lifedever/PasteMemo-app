@@ -122,6 +122,9 @@
 "action.deleteGroup" = "グループを削除";
 "action.deleteGroupConfirm" = "グループ「%@」を削除してもよろしいですか？グループ内のアイテムは削除されません。";
 "action.removeFromGroup" = "グループから除外";
+"group.preserveItems" = "このグループの内容を永久保存する";
+"group.preserveItems.help" = "有効にすると、このグループ内の内容は自動保持期間の整理や「データを消去」の対象外になります。";
+"group.preserveItems.badge" = "永久保存";
 "action.changeIcon" = "アイコンを変更…";
 "action.clearConfirm" = "お気に入りとピン留めを除くすべてのアイテムが削除されます。";
 

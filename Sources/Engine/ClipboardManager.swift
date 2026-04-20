@@ -560,8 +560,13 @@ final class ClipboardManager: ObservableObject {
 
         let descriptor = FetchDescriptor<ClipItem>()
         guard let allItems = try? context.fetch(descriptor) else { return }
+        let preservedGroupNames = SmartGroupRetention.preservedGroupNames(in: context)
 
-        let expiredItems = allItems.filter { $0.createdAt < cutoff && !$0.isPinned }
+        let expiredItems = allItems.filter {
+            $0.createdAt < cutoff
+                && !$0.isPinned
+                && !SmartGroupRetention.shouldPreserve(item: $0, preservedGroupNames: preservedGroupNames)
+        }
         guard !expiredItems.isEmpty else { return }
 
         let hasGroupedItems = expiredItems.contains { $0.groupName != nil }

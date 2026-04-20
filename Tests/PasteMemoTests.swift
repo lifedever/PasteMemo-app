@@ -236,7 +236,7 @@ struct PasteMemoTests {
         clip.groupName = "Work"
         sourceContext.insert(clip)
 
-        let group = SmartGroup(name: "Work", icon: "briefcase", sortOrder: 7, color: "#FF0000")
+        let group = SmartGroup(name: "Work", icon: "briefcase", sortOrder: 7, color: "#FF0000", preservesItems: true)
         sourceContext.insert(group)
 
         let userRule = AutomationRule(
@@ -288,6 +288,7 @@ struct PasteMemoTests {
         #expect(importedGroups.first?.icon == "briefcase")
         #expect(importedGroups.first?.sortOrder == 7)
         #expect(importedGroups.first?.color == "#FF0000")
+        #expect(importedGroups.first?.preservesItems == true)
 
         let importedRules = try destContext.fetch(FetchDescriptor<AutomationRule>())
         #expect(importedRules.count == 1)
@@ -349,8 +350,8 @@ struct PasteMemoTests {
         // Backup payload contains a group with the same name (should be skipped)
         // and a rule with the same ruleID (should be skipped),
         // plus a new group and new rule.
-        let incomingGroup1 = ExportGroup(name: "Work", icon: "briefcase", sortOrder: 9, color: nil)
-        let incomingGroup2 = ExportGroup(name: "Personal", icon: "house", sortOrder: 1, color: nil)
+        let incomingGroup1 = ExportGroup(name: "Work", icon: "briefcase", sortOrder: 9, color: nil, preservesItems: true)
+        let incomingGroup2 = ExportGroup(name: "Personal", icon: "house", sortOrder: 1, color: nil, preservesItems: true)
         let incomingRule1 = DataPorter.buildSingleExportRule(existingRule) // same ruleID
         let newRule = AutomationRule(name: "Brand new", isBuiltIn: false)
         let incomingRule2 = DataPorter.buildSingleExportRule(newRule)
@@ -373,6 +374,9 @@ struct PasteMemoTests {
         let workGroup = try #require(allGroups.first { $0.name == "Work" })
         #expect(workGroup.icon == "folder") // existing not overwritten
         #expect(workGroup.sortOrder == 0)
+        #expect(workGroup.preservesItems == false)
+        let personalGroup = try #require(allGroups.first { $0.name == "Personal" })
+        #expect(personalGroup.preservesItems == true)
 
         let allRules = try context.fetch(FetchDescriptor<AutomationRule>())
         #expect(allRules.count == 2)

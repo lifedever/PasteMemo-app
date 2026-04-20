@@ -33,6 +33,7 @@ struct ExportGroup: Codable {
     let icon: String
     let sortOrder: Int
     let color: String?
+    let preservesItems: Bool?
 }
 
 struct ExportRule: Codable {
@@ -239,7 +240,8 @@ enum DataPorter {
             name: group.name,
             icon: group.icon,
             sortOrder: group.sortOrder,
-            color: group.color
+            color: group.color,
+            preservesItems: group.preservesItems
         )
     }
 
@@ -326,7 +328,8 @@ enum DataPorter {
                 name: exp.name,
                 icon: exp.icon,
                 sortOrder: exp.sortOrder,
-                color: exp.color
+                color: exp.color,
+                preservesItems: exp.preservesItems ?? false
             )
             context.insert(group)
             inserted += 1

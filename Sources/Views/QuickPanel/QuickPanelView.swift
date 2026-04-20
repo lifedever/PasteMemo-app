@@ -358,7 +358,7 @@ struct QuickPanelView: View {
     /// `/` 建议里是否展示类型（tabBar 当前为分组时才展示）
     private var shouldSuggestTypes: Bool { secondaryRow == .groups }
 
-    private var currentSuggestionGroups: [(name: String, icon: String, count: Int)] {
+    private var currentSuggestionGroups: [(name: String, icon: String, count: Int, preservesItems: Bool)] {
         guard shouldSuggestGroups else { return [] }
         guard searchText.hasPrefix(Self.GROUP_SEARCH_PREFIX) else { return [] }
         let query = String(searchText.dropFirst()).trimmingCharacters(in: .whitespaces).lowercased()
@@ -659,7 +659,7 @@ struct QuickPanelView: View {
         }
     }
 
-    private var availableGroupsForTab: [(name: String, icon: String, count: Int)] {
+    private var availableGroupsForTab: [(name: String, icon: String, count: Int, preservesItems: Bool)] {
         store.sidebarCounts.byGroup.filter { $0.count > 0 }
     }
 
@@ -1634,9 +1634,10 @@ struct QuickPanelView: View {
         let descriptor = FetchDescriptor<SmartGroup>(predicate: #Predicate { $0.name == name })
         if let existing = try? modelContext.fetch(descriptor).first {
             existing.icon = result.icon
+            existing.preservesItems = result.preservesItems
         } else {
             let maxOrder = (try? modelContext.fetch(FetchDescriptor<SmartGroup>()))?.map(\.sortOrder).max() ?? -1
-            let group = SmartGroup(name: result.name, icon: result.icon, sortOrder: maxOrder + 1)
+            let group = SmartGroup(name: result.name, icon: result.icon, sortOrder: maxOrder + 1, preservesItems: result.preservesItems)
             modelContext.insert(group)
         }
         try? modelContext.save()

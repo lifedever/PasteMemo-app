@@ -205,6 +205,9 @@
 "action.deleteGroup" = "Hapus Grup";
 "action.deleteGroupConfirm" = "Yakin ingin menghapus grup \"%@\"? Item dalam grup tidak akan dihapus.";
 "action.removeFromGroup" = "Hapus dari Grup";
+"group.preserveItems" = "Simpan item di grup ini secara permanen";
+"group.preserveItems.help" = "Jika diaktifkan, item dalam grup ini dikecualikan dari pembersihan retensi otomatis dan Hapus Data.";
+"group.preserveItems.badge" = "Permanen";
 "action.changeIcon" = "Ubah Ikon…";
 "action.clearConfirm" = "Ini akan menghapus semua item kecuali yang disematkan.";
 "action.copy" = "Salin";

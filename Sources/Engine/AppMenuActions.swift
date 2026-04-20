@@ -97,16 +97,17 @@ enum AppMenuActions {
         let descriptor = FetchDescriptor<SmartGroup>(predicate: #Predicate { $0.name == resultName })
         if (try? context.fetch(descriptor).first) != nil { return }
         let maxOrder = (try? context.fetch(FetchDescriptor<SmartGroup>()))?.map(\.sortOrder).max() ?? -1
-        let group = SmartGroup(name: result.name, icon: result.icon, sortOrder: maxOrder + 1)
+        let group = SmartGroup(name: result.name, icon: result.icon, sortOrder: maxOrder + 1, preservesItems: result.preservesItems)
         context.insert(group)
         try? context.save()
         NotificationCenter.default.post(name: ClipItemStore.itemDidUpdateNotification, object: nil)
     }
 
     static func showEditGroupAlert(group: SmartGroup, context: ModelContext) {
-        guard let result = GroupEditorPanel.show(name: group.name, icon: group.icon) else { return }
+        guard let result = GroupEditorPanel.show(name: group.name, icon: group.icon, preservesItems: group.preservesItems) else { return }
         group.name = result.name
         group.icon = result.icon
+        group.preservesItems = result.preservesItems
         try? context.save()
         NotificationCenter.default.post(name: ClipItemStore.itemDidUpdateNotification, object: nil)
     }

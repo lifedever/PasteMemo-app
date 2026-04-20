@@ -8,10 +8,11 @@ final class GroupEditorPanel {
     struct Result {
         let name: String
         let icon: String
+        let preservesItems: Bool
     }
 
-    static func show(name: String = "", icon: String = "folder") -> Result? {
-        let viewModel = GroupEditorViewModel(name: name, icon: icon)
+    static func show(name: String = "", icon: String = "folder", preservesItems: Bool = false) -> Result? {
+        let viewModel = GroupEditorViewModel(name: name, icon: icon, preservesItems: preservesItems)
         let hostingView = NSHostingView(rootView: GroupEditorView(viewModel: viewModel))
         hostingView.frame = NSRect(x: 0, y: 0, width: 380, height: 420)
 
@@ -36,7 +37,7 @@ final class GroupEditorPanel {
         guard response == .OK else { return nil }
         let resultName = viewModel.name.trimmingCharacters(in: .whitespaces)
         guard !resultName.isEmpty else { return nil }
-        return Result(name: resultName, icon: viewModel.selectedIcon)
+        return Result(name: resultName, icon: viewModel.selectedIcon, preservesItems: viewModel.preservesItems)
     }
 }
 
@@ -80,15 +81,17 @@ private final class ModalSession: NSObject, NSWindowDelegate {
 private class GroupEditorViewModel {
     var name: String
     var selectedIcon: String
+    var preservesItems: Bool
     var iconSearchText = ""
     var selectedCategory: IconCategory
 
     var onDismiss: (() -> Void)?
     var onConfirm: (() -> Void)?
 
-    init(name: String, icon: String) {
+    init(name: String, icon: String, preservesItems: Bool) {
         self.name = name
         self.selectedIcon = icon
+        self.preservesItems = preservesItems
         self.selectedCategory = IconCategory.all[0]
     }
 
@@ -221,15 +224,27 @@ private struct GroupEditorView: View {
     }
 
     private var headerSection: some View {
-        HStack(spacing: 12) {
-            Image(systemName: viewModel.selectedIcon)
-                .font(.system(size: 28))
-                .foregroundStyle(.secondary)
-                .frame(width: 48, height: 48)
-                .background(Color.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: 10))
-            TextField(L10n.tr("automation.action.assignGroup.placeholder"), text: $viewModel.name)
-                .textFieldStyle(.roundedBorder)
-                .font(.system(size: 14))
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 12) {
+                Image(systemName: viewModel.selectedIcon)
+                    .font(.system(size: 28))
+                    .foregroundStyle(.secondary)
+                    .frame(width: 48, height: 48)
+                    .background(Color.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: 10))
+                TextField(L10n.tr("automation.action.assignGroup.placeholder"), text: $viewModel.name)
+                    .textFieldStyle(.roundedBorder)
+                    .font(.system(size: 14))
+            }
+
+            Toggle(isOn: $viewModel.preservesItems) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(L10n.tr("group.preserveItems"))
+                    Text(L10n.tr("group.preserveItems.help"))
+                        .font(.system(size: 11))
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .toggleStyle(.switch)
         }
         .padding(16)
     }

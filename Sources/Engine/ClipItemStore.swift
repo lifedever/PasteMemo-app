@@ -400,7 +400,7 @@ final class ClipItemStore {
         var sensitive = 0
         var byType: [ClipContentType: Int] = [:]
         var byApp: [String?: Int] = [:]  // nil key = unknown app
-        var byGroup: [(name: String, icon: String, count: Int)] = []
+        var byGroup: [(name: String, icon: String, count: Int, preservesItems: Bool)] = []
     }
 
     func refreshSidebarCounts() {
@@ -445,9 +445,9 @@ final class ClipItemStore {
         }
         let nullCount = db.queryInt("SELECT COUNT(*) FROM ZCLIPITEM WHERE ZSOURCEAPP IS NULL")
         if nullCount > 0 { counts.byApp[nil] = nullCount }
-        counts.byGroup = db.queryStringStringIntTuples(
-            "SELECT ZNAME, COALESCE(ZICON, 'folder'), ZCOUNT FROM ZSMARTGROUP ORDER BY ZSORTORDER"
-        ).map { (name: $0.0, icon: $0.1, count: $0.2) }
+        counts.byGroup = db.queryGroupRows(
+            "SELECT ZNAME, COALESCE(ZICON, 'folder'), ZCOUNT, COALESCE(ZPRESERVESITEMS, 0) FROM ZSMARTGROUP ORDER BY ZSORTORDER"
+        ).map { (name: $0.0, icon: $0.1, count: $0.2, preservesItems: $0.3) }
         sidebarCounts = counts
     }
 
