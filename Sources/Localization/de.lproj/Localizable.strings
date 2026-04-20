@@ -114,6 +114,9 @@
 "action.deleteGroup" = "Gruppe löschen";
 "action.deleteGroupConfirm" = "Möchten Sie die Gruppe „%@“ wirklich löschen? Die Elemente in der Gruppe werden nicht gelöscht.";
 "action.removeFromGroup" = "Aus Gruppe entfernen";
+"group.preserveItems" = "Inhalte dieser Gruppe dauerhaft behalten";
+"group.preserveItems.help" = "Wenn aktiviert, sind Elemente in dieser Gruppe von der automatischen Aufräumlogik und von „Daten löschen“ ausgenommen.";
+"group.preserveItems.badge" = "Dauerhaft";
 "action.changeIcon" = "Symbol ändern…";
 "action.clearConfirm" = "Alle Elemente außer Favoriten und angehefteten Elementen werden gelöscht.";
 

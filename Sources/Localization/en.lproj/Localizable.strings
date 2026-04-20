@@ -229,6 +229,9 @@
 "action.deleteGroup" = "Delete Group";
 "action.deleteGroupConfirm" = "Are you sure you want to delete the group \"%@\"? Items in the group will not be deleted.";
 "action.removeFromGroup" = "Remove from Group";
+"group.preserveItems" = "Keep items in this group permanently";
+"group.preserveItems.help" = "When enabled, items in this group are excluded from automatic retention cleanup and Clear Data.";
+"group.preserveItems.badge" = "Permanent";
 "action.changeIcon" = "Change Icon…";
 "action.clearConfirm" = "This will delete all items except pinned items.";
 "action.copy" = "Copy";

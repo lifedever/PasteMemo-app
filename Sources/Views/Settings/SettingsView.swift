@@ -482,7 +482,12 @@ struct PreferencesTab: View {
         let cutoff = Calendar.current.date(byAdding: .day, value: -newDays, to: Date())!
         let descriptor = FetchDescriptor<ClipItem>()
         guard let allItems = try? modelContext.fetch(descriptor) else { return }
-        let count = allItems.filter({ $0.createdAt < cutoff && !$0.isPinned }).count
+        let preservedGroupNames = SmartGroupRetention.preservedGroupNames(in: modelContext)
+        let count = allItems.filter {
+            $0.createdAt < cutoff
+                && !$0.isPinned
+                && !SmartGroupRetention.shouldPreserve(item: $0, preservedGroupNames: preservedGroupNames)
+        }.count
         guard count > 0 else { return }
 
         pendingRetentionOldDays = oldDays
@@ -494,7 +499,12 @@ struct PreferencesTab: View {
         let cutoff = Calendar.current.date(byAdding: .day, value: -retentionDays, to: Date())!
         let descriptor = FetchDescriptor<ClipItem>()
         guard let allItems = try? modelContext.fetch(descriptor) else { return }
-        let expiredItems = allItems.filter { $0.createdAt < cutoff && !$0.isPinned }
+        let preservedGroupNames = SmartGroupRetention.preservedGroupNames(in: modelContext)
+        let expiredItems = allItems.filter {
+            $0.createdAt < cutoff
+                && !$0.isPinned
+                && !SmartGroupRetention.shouldPreserve(item: $0, preservedGroupNames: preservedGroupNames)
+        }
         guard !expiredItems.isEmpty else { return }
 
         for item in expiredItems {

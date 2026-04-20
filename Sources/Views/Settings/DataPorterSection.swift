@@ -298,6 +298,7 @@ struct DataPorterSection: View {
             }
             ClipItemStore.isBulkOperation = true
 
+            let preservedGroupNames = SmartGroupRetention.preservedGroupNames(in: modelContext)
             let descriptor: FetchDescriptor<ClipItem>
             if days > 0 {
                 let cutoff = Calendar.current.date(byAdding: .day, value: -days, to: Date())!
@@ -309,7 +310,8 @@ struct DataPorterSection: View {
                     predicate: #Predicate { !$0.isPinned }
                 )
             }
-            guard let items = try? modelContext.fetch(descriptor) else { return }
+            guard let fetchedItems = try? modelContext.fetch(descriptor) else { return }
+            let items = SmartGroupRetention.filterDeletableItems(fetchedItems, preservedGroupNames: preservedGroupNames)
             let total = items.count
             let batchSize = 100
 

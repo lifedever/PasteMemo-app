@@ -229,6 +229,9 @@
 "action.deleteGroup" = "删除分组";
 "action.deleteGroupConfirm" = "确定要删除分组「%@」吗？分组内的条目不会被删除。";
 "action.removeFromGroup" = "移出分组";
+"group.preserveItems" = "永久保存此分组中的内容";
+"group.preserveItems.help" = "开启后，此分组中的内容不会被自动过期清理，也不会被“清理数据”删除。";
+"group.preserveItems.badge" = "永久保存";
 "action.changeIcon" = "修改图标…";
 "action.clearConfirm" = "将删除所有未置顶的条目。";
 "action.copy" = "复制";

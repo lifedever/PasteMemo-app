@@ -8,12 +8,14 @@ final class SmartGroup {
     var count: Int = 0
     var sortOrder: Int = 0
     var color: String?
+    var preservesItems: Bool = false
 
-    init(name: String, icon: String = "folder", sortOrder: Int = 0, color: String? = nil) {
+    init(name: String, icon: String = "folder", sortOrder: Int = 0, color: String? = nil, preservesItems: Bool = false) {
         self.name = name
         self.icon = icon
         self.sortOrder = sortOrder
         self.color = color
+        self.preservesItems = preservesItems
     }
 
     static let availableIcons: [String] = [

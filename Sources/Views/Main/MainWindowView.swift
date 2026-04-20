@@ -365,7 +365,7 @@ struct MainWindowView: View {
             if !store.sidebarCounts.byGroup.isEmpty {
                 Section(L10n.tr("filter.groups")) {
                     ForEach(store.sidebarCounts.byGroup, id: \.name) { group in
-                        sidebarRow(group.name, icon: group.icon, badge: group.count, isActive: selectedFilter == .group(group.name)) {
+                        sidebarRow(group.name, icon: group.icon, badge: group.count, showsPreservedBadge: group.preservesItems, isActive: selectedFilter == .group(group.name)) {
                             selectedFilter = .group(group.name)
                         }
                         .contextMenu {
@@ -460,13 +460,19 @@ struct MainWindowView: View {
         )
     }
 
-    private func sidebarRow(_ title: String, icon: String, badge: Int = 0, isActive: Bool, action: @escaping () -> Void) -> some View {
+    private func sidebarRow(_ title: String, icon: String, badge: Int = 0, showsPreservedBadge: Bool = false, isActive: Bool, action: @escaping () -> Void) -> some View {
         HStack {
             Image(systemName: icon)
                 .foregroundStyle(isActive ? .white : .secondary)
                 .frame(width: 18)
             Text(title)
                 .foregroundStyle(isActive ? .white : .primary)
+            if showsPreservedBadge {
+                Image(systemName: "lock.fill")
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundStyle(isActive ? .white.opacity(0.95) : .secondary)
+                    .help(L10n.tr("group.preserveItems.badge"))
+            }
             Spacer()
             if badge > 0 {
                 Text("\(badge)")
@@ -1008,8 +1014,9 @@ struct MainWindowView: View {
     private func changeGroupIcon(name: String) {
         let descriptor = FetchDescriptor<SmartGroup>(predicate: #Predicate { $0.name == name })
         guard let group = try? modelContext.fetch(descriptor).first else { return }
-        guard let result = GroupEditorPanel.show(name: group.name, icon: group.icon) else { return }
+        guard let result = GroupEditorPanel.show(name: group.name, icon: group.icon, preservesItems: group.preservesItems) else { return }
         group.icon = result.icon
+        group.preservesItems = result.preservesItems
         try? modelContext.save()
         store.refreshSidebarCounts()
     }
@@ -1063,9 +1070,10 @@ struct MainWindowView: View {
         let descriptor = FetchDescriptor<SmartGroup>(predicate: #Predicate { $0.name == name })
         if let existing = try? modelContext.fetch(descriptor).first {
             existing.icon = result.icon
+            existing.preservesItems = result.preservesItems
         } else {
             let maxOrder = (try? modelContext.fetch(FetchDescriptor<SmartGroup>()))?.map(\.sortOrder).max() ?? -1
-            let group = SmartGroup(name: result.name, icon: result.icon, sortOrder: maxOrder + 1)
+            let group = SmartGroup(name: result.name, icon: result.icon, sortOrder: maxOrder + 1, preservesItems: result.preservesItems)
             modelContext.insert(group)
         }
         try? modelContext.save()

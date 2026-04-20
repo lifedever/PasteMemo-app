@@ -114,6 +114,9 @@
 "action.deleteGroup" = "그룹 삭제";
 "action.deleteGroupConfirm" = "그룹 \"%@\"을(를) 삭제하시겠습니까? 그룹 내 항목은 삭제되지 않습니다.";
 "action.removeFromGroup" = "그룹에서 제거";
+"group.preserveItems" = "이 그룹의 내용을 영구 보관";
+"group.preserveItems.help" = "활성화하면 이 그룹의 내용은 자동 보관 기간 정리와 데이터 지우기에서 제외됩니다.";
+"group.preserveItems.badge" = "영구 보관";
 "action.changeIcon" = "아이콘 변경…";
 "action.clearConfirm" = "즐겨찾기와 고정된 항목을 제외한 모든 항목이 삭제됩니다.";
 

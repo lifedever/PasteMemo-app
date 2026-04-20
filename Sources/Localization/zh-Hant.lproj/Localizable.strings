@@ -206,6 +206,9 @@
 "action.deleteGroup" = "刪除分組";
 "action.deleteGroupConfirm" = "確定要刪除分組「%@」嗎？分組內的條目不會被刪除。";
 "action.removeFromGroup" = "移出分組";
+"group.preserveItems" = "永久保留此分組中的內容";
+"group.preserveItems.help" = "開啟後，此分組中的內容不會被自動過期清理，也不會被「清空資料」刪除。";
+"group.preserveItems.badge" = "永久保留";
 "action.changeIcon" = "修改圖示…";
 "action.clearConfirm" = "將刪除所有未置頂的條目。";
 "action.copy" = "複製";

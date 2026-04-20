@@ -110,6 +110,24 @@ final class SQLiteConnection {
         return results
     }
 
+    func queryGroupRows(_ sql: String, params: [Any] = []) -> [(String, String, Int, Bool)] {
+        var stmt: OpaquePointer?
+        guard sqlite3_prepare_v2(db, sql, -1, &stmt, nil) == SQLITE_OK else { return [] }
+        defer { sqlite3_finalize(stmt) }
+
+        bind(params, to: stmt)
+
+        var results: [(String, String, Int, Bool)] = []
+        while sqlite3_step(stmt) == SQLITE_ROW {
+            let name = sqlite3_column_text(stmt, 0).map { String(cString: $0) } ?? ""
+            let icon = sqlite3_column_text(stmt, 1).map { String(cString: $0) } ?? ""
+            let count = Int(sqlite3_column_int64(stmt, 2))
+            let preservesItems = sqlite3_column_int64(stmt, 3) != 0
+            results.append((name, icon, count, preservesItems))
+        }
+        return results
+    }
+
     /// Returns true if a table exists.
     func tableExists(_ name: String) -> Bool {
         !queryStrings(

@@ -114,6 +114,9 @@
 "action.deleteGroup" = "Supprimer le groupe";
 "action.deleteGroupConfirm" = "Voulez-vous vraiment supprimer le groupe « %@ » ? Les éléments du groupe ne seront pas supprimés.";
 "action.removeFromGroup" = "Retirer du groupe";
+"group.preserveItems" = "Conserver définitivement les éléments de ce groupe";
+"group.preserveItems.help" = "Une fois activé, les éléments de ce groupe sont exclus du nettoyage automatique par rétention et de l’effacement des données.";
+"group.preserveItems.badge" = "Permanent";
 "action.changeIcon" = "Changer l'icône…";
 "action.clearConfirm" = "Tous les éléments seront supprimés, sauf les favoris et les éléments épinglés.";
 

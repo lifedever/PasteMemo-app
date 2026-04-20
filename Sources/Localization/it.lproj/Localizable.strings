@@ -205,6 +205,9 @@
 "action.deleteGroup" = "Elimina gruppo";
 "action.deleteGroupConfirm" = "Eliminare il gruppo \"%@\"? Gli elementi nel gruppo non verranno eliminati.";
 "action.removeFromGroup" = "Rimuovi dal gruppo";
+"group.preserveItems" = "Conserva permanentemente gli elementi di questo gruppo";
+"group.preserveItems.help" = "Se attivato, gli elementi di questo gruppo sono esclusi dalla pulizia automatica per retention e da Cancella dati.";
+"group.preserveItems.badge" = "Permanente";
 "action.changeIcon" = "Cambia icona…";
 "action.clearConfirm" = "Verranno eliminati tutti gli elementi tranne quelli fissati.";
 "action.copy" = "Copia";
