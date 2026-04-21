@@ -723,8 +723,8 @@ struct QuickPanelView: View {
             showCommandPalette: showCommandPalette,
             allowMultipleSelection: true,
             scrollAlignment: .nearest,
-            itemRowHeight: 40,
-            headerRowHeight: 24,
+            itemRowHeight: 48,
+            headerRowHeight: 28,
             onItemTap: { id in
                 handleItemClick(id)
             },
