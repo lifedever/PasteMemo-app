@@ -342,6 +342,10 @@
 "accessibility.step2.pre" = "d'abord";
 "accessibility.step2.separator" = ", ";
 
+"accessibility.step3.dragFromPanel" = "Glissez PasteMemo depuis le panneau flottant";
+"accessibility.panelHint" = "Si une ancienne entrée existe, cliquez sur − pour la supprimer avant de glisser.";
+"accessibility.panelTitle" = "Autorisation d'Accessibilité";
+
 "filter.sensitive" = "Sensible";
 
 "settings.clearData" = "Effacer les données";
@@ -636,7 +640,7 @@ Utilisez %@ pour coller un par un.";
 
 /* Accessibility */
 "accessibility.lost.later" = "Plus tard";
-"accessibility.lost.message" = "Après une mise à jour de l'app, macOS exige une nouvelle autorisation. Veuillez ouvrir les Réglages système, retirer PasteMemo de la liste d'accessibilité (sélectionner et cliquer sur moins), puis cliquer sur plus pour le réajouter.";
+"accessibility.lost.message" = "Après une mise à jour, macOS exige une nouvelle autorisation. Après avoir cliqué sur « Ouvrir Accessibilité », sélectionnez l'entrée PasteMemo existante et cliquez sur − pour la supprimer, puis glissez la nouvelle version depuis le panneau flottant.";
 "accessibility.lost.title" = "Autorisation d'accessibilité requise";
 
 /* Automation Window */

@@ -250,7 +250,7 @@
 
 /* Onboarding */
 "accessibility.lost.title" = "Izin Aksesibilitas Diperlukan";
-"accessibility.lost.message" = "Setelah pembaruan aplikasi, macOS memerlukan otorisasi ulang. Buka Pengaturan Sistem, hapus PasteMemo dari daftar Aksesibilitas terlebih dahulu (pilih dan klik minus), lalu klik plus untuk menambahkannya kembali.";
+"accessibility.lost.message" = "Setelah pembaruan aplikasi, macOS memerlukan otorisasi ulang. Setelah mengklik «Buka Aksesibilitas», pilih entri PasteMemo yang ada dan klik − untuk menghapusnya, lalu seret versi baru dari panel mengambang.";
 "accessibility.lost.later" = "Nanti";
 "onboarding.back" = "Kembali";
 "onboarding.next" = "Lanjut";
@@ -424,6 +424,10 @@
 
 "accessibility.step2.pre" = "terlebih dahulu";
 "accessibility.step2.separator" = ", ";
+
+"accessibility.step3.dragFromPanel" = "Seret PasteMemo dari panel mengambang";
+"accessibility.panelHint" = "Jika entri lama ada, klik − untuk menghapusnya sebelum menyeret.";
+"accessibility.panelTitle" = "Izin Aksesibilitas";
 
 "filter.sensitive" = "Sensitif";
 

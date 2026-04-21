@@ -342,6 +342,10 @@
 "accessibility.step2.pre" = "zuerst";
 "accessibility.step2.separator" = ", ";
 
+"accessibility.step3.dragFromPanel" = "PasteMemo aus dem schwebenden Panel ziehen";
+"accessibility.panelHint" = "Bestehenden Eintrag zuerst mit − entfernen, dann ziehen.";
+"accessibility.panelTitle" = "Bedienungshilfen-Berechtigung";
+
 "filter.sensitive" = "Sensibel";
 
 "settings.clearData" = "Daten löschen";
@@ -628,7 +632,7 @@ Verwenden Sie %@ zum Einfügen.";
 
 /* Onboarding - Accessibility */
 "accessibility.lost.later" = "Später";
-"accessibility.lost.message" = "Nach einem App-Update erfordert macOS eine erneute Autorisierung. Bitte öffne die Systemeinstellungen, entferne PasteMemo zuerst aus der Bedienungshilfen-Liste (auswählen und Minus klicken), dann klicke Plus, um es erneut hinzuzufügen.";
+"accessibility.lost.message" = "Nach einem App-Update verlangt macOS eine erneute Berechtigung. Nach dem Klick auf „Bedienungshilfen öffnen“ wähle den vorhandenen PasteMemo-Eintrag aus, klicke auf −, um ihn zu entfernen, und ziehe dann die neue Version aus dem schwebenden Panel.";
 "accessibility.lost.title" = "Bedienungshilfen-Berechtigung erforderlich";
 
 /* Automation Manager Window */

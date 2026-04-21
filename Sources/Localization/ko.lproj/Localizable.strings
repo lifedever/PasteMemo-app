@@ -342,6 +342,10 @@
 "accessibility.step2.pre" = "먼저";
 "accessibility.step2.separator" = ", ";
 
+"accessibility.step3.dragFromPanel" = "플로팅 패널에서 PasteMemo 끌어오기";
+"accessibility.panelHint" = "기존 항목이 있으면 −를 먼저 클릭해 삭제하세요";
+"accessibility.panelTitle" = "손쉬운 사용 권한";
+
 "filter.sensitive" = "민감";
 
 "settings.clearData" = "데이터 지우기";
@@ -636,7 +640,7 @@
 
 /* Accessibility - Lost Permission */
 "accessibility.lost.later" = "나중에";
-"accessibility.lost.message" = "앱 업데이트 후 macOS에서 다시 권한을 부여해야 합니다. 시스템 설정을 열고, 먼저 손쉬운 사용 목록에서 PasteMemo를 제거(선택 후 마이너스 클릭)한 다음, 플러스를 클릭하여 다시 추가하세요.";
+"accessibility.lost.message" = "앱 업데이트 후 macOS는 재인증을 요구합니다. 「손쉬운 사용 설정 열기」를 클릭한 다음, 목록에서 기존 PasteMemo를 선택하고 −를 클릭해 삭제한 후, 플로팅 패널에서 새 버전을 끌어오세요.";
 "accessibility.lost.title" = "손쉬운 사용 권한이 필요합니다";
 
 /* Automation Window */

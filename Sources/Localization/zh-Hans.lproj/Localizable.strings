@@ -277,7 +277,7 @@
 
 /* Onboarding */
 "accessibility.lost.title" = "需要辅助功能权限";
-"accessibility.lost.message" = "应用更新后，macOS 要求重新授权辅助功能。请前往系统设置，先将 PasteMemo 从辅助功能列表中删除（选中后点减号），再点加号重新添加即可。";
+"accessibility.lost.message" = "应用更新后，macOS 要求重新授权。点击「打开辅助设置」后，请先在列表里选中 PasteMemo 并点 − 删除，然后从悬浮面板拖入新版本。";
 "accessibility.lost.later" = "稍后";
 "onboarding.back" = "上一步";
 "onboarding.skip" = "跳过";
@@ -568,6 +568,10 @@
 
 "accessibility.step2.pre" = "先将其";
 "accessibility.step2.separator" = "，";
+
+"accessibility.step3.dragFromPanel" = "从悬浮面板拖入 PasteMemo";
+"accessibility.panelHint" = "如已存在旧条目，请先点 − 删除再拖入";
+"accessibility.panelTitle" = "辅助功能权限";
 
 "filter.sensitive" = "敏感";
 

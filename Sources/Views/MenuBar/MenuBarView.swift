@@ -130,10 +130,6 @@ struct MenuBarContent: View {
     }
 
     private func openAccessibilitySettings() {
-        let opened = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")
-            .map { NSWorkspace.shared.open($0) } ?? false
-        if !opened {
-            ClipboardManager.shared.requestAccessibilityPermission()
-        }
+        AccessibilityMonitor.shared.openAccessibilitySettings()
     }
 }

@@ -1,0 +1,14 @@
+{
+  "originHash" : "2c89b1ac62195a9aa0a820dd85c8e45bfad5607a363e8a9ce3a7a300fb9a3775",
+  "pins" : [
+    {
+      "identity" : "permissionflow",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/lifedever/PermissionFlow.git",
+      "state" : {
+        "revision" : "6678e78b49edb95cc00b6d6754ca1e6954b65fbc"
+      }
+    }
+  ],
+  "version" : 3
+}

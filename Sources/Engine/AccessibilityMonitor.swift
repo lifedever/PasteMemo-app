@@ -1,6 +1,8 @@
+import AppKit
 import ApplicationServices
 import Combine
 import Foundation
+import PermissionFlow
 
 @MainActor
 final class AccessibilityMonitor: ObservableObject {
@@ -9,6 +11,12 @@ final class AccessibilityMonitor: ObservableObject {
     @Published private(set) var isTrusted: Bool = AXIsProcessTrusted()
 
     private var timer: Timer?
+    private let permissionController = PermissionFlow.makeController(
+        configuration: .init(
+            requiredAppURLs: [Bundle.main.bundleURL],
+            promptForAccessibilityTrust: false
+        )
+    )
 
     private init() {
         startPolling()
@@ -26,5 +34,21 @@ final class AccessibilityMonitor: ObservableObject {
                 }
             }
         }
+    }
+
+    func openAccessibilitySettings(sourceFrameInScreen: CGRect? = nil) {
+        let frame = sourceFrameInScreen ?? defaultSourceFrame()
+        permissionController.authorize(
+            pane: .accessibility,
+            suggestedAppURLs: [Bundle.main.bundleURL],
+            sourceFrameInScreen: frame,
+            panelHint: L10n.tr("accessibility.panelHint"),
+            panelTitle: L10n.tr("accessibility.panelTitle")
+        )
+    }
+
+    private func defaultSourceFrame() -> CGRect {
+        let location = NSEvent.mouseLocation
+        return CGRect(x: location.x - 16, y: location.y - 16, width: 32, height: 32)
     }
 }

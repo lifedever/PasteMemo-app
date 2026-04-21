@@ -203,13 +203,10 @@ struct OnboardingView: View {
                 }
                 accessibilityStepRow("3") {
                     HStack(spacing: 3) {
-                        Text(L10n.tr("accessibility.step3.add"))
+                        Image(systemName: "hand.point.up.left.fill")
                             .foregroundStyle(.secondary)
-                        Image(systemName: "plus").foregroundStyle(.secondary)
-                        Text(L10n.tr("accessibility.step3.readd"))
+                        Text(L10n.tr("accessibility.step3.dragFromPanel"))
                             .foregroundStyle(.secondary)
-                        appLogoMini
-                        Text("PasteMemo").bold()
                     }
                     .font(.callout)
                 }
@@ -223,7 +220,7 @@ struct OnboardingView: View {
     private var accessibilityActionButton: some View {
         VStack(spacing: 8) {
             Button(L10n.tr("onboarding.accessibility.grant")) {
-                ClipboardManager.shared.requestAccessibilityPermission()
+                AccessibilityMonitor.shared.openAccessibilitySettings()
                 startAccessibilityPolling()
             }
             .buttonStyle(.borderedProminent)

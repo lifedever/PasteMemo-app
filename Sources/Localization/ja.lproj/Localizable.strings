@@ -356,6 +356,10 @@
 "accessibility.step2.pre" = "まず";
 "accessibility.step2.separator" = "、";
 
+"accessibility.step3.dragFromPanel" = "フローティングパネルから PasteMemo をドラッグ";
+"accessibility.panelHint" = "古い項目がある場合は先に − をクリックして削除してください";
+"accessibility.panelTitle" = "アクセシビリティ権限";
+
 "filter.sensitive" = "機密";
 
 "settings.clearData" = "データを消去";
@@ -653,7 +657,7 @@
 
 /* Accessibility - Lost Permission */
 "accessibility.lost.later" = "後で";
-"accessibility.lost.message" = "アプリのアップデート後、macOSは再認証を必要とします。システム設定を開き、まずアクセシビリティリストからPasteMemoを削除（選択してマイナスをクリック）し、次にプラスをクリックして再追加してください。";
+"accessibility.lost.message" = "アプリのアップデート後、macOS は再認証を要求します。「アクセシビリティ設定を開く」をクリックしたあと、リストで既存の PasteMemo を選択して − をクリックして削除し、フローティングパネルから新しいバージョンをドラッグしてください。";
 "accessibility.lost.title" = "アクセシビリティ権限が必要です";
 
 /* Automation Window */
