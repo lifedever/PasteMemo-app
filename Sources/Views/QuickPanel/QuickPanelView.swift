@@ -1309,8 +1309,12 @@ struct QuickPanelView: View {
                    textView.hasMarkedText() {
                     return event
                 }
-                let hasOption = event.modifierFlags.contains(.option)
-                if hasOption, !isMultiSelected, let item = currentItem, canPasteAndDestroy(item) {
+                // ⌘⇧↩ is the one-shot "paste and destroy" shortcut, gated to
+                // single-selection items that aren't pinned / favourited / in a
+                // preserved group. The check runs before the hasCmd branch below
+                // so shift isn't swallowed by the plain hasCmd path.
+                if hasCmd, hasShift, !isMultiSelected,
+                   let item = currentItem, canPasteAndDestroy(item) {
                     handlePasteAndDestroy(item: item)
                     return nil
                 }

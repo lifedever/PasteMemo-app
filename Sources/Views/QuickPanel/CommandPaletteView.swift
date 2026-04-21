@@ -68,10 +68,7 @@ enum CommandAction: Hashable {
     var shortcutKey: String? {
         switch self {
         case .paste: "V"
-        // pasteAndDestroy binds to ⌥↩ (a chord, not a single letter), so the
-        // row's shortcut pill renders the chord glyph via `shortcutGlyph` below
-        // rather than a letter here.
-        case .pasteAndDestroy: nil
+        case .pasteAndDestroy: "B"
         case .cmdEnter: "P"
         case .copyColorFormat: "P"
         case .retryOCR: "Y"
@@ -88,21 +85,10 @@ enum CommandAction: Hashable {
         }
     }
 
-    /// Optional chord-style glyph to show when `shortcutKey` is nil. Used by
-    /// commands whose invocation is a modifier combo rather than a bare letter.
-    var shortcutGlyph: String? {
-        switch self {
-        case .pasteAndDestroy: "⌥↩"
-        default: nil
-        }
-    }
-
     var keyCode: Int? {
         switch self {
         case .paste: 9       // V
-        // pasteAndDestroy doesn't register a single-letter shortcut — it's
-        // handled explicitly in the palette's Option+Enter branch.
-        case .pasteAndDestroy: nil
+        case .pasteAndDestroy: 11 // B
         case .cmdEnter: 35   // P
         case .copyColorFormat: 35 // P
         case .retryOCR: 16   // Y
@@ -284,13 +270,7 @@ struct CommandPaletteContent: View {
                 .lineLimit(1)
                 .truncationMode(.tail)
             Spacer()
-            if let glyph = action.shortcutGlyph {
-                // Chord-style shortcuts (e.g. ⌥↩) need more room than a single
-                // letter pill, so render them as inline secondary text instead.
-                Text(glyph)
-                    .font(.system(size: 10, weight: .medium))
-                    .foregroundStyle(.secondary)
-            } else if let key = action.shortcutKey ?? ruleDigit {
+            if let key = action.shortcutKey ?? ruleDigit {
                 Text(key)
                     .font(.system(size: 9, weight: .medium, design: .monospaced))
                     .foregroundStyle(.secondary)
@@ -344,13 +324,7 @@ struct CommandPaletteContent: View {
                     return nil
                 }
                 return event
-            case 36: // Enter / ⌥Enter
-                if event.modifierFlags.contains(.option), canPasteAndDestroy {
-                    execute(.pasteAndDestroy)
-                } else {
-                    execute(actions[selectedIndex])
-                }
-                return nil
+            case 36: execute(actions[selectedIndex]); return nil // Enter
             default:
                 if let match = actions.first(where: { $0.keyCode == code }) {
                     execute(match); return nil
