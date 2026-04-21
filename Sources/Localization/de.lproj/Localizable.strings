@@ -800,3 +800,8 @@ Verwenden Sie %@ zum Einfügen.";
 "quick.ocrMatch" = "Treffer im erkannten Text";
 "cmd.openInPreview" = "In Vorschau öffnen";
 "cmd.retryOCR" = "OCR erneut ausführen";
+
+/* Review */
+"detail.review" = "Review";
+"detail.review.autosave" = "Automatisch gespeichert";
+"detail.richText.editWarning" = "Beim Bearbeiten wird Rich-Text in Klartext umgewandelt.";

@@ -816,3 +816,8 @@
 "quick.ocrMatch" = "인식된 텍스트에서 일치";
 "cmd.openInPreview" = "미리보기로 열기";
 "cmd.retryOCR" = "OCR 다시 시도";
+
+/* Review */
+"detail.review" = "리뷰";
+"detail.review.autosave" = "자동 저장";
+"detail.richText.editWarning" = "편집하면 리치 텍스트가 일반 텍스트로 변환됩니다.";

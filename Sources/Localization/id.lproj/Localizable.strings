@@ -788,3 +788,8 @@ Gunakan %@ untuk menempel satu per satu.";
 "quick.ocrMatch" = "Cocok di teks hasil OCR";
 "cmd.openInPreview" = "Buka di Pratinjau";
 "cmd.retryOCR" = "Coba lagi OCR";
+
+/* Review */
+"detail.review" = "Ulasan";
+"detail.review.autosave" = "Tersimpan otomatis";
+"detail.richText.editWarning" = "Mengedit akan mengonversi rich text menjadi teks biasa.";

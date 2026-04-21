@@ -1,6 +1,7 @@
 import SwiftUI
 import AVFoundation
 import AppKit
+import SwiftData
 
 struct QuickPreviewPane: View {
     let item: ClipItem
@@ -9,6 +10,9 @@ struct QuickPreviewPane: View {
     @State private var allowHeavyPreview = false
     @State private var webPreviewReady = false
     @State private var cachedCodeSummary: CodePreviewSummary?
+    @State private var reviewDraft = ""
+    @State private var reviewBoundItemID = ""
+    @State private var reviewAutosaveTask: Task<Void, Never>?
 
     struct CodePreviewSummary: Equatable {
         let language: CodeLanguage
@@ -101,6 +105,16 @@ struct QuickPreviewPane: View {
             propertiesSection
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .onAppear { loadReviewFromCurrentItem() }
+        .onDisappear {
+            flushReviewDraft(notify: true)
+            reviewAutosaveTask?.cancel()
+            reviewAutosaveTask = nil
+        }
+        .onChange(of: item.persistentModelID) {
+            flushReviewDraft(notify: true)
+            loadReviewFromCurrentItem()
+        }
         .task(id: item.persistentModelID) {
             allowHeavyPreview = false
             webPreviewReady = false
@@ -801,11 +815,92 @@ struct QuickPreviewPane: View {
     // MARK: - Properties
 
     private var propertiesSection: some View {
-        ClipPropertiesView(item: item, fontSize: 11) { path in
-            NSWorkspace.shared.selectFile(nil, inFileViewerRootedAtPath: path)
-            QuickPanelWindowController.shared.dismiss()
+        VStack(spacing: 6) {
+            ClipPropertiesView(item: item, fontSize: 11) { path in
+                NSWorkspace.shared.selectFile(nil, inFileViewerRootedAtPath: path)
+                QuickPanelWindowController.shared.dismiss()
+            }
+            reviewSection
         }
         .padding(.horizontal, 20)
         .padding(.vertical, 6)
+    }
+
+    private var reviewSection: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack {
+                Text(L10n.tr("detail.review"))
+                    .font(.system(size: 11, weight: .semibold))
+                Spacer()
+                Text(L10n.tr("detail.review.autosave"))
+                    .font(.system(size: 10))
+                    .foregroundStyle(.secondary)
+            }
+            NativeTextView(
+                text: reviewDraft,
+                isEditable: true,
+                onTextChange: { newText in
+                    reviewDraft = newText
+                    scheduleReviewAutosave()
+                }
+            )
+            .frame(minHeight: 64, maxHeight: 104)
+            .background(
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(Color.primary.opacity(0.04))
+            )
+        }
+    }
+
+    private func loadReviewFromCurrentItem() {
+        reviewAutosaveTask?.cancel()
+        reviewAutosaveTask = nil
+        reviewBoundItemID = item.itemID
+        reviewDraft = item.review ?? ""
+    }
+
+    private func scheduleReviewAutosave() {
+        let targetItemID = reviewBoundItemID
+        let snapshot = reviewDraft
+        reviewAutosaveTask?.cancel()
+        reviewAutosaveTask = Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(350))
+            guard !Task.isCancelled else { return }
+            persistReview(itemID: targetItemID, text: snapshot, notify: true)
+            reviewAutosaveTask = nil
+        }
+    }
+
+    private func flushReviewDraft(notify: Bool) {
+        reviewAutosaveTask?.cancel()
+        reviewAutosaveTask = nil
+        persistReview(itemID: reviewBoundItemID, text: reviewDraft, notify: notify)
+    }
+
+    private func persistReview(itemID: String, text: String, notify: Bool) {
+        guard !itemID.isEmpty else { return }
+        guard let context = item.modelContext else { return }
+        let normalized = text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : text
+
+        if item.itemID == itemID {
+            guard item.review != normalized else { return }
+            item.review = normalized
+            if notify {
+                ClipItemStore.saveAndNotifyContent(context)
+            } else {
+                try? context.save()
+            }
+            return
+        }
+
+        let descriptor = FetchDescriptor<ClipItem>(predicate: #Predicate { $0.itemID == itemID })
+        guard let boundItem = try? context.fetch(descriptor).first else { return }
+        guard boundItem.review != normalized else { return }
+        boundItem.review = normalized
+        if notify {
+            ClipItemStore.saveAndNotifyContent(context)
+        } else {
+            try? context.save()
+        }
     }
 }

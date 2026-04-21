@@ -818,3 +818,8 @@ Utilisez %@ pour coller un par un.";
 "quick.ocrMatch" = "Correspondance dans le texte reconnu";
 "cmd.openInPreview" = "Ouvrir dans Aperçu";
 "cmd.retryOCR" = "Relancer l'OCR";
+
+/* Review */
+"detail.review" = "Revue";
+"detail.review.autosave" = "Enregistrement automatique";
+"detail.richText.editWarning" = "La modification convertira le texte enrichi en texte brut.";

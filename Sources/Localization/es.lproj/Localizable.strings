@@ -818,3 +818,8 @@ Usa %@ para pegar uno por uno.";
 "quick.ocrMatch" = "Coincidencia en el texto reconocido";
 "cmd.openInPreview" = "Abrir en Vista Previa";
 "cmd.retryOCR" = "Reintentar OCR";
+
+/* Review */
+"detail.review" = "Reseña";
+"detail.review.autosave" = "Guardado automático";
+"detail.richText.editWarning" = "Editar convertirá el texto enriquecido en texto plano.";

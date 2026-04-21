@@ -765,3 +765,8 @@
 "onboarding.analytics.title" = "使用统计";
 "onboarding.analytics.desc" = "发送匿名使用数据（应用版本、系统语言、macOS 版本）帮助改进 PasteMemo。不采集任何个人信息。";
 "onboarding.analytics.hint" = "你可以随时在 设置 → 隐私 中更改。";
+
+/* Review */
+"detail.review" = "回顾";
+"detail.review.autosave" = "自动保存";
+"detail.richText.editWarning" = "编辑将去富文本转纯文本。";

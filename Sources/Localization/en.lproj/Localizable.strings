@@ -765,3 +765,8 @@
 "onboarding.analytics.title" = "Usage Statistics";
 "onboarding.analytics.desc" = "Help improve PasteMemo by sending anonymous usage data including app version, system language, and macOS version. No personal data is collected.";
 "onboarding.analytics.hint" = "You can change this anytime in Settings → Privacy.";
+
+/* Review */
+"detail.review" = "Review";
+"detail.review.autosave" = "Auto-saved";
+"detail.richText.editWarning" = "Editing will convert rich text to plain text.";

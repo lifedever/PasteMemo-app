@@ -788,3 +788,8 @@
 "quick.ocrMatch" = "Совпадение в распознанном тексте";
 "cmd.openInPreview" = "Открыть в Просмотре";
 "cmd.retryOCR" = "Повторить OCR";
+
+/* Review */
+"detail.review" = "Обзор";
+"detail.review.autosave" = "Автосохранение";
+"detail.richText.editWarning" = "При редактировании форматированный текст будет преобразован в обычный текст.";

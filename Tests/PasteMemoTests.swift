@@ -265,6 +265,15 @@ struct PasteMemoTests {
         #expect(exported.ocrVersion == 2)
     }
 
+    @Test("DataPorter preserves review text")
+    @MainActor func dataPorterPreservesReview() {
+        let clip = ClipItem(content: "hello", contentType: .text)
+        clip.review = "remember this clip"
+
+        let exported = DataPorter.buildSingleExportItem(clip)
+        #expect(exported.review == "remember this clip")
+    }
+
     @Test("DataPorter v2 round-trips groups and user rules, skipping built-in rules")
     @MainActor func dataPorterRoundTripsGroupsAndRules() throws {
         let sourceContainer = try ModelContainer(

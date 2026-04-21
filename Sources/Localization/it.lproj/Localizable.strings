@@ -778,3 +778,8 @@ Usa %@ per incollare uno per uno.";
 "quick.ocrMatch" = "Corrispondenza nel testo riconosciuto";
 "cmd.openInPreview" = "Apri in Anteprima";
 "cmd.retryOCR" = "Riprova OCR";
+
+/* Review */
+"detail.review" = "Revisione";
+"detail.review.autosave" = "Salvataggio automatico";
+"detail.richText.editWarning" = "La modifica convertirà il testo ricco in testo semplice.";

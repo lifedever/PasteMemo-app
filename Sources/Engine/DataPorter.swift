@@ -20,6 +20,7 @@ struct ExportItem: Codable {
     let faviconDataBase64: String?
     let richTextDataBase64: String?
     let richTextType: String?
+    let review: String?
     let groupName: String?
     let ocrText: String?
     let ocrStatus: String?
@@ -231,6 +232,7 @@ enum DataPorter {
             faviconDataBase64: clip.faviconData?.base64EncodedString(),
             richTextDataBase64: clip.richTextData?.base64EncodedString(),
             richTextType: clip.richTextType,
+            review: clip.review,
             groupName: clip.groupName,
             ocrText: clip.ocrText,
             ocrStatus: clip.ocrStatus,
@@ -299,7 +301,8 @@ enum DataPorter {
             lastUsedAt: exportItem.lastUsedAt,
             codeLanguage: exportItem.codeLanguage,
             richTextData: exportItem.richTextDataBase64.flatMap { Data(base64Encoded: $0) },
-            richTextType: exportItem.richTextType
+            richTextType: exportItem.richTextType,
+            review: exportItem.review
         )
         clip.sourceAppBundleID = exportItem.sourceAppBundleID
         clip.isSensitive = exportItem.isSensitive

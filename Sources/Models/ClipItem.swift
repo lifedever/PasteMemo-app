@@ -156,6 +156,8 @@ final class ClipItem {
     /// paste behaviour — the target app (Word, Mail, browsers, etc.) picks whichever UTI it
     /// prefers. Nil for simple text/image/file clips where full-fidelity isn't needed.
     @Attribute(.externalStorage) var pasteboardSnapshot: Data?
+    /// User-authored review/notes for this clip item. Nil/empty means no review.
+    var review: String?
     var groupName: String?
     var ocrText: String?
     var ocrStatus: String = OCRStatus.skipped.rawValue
@@ -178,7 +180,8 @@ final class ClipItem {
         richTextData: Data? = nil,
         richTextType: String? = nil,
         filePaths: String? = nil,
-        pasteboardSnapshot: Data? = nil
+        pasteboardSnapshot: Data? = nil,
+        review: String? = nil
     ) {
         self.content = content
         self.contentTypeRaw = contentType.rawValue
@@ -194,6 +197,7 @@ final class ClipItem {
         self.richTextType = richTextType
         self.filePaths = filePaths
         self.pasteboardSnapshot = pasteboardSnapshot
+        self.review = review
         self.displayTitle = Self.buildTitle(content: content, contentType: contentType, imageData: imageData, filePaths: filePaths)
         if (contentType == .image || contentType == .mixed), imageData != nil {
             self.ocrStatus = OCRStatus.pending.rawValue

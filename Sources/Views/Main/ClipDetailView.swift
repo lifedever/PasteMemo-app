@@ -1,6 +1,7 @@
 import SwiftUI
 import AppKit
 import AVFoundation
+import SwiftData
 
 struct ClipDetailView: View {
     let item: ClipItem
@@ -10,11 +11,13 @@ struct ClipDetailView: View {
     @State private var isEditing = false
     @State private var editingContent = ""
     @State private var isOCRExpanded = false
+    @State private var reviewDraft = ""
+    @State private var reviewBoundItemID = ""
+    @State private var reviewAutosaveTask: Task<Void, Never>?
     @AppStorage(OCRTaskCoordinator.enableOCRKey) private var ocrEnabled = true
 
     private var isEditableType: Bool {
-        (item.contentType == .text || item.contentType == .code)
-            && item.richTextData == nil
+        item.contentType == .text || item.contentType == .code
     }
 
     @ViewBuilder
@@ -45,10 +48,20 @@ struct ClipDetailView: View {
             }
 
             propertiesCard
+            Divider().opacity(0.3)
+            reviewCard
+        }
+        .onAppear { loadReviewFromCurrentItem() }
+        .onDisappear {
+            flushReviewDraft(notify: true)
+            reviewAutosaveTask?.cancel()
+            reviewAutosaveTask = nil
         }
         .onChange(of: item.persistentModelID) {
+            flushReviewDraft(notify: true)
             if isEditing { cancelEdit() }
             isOCRExpanded = false
+            loadReviewFromCurrentItem()
         }
         } // isDeleted guard
     }
@@ -235,6 +248,10 @@ struct ClipDetailView: View {
 
     private func saveEdit() {
         item.content = editingContent
+        if item.richTextData != nil {
+            item.richTextData = nil
+            item.richTextType = nil
+        }
         item.displayTitle = ClipItem.buildTitle(
             content: item.content,
             contentType: item.contentType,
@@ -245,6 +262,7 @@ struct ClipDetailView: View {
             sourceAppBundleID: nil,
             contentType: item.contentType
         )
+        ClipItemStore.saveAndNotifyContent(modelContext)
         isEditing = false
         textRefreshID = UUID()
     }
@@ -316,12 +334,19 @@ struct ClipDetailView: View {
     }
 
     private var editableTextPreview: some View {
-        NativeTextView(
-            text: editingContent,
-            isEditable: true,
-            onTextChange: { editingContent = $0 }
-        )
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        VStack(alignment: .leading, spacing: 8) {
+            if item.richTextData != nil {
+                Label(L10n.tr("detail.richText.editWarning"), systemImage: "exclamationmark.triangle.fill")
+                    .font(.system(size: 12))
+                    .foregroundStyle(.orange)
+            }
+            NativeTextView(
+                text: editingContent,
+                isEditable: true,
+                onTextChange: { editingContent = $0 }
+            )
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
     }
 
     @State private var textRefreshID = UUID()
@@ -618,6 +643,86 @@ struct ClipDetailView: View {
         .padding(.horizontal, 16)
         .padding(.vertical, 8)
         .background(Color.clear)
+    }
+
+    private var reviewCard: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack {
+                Text(L10n.tr("detail.review"))
+                    .font(.system(size: 12, weight: .semibold))
+                Spacer()
+                Text(L10n.tr("detail.review.autosave"))
+                    .font(.system(size: 11))
+                    .foregroundStyle(.secondary)
+            }
+
+            NativeTextView(
+                text: reviewDraft,
+                isEditable: true,
+                onTextChange: { newText in
+                    reviewDraft = newText
+                    scheduleReviewAutosave()
+                }
+            )
+            .frame(minHeight: 88, maxHeight: 140)
+            .background(
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(Color.primary.opacity(0.04))
+            )
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
+    }
+
+    private func loadReviewFromCurrentItem() {
+        reviewAutosaveTask?.cancel()
+        reviewAutosaveTask = nil
+        reviewBoundItemID = item.itemID
+        reviewDraft = item.review ?? ""
+    }
+
+    private func scheduleReviewAutosave() {
+        let targetItemID = reviewBoundItemID
+        let snapshot = reviewDraft
+        reviewAutosaveTask?.cancel()
+        reviewAutosaveTask = Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(350))
+            guard !Task.isCancelled else { return }
+            persistReview(itemID: targetItemID, text: snapshot, notify: true)
+            reviewAutosaveTask = nil
+        }
+    }
+
+    private func flushReviewDraft(notify: Bool) {
+        reviewAutosaveTask?.cancel()
+        reviewAutosaveTask = nil
+        persistReview(itemID: reviewBoundItemID, text: reviewDraft, notify: notify)
+    }
+
+    private func persistReview(itemID: String, text: String, notify: Bool) {
+        guard !itemID.isEmpty else { return }
+        let normalized = text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : text
+
+        if item.itemID == itemID {
+            guard item.review != normalized else { return }
+            item.review = normalized
+            if notify {
+                ClipItemStore.saveAndNotifyContent(modelContext)
+            } else {
+                try? modelContext.save()
+            }
+            return
+        }
+
+        let descriptor = FetchDescriptor<ClipItem>(predicate: #Predicate { $0.itemID == itemID })
+        guard let boundItem = try? modelContext.fetch(descriptor).first else { return }
+        guard boundItem.review != normalized else { return }
+        boundItem.review = normalized
+        if notify {
+            ClipItemStore.saveAndNotifyContent(modelContext)
+        } else {
+            try? modelContext.save()
+        }
     }
 
     private var ocrCard: some View {

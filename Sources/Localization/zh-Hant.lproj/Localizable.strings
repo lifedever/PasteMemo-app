@@ -776,3 +776,8 @@
 "quick.ocrMatch" = "命中辨識文字";
 "cmd.openInPreview" = "用「預覽」打開";
 "cmd.retryOCR" = "重新辨識 OCR";
+
+/* Review */
+"detail.review" = "回顧";
+"detail.review.autosave" = "自動儲存";
+"detail.richText.editWarning" = "編輯將移除富文本格式並轉為純文字。";
