@@ -303,36 +303,58 @@ final class ClipboardManager: ObservableObject {
     /// Protects the database from pathological clipboards (huge embedded PDFs, etc.).
     private static let MAX_SNAPSHOT_BYTES = 50 * 1024 * 1024
 
+    /// Office-internal UTI prefixes that we never want on the pasteboard when PasteMemo
+    /// writes back. Word paste hijacks into its private internal clipboard whenever any
+    /// `com.microsoft.*` type is present and ignores NSPasteboard — so every paste
+    /// replays whatever Word last copied itself instead of our content (issue #28).
+    /// Maccy, the most popular OSS macOS clipboard manager, takes the same approach.
+    /// Stripping here is harmless for non-Word targets (they ignore these types) and
+    /// essential for Word: without the MS types, Word falls back to the standard
+    /// `public.rtf` / `public.html` path. Bold / color / font size survive; only
+    /// Word-internal object references are lost.
+    private static let OFFICE_PRIVATE_TYPE_PREFIXES: [String] = [
+        "com.microsoft."
+    ]
+
+    /// Returns true when the given UTI is an Office-private type that would trigger
+    /// Word's internal-clipboard hijack.
+    private static func isOfficePrivateType(_ rawType: String) -> Bool {
+        OFFICE_PRIVATE_TYPE_PREFIXES.contains { rawType.hasPrefix($0) }
+    }
+
     /// Captures every type on the pasteboard as a binary-plist dictionary. Returns nil if
     /// nothing readable is available, or if the total size exceeds MAX_SNAPSHOT_BYTES.
     /// Replaying this via `restorePasteboardSnapshot` reproduces the original pasteboard
     /// verbatim — that's how we achieve system-native paste in rich-content apps (Word,
     /// Mail, browsers, Notes) that pick UTIs outside the small set we decode ourselves.
+    ///
+    /// Office-private types are dropped at capture time so they never land in the
+    /// database; see `OFFICE_PRIVATE_TYPE_PREFIXES` for rationale.
     private func capturePasteboardSnapshot(from pasteboard: NSPasteboard) -> Data? {
         guard let types = pasteboard.types, !types.isEmpty else { return nil }
-        // When Word exposes a cross-reference or bookmark on the pasteboard it advertises
-        // both `com.microsoft.LinkSource` and `com.microsoft.ObjectLink`, plus a `.pdf`
-        // representation that is NOT the paragraph content but a bookmark-link PDF.
-        // Targets that pick PDF first (Word itself, Pages, Preview) would paste that link
-        // image instead of the actual text. Drop all three when the bookmark pair is
-        // present; the regular public.rtf / public.html representations survive and carry
-        // the real content.
+        // Detect Word cross-reference/bookmark copy BEFORE the blanket com.microsoft.*
+        // strip below removes the link markers. When Word places a bookmark link on
+        // the pasteboard, the .pdf representation is a bookmark-link image rather
+        // than real paragraph content; targets that pick PDF first (Pages, Preview)
+        // would paste the link image instead of text. Drop the .pdf in that case
+        // so targets fall through to public.rtf / public.html.
         let msLinkSource = NSPasteboard.PasteboardType("com.microsoft.LinkSource")
         let msObjectLink = NSPasteboard.PasteboardType("com.microsoft.ObjectLink")
         let isWordBookmarkCopy = types.contains(msLinkSource) && types.contains(msObjectLink)
-        let droppedTypes: Set<NSPasteboard.PasteboardType> = isWordBookmarkCopy
-            ? [msLinkSource, msObjectLink, .pdf]
-            : []
         var dict: [String: Data] = [:]
         var totalBytes = 0
         for type in types {
             // Skip `dyn.*` aliases — macOS auto-generates them for legacy pasteboard
             // type names (e.g. `TelegramTextPboardType` also surfaces as `dyn.ah62d4rv4gu8...`).
-            // Both point to identical bytes, so keeping them doubles the stored size with no
-            // benefit: the original legacy name is already in the `types` list and is what
-            // source apps read back during paste.
+            // Both point to identical bytes, so keeping them doubles the stored size
+            // with no benefit.
             if type.rawValue.hasPrefix("dyn.") { continue }
-            if droppedTypes.contains(type) { continue }
+            // Drop Office-private types unconditionally (issue #28) — Word's internal
+            // clipboard hijack reads these and ignores NSPasteboard. This also removes
+            // the LinkSource + ObjectLink pair.
+            if Self.isOfficePrivateType(type.rawValue) { continue }
+            // In a Word bookmark copy, also drop the bogus bookmark-link PDF.
+            if isWordBookmarkCopy, type == .pdf { continue }
             guard let data = pasteboard.data(forType: type) else { continue }
             totalBytes += data.count
             if totalBytes > Self.MAX_SNAPSHOT_BYTES { return nil }
@@ -346,30 +368,16 @@ final class ClipboardManager: ObservableObject {
     /// on success (caller should skip any legacy per-type writes); false on malformed/empty
     /// snapshots so the caller can fall through to the fallback path.
     ///
-    /// - Parameter stripPrivatePrefixes: if non-empty, entries whose UTI starts with any
-    ///   of the given prefixes are dropped before writing. Used to work around Word's
-    ///   internal-clipboard hijack of `com.microsoft.*` types (issue #28): with those
-    ///   types present, Word paste reads from its private cache and ignores our writes;
-    ///   without them, Word falls back to the standard `public.rtf` / `public.html` path.
+    /// Office-private types are stripped on restore as well — defensively, in case the
+    /// snapshot was captured by an older build before capture-time filtering existed.
     @discardableResult
-    func restorePasteboardSnapshot(
-        _ data: Data,
-        to pasteboard: NSPasteboard,
-        stripPrivatePrefixes: [String] = []
-    ) -> Bool {
+    func restorePasteboardSnapshot(_ data: Data, to pasteboard: NSPasteboard) -> Bool {
         guard
             let plist = try? PropertyListSerialization.propertyList(from: data, options: [], format: nil),
             let dict = plist as? [String: Data],
             !dict.isEmpty
         else { return false }
-        let filteredDict: [String: Data]
-        if stripPrivatePrefixes.isEmpty {
-            filteredDict = dict
-        } else {
-            filteredDict = dict.filter { pair in
-                !stripPrivatePrefixes.contains(where: { pair.key.hasPrefix($0) })
-            }
-        }
+        let filteredDict = dict.filter { !Self.isOfficePrivateType($0.key) }
         guard !filteredDict.isEmpty else { return false }
         pasteboard.clearContents()
         for (typeRaw, bytes) in filteredDict {
@@ -794,6 +802,9 @@ final class ClipboardManager: ObservableObject {
         // Exception: if the target is a plain-text-only app (terminals, editors), skip the
         // snapshot — it might carry file URLs / images the target can't use, and the text-only
         // fallback below picks the best textual representation.
+        //
+        // `restorePasteboardSnapshot` itself drops Office-private types (issue #28) so Word
+        // paste doesn't get hijacked by its private internal clipboard.
         if !textOnly, let snapshot = item.pasteboardSnapshot,
            restorePasteboardSnapshot(snapshot, to: pasteboard) {
             lastChangeCount = pasteboard.changeCount
