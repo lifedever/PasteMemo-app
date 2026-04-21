@@ -13,6 +13,7 @@ enum RelayPaster {
         let pasteboard = NSPasteboard.general
         pasteboard.clearContents()
         pasteboard.setString(transformed, forType: .string)
+        pasteboard.markAsPasteMemoWrite()
         monitor.skipNextChange()
         try? await Task.sleep(for: PASTE_DELAY)
         simulateCommandV()
@@ -30,6 +31,7 @@ enum RelayPaster {
             pasteboard.setData(data, forType: .png)
             pasteboard.setData(data, forType: .tiff)
         }
+        pasteboard.markAsPasteMemoWrite()
         monitor.skipNextChange()
         try? await Task.sleep(for: PASTE_DELAY)
         simulateCommandV()
@@ -59,6 +61,7 @@ enum RelayPaster {
         let pboardType = NSPasteboard.PasteboardType("NSFilenamesPboardType")
         pasteboard.setPropertyList(paths, forType: pboardType)
 
+        pasteboard.markAsPasteMemoWrite()
         monitor.skipNextChange()
         try? await Task.sleep(for: PASTE_DELAY)
         simulateCommandV()
@@ -73,6 +76,7 @@ enum RelayPaster {
     static func pasteSnapshot(_ snapshot: Data, monitor: RelayClipboardMonitor) async {
         let pasteboard = NSPasteboard.general
         _ = ClipboardManager.shared.restorePasteboardSnapshot(snapshot, to: pasteboard)
+        pasteboard.markAsPasteMemoWrite()
         monitor.skipNextChange()
         try? await Task.sleep(for: PASTE_DELAY)
         simulateCommandV()

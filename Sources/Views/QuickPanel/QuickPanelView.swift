@@ -1435,6 +1435,8 @@ struct QuickPanelView: View {
             let pasteboard = NSPasteboard.general
             pasteboard.clearContents()
             pasteboard.setString(format, forType: .string)
+            // No marker / lastChangeCount update: we want auto-capture to persist the
+            // formatted color as a new history entry (or dedup/update the existing one).
             showCopiedToast = true
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { showCopiedToast = false }
         case .showInFinder:
@@ -1611,6 +1613,7 @@ struct QuickPanelView: View {
             let pasteboard = NSPasteboard.general
             pasteboard.clearContents()
             clipboardManager.writeFileURLsToPasteboard(pasteboard, paths: allPaths)
+            pasteboard.markAsPasteMemoWrite()
             clipboardManager.lastChangeCount = pasteboard.changeCount
         }
 
@@ -1645,6 +1648,7 @@ struct QuickPanelView: View {
         pasteboard.clearContents()
         let merged = items.map(\.content).joined(separator: "\n")
         pasteboard.setString(merged, forType: .string)
+        pasteboard.markAsPasteMemoWrite()
         clipboardManager.lastChangeCount = pasteboard.changeCount
         bumpLastUsedPreservingOrder(items)
 
@@ -1921,6 +1925,7 @@ struct QuickPanelView: View {
             let pasteboard = NSPasteboard.general
             pasteboard.clearContents()
             pasteboard.setString(item.content, forType: .string)
+            pasteboard.markAsPasteMemoWrite()
             clipboardManager.lastChangeCount = pasteboard.changeCount
         } else {
             clipboardManager.writeToPasteboard(item)
@@ -2043,6 +2048,7 @@ struct QuickPanelView: View {
         let pasteboard = NSPasteboard.general
         pasteboard.clearContents()
         pasteboard.setData(imageData, forType: .tiff)
+        pasteboard.markAsPasteMemoWrite()
         clipboardManager.lastChangeCount = pasteboard.changeCount
         SoundManager.playPaste()
 
@@ -2067,6 +2073,7 @@ struct QuickPanelView: View {
         let pasteboard = NSPasteboard.general
         pasteboard.clearContents()
         pasteboard.setString(item.content, forType: .string)
+        pasteboard.markAsPasteMemoWrite()
         clipboardManager.lastChangeCount = pasteboard.changeCount
         SoundManager.playPaste()
 

@@ -111,6 +111,11 @@ final class ClipboardManager: ObservableObject {
         let pasteboard = NSPasteboard.general
         guard pasteboard.changeCount != lastChangeCount else { return }
         lastChangeCount = pasteboard.changeCount
+        // Defensive fallback: even if `lastChangeCount` was knocked out of sync by a
+        // third-party clipboard manager writing between our setData and our baseline
+        // update, the self-write marker still identifies this change as ours and we
+        // skip capturing a duplicate history entry.
+        if pasteboard.isPasteMemoWrite { return }
         captureAndSave()
     }
 
@@ -349,6 +354,11 @@ final class ClipboardManager: ObservableObject {
             // Both point to identical bytes, so keeping them doubles the stored size
             // with no benefit.
             if type.rawValue.hasPrefix("dyn.") { continue }
+            // Never persist the self-write marker in the snapshot. If it ever leaked
+            // into the database, restoring that snapshot would re-apply the marker on
+            // every paste and every subsequent poll would see it as "our write" — a
+            // useless round-trip, and a stale artefact if the marker UTI ever changes.
+            if type == .fromPasteMemo { continue }
             // Drop Office-private types unconditionally (issue #28) — Word's internal
             // clipboard hijack reads these and ignores NSPasteboard. This also removes
             // the LinkSource + ObjectLink pair.
@@ -807,6 +817,7 @@ final class ClipboardManager: ObservableObject {
         // paste doesn't get hijacked by its private internal clipboard.
         if !textOnly, let snapshot = item.pasteboardSnapshot,
            restorePasteboardSnapshot(snapshot, to: pasteboard) {
+            pasteboard.markAsPasteMemoWrite()
             lastChangeCount = pasteboard.changeCount
             skipRelayMonitorIfActive()
             return
@@ -945,6 +956,7 @@ final class ClipboardManager: ObservableObject {
                 writeRichTextData(rtfData, type: item.richTextType, to: pasteboard)
             }
         }
+        pasteboard.markAsPasteMemoWrite()
         lastChangeCount = NSPasteboard.general.changeCount
         skipRelayMonitorIfActive()
     }
@@ -1101,6 +1113,7 @@ final class ClipboardManager: ObservableObject {
                     }
                 }
 
+                pasteboard.markAsPasteMemoWrite()
                 lastChangeCount = pasteboard.changeCount
                 skipRelayMonitorIfActive()
                 try? await Task.sleep(for: PASTE_SIMULATION_DELAY)
@@ -1170,6 +1183,7 @@ final class ClipboardManager: ObservableObject {
         let pasteboard = NSPasteboard.general
         pasteboard.clearContents()
         pasteboard.setString(merged, forType: .string)
+        pasteboard.markAsPasteMemoWrite()
         lastChangeCount = pasteboard.changeCount
         skipRelayMonitorIfActive()
 
@@ -1183,6 +1197,7 @@ final class ClipboardManager: ObservableObject {
         let pasteboard = NSPasteboard.general
         pasteboard.clearContents()
         pasteboard.setString(item.content, forType: .string)
+        pasteboard.markAsPasteMemoWrite()
         lastChangeCount = pasteboard.changeCount
         skipRelayMonitorIfActive()
         SoundManager.playPaste()
