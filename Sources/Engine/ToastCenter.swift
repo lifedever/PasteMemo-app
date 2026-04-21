@@ -16,7 +16,15 @@ final class ToastCenter {
     private var panel: NSPanel?
     private var hostingView: NSHostingView<UnifiedToastView>?
     private var autoDismissTask: Task<Void, Never>?
-    private var undoKeyMonitor: Any?
+    /// Fires when PasteMemo itself has focus. Consumes ⌘Z so the source window
+    /// doesn't also perform its own undo on top of ours.
+    private var undoLocalMonitor: Any?
+    /// Fires when another app has focus. Global monitors cannot consume events,
+    /// so the target app still receives its native ⌘Z (this is desirable for
+    /// paste-and-destroy: the target's paste undoes alongside our history
+    /// restore). The trade-off is that ⌘Z pressed in another app during the
+    /// undo window restores the clip even if the user's intent was unrelated.
+    private var undoGlobalMonitor: Any?
     private var currentDescriptor: ToastDescriptor?
     private var currentAction: (() -> Void)?
     /// Guards against posting the same undo toast twice in a row when an
@@ -159,30 +167,41 @@ final class ToastCenter {
 
     // MARK: - ⌘Z shortcut
 
-    /// Install a local key monitor for ⌘Z when the current toast carries an
-    /// action labelled with a shortcut. Only fires when PasteMemo itself has
-    /// focus — if the user has switched to another app, the Undo button on the
-    /// toast is the fallback path.
+    /// Install both local and global ⌘Z monitors while a toast with an "⌘Z"
+    /// action hint is on screen. Local fires when PasteMemo has focus and
+    /// consumes the event so the source window doesn't double-undo. Global
+    /// fires when another app has focus and does *not* consume the event,
+    /// which is exactly what we want for paste-and-destroy: the target app's
+    /// native ⌘Z rolls back the paste while our callback restores the history
+    /// entry.
     private func refreshUndoShortcut() {
         tearDownUndoShortcut()
         guard let descriptor = currentDescriptor,
               let shortcut = descriptor.action?.shortcut,
               shortcut == "⌘Z"
         else { return }
-        undoKeyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
+        undoLocalMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
             guard let self else { return event }
-            let isCmdZ = event.modifierFlags.intersection(.deviceIndependentFlagsMask) == .command
-                && event.charactersIgnoringModifiers?.lowercased() == "z"
-            guard isCmdZ else { return event }
+            guard Self.isCmdZ(event) else { return event }
             self.invokeAction()
             return nil
+        }
+        undoGlobalMonitor = NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { [weak self] event in
+            guard let self else { return }
+            guard Self.isCmdZ(event) else { return }
+            self.invokeAction()
         }
     }
 
     private func tearDownUndoShortcut() {
-        if let undoKeyMonitor {
-            NSEvent.removeMonitor(undoKeyMonitor)
-        }
-        undoKeyMonitor = nil
+        if let undoLocalMonitor { NSEvent.removeMonitor(undoLocalMonitor) }
+        if let undoGlobalMonitor { NSEvent.removeMonitor(undoGlobalMonitor) }
+        undoLocalMonitor = nil
+        undoGlobalMonitor = nil
+    }
+
+    private static func isCmdZ(_ event: NSEvent) -> Bool {
+        event.modifierFlags.intersection(.deviceIndependentFlagsMask) == .command
+            && event.charactersIgnoringModifiers?.lowercased() == "z"
     }
 }
