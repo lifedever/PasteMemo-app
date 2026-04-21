@@ -512,6 +512,7 @@
 "relay.emptyHint" = "Скопируйте содержимое для добавления в очередь";
 "relay.deleted.recirculated" = "Удалено из реле, сохранено в истории";
 "relay.deleted.undo" = "Отменить";
+"relay.appendedToQueue" = "Добавлено в очередь эстафеты (%d/%d)";
 "relay.queue.heading" = "Очередь %d";
 "relay.quickPastePaused" = "Быстрая вставка приостановлена в режиме эстафеты";
 "relay.expand" = "Развернуть";

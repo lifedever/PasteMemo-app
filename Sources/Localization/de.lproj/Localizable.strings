@@ -423,6 +423,7 @@
 "relay.emptyHint" = "Kopierte Inhalte werden der Warteschlange hinzugefügt";
 "relay.deleted.recirculated" = "Aus Relay entfernt, in Zwischenablage-Verlauf erhalten";
 "relay.deleted.undo" = "Rückgängig";
+"relay.appendedToQueue" = "Zur Relay-Warteschlange hinzugefügt (%d/%d)";
 "relay.queue.heading" = "Warteschlange %d";
 "relay.quickPastePaused" = "Schnelles Einfügen ist im Relay-Modus pausiert";
 "relay.expand" = "Einblenden";

@@ -423,6 +423,7 @@
 "relay.emptyHint" = "복사한 내용이 대기열에 추가됩니다";
 "relay.deleted.recirculated" = "릴레이에서 삭제됨 (클립보드 기록에 유지)";
 "relay.deleted.undo" = "실행 취소";
+"relay.appendedToQueue" = "릴레이 대기열에 추가됨 (%d/%d)";
 "relay.queue.heading" = "대기열 %d";
 "relay.quickPastePaused" = "릴레이 모드에서는 빠른 붙여넣기가 일시 정지됩니다";
 "relay.expand" = "확장";

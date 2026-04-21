@@ -423,6 +423,7 @@
 "relay.emptyHint" = "Copia contenido para añadirlo a la cola";
 "relay.deleted.recirculated" = "Eliminado de relay, guardado en historial del portapapeles";
 "relay.deleted.undo" = "Deshacer";
+"relay.appendedToQueue" = "Añadido a la cola de relevo (%d/%d)";
 "relay.queue.heading" = "Cola %d";
 "relay.quickPastePaused" = "Pegado rápido pausado durante el modo relevo";
 "relay.expand" = "Expandir";

@@ -657,6 +657,7 @@
 "relay.emptyHint" = "Copy something to add to queue";
 "relay.deleted.recirculated" = "Removed from relay, kept in clipboard history";
 "relay.deleted.undo" = "Undo";
+"relay.appendedToQueue" = "Appended to relay queue (%d/%d)";
 "relay.queue.heading" = "Queue %d";
 "relay.quickPastePaused" = "Quick Paste is paused during Relay Mode";
 "relay.expand" = "Expand";

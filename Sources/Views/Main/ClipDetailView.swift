@@ -177,10 +177,7 @@ struct ClipDetailView: View {
 
     private var relayButton: some View {
         Button {
-            RelayManager.shared.enqueue(clipItems: [item])
-            if !RelayManager.shared.isActive {
-                RelayManager.shared.activate()
-            }
+            RelayManager.shared.addToQueue(clipItems: [item])
         } label: {
             Label(L10n.tr("relay.addToQueue"), systemImage: "arrow.right.arrow.left")
                 .font(.system(size: 12))

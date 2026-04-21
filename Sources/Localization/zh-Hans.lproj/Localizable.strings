@@ -658,6 +658,7 @@
 "relay.emptyHint" = "复制内容自动加入队列";
 "relay.deleted.recirculated" = "已从接力删除，保留在剪贴板历史";
 "relay.deleted.undo" = "撤销";
+"relay.appendedToQueue" = "已追加到接力队列（%d/%d）";
 "relay.queue.heading" = "队列 %d";
 "relay.quickPastePaused" = "接力模式下快捷粘贴已暂停";
 "relay.expand" = "展开";

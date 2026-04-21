@@ -71,6 +71,31 @@ final class RelayManager {
         markCurrentIfNeeded()
     }
 
+    /// UI 入口：把 clip 加入接力队列。保证先激活（恢复持久化历史）再追加，避免
+    /// "先 enqueue 再 activate" 导致新 items 被持久化 items 覆盖到后面、产生双 current 的 bug。
+    /// 若本次是追加到已有队列（活跃中 或 从持久化恢复出来的历史），会弹出 toast 提示当前进度。
+    func addToQueue(clipItems: [ClipItem]) {
+        if !isActive {
+            activate()
+        }
+        let hadHistory = !items.isEmpty
+        enqueue(clipItems: clipItems)
+        if hadHistory {
+            GlobalToast.show(L10n.tr("relay.appendedToQueue", currentIndex, items.count))
+        }
+    }
+
+    func addToQueue(texts: [String]) {
+        if !isActive {
+            activate()
+        }
+        let hadHistory = !items.isEmpty
+        enqueue(texts: texts)
+        if hadHistory {
+            GlobalToast.show(L10n.tr("relay.appendedToQueue", currentIndex, items.count))
+        }
+    }
+
     /// Paste current item and advance. Returns the item to paste, or nil if exhausted.
     func advance() -> RelayItem? {
         guard currentIndex < items.count else { return nil }

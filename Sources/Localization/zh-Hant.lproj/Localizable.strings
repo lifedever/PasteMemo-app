@@ -508,6 +508,7 @@
 "relay.emptyHint" = "複製內容自動加入佇列";
 "relay.deleted.recirculated" = "已從接力刪除，保留在剪貼簿歷史";
 "relay.deleted.undo" = "撤銷";
+"relay.appendedToQueue" = "已追加到接力佇列（%d/%d）";
 "relay.queue.heading" = "佇列 %d";
 "relay.quickPastePaused" = "接力模式下快捷貼上已暫停";
 "relay.expand" = "展開";

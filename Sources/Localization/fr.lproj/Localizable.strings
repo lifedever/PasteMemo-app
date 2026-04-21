@@ -423,6 +423,7 @@
 "relay.emptyHint" = "Copiez du contenu pour l'ajouter à la file";
 "relay.deleted.recirculated" = "Retiré du relais, conservé dans l'historique";
 "relay.deleted.undo" = "Annuler";
+"relay.appendedToQueue" = "Ajouté à la file de relais (%d/%d)";
 "relay.queue.heading" = "File %d";
 "relay.quickPastePaused" = "Le collage rapide est en pause pendant le mode relais";
 "relay.expand" = "Déplier";

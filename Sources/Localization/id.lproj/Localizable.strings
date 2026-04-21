@@ -512,6 +512,7 @@
 "relay.emptyHint" = "Salin konten untuk menambahkan ke antrian";
 "relay.deleted.recirculated" = "Dihapus dari relay, disimpan di riwayat clipboard";
 "relay.deleted.undo" = "Urungkan";
+"relay.appendedToQueue" = "Ditambahkan ke antrian relay (%d/%d)";
 "relay.queue.heading" = "Antrian %d";
 "relay.quickPastePaused" = "Tempel cepat dijeda selama mode relay";
 "relay.expand" = "Buka";

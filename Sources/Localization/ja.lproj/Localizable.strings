@@ -439,6 +439,7 @@
 "relay.emptyHint" = "コピーした内容がキューに追加されます";
 "relay.deleted.recirculated" = "リレーから削除（クリップボード履歴に保持）";
 "relay.deleted.undo" = "元に戻す";
+"relay.appendedToQueue" = "リレーキューに追加（%d/%d）";
 "relay.queue.heading" = "キュー %d";
 "relay.quickPastePaused" = "リレーモード中はクイックペーストが一時停止しています";
 "relay.expand" = "展開";

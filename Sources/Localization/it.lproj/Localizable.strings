@@ -506,6 +506,7 @@
 "relay.emptyHint" = "Copia contenuti per aggiungerli alla coda";
 "relay.deleted.recirculated" = "Rimosso dal relay, conservato nella cronologia";
 "relay.deleted.undo" = "Annulla";
+"relay.appendedToQueue" = "Aggiunto alla coda staffetta (%d/%d)";
 "relay.queue.heading" = "Coda %d";
 "relay.quickPastePaused" = "Incolla rapido in pausa durante la modalità staffetta";
 "relay.expand" = "Espandi";
