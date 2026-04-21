@@ -98,6 +98,11 @@ final class ToastCenter {
         action?()
     }
 
+    /// Distance the panel slides during the enter animation. Small enough to
+    /// read as a gentle nudge upward rather than a full tray slide — matches
+    /// the `.move(edge:.bottom)` feel of the original SwiftUI overlay.
+    private static let slideOffset: CGFloat = 14
+
     private func buildPanel(with view: UnifiedToastView) {
         let hosting = NSHostingView(rootView: view)
         hosting.layout()
@@ -119,28 +124,37 @@ final class ToastCenter {
         newPanel.hasShadow = false
         newPanel.contentView = hosting
 
-        reposition(panel: newPanel, contentSize: size)
+        // Start a bit below the resting position and fade in while sliding up,
+        // so the toast has the same "move(edge:.bottom) + opacity" entrance
+        // the original embedded version had.
+        let restingOrigin = restingOrigin(for: newPanel, contentSize: size)
+        newPanel.setFrameOrigin(NSPoint(x: restingOrigin.x, y: restingOrigin.y - Self.slideOffset))
         newPanel.alphaValue = 0
         newPanel.orderFrontRegardless()
 
         NSAnimationContext.runAnimationGroup { ctx in
-            ctx.duration = 0.15
+            ctx.duration = 0.22
+            ctx.timingFunction = CAMediaTimingFunction(name: .easeOut)
             newPanel.animator().alphaValue = 1
+            newPanel.animator().setFrameOrigin(restingOrigin)
         }
 
         panel = newPanel
         hostingView = hosting
     }
 
-    /// Bottom-center of the active screen, a bit above the dock. Matches where
-    /// the old `ClipItemUndoToast` sat when embedded in Quick Panel / Main
-    /// Window so users don't have to retrain their eyes.
-    private func reposition(panel: NSPanel, contentSize: NSSize) {
-        guard let screen = NSScreen.main else { return }
+    /// Bottom-center of the active screen, well above the dock so the toast
+    /// doesn't get crowded by menus, notifications, or the Control Centre pill.
+    private func restingOrigin(for panel: NSPanel, contentSize: NSSize) -> NSPoint {
+        guard let screen = NSScreen.main else { return .zero }
         let frame = screen.visibleFrame
         let x = frame.midX - contentSize.width / 2
-        let y = frame.minY + 40
-        panel.setFrameOrigin(NSPoint(x: x, y: y))
+        let y = frame.minY + 72
+        return NSPoint(x: x, y: y)
+    }
+
+    private func reposition(panel: NSPanel, contentSize: NSSize) {
+        panel.setFrameOrigin(restingOrigin(for: panel, contentSize: contentSize))
     }
 
     // MARK: - ⌘Z shortcut

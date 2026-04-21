@@ -117,7 +117,7 @@ final class DeleteUndoCoordinator {
     /// Keep the undo window long enough that a user who thought "oh wait" has
     /// time to move the pointer to the toast, but short enough that the toast
     /// doesn't feel like a permanent status bar.
-    private let undoWindow: TimeInterval = 8
+    private let undoWindow: TimeInterval = 5
 
     private var expirationTask: Task<Void, Never>?
 
