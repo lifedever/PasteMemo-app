@@ -287,11 +287,6 @@ struct MainWindowView: View {
                 .animation(.easeInOut(duration: 0.2), value: showCopiedToast)
             }
         }
-        .overlay(alignment: .bottom) {
-            ClipItemUndoToast()
-                .padding(.bottom, 20)
-                .animation(.easeOut(duration: 0.2), value: DeleteUndoCoordinator.shared.pending?.expiresAt)
-        }
         .localized()
         .sheet(isPresented: $isClearing) {
             VStack(spacing: 16) {

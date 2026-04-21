@@ -69,22 +69,25 @@ final class ToastCenter {
     }
 
     /// Hide the current toast, if any. No-op when nothing is showing.
+    ///
+    /// The stored references (`panel`, `hostingView`) are cleared synchronously
+    /// so a subsequent `show(_:)` on the same tick always builds a fresh panel
+    /// instead of hijacking the one that's fading out. The old panel's fade-out
+    /// completes in its own animation group and only tears itself down.
     func dismiss() {
         autoDismissTask?.cancel()
         autoDismissTask = nil
         currentDescriptor = nil
         currentAction = nil
         tearDownUndoShortcut()
-        guard let panel else { return }
+        guard let dismissing = panel else { return }
+        panel = nil
+        hostingView = nil
         NSAnimationContext.runAnimationGroup({ ctx in
             ctx.duration = 0.18
-            panel.animator().alphaValue = 0
-        }, completionHandler: { [weak self] in
-            guard let self else { return }
-            panel.orderOut(nil)
-            panel.alphaValue = 1
-            self.panel = nil
-            self.hostingView = nil
+            dismissing.animator().alphaValue = 0
+        }, completionHandler: {
+            dismissing.orderOut(nil)
         })
     }
 

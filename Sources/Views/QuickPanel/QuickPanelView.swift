@@ -231,11 +231,6 @@ struct QuickPanelView: View {
             }
             // Command palette is now shown via popover on the selected row
         }
-        .overlay(alignment: .bottom) {
-            ClipItemUndoToast()
-                .padding(.bottom, 58)
-                .animation(.easeOut(duration: 0.2), value: DeleteUndoCoordinator.shared.pending?.expiresAt)
-        }
         // Floating group suggestions overlay
         if isShowingSuggestions {
             VStack(spacing: 0) {
