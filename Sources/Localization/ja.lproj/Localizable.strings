@@ -150,6 +150,7 @@
 "settings.autoPaste" = "Enterでアプリに直接ペースト";
 "settings.addNewLine" = "ペースト後に改行を追加";
 "settings.quickPanelLaunchAnimation" = "クイックパネル起動アニメーション";
+"settings.confirmSingleDelete" = "Confirm before deleting a single item";
 "settings.quickPanelSecondaryRow" = "クイックパネル検索下に表示";
 "settings.quickPanelSecondaryRow.types" = "タイプ";
 "settings.quickPanelSecondaryRow.groups" = "グループ";

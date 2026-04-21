@@ -353,6 +353,7 @@ struct PreferencesTab: View {
     @AppStorage("showLinkURL") private var showLinkURL = false
     @AppStorage("webPreviewEnabled") private var webPreviewEnabled = true
     @AppStorage("imageLinkPreviewEnabled") private var imageLinkPreviewEnabled = true
+    @AppStorage("confirmSingleDelete") private var confirmSingleDelete = true
     @AppStorage(QuickPanelSettings.launchAnimationEnabledKey) private var quickPanelLaunchAnimationEnabled = true
     @AppStorage(QuickPanelSettings.secondaryRowKey) private var quickPanelSecondaryRow = QuickPanelSecondaryRow.types.rawValue
     @AppStorage(QuickPanelPositionSettings.modeKey) private var quickPanelPositionMode = QuickPanelPositionMode.screenCenter.rawValue
@@ -444,6 +445,7 @@ struct PreferencesTab: View {
                 Toggle(L10n.tr("settings.autoPaste"), isOn: $quickPanelAutoPaste)
                 Toggle(L10n.tr("settings.addNewLine"), isOn: $addNewLineAfterPaste)
                 Toggle(L10n.tr("settings.quickPanelLaunchAnimation"), isOn: $quickPanelLaunchAnimationEnabled)
+                Toggle(L10n.tr("settings.confirmSingleDelete"), isOn: $confirmSingleDelete)
                 Toggle(L10n.tr("settings.showLinkURL"), isOn: $showLinkURL)
                 Toggle(L10n.tr("settings.webPreview"), isOn: $webPreviewEnabled)
                 Toggle(L10n.tr("settings.imageLinkPreview"), isOn: $imageLinkPreviewEnabled)

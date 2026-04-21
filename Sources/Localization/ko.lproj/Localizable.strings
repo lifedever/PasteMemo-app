@@ -142,6 +142,7 @@
 "settings.autoPaste" = "Enter로 앱에 바로 붙여넣기";
 "settings.addNewLine" = "붙여넣기 후 줄바꿈 추가";
 "settings.quickPanelLaunchAnimation" = "빠른 패널 실행 애니메이션";
+"settings.confirmSingleDelete" = "Confirm before deleting a single item";
 "settings.quickPanelSecondaryRow" = "빠른 패널 검색 아래에 표시";
 "settings.quickPanelSecondaryRow.types" = "유형";
 "settings.quickPanelSecondaryRow.groups" = "그룹";

@@ -112,6 +112,7 @@
 "settings.autoPaste" = "Tempel ke app dengan Enter";
 "settings.addNewLine" = "Tambah baris baru setelah tempel";
 "settings.quickPanelLaunchAnimation" = "Animasi peluncuran panel cepat";
+"settings.confirmSingleDelete" = "Confirm before deleting a single item";
 "settings.quickPanelSecondaryRow" = "Tampilkan di bawah pencarian panel cepat";
 "settings.quickPanelSecondaryRow.types" = "Tipe";
 "settings.quickPanelSecondaryRow.groups" = "Grup";

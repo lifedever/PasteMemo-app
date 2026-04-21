@@ -58,6 +58,7 @@ struct MainWindowView: View {
     @State private var cachedVisualOrderedItems: [ClipItem] = []
     @AppStorage("hideDockIcon") private var hideDockIcon = false
     @AppStorage("alwaysOnTop") private var alwaysOnTop = false
+    @AppStorage("confirmSingleDelete") private var confirmSingleDelete = true
 
     private var sourceApps: [String] { store.sourceApps }
 
@@ -1233,12 +1234,14 @@ struct MainWindowView: View {
         let idsToDelete = selectedItems.intersection(visibleIDs)
         guard !idsToDelete.isEmpty else { return }
 
-        let alert = NSAlert()
-        alert.messageText = L10n.tr("action.deleteSelected.confirm", idsToDelete.count)
-        alert.alertStyle = .warning
-        alert.addButton(withTitle: L10n.tr("action.delete"))
-        alert.addButton(withTitle: L10n.tr("action.cancel"))
-        guard alert.runModal() == .alertFirstButtonReturn else { return }
+        if idsToDelete.count > 1 || confirmSingleDelete {
+            let alert = NSAlert()
+            alert.messageText = L10n.tr("action.deleteSelected.confirm", idsToDelete.count)
+            alert.alertStyle = .warning
+            alert.addButton(withTitle: L10n.tr("action.delete"))
+            alert.addButton(withTitle: L10n.tr("action.cancel"))
+            guard alert.runModal() == .alertFirstButtonReturn else { return }
+        }
 
         // Find the lowest index among deleted items for successor selection
         let firstDeletedIdx = items.firstIndex { idsToDelete.contains($0.persistentModelID) }

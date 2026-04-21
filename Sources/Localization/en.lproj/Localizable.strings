@@ -122,6 +122,7 @@
 "settings.autoPaste" = "Paste to App on Enter";
 "settings.addNewLine" = "Add new line after paste";
 "settings.quickPanelLaunchAnimation" = "Quick Panel launch animation";
+"settings.confirmSingleDelete" = "Confirm before deleting a single item";
 "settings.quickPanelSecondaryRow" = "Show below Quick Panel search";
 "settings.quickPanelSecondaryRow.types" = "Types";
 "settings.quickPanelSecondaryRow.groups" = "Groups";

@@ -122,6 +122,7 @@
 "settings.autoPaste" = "回车直接粘贴到应用";
 "settings.addNewLine" = "粘贴后自动换行";
 "settings.quickPanelLaunchAnimation" = "快捷面板启动动画";
+"settings.confirmSingleDelete" = "删除单条记录前确认";
 "settings.quickPanelSecondaryRow" = "快捷面板搜索框下方显示";
 "settings.quickPanelSecondaryRow.types" = "类型";
 "settings.quickPanelSecondaryRow.groups" = "分组";

@@ -112,6 +112,7 @@
 "settings.autoPaste" = "Вставлять в приложение по Enter";
 "settings.addNewLine" = "Добавлять перевод строки после вставки";
 "settings.quickPanelLaunchAnimation" = "Анимация запуска быстрой панели";
+"settings.confirmSingleDelete" = "Confirm before deleting a single item";
 "settings.quickPanelSecondaryRow" = "Показывать под поиском быстрой панели";
 "settings.quickPanelSecondaryRow.types" = "Типы";
 "settings.quickPanelSecondaryRow.groups" = "Группы";

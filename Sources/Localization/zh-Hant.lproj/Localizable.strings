@@ -113,6 +113,7 @@
 "settings.autoPaste" = "按 Enter 直接貼上到應用";
 "settings.addNewLine" = "貼上後自動換行";
 "settings.quickPanelLaunchAnimation" = "快捷面板啟動動畫";
+"settings.confirmSingleDelete" = "刪除單條記錄前確認";
 "settings.quickPanelSecondaryRow" = "快捷面板搜尋框下方顯示";
 "settings.quickPanelSecondaryRow.types" = "類型";
 "settings.quickPanelSecondaryRow.groups" = "分組";

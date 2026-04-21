@@ -58,6 +58,7 @@ struct QuickPanelView: View {
     @State private var cachedItemMap: [PersistentIdentifier: ClipItem] = [:]
     @State private var cachedIDSet: Set<PersistentIdentifier> = []
     @AppStorage("quickPanelAutoPaste") private var quickPanelAutoPaste = true
+    @AppStorage("confirmSingleDelete") private var confirmSingleDelete = true
     @AppStorage(QuickPanelSettings.secondaryRowKey) private var quickPanelSecondaryRowRaw = QuickPanelSecondaryRow.types.rawValue
 
     private var secondaryRow: QuickPanelSecondaryRow {
@@ -1803,6 +1804,14 @@ struct QuickPanelView: View {
 
     private func deleteItems(_ itemsToDelete: [ClipItem]) {
         guard !itemsToDelete.isEmpty else { return }
+        if itemsToDelete.count == 1 && confirmSingleDelete {
+            let alert = NSAlert()
+            alert.messageText = L10n.tr("action.deleteSelected.confirm", 1)
+            alert.alertStyle = .warning
+            alert.addButton(withTitle: L10n.tr("action.delete"))
+            alert.addButton(withTitle: L10n.tr("action.cancel"))
+            guard alert.runModal() == .alertFirstButtonReturn else { return }
+        }
         let items = filteredItems
         let idsToDelete = Set(itemsToDelete.map(\.persistentModelID))
         let firstIdx = items.firstIndex { idsToDelete.contains($0.persistentModelID) }

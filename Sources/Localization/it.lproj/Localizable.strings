@@ -112,6 +112,7 @@
 "settings.autoPaste" = "Incolla nell'app con Invio";
 "settings.addNewLine" = "Aggiungi a capo dopo incolla";
 "settings.quickPanelLaunchAnimation" = "Animazione di avvio del pannello rapido";
+"settings.confirmSingleDelete" = "Confirm before deleting a single item";
 "settings.quickPanelSecondaryRow" = "Mostra sotto la ricerca del pannello rapido";
 "settings.quickPanelSecondaryRow.types" = "Tipi";
 "settings.quickPanelSecondaryRow.groups" = "Gruppi";
