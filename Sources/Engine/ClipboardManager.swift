@@ -205,7 +205,13 @@ final class ClipboardManager: ObservableObject {
         // Parallel capture of every independent representation on the pasteboard.
         // `richText` is attached to text (not counted as an independent representation for .mixed judgement).
         let fileURLs = (pasteboard.readObjects(forClasses: [NSURL.self], options: [.urlReadingFileURLsOnly: true]) as? [URL]) ?? []
-        let rawImageData = pasteboard.data(forType: .png) ?? pasteboard.data(forType: .tiff)
+        // Cover the four standard image UTIs so iPhone photos (HEIC), Safari drags
+        // (often JPEG), and classic screenshots (PNG/TIFF) all get recognised as
+        // images rather than falling through to the file / unknown path.
+        let rawImageData = pasteboard.data(forType: .png)
+            ?? pasteboard.data(forType: NSPasteboard.PasteboardType("public.jpeg"))
+            ?? pasteboard.data(forType: NSPasteboard.PasteboardType("public.heic"))
+            ?? pasteboard.data(forType: .tiff)
         let rawText = pasteboard.string(forType: .string)?.trimmingCharacters(in: .whitespacesAndNewlines)
         let richText = captureRichTextData(from: pasteboard)
 
