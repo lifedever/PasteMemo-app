@@ -489,6 +489,7 @@
 // Tavolozza comandi
 "cmd.title" = "Azioni rapide";
 "cmd.paste" = "Incolla";
+"cmd.pasteAndDestroy" = "Incolla ed elimina";
 "cmd.pasteAsPlainText" = "Incolla come testo";
 "cmd.copyAsPlainText" = "Copia come testo";
 "cmd.copy" = "Copia";

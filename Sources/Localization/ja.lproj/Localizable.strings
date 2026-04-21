@@ -418,6 +418,7 @@
 // コマンドパレット
 "cmd.title" = "クイックアクション";
 "cmd.paste" = "ペースト";
+"cmd.pasteAndDestroy" = "貼り付けて削除";
 "cmd.pasteAsPlainText" = "プレーンテキストでペースト";
 "cmd.copyAsPlainText" = "プレーンテキストとしてコピー";
 "cmd.copy" = "コピー";

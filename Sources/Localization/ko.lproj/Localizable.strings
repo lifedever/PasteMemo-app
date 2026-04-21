@@ -404,6 +404,7 @@
 // 명령 팔레트
 "cmd.title" = "빠른 작업";
 "cmd.paste" = "붙여넣기";
+"cmd.pasteAndDestroy" = "붙여넣기 후 삭제";
 "cmd.pasteAsPlainText" = "일반 텍스트로 붙여넣기";
 "cmd.copyAsPlainText" = "일반 텍스트로 복사";
 "cmd.copy" = "복사";

@@ -630,6 +630,7 @@ struct MainWindowView: View {
                     item: item,
                     isMultiSelected: selectedItems.count > 1,
                     manualRules: manualRulesForPalette(item: item),
+                    preservedGroupNames: SmartGroupRetention.preservedGroupNames(in: modelContext),
                     onAction: { handleMainCommandAction($0, item: item) },
                     onDismiss: { showCommandPalette = false }
                 )
@@ -866,6 +867,19 @@ struct MainWindowView: View {
         switch action {
         case .paste:
             copyToClipboard(item)
+        case .pasteAndDestroy:
+            // Main window has no target app to paste into, so fall back to
+            // "copy to clipboard, then destroy history" — users can then paste
+            // elsewhere and the sensitive entry is gone regardless.
+            if !item.isPinned && !item.isFavorite,
+               !isItemInPreservedGroup(item) {
+                copyToClipboard(item)
+                let context = modelContext
+                Task { @MainActor in
+                    try? await Task.sleep(for: .milliseconds(500))
+                    DeleteUndoCoordinator.shared.scheduleUndoableDelete(items: [item], context: context)
+                }
+            }
         case .cmdEnter:
             if item.contentType == .link,
                let url = URL(string: item.content.trimmingCharacters(in: .whitespacesAndNewlines)) {
@@ -957,6 +971,12 @@ struct MainWindowView: View {
             $0.triggerMode == .manual && $0.matches(item: item)
         }
         return Array(filtered.prefix(5))
+    }
+
+    private func isItemInPreservedGroup(_ item: ClipItem) -> Bool {
+        guard let group = item.groupName, !group.isEmpty else { return false }
+        let preserved = SmartGroupRetention.preservedGroupNames(in: modelContext)
+        return preserved.contains(group)
     }
 
     private func copySelectedToClipboard() {

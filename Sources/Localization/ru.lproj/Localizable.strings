@@ -622,6 +622,7 @@
 /* Missing Keys - Command Palette */
 "cmd.title" = "Быстрые действия";
 "cmd.paste" = "Вставить";
+"cmd.pasteAndDestroy" = "Вставить и удалить";
 "cmd.pasteAsPlainText" = "Вставить как обычный текст";
 "cmd.copyAsPlainText" = "Скопировать как обычный текст";
 "cmd.copy" = "Копировать";

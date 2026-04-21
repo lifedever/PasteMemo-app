@@ -404,6 +404,7 @@
 // Palette de commandes
 "cmd.title" = "Actions rapides";
 "cmd.paste" = "Coller";
+"cmd.pasteAndDestroy" = "Coller et supprimer";
 "cmd.pasteAsPlainText" = "Coller en texte brut";
 "cmd.copyAsPlainText" = "Copier en texte brut";
 "cmd.copy" = "Copier";

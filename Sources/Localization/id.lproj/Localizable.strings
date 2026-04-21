@@ -622,6 +622,7 @@ Gunakan %@ untuk menempel satu per satu.";
 /* Missing Keys - Command Palette */
 "cmd.title" = "Tindakan Cepat";
 "cmd.paste" = "Tempel";
+"cmd.pasteAndDestroy" = "Tempel & Hapus";
 "cmd.pasteAsPlainText" = "Tempel sebagai Teks Biasa";
 "cmd.copyAsPlainText" = "Salin sebagai Teks Biasa";
 "cmd.copy" = "Salin";

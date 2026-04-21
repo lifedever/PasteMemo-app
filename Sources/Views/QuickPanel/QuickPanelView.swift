@@ -778,6 +778,7 @@ struct QuickPanelView: View {
                     item: item,
                     isMultiSelected: isMultiSelected,
                     manualRules: manualRulesForPalette(item: item),
+                    preservedGroupNames: SmartGroupRetention.preservedGroupNames(in: modelContext),
                     onAction: { handleCommandAction($0) },
                     onDismiss: { showCommandPalette = false; isSearchFocused = true }
                 )
@@ -1308,6 +1309,11 @@ struct QuickPanelView: View {
                    textView.hasMarkedText() {
                     return event
                 }
+                let hasOption = event.modifierFlags.contains(.option)
+                if hasOption, !isMultiSelected, let item = currentItem, canPasteAndDestroy(item) {
+                    handlePasteAndDestroy(item: item)
+                    return nil
+                }
                 if isMultiSelected {
                     handleMultiPaste(asPlainText: hasCmd, forceNewLine: hasShift)
                 } else if hasCmd {
@@ -1389,6 +1395,10 @@ struct QuickPanelView: View {
         switch action {
         case .paste:
             handlePaste(respectAutoPaste: false)
+        case .pasteAndDestroy:
+            if let item = currentItem, canPasteAndDestroy(item) {
+                handlePasteAndDestroy(item: item)
+            }
         case .cmdEnter:
             if isMultiSelected {
                 handleMultiPaste(asPlainText: true, forceNewLine: false, respectAutoPaste: false)
@@ -2090,6 +2100,36 @@ struct QuickPanelView: View {
                 try? await Task.sleep(for: .milliseconds(50))
                 clipboardManager.simulatePaste()
             }
+        }
+    }
+
+    /// Whether the given clip qualifies for the paste-and-destroy shortcut.
+    /// Mirrors the palette's `canPasteAndDestroy` gate — pinned / favourited
+    /// items, and clips in a `preservesItems` group, are excluded so the
+    /// one-shot delete can't swallow content the user explicitly kept.
+    private func canPasteAndDestroy(_ item: ClipItem) -> Bool {
+        if item.isPinned || item.isFavorite { return false }
+        if let group = item.groupName, !group.isEmpty {
+            let preserved = SmartGroupRetention.preservedGroupNames(in: modelContext)
+            if preserved.contains(group) { return false }
+        }
+        return true
+    }
+
+    /// Paste the clip via the normal pipeline, then schedule an undoable delete
+    /// a beat later. The delay gives the simulated ⌘V time to land in the target
+    /// app (around 200–300ms in practice) before we queue deletion — undo
+    /// restores the history entry but does not undo the paste itself.
+    private func handlePasteAndDestroy(item: ClipItem) {
+        QuickPanelWindowController.shared.dismissAndPaste(
+            item,
+            clipboardManager: clipboardManager,
+            addNewLine: false
+        )
+        let context = modelContext
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(500))
+            DeleteUndoCoordinator.shared.scheduleUndoableDelete(items: [item], context: context)
         }
     }
 

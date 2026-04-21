@@ -640,6 +640,7 @@
 // 命令面板
 "cmd.title" = "快捷操作";
 "cmd.paste" = "粘贴";
+"cmd.pasteAndDestroy" = "粘贴并销毁";
 "cmd.pasteAsPlainText" = "纯文本粘贴";
 "cmd.copyAsPlainText" = "复制为纯文本";
 "cmd.copy" = "复制";

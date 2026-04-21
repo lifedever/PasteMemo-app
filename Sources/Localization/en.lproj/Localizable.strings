@@ -639,6 +639,7 @@
 // Command Palette
 "cmd.title" = "Quick Actions";
 "cmd.paste" = "Paste";
+"cmd.pasteAndDestroy" = "Paste & Destroy";
 "cmd.pasteAsPlainText" = "Paste as Plain Text";
 "cmd.copyAsPlainText" = "Copy as Plain Text";
 "cmd.copy" = "Copy";
