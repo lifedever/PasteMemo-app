@@ -127,7 +127,9 @@
 "settings.features" = "Fonctionnalités";
 "settings.shortcuts" = "Raccourcis";
 "settings.quickPanelShortcut" = "Collage rapide";
-"settings.managerShortcut" = "Open Manager";
+"settings.managerShortcut" = "Ouvrir le gestionnaire";
+"settings.managerShortcut.global" = "Global";
+"settings.managerShortcut.scopeHint" = "Lorsque Global est désactivé, ce raccourci ne fonctionne que lorsque le panneau rapide est déjà ouvert.";
 "settings.relayShortcut" = "Démarrer le relais";
 "settings.shortcut.none" = "Non défini";
 "settings.paste" = "Collage";

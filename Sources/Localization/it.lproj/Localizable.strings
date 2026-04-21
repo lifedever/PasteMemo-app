@@ -101,7 +101,9 @@
 "settings.features" = "Funzionalità";
 "settings.shortcuts" = "Scorciatoie";
 "settings.quickPanelShortcut" = "Incolla Rapido";
-"settings.managerShortcut" = "Open Manager";
+"settings.managerShortcut" = "Apri Gestore";
+"settings.managerShortcut.global" = "Globale";
+"settings.managerShortcut.scopeHint" = "Quando Globale è disattivato, questa scorciatoia funziona solo mentre il pannello rapido è già aperto.";
 "settings.relayShortcut" = "Avvia staffetta";
 "settings.shortcut.none" = "Non impostata";
 "settings.shortcut.clickToRecord" = "Clicca per registrare";

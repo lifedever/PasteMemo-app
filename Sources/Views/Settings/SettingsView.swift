@@ -215,6 +215,7 @@ struct ShortcutsTab: View {
     @AppStorage("hotkeyModifiers") private var hotkeyModifiers = cmdKey | shiftKey
     @AppStorage("managerHotkeyKeyCode") private var managerKeyCode = -1
     @AppStorage("managerHotkeyModifiers") private var managerModifiers = -1
+    @AppStorage("managerHotkeyGlobalEnabled") private var managerHotkeyGlobalEnabled = true
     @AppStorage("relayHotkeyKeyCode") private var relayKeyCode = -1
     @AppStorage("relayHotkeyModifiers") private var relayModifiers = -1
     @AppStorage("doubleTapEnabled") private var doubleTapEnabled = false
@@ -253,6 +254,19 @@ struct ShortcutsTab: View {
                             .foregroundStyle(.tertiary)
                             .font(.callout)
                     }
+                    HStack(spacing: 6) {
+                        Text(L10n.tr("settings.managerShortcut.global"))
+                            .font(.callout)
+                            .foregroundStyle(.secondary)
+                        Toggle("", isOn: $managerHotkeyGlobalEnabled)
+                            .labelsHidden()
+                            .toggleStyle(.switch)
+                            .controlSize(.small)
+                            .fixedSize()
+                            .onChange(of: managerHotkeyGlobalEnabled) {
+                                hotkeyManager.updateManagerHotkeyGlobalEnabled(managerHotkeyGlobalEnabled)
+                            }
+                    }
                     ShortcutRecorder(keyCode: $managerKeyCode, modifiers: $managerModifiers, onChanged: applyManagerShortcut)
                         .frame(width: 140, height: 24)
                     Button {
@@ -266,6 +280,10 @@ struct ShortcutsTab: View {
                     .buttonStyle(.plain)
                     .pointerCursor()
                 }
+
+                Text(L10n.tr("settings.managerShortcut.scopeHint"))
+                    .font(.callout)
+                    .foregroundStyle(.tertiary)
 
                 HStack {
                     Text(L10n.tr("settings.relayShortcut"))

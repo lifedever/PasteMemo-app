@@ -101,7 +101,9 @@
 "settings.features" = "Функции";
 "settings.shortcuts" = "Горячие клавиши";
 "settings.quickPanelShortcut" = "Быстрая вставка";
-"settings.managerShortcut" = "Open Manager";
+"settings.managerShortcut" = "Открыть менеджер";
+"settings.managerShortcut.global" = "Глобально";
+"settings.managerShortcut.scopeHint" = "Когда глобальный режим выключен, это сочетание клавиш работает только если быстрая панель уже открыта.";
 "settings.relayShortcut" = "Начать эстафету";
 "settings.shortcut.none" = "Не задано";
 "settings.shortcut.clickToRecord" = "Нажмите для записи";

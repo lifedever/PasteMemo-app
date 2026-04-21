@@ -127,7 +127,9 @@
 "settings.features" = "Funciones";
 "settings.shortcuts" = "Atajos";
 "settings.quickPanelShortcut" = "Pegado rápido";
-"settings.managerShortcut" = "Open Manager";
+"settings.managerShortcut" = "Abrir gestor";
+"settings.managerShortcut.global" = "Global";
+"settings.managerShortcut.scopeHint" = "Cuando Global está desactivado, este atajo solo funciona mientras el panel rápido ya está abierto.";
 "settings.relayShortcut" = "Iniciar relevo";
 "settings.shortcut.none" = "No configurado";
 "settings.paste" = "Pegar";

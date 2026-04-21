@@ -110,6 +110,8 @@
 "settings.shortcuts" = "Shortcuts";
 "settings.quickPanelShortcut" = "Quick Paste";
 "settings.managerShortcut" = "Open Manager";
+"settings.managerShortcut.global" = "Global";
+"settings.managerShortcut.scopeHint" = "When Global is off, this shortcut works only while the Quick Panel is already open.";
 "settings.relayShortcut" = "Start Relay";
 "settings.shortcut.none" = "Not set";
 "settings.shortcut.clickToRecord" = "Click to record";

@@ -102,7 +102,9 @@
 "settings.features" = "功能";
 "settings.shortcuts" = "快捷鍵";
 "settings.quickPanelShortcut" = "開啟快捷貼上視窗";
-"settings.managerShortcut" = "Open Manager";
+"settings.managerShortcut" = "開啟管理器";
+"settings.managerShortcut.global" = "全域";
+"settings.managerShortcut.scopeHint" = "關閉全域後，這個快捷鍵只會在快捷面板已開啟時可用。";
 "settings.relayShortcut" = "開啟接力";
 "settings.shortcut.none" = "未設定";
 "settings.shortcut.clickToRecord" = "點擊錄入";

@@ -110,6 +110,8 @@
 "settings.shortcuts" = "快捷键";
 "settings.quickPanelShortcut" = "打开快捷粘贴窗口";
 "settings.managerShortcut" = "打开管理器";
+"settings.managerShortcut.global" = "全局";
+"settings.managerShortcut.scopeHint" = "关闭全局后，这个快捷键只在快捷面板已打开时可用。";
 "settings.relayShortcut" = "开启接力";
 "settings.shortcut.none" = "未设置";
 "settings.shortcut.clickToRecord" = "点击录入";

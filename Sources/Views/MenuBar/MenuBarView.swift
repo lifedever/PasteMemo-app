@@ -24,7 +24,9 @@ struct MenuBarContent: View {
         Button {
             handleOpenMainWindow()
         } label: {
-            let shortcut = hotkeyManager.isManagerCleared ? "" : shortcutDisplayString(keyCode: hotkeyManager.managerKeyCode, modifiers: hotkeyManager.managerModifiers)
+            let shortcut = hotkeyManager.isManagerCleared || !hotkeyManager.isManagerHotkeyGlobalEnabled
+                ? ""
+                : shortcutDisplayString(keyCode: hotkeyManager.managerKeyCode, modifiers: hotkeyManager.managerModifiers)
             if shortcut.isEmpty {
                 Text(L10n.tr("menu.manager"))
             } else {

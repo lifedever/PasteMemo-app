@@ -101,7 +101,9 @@
 "settings.features" = "Fitur";
 "settings.shortcuts" = "Pintasan";
 "settings.quickPanelShortcut" = "Tempel Cepat";
-"settings.managerShortcut" = "Open Manager";
+"settings.managerShortcut" = "Buka Pengelola";
+"settings.managerShortcut.global" = "Global";
+"settings.managerShortcut.scopeHint" = "Saat Global dimatikan, pintasan ini hanya berfungsi ketika panel cepat sudah terbuka.";
 "settings.relayShortcut" = "Mulai relay";
 "settings.shortcut.none" = "Belum diatur";
 "settings.shortcut.clickToRecord" = "Klik untuk merekam";

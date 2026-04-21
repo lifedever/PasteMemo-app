@@ -127,7 +127,9 @@
 "settings.features" = "기능";
 "settings.shortcuts" = "단축키";
 "settings.quickPanelShortcut" = "빠른 붙여넣기";
-"settings.managerShortcut" = "Open Manager";
+"settings.managerShortcut" = "관리자 열기";
+"settings.managerShortcut.global" = "전역";
+"settings.managerShortcut.scopeHint" = "전역을 끄면 이 단축키는 빠른 패널이 이미 열려 있을 때만 동작합니다.";
 "settings.relayShortcut" = "릴레이 시작";
 "settings.shortcut.none" = "미설정";
 "settings.paste" = "붙여넣기";

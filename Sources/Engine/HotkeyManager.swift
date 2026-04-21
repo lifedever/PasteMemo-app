@@ -7,6 +7,7 @@ private let DEFAULT_MODIFIERS = cmdKey | shiftKey
 private let HOTKEY_ID_QUICK_PANEL: UInt32 = 1
 private let HOTKEY_ID_MANAGER: UInt32 = 2
 private let HOTKEY_ID_RELAY: UInt32 = 3
+private let MANAGER_HOTKEY_GLOBAL_ENABLED_KEY = "managerHotkeyGlobalEnabled"
 
 @MainActor
 final class HotkeyManager: ObservableObject {
@@ -71,9 +72,21 @@ final class HotkeyManager: ObservableObject {
         return stored
     }
 
+    var isManagerHotkeyGlobalEnabled: Bool {
+        guard UserDefaults.standard.object(forKey: MANAGER_HOTKEY_GLOBAL_ENABLED_KEY) != nil else { return true }
+        return UserDefaults.standard.bool(forKey: MANAGER_HOTKEY_GLOBAL_ENABLED_KEY)
+    }
+
     func updateManagerShortcut(keyCode: Int, modifiers: Int) {
         UserDefaults.standard.set(keyCode, forKey: "managerHotkeyKeyCode")
         UserDefaults.standard.set(modifiers, forKey: "managerHotkeyModifiers")
+        unregisterManagerHotKey()
+        registerManagerHotKey()
+        objectWillChange.send()
+    }
+
+    func updateManagerHotkeyGlobalEnabled(_ enabled: Bool) {
+        UserDefaults.standard.set(enabled, forKey: MANAGER_HOTKEY_GLOBAL_ENABLED_KEY)
         unregisterManagerHotKey()
         registerManagerHotKey()
         objectWillChange.send()
@@ -206,7 +219,7 @@ final class HotkeyManager: ObservableObject {
     }
 
     private func registerManagerHotKey() {
-        guard !isManagerCleared else { return }
+        guard isManagerHotkeyGlobalEnabled, !isManagerCleared else { return }
         var hotKeyID = EventHotKeyID()
         hotKeyID.signature = HOTKEY_SIGNATURE
         hotKeyID.id = HOTKEY_ID_MANAGER

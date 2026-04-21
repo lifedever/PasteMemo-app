@@ -135,7 +135,9 @@
 "settings.features" = "機能";
 "settings.shortcuts" = "ショートカット";
 "settings.quickPanelShortcut" = "クイックペースト";
-"settings.managerShortcut" = "Open Manager";
+"settings.managerShortcut" = "管理ツールを開く";
+"settings.managerShortcut.global" = "グローバル";
+"settings.managerShortcut.scopeHint" = "グローバルをオフにすると、このショートカットはクイックパネルがすでに開いているときだけ使えます。";
 "settings.relayShortcut" = "リレー開始";
 "settings.shortcut.none" = "未設定";
 "settings.paste" = "ペースト";
