@@ -320,15 +320,34 @@ final class ClipboardManager: ObservableObject {
     /// Restores a pasteboard snapshot produced by `capturePasteboardSnapshot`. Returns true
     /// on success (caller should skip any legacy per-type writes); false on malformed/empty
     /// snapshots so the caller can fall through to the fallback path.
+    ///
+    /// - Parameter stripPrivatePrefixes: if non-empty, entries whose UTI starts with any
+    ///   of the given prefixes are dropped before writing. Used to work around Word's
+    ///   internal-clipboard hijack of `com.microsoft.*` types (issue #28): with those
+    ///   types present, Word paste reads from its private cache and ignores our writes;
+    ///   without them, Word falls back to the standard `public.rtf` / `public.html` path.
     @discardableResult
-    func restorePasteboardSnapshot(_ data: Data, to pasteboard: NSPasteboard) -> Bool {
+    func restorePasteboardSnapshot(
+        _ data: Data,
+        to pasteboard: NSPasteboard,
+        stripPrivatePrefixes: [String] = []
+    ) -> Bool {
         guard
             let plist = try? PropertyListSerialization.propertyList(from: data, options: [], format: nil),
             let dict = plist as? [String: Data],
             !dict.isEmpty
         else { return false }
+        let filteredDict: [String: Data]
+        if stripPrivatePrefixes.isEmpty {
+            filteredDict = dict
+        } else {
+            filteredDict = dict.filter { pair in
+                !stripPrivatePrefixes.contains(where: { pair.key.hasPrefix($0) })
+            }
+        }
+        guard !filteredDict.isEmpty else { return false }
         pasteboard.clearContents()
-        for (typeRaw, bytes) in dict {
+        for (typeRaw, bytes) in filteredDict {
             pasteboard.setData(bytes, forType: NSPasteboard.PasteboardType(typeRaw))
         }
         return true

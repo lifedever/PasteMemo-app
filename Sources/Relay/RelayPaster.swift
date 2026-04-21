@@ -3,6 +3,24 @@ import AppKit
 private let PASTE_DELAY: Duration = .milliseconds(100)
 private let V_KEY_CODE: UInt16 = 0x09
 
+/// Apps that hijack `com.microsoft.*` pasteboard types into an internal clipboard
+/// cache, making NSPasteboard writes invisible to them. See issue #28 for the
+/// full story — stripping those types from the snapshot on paste lets the app
+/// fall back to the standard `public.rtf` / `public.html` path.
+private let OFFICE_BUNDLE_PREFIXES: [String] = [
+    "com.microsoft."
+]
+
+/// Returns true when the frontmost app belongs to the Office family and needs
+/// the Microsoft-private-type workaround described above.
+@MainActor
+private func targetIsOffice() -> Bool {
+    guard let bundleID = NSWorkspace.shared.frontmostApplication?.bundleIdentifier else {
+        return false
+    }
+    return OFFICE_BUNDLE_PREFIXES.contains { bundleID.hasPrefix($0) }
+}
+
 @MainActor
 enum RelayPaster {
 
@@ -71,7 +89,16 @@ enum RelayPaster {
     /// Used for rich-text clips (备忘录/Word/Excel/网页图文) to achieve native-fidelity paste.
     static func pasteSnapshot(_ snapshot: Data, monitor: RelayClipboardMonitor) async {
         let pasteboard = NSPasteboard.general
-        _ = ClipboardManager.shared.restorePasteboardSnapshot(snapshot, to: pasteboard)
+        // Issue #28: when target is Office, drop the Microsoft-private UTIs
+        // (`com.microsoft.*`) from the snapshot. With those types present, Word
+        // paste reads from its private internal clipboard and ignores our
+        // NSPasteboard writes — so rapid multi-item relay pastes only ever replay
+        // the last Word copy. Stripping them forces Word onto the standard
+        // `public.rtf` / `public.html` path that actually reads NSPasteboard.
+        // Bold / color / font size survive; the lost types are Word-internal
+        // object references.
+        let stripPrefixes: [String] = targetIsOffice() ? ["com.microsoft."] : []
+        _ = ClipboardManager.shared.restorePasteboardSnapshot(snapshot, to: pasteboard, stripPrivatePrefixes: stripPrefixes)
         monitor.skipNextChange()
         try? await Task.sleep(for: PASTE_DELAY)
         simulateCommandV()

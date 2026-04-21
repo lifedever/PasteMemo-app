@@ -232,6 +232,12 @@ final class RelayManager {
     private var monitor: RelayClipboardMonitor?
     private var hotkeyHandler: RelayHotkeyHandler?
     private var windowController: RelayFloatingWindowController?
+    /// Holds the most recently scheduled paste Task so new presses can chain
+    /// after it and execute strictly one-at-a-time. Without this, rapid hotkey
+    /// presses spawn concurrent Tasks that race on the shared pasteboard —
+    /// Task N+1's pasteboard write overwrites Task N's before the target app
+    /// has finished reading it (issue #28: Word pastes only the last snapshot).
+    private var currentPasteTask: Task<Void, Never>?
 
     // MARK: - Mode Lifecycle
 
@@ -387,42 +393,53 @@ final class RelayManager {
     }
 
     private func pasteNext() {
+        // Chain each paste request behind the previously-scheduled one. Swift
+        // Tasks yield at `await` points, so without this chain multiple rapid
+        // hotkey presses run concurrently and their pasteboard writes race —
+        // see `currentPasteTask` for the full motivation.
+        let previous = currentPasteTask
+        currentPasteTask = Task { [weak self] in
+            await previous?.value
+            await self?.performOnePaste()
+        }
+    }
+
+    @MainActor
+    private func performOnePaste() async {
         guard let item = advance() else {
             handleQueueExhausted()
             return
         }
         guard let mon = monitor else { return }
-        Task {
-            // Evaluate rule conditions against this specific item. Non-empty only when a
-            // rule is selected AND its conditions match (content type / source app / etc.).
-            // Re-routing rich-text items to the plain-text path so actions can transform
-            // `item.content` — issue #22.
-            let matchedActions = RelayRuleResolver.actionsApplying(to: item)
+        // Evaluate rule conditions against this specific item. Non-empty only when a
+        // rule is selected AND its conditions match (content type / source app / etc.).
+        // Re-routing rich-text items to the plain-text path so actions can transform
+        // `item.content` — issue #22.
+        let matchedActions = RelayRuleResolver.actionsApplying(to: item)
 
-            // Plain-text override takes precedence — user explicitly chose string-only paste.
-            if pasteAsPlainText || !matchedActions.isEmpty {
-                await RelayPaster.paste(item.content, actions: matchedActions, monitor: mon)
-            } else if let snapshot = item.pasteboardSnapshot {
-                // Rich-text / native-fidelity path: replay the source's original pasteboard bytes.
-                await RelayPaster.pasteSnapshot(snapshot, monitor: mon)
-            } else {
-                switch item.contentKind {
-                case .image:
-                    if let imageData = item.imageData {
-                        await RelayPaster.pasteImage(imageData, monitor: mon)
-                    } else {
-                        await RelayPaster.paste(item.content, monitor: mon)
-                    }
-                case .file:
-                    await RelayPaster.pasteFile(item.content, imageData: item.imageData, monitor: mon)
-                case .text:
+        // Plain-text override takes precedence — user explicitly chose string-only paste.
+        if pasteAsPlainText || !matchedActions.isEmpty {
+            await RelayPaster.paste(item.content, actions: matchedActions, monitor: mon)
+        } else if let snapshot = item.pasteboardSnapshot {
+            // Rich-text / native-fidelity path: replay the source's original pasteboard bytes.
+            await RelayPaster.pasteSnapshot(snapshot, monitor: mon)
+        } else {
+            switch item.contentKind {
+            case .image:
+                if let imageData = item.imageData {
+                    await RelayPaster.pasteImage(imageData, monitor: mon)
+                } else {
                     await RelayPaster.paste(item.content, monitor: mon)
                 }
+            case .file:
+                await RelayPaster.pasteFile(item.content, imageData: item.imageData, monitor: mon)
+            case .text:
+                await RelayPaster.paste(item.content, monitor: mon)
             }
-            SoundManager.playPaste()
-            if isQueueExhausted {
-                handleQueueExhausted()
-            }
+        }
+        SoundManager.playPaste()
+        if isQueueExhausted {
+            handleQueueExhausted()
         }
     }
 

@@ -32,6 +32,26 @@ struct PasteMemoTests {
         #expect(ClipboardManager.shared.pasteboardHasThirdPartyTypes(pb) == false)
     }
 
+    @Test("restorePasteboardSnapshot strips requested UTI prefixes (issue #28 — Word private clipboard hijack)")
+    @MainActor func restoreStripsPrivateTypes() throws {
+        let pb = NSPasteboard(name: NSPasteboard.Name("pastememo-test-strip-\(UUID().uuidString)"))
+        let snapshotDict: [String: Data] = [
+            "public.rtf": Data("rtf-bytes".utf8),
+            "public.utf8-plain-text": Data("plain".utf8),
+            "com.microsoft.Object-Descriptor": Data([0x01, 0x02]),
+            "com.microsoft.DataObject": Data([0x03, 0x04]),
+        ]
+        let blob = try PropertyListSerialization.data(fromPropertyList: snapshotDict, format: .binary, options: 0)
+        pb.clearContents()
+        let ok = ClipboardManager.shared.restorePasteboardSnapshot(blob, to: pb, stripPrivatePrefixes: ["com.microsoft."])
+        #expect(ok)
+        let restoredTypes = Set((pb.types ?? []).map(\.rawValue))
+        #expect(restoredTypes.contains("public.rtf"))
+        #expect(restoredTypes.contains("public.utf8-plain-text"))
+        #expect(restoredTypes.contains("com.microsoft.Object-Descriptor") == false)
+        #expect(restoredTypes.contains("com.microsoft.DataObject") == false)
+    }
+
     @Test("Detect link content type")
     @MainActor func detectLink() {
         let result = ClipboardManager.shared.detectContentType("https://github.com")
