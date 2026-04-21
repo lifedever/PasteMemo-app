@@ -45,7 +45,6 @@ struct QuickPanelView: View {
     @State private var selectionAnchor: PersistentIdentifier?
     @State private var showAllShortcuts = false
     @State private var relaySplitText: String?
-    @State private var showCopiedToast = false
     @State private var showCommandPalette = false
     @State private var targetApp: NSRunningApplication?
     @State private var isPanelPinned = false
@@ -214,23 +213,6 @@ struct QuickPanelView: View {
             footerBar
         }
         .frame(minWidth: 360, minHeight: 420)
-        .overlay {
-            if showCopiedToast {
-                VStack {
-                    Spacer()
-                    Text(L10n.tr("action.copied"))
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundStyle(.white)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 6)
-                        .background(.black.opacity(0.75), in: Capsule())
-                        .transition(.opacity.combined(with: .scale(scale: 0.9)))
-                        .padding(.bottom, 50)
-                }
-                .animation(.easeInOut(duration: 0.2), value: showCopiedToast)
-            }
-            // Command palette is now shown via popover on the selected row
-        }
         // Floating group suggestions overlay
         if isShowingSuggestions {
             VStack(spacing: 0) {
@@ -1456,8 +1438,7 @@ struct QuickPanelView: View {
             pasteboard.setString(format, forType: .string)
             // No marker / lastChangeCount update: we want auto-capture to persist the
             // formatted color as a new history entry (or dedup/update the existing one).
-            showCopiedToast = true
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { showCopiedToast = false }
+            ToastCenter.shared.show(ToastDescriptor(message: L10n.tr("action.copied"), icon: .success))
         case .showInFinder:
             if let item = currentItem {
                 let paths = item.content.components(separatedBy: "\n").filter { !$0.isEmpty }
@@ -1677,12 +1658,11 @@ struct QuickPanelView: View {
 
         if dismissAfterCopy {
             QuickPanelWindowController.shared.dismiss()
-            GlobalToast.show(L10n.tr("action.copied"))
+            ToastCenter.shared.show(ToastDescriptor(message: L10n.tr("action.copied"), icon: .success))
             return
         }
 
-        showCopiedToast = true
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { showCopiedToast = false }
+        ToastCenter.shared.show(ToastDescriptor(message: L10n.tr("action.copied"), icon: .success))
     }
 
     private func handleDeleteSelected() {
@@ -1956,7 +1936,7 @@ struct QuickPanelView: View {
         }
         SoundManager.playCopy()
         QuickPanelWindowController.shared.dismiss()
-        GlobalToast.show(L10n.tr("action.copied"))
+        ToastCenter.shared.show(ToastDescriptor(message: L10n.tr("action.copied"), icon: .success))
     }
 
     private func handlePlainTextPaste(_ item: ClipItem) {

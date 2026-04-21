@@ -81,7 +81,7 @@ final class RelayManager {
         let hadHistory = !items.isEmpty
         enqueue(clipItems: clipItems)
         if hadHistory {
-            GlobalToast.show(L10n.tr("relay.appendedToQueue", currentIndex, items.count))
+            ToastCenter.shared.show(ToastDescriptor(message: L10n.tr("relay.appendedToQueue", currentIndex, items.count), icon: .info))
         }
     }
 
@@ -92,7 +92,7 @@ final class RelayManager {
         let hadHistory = !items.isEmpty
         enqueue(texts: texts)
         if hadHistory {
-            GlobalToast.show(L10n.tr("relay.appendedToQueue", currentIndex, items.count))
+            ToastCenter.shared.show(ToastDescriptor(message: L10n.tr("relay.appendedToQueue", currentIndex, items.count), icon: .info))
         }
     }
 
