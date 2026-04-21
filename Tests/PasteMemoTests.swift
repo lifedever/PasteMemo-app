@@ -384,6 +384,50 @@ struct PasteMemoTests {
         #expect(allRules.contains { $0.name == "Brand new" })
     }
 
+    @Test("DataPorter import rebuilds SmartGroup counts from items (regression for issue #31)")
+    @MainActor func dataPorterImportRebuildsGroupCounts() throws {
+        // Source: two groups with items, SmartGroup.count deliberately desynced from reality
+        let sourceContainer = try ModelContainer(
+            for: ClipItem.self, SmartGroup.self, AutomationRule.self,
+            configurations: ModelConfiguration(isStoredInMemoryOnly: true)
+        )
+        let sourceContext = sourceContainer.mainContext
+        let work = SmartGroup(name: "Work", icon: "briefcase", sortOrder: 0)
+        work.count = 999 // stale value; import must ignore and recompute
+        sourceContext.insert(work)
+        sourceContext.insert(SmartGroup(name: "Personal", icon: "house", sortOrder: 1))
+        for i in 0..<3 {
+            let clip = ClipItem(content: "w\(i)", contentType: .text)
+            clip.groupName = "Work"
+            sourceContext.insert(clip)
+        }
+        for i in 0..<2 {
+            let clip = ClipItem(content: "p\(i)", contentType: .text)
+            clip.groupName = "Personal"
+            sourceContext.insert(clip)
+        }
+        sourceContext.insert(ClipItem(content: "ungrouped", contentType: .text))
+        try sourceContext.save()
+
+        let items = try sourceContext.fetch(FetchDescriptor<ClipItem>())
+        let groups = try sourceContext.fetch(FetchDescriptor<SmartGroup>())
+        let payload = DataPorter.buildExportPayload(items, groups: groups, rules: [])
+        let data = try DataPorter.encodeAndCompress(payload)
+
+        let destContainer = try ModelContainer(
+            for: ClipItem.self, SmartGroup.self, AutomationRule.self,
+            configurations: ModelConfiguration(isStoredInMemoryOnly: true)
+        )
+        let destContext = destContainer.mainContext
+        _ = try DataPorter.importItems(from: data, into: destContext)
+
+        let importedGroups = try destContext.fetch(FetchDescriptor<SmartGroup>())
+        let workGroup = try #require(importedGroups.first { $0.name == "Work" })
+        let personalGroup = try #require(importedGroups.first { $0.name == "Personal" })
+        #expect(workGroup.count == 3)
+        #expect(personalGroup.count == 2)
+    }
+
     @Test("OCR-only match ignores title/content hits")
     @MainActor func ocrOnlyMatchDetection() {
         let item = ClipItem(content: "[Image]", contentType: .image, imageData: Data([1]))

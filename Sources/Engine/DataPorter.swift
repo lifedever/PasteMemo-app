@@ -165,6 +165,9 @@ enum DataPorter {
             await Task.yield()
         }
 
+        recalculateGroupCounts(in: context)
+        try context.save()
+
         return ImportResult(
             imported: imported,
             skipped: skipped,
@@ -193,6 +196,8 @@ enum DataPorter {
             }
         }
 
+        try context.save()
+        recalculateGroupCounts(in: context)
         try context.save()
         return ImportResult(
             imported: imported,
@@ -367,5 +372,16 @@ enum DataPorter {
             inserted += 1
         }
         return inserted
+    }
+
+    /// SmartGroup.count is persisted; rebuild it from actual items after bulk import
+    /// so sidebar badges and quick-panel suggestions reflect restored data.
+    private static func recalculateGroupCounts(in context: ModelContext) {
+        guard let groups = try? context.fetch(FetchDescriptor<SmartGroup>()) else { return }
+        for group in groups {
+            let name = group.name
+            let descriptor = FetchDescriptor<ClipItem>(predicate: #Predicate { $0.groupName == name })
+            group.count = (try? context.fetchCount(descriptor)) ?? 0
+        }
     }
 }
