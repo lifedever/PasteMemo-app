@@ -47,6 +47,11 @@ struct MainWindowView: View {
     @State private var scrollTarget: ClipItem.ID?
     @State private var relaySplitText: String?
     @State private var showCommandPalette = false
+    @State private var cachedGroupedItems: [GroupedItem<ClipItem>] = []
+    @State private var cachedHistoryRows: [ClipHistoryListBuilder.Row] = []
+    @State private var cachedHistoryRowIndexByID: [PersistentIdentifier: Int] = [:]
+    @State private var cachedHistoryItemMap: [PersistentIdentifier: ClipItem] = [:]
+    @State private var cachedVisualOrderedItems: [ClipItem] = []
     @AppStorage("hideDockIcon") private var hideDockIcon = false
     @AppStorage("alwaysOnTop") private var alwaysOnTop = false
 
@@ -57,6 +62,16 @@ struct MainWindowView: View {
     }
 
     private var filteredItems: [ClipItem] { store.items.filter { !$0.isDeleted } }
+
+    private func rebuildHistoryCache() {
+        // 主界面滚动时如果每次 body 重算都重新分组/建索引，会比 quick panel 明显更卡。
+        // 这里把历史列表需要的派生数据一次性缓存，后续滚动只读缓存结果。
+        cachedGroupedItems = groupItemsByTime(filteredItems)
+        cachedHistoryRows = ClipHistoryListBuilder.makeRows(from: cachedGroupedItems)
+        cachedHistoryRowIndexByID = ClipHistoryListBuilder.rowIndexByItemID(rows: cachedHistoryRows)
+        cachedVisualOrderedItems = cachedGroupedItems.flatMap(\.items)
+        cachedHistoryItemMap = Dictionary(cachedVisualOrderedItems.map { ($0.persistentModelID, $0) }, uniquingKeysWith: { _, last in last })
+    }
 
     var body: some View {
         NavigationSplitView {
@@ -69,14 +84,20 @@ struct MainWindowView: View {
         .searchable(text: $searchText, prompt: L10n.tr("search.placeholder"))
         .onChange(of: selectedFilter) {
             selectedItems.removeAll()
+            selectionAnchor = nil
             syncStoreFilter()
         }
         .onChange(of: searchText) {
             selectedItems.removeAll()
+            selectionAnchor = nil
             store.searchText = searchText
+        }
+        .onChange(of: store.items) {
+            rebuildHistoryCache()
         }
         .onReceive(NotificationCenter.default.publisher(for: Notification.Name("clearSelection"))) { _ in
             selectedItems.removeAll()
+            selectionAnchor = nil
         }
         .onReceive(NotificationCenter.default.publisher(for: Notification.Name("deleteSelectedFromDetail"))) { _ in
             deleteSelectedItems()
@@ -89,6 +110,7 @@ struct MainWindowView: View {
             store.sortPinnedFirst = true
             store.isActive = true
             store.configure(modelContext: modelContext)
+            rebuildHistoryCache()
             if alwaysOnTop {
                 DispatchQueue.main.async {
                     for window in NSApp.windows where window.canBecomeMain {
@@ -502,39 +524,86 @@ struct MainWindowView: View {
     // MARK: - Clip List
 
     private var groupedFilteredItems: [GroupedItem<ClipItem>] {
-        groupItemsByTime(filteredItems)
+        cachedGroupedItems
+    }
+
+    private var historyRows: [ClipHistoryListBuilder.Row] {
+        cachedHistoryRows
+    }
+
+    private var historyRowIndexByID: [PersistentIdentifier: Int] {
+        cachedHistoryRowIndexByID
+    }
+
+    private var historyItemMap: [PersistentIdentifier: ClipItem] {
+        cachedHistoryItemMap
     }
 
     /// Items in visual display order (matching grouped section rendering)
     private var visualOrderedItems: [ClipItem] {
-        groupedFilteredItems.flatMap(\.items)
+        cachedVisualOrderedItems
     }
 
     private var clipListView: some View {
-        ScrollViewReader { proxy in
-            ScrollView {
-                LazyVStack(spacing: 0) {
-                    ForEach(groupedFilteredItems, id: \.group) { group in
-                        Text(group.group.label)
-                            .font(.system(size: 11, weight: .medium))
-                            .foregroundStyle(.tertiary)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.horizontal, 16)
-                            .padding(.top, 10)
-                            .padding(.bottom, 2)
-
-                        ForEach(group.items) { item in
-                            mainListRow(item: item)
-                        }
-                    }
+        NativeClipHistoryList(
+            rows: historyRows,
+            rowIndexByItemID: historyRowIndexByID,
+            itemsByID: historyItemMap,
+            canLoadMore: store.hasMore,
+            selectedItemIDs: selectedItems,
+            focusedItemID: navigationCursor ?? selectedItems.first,
+            scrollTargetID: scrollTarget,
+            showCommandPalette: showCommandPalette,
+            allowMultipleSelection: true,
+            scrollAlignment: .center,
+            itemRowHeight: 48,
+            headerRowHeight: 28,
+            onItemTap: { id in
+                guard let item = historyItemMap[id] else { return }
+                handleRowClick(item)
+            },
+            onItemRightClick: { id in
+                if !selectedItems.contains(id) {
+                    selectedItems = [id]
+                    navigationCursor = id
+                    selectionAnchor = id
                 }
-                .padding(.vertical, 4)
+            },
+            onCommandPaletteDismiss: {
+                showCommandPalette = false
+            },
+            onLoadMore: {
+                store.loadMore()
+            },
+            rowContent: { item, isSelected in
+                mainListRowContent(item: item, isSelected: isSelected)
+            },
+            headerContent: { group in
+                Text(group.label)
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(.tertiary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 16)
+                    .padding(.top, 10)
+                    .padding(.bottom, 2)
+            },
+            contextMenu: { item in
+                mainListContextMenu(item: item)
+            },
+            commandPaletteContent: { item in
+                CommandPaletteContent(
+                    item: item,
+                    isMultiSelected: selectedItems.count > 1,
+                    manualRules: manualRulesForPalette(item: item),
+                    onAction: { handleMainCommandAction($0, item: item) },
+                    onDismiss: { showCommandPalette = false }
+                )
             }
-            .onChange(of: scrollTarget) { _, target in
-                guard let target else { return }
-                withAnimation(.easeInOut(duration: 0.15)) {
-                    proxy.scrollTo(target, anchor: .center)
-                }
+        )
+        .onChange(of: scrollTarget) { _, target in
+            guard target != nil else { return }
+            // 只把 scrollTarget 当成一次性脉冲使用，交给原生列表消费后立即清掉。
+            DispatchQueue.main.async {
                 scrollTarget = nil
             }
         }
@@ -543,11 +612,7 @@ struct MainWindowView: View {
         .navigationSplitViewColumnWidth(min: 250, ideal: 300, max: 450)
     }
 
-    @ViewBuilder
-    private func mainListRow(item: ClipItem) -> some View {
-        if item.isDeleted { EmptyView() } else {
-        let contentType = item.contentType
-        let isSelected = selectedItems.contains(item.persistentModelID)
+    private func mainListRowContent(item: ClipItem, isSelected: Bool) -> some View {
         ClipItemListRow(
             item: item,
             isSelected: isSelected,
@@ -563,139 +628,103 @@ struct MainWindowView: View {
                     .padding(.vertical, 1)
             )
             .padding(.trailing, 4)
-            .contentShape(Rectangle())
-            .id(item.persistentModelID)
-            .onAppear {
-                if item.id == filteredItems.last?.id { store.loadMore() }
+    }
+
+    @ViewBuilder
+    private func mainListContextMenu(item: ClipItem) -> some View {
+        if item.isDeleted { EmptyView() } else {
+            Button(item.isPinned ? L10n.tr("action.unpin") : L10n.tr("action.pin")) {
+                if selectedItems.contains(item.persistentModelID), selectedItems.count > 1 {
+                    let items = selectedClipItems
+                    let shouldPin = !items.contains(where: \.isPinned)
+                    for i in items { i.isPinned = shouldPin }
+                } else {
+                    item.isPinned.toggle()
+                }
+                ClipItemStore.saveAndNotify(modelContext)
+                selectedItems.removeAll()
             }
-            .popover(
-                isPresented: Binding(
-                    get: {
-                        showCommandPalette && isSelected
-                        && (selectedItems.count <= 1 || (navigationCursor ?? selectedItems.first) == item.persistentModelID)
-                    },
-                    set: { if !$0 { showCommandPalette = false } }
-                ),
-                arrowEdge: .trailing
-            ) {
-                CommandPaletteContent(
-                    item: item,
-                    isMultiSelected: selectedItems.count > 1,
-                    manualRules: manualRulesForPalette(item: item),
-                    onAction: { handleMainCommandAction($0, item: item) },
-                    onDismiss: { showCommandPalette = false }
-                )
+            Button(item.isSensitive ? L10n.tr("sensitive.unmarkSensitive") : L10n.tr("sensitive.markSensitive")) {
+                if selectedItems.contains(item.persistentModelID), selectedItems.count > 1 {
+                    let items = selectedClipItems
+                    let hasSensitive = items.contains(where: \.isSensitive)
+                    for i in items { i.isSensitive = !hasSensitive }
+                } else {
+                    item.isSensitive.toggle()
+                }
+                ClipItemStore.saveAndNotify(modelContext)
             }
-            .onTapGesture { handleRowClick(item) }
-            .onRightClick {
+            Button(L10n.tr("action.mergeCopy")) {
+                if selectedItems.contains(item.persistentModelID), selectedItems.count > 1 {
+                    copySelectedToClipboard()
+                } else {
+                    copyToClipboard(item)
+                }
+            }
+            if selectedItems.count > 1, selectedClipItems.allSatisfy({ $0.contentType.isMergeable }) {
+                Button(L10n.tr("action.merge")) { mergeSelectedItems() }
+            }
+            if ProManager.AUTOMATION_ENABLED {
+                let applicableRules = fetchEnabledAutomationRules()
+                    .filter { $0.triggerMode == .manual && $0.matches(item: item) }
+                if !applicableRules.isEmpty {
+                    Divider()
+                    Menu(L10n.tr("cmd.automation")) {
+                        ForEach(applicableRules) { rule in
+                            Button(rule.isBuiltIn ? L10n.tr(rule.name) : rule.name) {
+                                applyAutomationRule(rule, to: item)
+                            }
+                        }
+                    }
+                }
+            }
+            Divider()
+            let targetItems = selectedItems.contains(item.persistentModelID) ? selectedClipItems : [item]
+            let groupNames = Set(targetItems.compactMap(\.groupName))
+            let currentGroup = groupNames.count == 1 ? groupNames.first : nil
+            Menu(L10n.tr("action.assignGroup")) {
+                ForEach(store.sidebarCounts.byGroup, id: \.name) { group in
+                    if group.name == currentGroup {
+                        Button {} label: {
+                            Label(group.name, systemImage: "checkmark")
+                        }
+                    } else {
+                        Button(group.name) {
+                            assignToGroup(items: targetItems, name: group.name)
+                        }
+                    }
+                }
+                if !store.sidebarCounts.byGroup.isEmpty {
+                    Divider()
+                }
+                Button(L10n.tr("action.newGroup")) {
+                    showNewGroupAlert(for: targetItems)
+                }
+            }
+            if targetItems.contains(where: { $0.groupName != nil }) {
+                Button(L10n.tr("action.removeFromGroup")) {
+                    removeFromGroup(items: targetItems)
+                }
+            }
+            Divider()
+            if selectedItems.count > 1 {
+                Button(L10n.tr("relay.addToQueue")) {
+                    RelayManager.shared.addToQueue(clipItems: selectedClipItems)
+                }
+            } else if !item.content.isEmpty || item.imageData != nil {
+                Button(L10n.tr("relay.addToQueue")) {
+                    RelayManager.shared.addToQueue(clipItems: [item])
+                }
+                Button(L10n.tr("relay.splitAndRelay")) {
+                    relaySplitText = item.content
+                }
+            }
+            Divider()
+            Button(L10n.tr("action.delete"), role: .destructive) {
                 if !selectedItems.contains(item.persistentModelID) {
                     selectedItems = [item.persistentModelID]
-                    navigationCursor = item.persistentModelID
                 }
-            }
-            .contextMenu {
-                if item.isDeleted { EmptyView() } else {
-                Button(item.isPinned ? L10n.tr("action.unpin") : L10n.tr("action.pin")) {
-                    if selectedItems.contains(item.persistentModelID), selectedItems.count > 1 {
-                        let items = selectedClipItems
-                        let shouldPin = !items.contains(where: \.isPinned)
-                        for i in items { i.isPinned = shouldPin }
-                    } else {
-                        item.isPinned.toggle()
-                    }
-                    ClipItemStore.saveAndNotify(modelContext)
-                    selectedItems.removeAll()
-                }
-                Button(item.isSensitive ? L10n.tr("sensitive.unmarkSensitive") : L10n.tr("sensitive.markSensitive")) {
-                    if selectedItems.contains(item.persistentModelID), selectedItems.count > 1 {
-                        let items = selectedClipItems
-                        let hasSensitive = items.contains(where: \.isSensitive)
-                        for i in items { i.isSensitive = !hasSensitive }
-                    } else {
-                        item.isSensitive.toggle()
-                    }
-                    ClipItemStore.saveAndNotify(modelContext)
-                }
-                Button(L10n.tr("action.mergeCopy")) {
-                    if selectedItems.contains(item.persistentModelID), selectedItems.count > 1 {
-                        copySelectedToClipboard()
-                    } else {
-                        copyToClipboard(item)
-                    }
-                }
-                if selectedItems.count > 1, selectedClipItems.allSatisfy({ $0.contentType.isMergeable }) {
-                    Button(L10n.tr("action.merge")) { mergeSelectedItems() }
-                }
-                if ProManager.AUTOMATION_ENABLED {
-                    // Only manual-trigger rules belong in this menu — automatic
-                    // rules already fire on capture, surfacing them here would
-                    // just confuse the user. Rule.matches then filters by
-                    // conditions + action applicability so rules scoped to
-                    // "contentType == image" stay off text clips.
-                    let applicableRules = fetchEnabledAutomationRules()
-                        .filter { $0.triggerMode == .manual && $0.matches(item: item) }
-                    if !applicableRules.isEmpty {
-                        Divider()
-                        Menu(L10n.tr("cmd.automation")) {
-                            ForEach(applicableRules) { rule in
-                                Button(rule.isBuiltIn ? L10n.tr(rule.name) : rule.name) {
-                                    applyAutomationRule(rule, to: item)
-                                }
-                            }
-                        }
-                    }
-                }
-                Divider()
-                let targetItems = selectedItems.contains(item.persistentModelID) ? selectedClipItems : [item]
-                let groupNames = Set(targetItems.compactMap(\.groupName))
-                let currentGroup = groupNames.count == 1 ? groupNames.first : nil
-                Menu(L10n.tr("action.assignGroup")) {
-                    ForEach(store.sidebarCounts.byGroup, id: \.name) { group in
-                        if group.name == currentGroup {
-                            Button {
-                                // Already in this group — no-op
-                            } label: {
-                                Label(group.name, systemImage: "checkmark")
-                            }
-                        } else {
-                            Button(group.name) {
-                                assignToGroup(items: targetItems, name: group.name)
-                            }
-                        }
-                    }
-                    if !store.sidebarCounts.byGroup.isEmpty {
-                        Divider()
-                    }
-                    Button(L10n.tr("action.newGroup")) {
-                        showNewGroupAlert(for: targetItems)
-                    }
-                }
-                if targetItems.contains(where: { $0.groupName != nil }) {
-                    Button(L10n.tr("action.removeFromGroup")) {
-                        removeFromGroup(items: targetItems)
-                    }
-                }
-                Divider()
-                if selectedItems.count > 1 {
-                    Button(L10n.tr("relay.addToQueue")) {
-                        RelayManager.shared.addToQueue(clipItems: selectedClipItems)
-                    }
-                } else if !item.content.isEmpty || item.imageData != nil {
-                    Button(L10n.tr("relay.addToQueue")) {
-                        RelayManager.shared.addToQueue(clipItems: [item])
-                    }
-                    Button(L10n.tr("relay.splitAndRelay")) {
-                        relaySplitText = item.content
-                    }
-                }
-                Divider()
-                Button(L10n.tr("action.delete"), role: .destructive) {
-                    if !selectedItems.contains(item.persistentModelID) {
-                        selectedItems = [item.persistentModelID]
-                    }
-                    deleteSelectedItems()
-                }
-                } // isDeleted guard
+                deleteSelectedItems()
             }
         }
     }
@@ -703,30 +732,47 @@ struct MainWindowView: View {
     private func handleRowClick(_ item: ClipItem) {
         let flags = NSApp.currentEvent?.modifierFlags ?? []
         let id = item.persistentModelID
+        let previousCursor = navigationCursor
         navigationCursor = id
 
         if flags.contains(.command) {
             // Cmd+Click: toggle this item in selection
             if selectedItems.contains(id) {
                 selectedItems.remove(id)
+                if selectionAnchor == id {
+                    selectionAnchor = previousCursor == id ? nil : previousCursor
+                }
             } else {
                 selectedItems.insert(id)
+                selectionAnchor = selectionAnchor ?? id
             }
-        } else if flags.contains(.shift), let lastID = selectedItems.first {
+        } else if flags.contains(.shift) {
             // Shift+Click: range select
             let items = visualOrderedItems
-            guard let lastIdx = items.firstIndex(where: { $0.persistentModelID == lastID }),
-                  let clickIdx = items.firstIndex(where: { $0.persistentModelID == id }) else {
+            let anchor = ClipHistorySelectionHelper.resolvedAnchor(
+                existingAnchor: selectionAnchor,
+                focusedID: previousCursor,
+                fallbackSelectedID: selectedItems.first,
+                targetID: id
+            )
+            guard let selection = ClipHistorySelectionHelper.rangeSelection(
+                orderedIDs: items.map(\.persistentModelID),
+                anchorID: anchor,
+                targetID: id
+            ) else {
                 selectedItems = [id]
+                selectionAnchor = id
                 return
             }
-            let range = min(lastIdx, clickIdx)...max(lastIdx, clickIdx)
-            selectedItems = Set(items[range].map(\.persistentModelID))
+            selectedItems = selection
+            selectionAnchor = anchor
         } else {
             if selectedItems == [id] {
                 selectedItems.removeAll()
+                selectionAnchor = nil
             } else {
                 selectedItems = [id]
+                selectionAnchor = id
             }
         }
     }
@@ -1103,10 +1149,12 @@ struct MainWindowView: View {
             let nextID = remaining[nextIdx].persistentModelID
             selectedItems = [nextID]
             navigationCursor = nextID
+            selectionAnchor = nextID
             scrollTarget = nextID
         } else {
             selectedItems.removeAll()
             navigationCursor = nil
+            selectionAnchor = nil
         }
 
         store.refreshSidebarCounts()

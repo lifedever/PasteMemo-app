@@ -51,6 +51,8 @@ struct QuickPanelView: View {
     @State private var scrollResetToken = UUID()
     @State private var lastSeenFirstItemID: String?
     @State private var cachedGroupedItems: [GroupedItem<ClipItem>] = []
+    @State private var cachedHistoryRows: [ClipHistoryListBuilder.Row] = []
+    @State private var cachedHistoryRowIndexByID: [PersistentIdentifier: Int] = [:]
     @State private var cachedDisplayOrder: [ClipItem] = []
     @State private var cachedItemMap: [PersistentIdentifier: ClipItem] = [:]
     @State private var cachedIDSet: Set<PersistentIdentifier> = []
@@ -62,6 +64,10 @@ struct QuickPanelView: View {
     }
 
     private var filteredItems: [ClipItem] { store.items }
+
+    private var validFilteredItems: [ClipItem] {
+        filteredItems.filter { !$0.isDeleted && $0.modelContext != nil }
+    }
 
     private var groupedItems: [GroupedItem<ClipItem>] { cachedGroupedItems }
 
@@ -76,14 +82,20 @@ struct QuickPanelView: View {
         if let id = cachedDisplayOrder.first?.persistentModelID {
             selectedItemIDs = [id]
             lastNavigatedID = id
+            selectionAnchor = id
         } else {
             selectedItemIDs.removeAll()
             lastNavigatedID = nil
+            selectionAnchor = nil
         }
     }
 
     private func rebuildGroupedItems() {
-        cachedGroupedItems = groupItemsByTime(filteredItems, separatePinned: false)
+        // 原生列表会给每个 row 分配固定高度，先把已删除/脱离上下文的对象过滤掉，
+        // 避免表格里出现可见空白占位行。
+        cachedGroupedItems = groupItemsByTime(validFilteredItems, separatePinned: false)
+        cachedHistoryRows = ClipHistoryListBuilder.makeRows(from: cachedGroupedItems)
+        cachedHistoryRowIndexByID = ClipHistoryListBuilder.rowIndexByItemID(rows: cachedHistoryRows)
         cachedDisplayOrder = cachedGroupedItems.flatMap(\.items)
         cachedItemMap = Dictionary(cachedDisplayOrder.map { ($0.persistentModelID, $0) }, uniquingKeysWith: { _, last in last })
         cachedIDSet = Set(cachedItemMap.keys)
@@ -115,6 +127,7 @@ struct QuickPanelView: View {
     private func selectItem(_ id: PersistentIdentifier) {
         selectedItemIDs = [id]
         lastNavigatedID = id
+        selectionAnchor = id
     }
 
     private func handleItemClick(_ id: PersistentIdentifier) {
@@ -145,21 +158,34 @@ struct QuickPanelView: View {
     private func toggleItemInSelection(_ id: PersistentIdentifier) {
         if selectedItemIDs.contains(id) {
             selectedItemIDs.remove(id)
+            if selectionAnchor == id {
+                selectionAnchor = lastNavigatedID == id ? nil : lastNavigatedID
+            }
         } else {
             selectedItemIDs.insert(id)
+            selectionAnchor = selectionAnchor ?? id
         }
     }
 
     private func extendSelectionTo(_ id: PersistentIdentifier) {
         let items = displayOrderItems
-        guard let lastID = selectedItemIDs.first,
-              let lastIdx = items.firstIndex(where: { $0.persistentModelID == lastID }),
-              let clickIdx = items.firstIndex(where: { $0.persistentModelID == id }) else {
+        let anchor = ClipHistorySelectionHelper.resolvedAnchor(
+            existingAnchor: selectionAnchor,
+            focusedID: lastNavigatedID == id ? nil : lastNavigatedID,
+            fallbackSelectedID: selectedItemIDs.first,
+            targetID: id
+        )
+        guard let selection = ClipHistorySelectionHelper.rangeSelection(
+            orderedIDs: items.map(\.persistentModelID),
+            anchorID: anchor,
+            targetID: id
+        ) else {
             selectItem(id)
             return
         }
-        let range = min(lastIdx, clickIdx)...max(lastIdx, clickIdx)
-        selectedItemIDs = Set(items[range].map(\.persistentModelID))
+        selectedItemIDs = selection
+        selectionAnchor = anchor
+        lastNavigatedID = id
     }
 
     var body: some View {
@@ -220,6 +246,7 @@ struct QuickPanelView: View {
         }
         } // ZStack
         .onAppear {
+            store.sortPinnedFirst = true
             store.configure(modelContext: modelContext)
             rebuildGroupedItems()
             selectDefaultHistoryItem()
@@ -309,7 +336,13 @@ struct QuickPanelView: View {
             rebuildGroupedItems()
             guard selectedItemIDs.isEmpty || selectedItemIDs.isDisjoint(with: cachedIDSet) else { return }
             let firstID = defaultItem?.persistentModelID
-            if let firstID { selectedItemIDs = [firstID] } else { selectedItemIDs.removeAll() }
+            if let firstID {
+                selectedItemIDs = [firstID]
+                selectionAnchor = firstID
+            } else {
+                selectedItemIDs.removeAll()
+                selectionAnchor = nil
+            }
             lastNavigatedID = firstID
         }
         .onChange(of: relaySplitText) {
@@ -552,6 +585,7 @@ struct QuickPanelView: View {
         }
 
         store.applyFilters()
+        scrollResetToken = UUID()
     }
 
     private var searchBar: some View {
@@ -678,165 +712,68 @@ struct QuickPanelView: View {
     // MARK: - List
 
     private var clipList: some View {
-        ScrollViewReader { proxy in
-            ScrollView {
-                    LazyVStack(spacing: 0) {
-                        ForEach(groupedItems, id: \.group) { group in
-                            Text(group.group.label)
-                                .font(.system(size: 11, weight: .medium))
-                                .foregroundStyle(.tertiary)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .padding(.horizontal, 14)
-                                .padding(.top, 6)
-                                .padding(.bottom, 2)
-                                .id("group_\(group.group.rawValue)")
-
-                            ForEach(group.items) { item in
-                                if item.isDeleted { EmptyView() } else {
-                                let itemID = item.persistentModelID
-                                let itemContentType = item.contentType
-                                let shortcutIdx = shortcutIndex(for: item)
-                                QuickClipRow(item: item, isSelected: selectedItemIDs.contains(itemID), shortcutIndex: shortcutIdx, searchText: searchText)
-                                    .id(itemID)
-                                    .contentShape(Rectangle())
-                                    .popover(
-                                        isPresented: Binding(
-                                            get: { showCommandPalette && selectedItemIDs.contains(itemID) && (lastNavigatedID ?? selectedItemIDs.first) == itemID },
-                                            set: { if !$0 { showCommandPalette = false; isSearchFocused = true } }
-                                        ),
-                                        arrowEdge: .trailing
-                                    ) {
-                                        CommandPaletteContent(
-                                            item: item,
-                                            isMultiSelected: isMultiSelected,
-                                            manualRules: manualRulesForPalette(item: item),
-                                            onAction: { handleCommandAction($0) },
-                                            onDismiss: { showCommandPalette = false; isSearchFocused = true }
-                                        )
-                                    }
-                                    .onAppear {
-                                        if item.id == filteredItems.last?.id { store.loadMore() }
-                                    }
-                                    .onTapGesture {
-                                        handleItemClick(itemID)
-                                    }
-                                    .onRightClick {
-                                        if !selectedItemIDs.contains(itemID) {
-                                            selectedItemIDs = [itemID]
-                                            lastNavigatedID = itemID
-                                        }
-                                    }
-                                    .contextMenu {
-                                        if isMultiSelected, selectedItemIDs.contains(itemID) {
-                                            let items = currentItems
-                                            let hasPinned = items.contains(where: \.isPinned)
-                                            Button(hasPinned ? L10n.tr("action.unpin") : L10n.tr("action.pin")) {
-                                                let newValue = !hasPinned
-                                                for i in items { i.isPinned = newValue }
-                                                ClipItemStore.saveAndNotify(modelContext)
-                                            }
-                                            let hasSensitive = items.contains(where: \.isSensitive)
-                                            Button(hasSensitive ? L10n.tr("sensitive.unmarkSensitive") : L10n.tr("sensitive.markSensitive")) {
-                                                let newValue = !hasSensitive
-                                                for i in items { i.isSensitive = newValue }
-                                                ClipItemStore.saveAndNotify(modelContext)
-                                            }
-                                            Button(L10n.tr("action.mergeCopy")) {
-                                                copyItemsToClipboard(items)
-                                            }
-                                            Divider()
-                                            quickPanelGroupMenu(items: items)
-                                            if items.contains(where: { $0.groupName != nil }) {
-                                                Button(L10n.tr("action.removeFromGroup")) {
-                                                    removeFromGroup(items: items)
-                                                }
-                                            }
-                                            Divider()
-                                            Button(L10n.tr("relay.addToQueue")) {
-                                                RelayManager.shared.addToQueue(clipItems: items)
-                                            }
-                                            Divider()
-                                            Button(L10n.tr("action.delete"), role: .destructive) {
-                                                handleDeleteSelected()
-                                            }
-                                        } else {
-                                            Button(item.isPinned ? L10n.tr("action.unpin") : L10n.tr("action.pin")) {
-                                                item.isPinned.toggle()
-                                                ClipItemStore.saveAndNotify(modelContext)
-                                                selectItem(itemID)
-                                            }
-                                            Button(item.isSensitive ? L10n.tr("sensitive.unmarkSensitive") : L10n.tr("sensitive.markSensitive")) {
-                                                item.isSensitive.toggle()
-                                                ClipItemStore.saveAndNotify(modelContext)
-                                                selectItem(itemID)
-                                            }
-                                            Button(L10n.tr("action.mergeCopy")) {
-                                                copyItemsToClipboard([item])
-                                                selectItem(itemID)
-                                            }
-                                            if ProManager.AUTOMATION_ENABLED {
-                                                // Only manual-trigger rules here — automatic rules
-                                                // fire on capture, no need to let the user re-fire them.
-                                                let manualRules = fetchEnabledRules()
-                                                    .filter { $0.triggerMode == .manual && $0.matches(item: item) }
-                                                if !manualRules.isEmpty {
-                                                    Divider()
-                                                    Menu(L10n.tr("cmd.automation")) {
-                                                        ForEach(manualRules) { rule in
-                                                            Button(rule.isBuiltIn ? L10n.tr(rule.name) : rule.name) {
-                                                                applyRule(rule, to: item)
-                                                            }
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                            Divider()
-                                            quickPanelGroupMenu(items: [item])
-                                            if item.groupName != nil {
-                                                Button(L10n.tr("action.removeFromGroup")) {
-                                                    removeFromGroup(items: [item])
-                                                    selectItem(itemID)
-                                                }
-                                            }
-                                            Divider()
-                                            if !item.content.isEmpty || item.imageData != nil {
-                                                Button(L10n.tr("relay.addToQueue")) {
-                                                    RelayManager.shared.addToQueue(clipItems: [item])
-                                                }
-                                                Button(L10n.tr("relay.splitAndRelay")) {
-                                                    relaySplitText = item.content
-                                                }
-                                            }
-                                            Divider()
-                                            Button(L10n.tr("action.copyDebugInfo")) {
-                                                copyDebugInfo(for: item)
-                                            }
-                                            Divider()
-                                            Button(L10n.tr("action.delete"), role: .destructive) {
-                                                deleteItem(item)
-                                            }
-                                        }
-                                    }
-                                } // isDeleted guard
-                            }
-                        }
-                    }
-                    .padding(.vertical, 4)
-                    .padding(.horizontal, 6)
+        NativeClipHistoryList(
+            rows: cachedHistoryRows,
+            rowIndexByItemID: cachedHistoryRowIndexByID,
+            itemsByID: cachedItemMap,
+            canLoadMore: store.hasMore,
+            selectedItemIDs: selectedItemIDs,
+            focusedItemID: lastNavigatedID ?? selectedItemIDs.first,
+            scrollTargetID: lastNavigatedID,
+            showCommandPalette: showCommandPalette,
+            allowMultipleSelection: true,
+            scrollAlignment: .nearest,
+            itemRowHeight: 40,
+            headerRowHeight: 24,
+            onItemTap: { id in
+                handleItemClick(id)
+            },
+            onItemRightClick: { id in
+                if !selectedItemIDs.contains(id) {
+                    selectedItemIDs = [id]
+                    lastNavigatedID = id
+                    selectionAnchor = id
                 }
-                .onChange(of: lastNavigatedID) {
-                guard let id = lastNavigatedID else { return }
-                withAnimation(.easeOut(duration: 0.1)) {
-                    proxy.scrollTo(id)
-                }
+            },
+            onCommandPaletteDismiss: {
+                showCommandPalette = false
+                isSearchFocused = true
+            },
+            onLoadMore: {
+                store.loadMore()
+            },
+            rowContent: { item, isSelected in
+                QuickClipRow(
+                    item: item,
+                    isSelected: isSelected,
+                    shortcutIndex: shortcutIndex(for: item),
+                    searchText: searchText
+                )
+            },
+            headerContent: { group in
+                Text(group.label)
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(.tertiary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 14)
+                    .padding(.top, 6)
+                    .padding(.bottom, 2)
+            },
+            contextMenu: { item in
+                historyItemContextMenu(item: item)
+            },
+            commandPaletteContent: { item in
+                CommandPaletteContent(
+                    item: item,
+                    isMultiSelected: isMultiSelected,
+                    manualRules: manualRulesForPalette(item: item),
+                    onAction: { handleCommandAction($0) },
+                    onDismiss: { showCommandPalette = false; isSearchFocused = true }
+                )
             }
-                .onChange(of: selectedFilter) {
-                if let firstGroup = cachedGroupedItems.first {
-                    proxy.scrollTo("group_\(firstGroup.group.rawValue)", anchor: .top)
-                }
-            }
-            .id(scrollResetToken)
-        }
+        )
+        // 过滤条件切换时需要整棵列表重建，避免旧的 NSTableView 选择/滚动状态残留。
+        .id(scrollResetToken)
         .frame(width: LIST_WIDTH)
     }
 
@@ -1043,6 +980,19 @@ struct QuickPanelView: View {
         return nil
     }
 
+    private func cmdEnterPaletteLabel(for item: ClipItem) -> String {
+        // 这里只服务 ⌘K 面板里的“次级动作”标签与执行，保持和面板文案一致，
+        // 不复用 footer 文案，避免被 quickPanelAutoPaste 的复制/粘贴分支影响。
+        switch item.contentType {
+        case .text, .code, .color, .email, .phone, .mixed:
+            return L10n.tr("cmd.pasteAsPlainText")
+        case .link:
+            return L10n.tr("cmd.openLink")
+        case .image, .file, .document, .archive, .application, .video, .audio:
+            return L10n.tr("cmd.pastePath")
+        }
+    }
+
     private func footerKey(_ key: String, _ label: String) -> some View {
         HStack(spacing: 4) {
             Text(key)
@@ -1054,6 +1004,99 @@ struct QuickPanelView: View {
             Text(label)
                 .font(.system(size: 11))
                 .foregroundStyle(.tertiary)
+        }
+    }
+
+    @ViewBuilder
+    private func historyItemContextMenu(item: ClipItem) -> some View {
+        let itemID = item.persistentModelID
+
+        if isMultiSelected, selectedItemIDs.contains(itemID) {
+            let items = currentItems
+            let hasPinned = items.contains(where: \.isPinned)
+            Button(hasPinned ? L10n.tr("action.unpin") : L10n.tr("action.pin")) {
+                let newValue = !hasPinned
+                for i in items { i.isPinned = newValue }
+                ClipItemStore.saveAndNotify(modelContext)
+            }
+            let hasSensitive = items.contains(where: \.isSensitive)
+            Button(hasSensitive ? L10n.tr("sensitive.unmarkSensitive") : L10n.tr("sensitive.markSensitive")) {
+                let newValue = !hasSensitive
+                for i in items { i.isSensitive = newValue }
+                ClipItemStore.saveAndNotify(modelContext)
+            }
+            Button(L10n.tr("action.mergeCopy")) {
+                copyItemsToClipboard(items)
+            }
+            Divider()
+            quickPanelGroupMenu(items: items)
+            if items.contains(where: { $0.groupName != nil }) {
+                Button(L10n.tr("action.removeFromGroup")) {
+                    removeFromGroup(items: items)
+                }
+            }
+            Divider()
+            Button(L10n.tr("relay.addToQueue")) {
+                RelayManager.shared.addToQueue(clipItems: items)
+            }
+            Divider()
+            Button(L10n.tr("action.delete"), role: .destructive) {
+                handleDeleteSelected()
+            }
+        } else {
+            Button(item.isPinned ? L10n.tr("action.unpin") : L10n.tr("action.pin")) {
+                item.isPinned.toggle()
+                ClipItemStore.saveAndNotify(modelContext)
+                selectItem(itemID)
+            }
+            Button(item.isSensitive ? L10n.tr("sensitive.unmarkSensitive") : L10n.tr("sensitive.markSensitive")) {
+                item.isSensitive.toggle()
+                ClipItemStore.saveAndNotify(modelContext)
+                selectItem(itemID)
+            }
+            Button(L10n.tr("action.mergeCopy")) {
+                copyItemsToClipboard([item])
+                selectItem(itemID)
+            }
+            if ProManager.AUTOMATION_ENABLED {
+                let manualRules = fetchEnabledRules()
+                    .filter { $0.triggerMode == .manual && $0.matches(item: item) }
+                if !manualRules.isEmpty {
+                    Divider()
+                    Menu(L10n.tr("cmd.automation")) {
+                        ForEach(manualRules) { rule in
+                            Button(rule.isBuiltIn ? L10n.tr(rule.name) : rule.name) {
+                                applyRule(rule, to: item)
+                            }
+                        }
+                    }
+                }
+            }
+            Divider()
+            quickPanelGroupMenu(items: [item])
+            if item.groupName != nil {
+                Button(L10n.tr("action.removeFromGroup")) {
+                    removeFromGroup(items: [item])
+                    selectItem(itemID)
+                }
+            }
+            Divider()
+            if !item.content.isEmpty || item.imageData != nil {
+                Button(L10n.tr("relay.addToQueue")) {
+                    RelayManager.shared.addToQueue(clipItems: [item])
+                }
+                Button(L10n.tr("relay.splitAndRelay")) {
+                    relaySplitText = item.content
+                }
+            }
+            Divider()
+            Button(L10n.tr("action.copyDebugInfo")) {
+                copyDebugInfo(for: item)
+            }
+            Divider()
+            Button(L10n.tr("action.delete"), role: .destructive) {
+                deleteItem(item)
+            }
         }
     }
 
@@ -1093,11 +1136,31 @@ struct QuickPanelView: View {
         }
         keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
             guard HotkeyManager.shared.isQuickPanelVisible else { return event }
-            // Let command palette handle keys when it's open
-            if showCommandPalette { return event }
             let hasShift = event.modifierFlags.contains(.shift)
             let hasCmd = event.modifierFlags.contains(.command)
             let hasControl = event.modifierFlags.contains(.control)
+
+            if showCommandPalette {
+                // NSPopover 内的键盘监听偶发收不到字母键，这里只对高频字母快捷键做一层兜底，
+                // 用最小改动修复「⌘K 后按 P 无反应」。
+                switch Int(event.keyCode) {
+                case 53, 40 where hasCmd, 13 where hasCmd:
+                    showCommandPalette = false
+                    isSearchFocused = true
+                    return nil
+                case 35 where !hasControl:
+                    if let item = currentItem, item.contentType != .color {
+                        handleCommandAction(.cmdEnter(label: cmdEnterPaletteLabel(for: item)))
+                        return nil
+                    }
+                    return event
+                case 9:
+                    handleCommandAction(.paste)
+                    return nil
+                default:
+                    return event
+                }
+            }
 
             // Group suggestion keyboard navigation
             if isShowingSuggestions {
@@ -1745,10 +1808,12 @@ struct QuickPanelView: View {
             let nextID = remaining[nextIdx].persistentModelID
             selectedItemIDs = [nextID]
             lastNavigatedID = nextID
+            selectionAnchor = nextID
         } else {
             let firstID = remaining.first?.persistentModelID
             selectedItemIDs = firstID.map { [$0] } ?? []
             lastNavigatedID = firstID
+            selectionAnchor = firstID
         }
     }
 
@@ -1832,7 +1897,7 @@ struct QuickPanelView: View {
             handlePasteTextToFolder()
         }
         // Text-like types → paste as plain text
-        else if [.text, .code, .color, .email, .phone].contains(item.contentType) {
+        else if [.text, .code, .color, .email, .phone, .mixed].contains(item.contentType) {
             if !respectAutoPaste || quickPanelAutoPaste {
                 handlePlainTextPaste(item)
             } else {
