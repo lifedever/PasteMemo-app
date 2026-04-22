@@ -2,8 +2,8 @@ name: Auto-release staged drafts
 
 on:
   schedule:
-    # 12:00 Asia/Shanghai (UTC+8) = 04:00 UTC
-    - cron: '0 4 * * *'
+    # 00:00 Asia/Shanghai (UTC+8) = 16:00 UTC (previous day)
+    - cron: '0 16 * * *'
   workflow_dispatch:
 
 permissions:
