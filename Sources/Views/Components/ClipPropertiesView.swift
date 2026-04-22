@@ -23,7 +23,7 @@ struct ClipPropertiesView: View {
             propDivider
             propRow(L10n.tr("detail.created"), formatDate(item.createdAt))
         }
-        .task(id: item.persistentModelID) {
+        .task(id: "\(item.itemID):\(item.content.count)") {
             textStats = nil
             guard item.contentType == .text || item.contentType == .code else { return }
             let content = item.content
