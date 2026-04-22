@@ -352,6 +352,7 @@
 /* Data Import/Export */
 "dataPorter.section" = "Data";
 "dataPorter.export" = "Ekspor Data";
+"dataPorter.compressing" = "Mengompresi...";
 "dataPorter.import" = "Impor Data";
 "dataPorter.encrypt" = "Enkripsi ekspor";
 "dataPorter.password" = "Kata Sandi";
@@ -379,6 +380,7 @@
 /* Multi-select */
 "action.merge" = "Gabung";
 "action.mergeCopy" = "Salin";
+"action.copyDebugInfo" = "Salin Info Debug";
 "quick.multiSelected" = "%d item dipilih";
 "quick.batchPaste" = "Tempel Massal";
 
@@ -634,6 +636,7 @@ Gunakan %@ untuk menempel satu per satu.";
 "cmd.pastePath" = "Tempel Path";
 "cmd.andNewLine" = " + Baris Baru";
 "cmd.transform" = "Transformasi";
+"cmd.automation" = "Otomatisasi";
 
 /* Missing Keys - Relay */
 "relay.tab" = "Relay";
@@ -643,6 +646,7 @@ Gunakan %@ untuk menempel satu per satu.";
 "automation.section.builtIn" = "Aturan Bawaan";
 "automation.section.custom" = "Aturan Saya";
 "automation.section.empty" = "(kosong)";
+"automation.section.disabled" = "Dinonaktifkan";
 "automation.editor.selectRule" = "Pilih aturan untuk diedit";
 "automation.rule.name" = "Nama";
 "automation.rule.enabled" = "Aktif";

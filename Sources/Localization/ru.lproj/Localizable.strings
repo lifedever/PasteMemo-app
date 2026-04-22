@@ -352,6 +352,7 @@
 /* Data Import/Export */
 "dataPorter.section" = "Данные";
 "dataPorter.export" = "Экспорт данных";
+"dataPorter.compressing" = "Сжатие...";
 "dataPorter.import" = "Импорт данных";
 "dataPorter.encrypt" = "Шифровать экспорт";
 "dataPorter.password" = "Пароль";
@@ -379,6 +380,7 @@
 /* Multi-select */
 "action.merge" = "Объединить";
 "action.mergeCopy" = "Копировать";
+"action.copyDebugInfo" = "Скопировать отладочную информацию";
 "quick.multiSelected" = "Выбрано: %d";
 "quick.batchPaste" = "Пакетная вставка";
 
@@ -634,6 +636,7 @@
 "cmd.pastePath" = "Вставить путь";
 "cmd.andNewLine" = " + новая строка";
 "cmd.transform" = "Преобразовать";
+"cmd.automation" = "Автоматизация";
 
 /* Missing Keys - Relay */
 "relay.tab" = "Эстафета";
@@ -643,6 +646,7 @@
 "automation.section.builtIn" = "Встроенные правила";
 "automation.section.custom" = "Мои правила";
 "automation.section.empty" = "(пусто)";
+"automation.section.disabled" = "Отключено";
 "automation.editor.selectRule" = "Выберите правило для редактирования";
 "automation.rule.name" = "Название";
 "automation.rule.enabled" = "Включено";

@@ -267,6 +267,7 @@
 /* Data Import/Export */
 "dataPorter.section" = "데이터";
 "dataPorter.export" = "데이터 내보내기";
+"dataPorter.compressing" = "압축 중...";
 "dataPorter.import" = "데이터 가져오기";
 "dataPorter.encrypt" = "암호화하여 내보내기";
 "dataPorter.password" = "비밀번호";
@@ -294,6 +295,7 @@
 /* Multi-select */
 "action.merge" = "병합";
 "action.mergeCopy" = "복사";
+"action.copyDebugInfo" = "디버그 정보 복사";
 "quick.multiSelected" = "%d개 선택됨";
 "quick.batchPaste" = "일괄 붙여넣기";
 
@@ -416,6 +418,7 @@
 "cmd.pastePath" = "경로 붙여넣기";
 "cmd.andNewLine" = " + 줄바꿈";
 "cmd.transform" = "변환";
+"cmd.automation" = "자동화";
 
 "relay.title" = "릴레이 모드";
 "relay.tab" = "릴레이";
@@ -660,6 +663,7 @@
 "automation.section.builtIn" = "기본 규칙";
 "automation.section.custom" = "내 규칙";
 "automation.section.empty" = "(비어 있음)";
+"automation.section.disabled" = "비활성화";
 "automation.editor.selectRule" = "편집할 규칙을 선택하세요";
 "automation.editor.definition" = "규칙 정의";
 "automation.editor.settings" = "설정";

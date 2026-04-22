@@ -267,6 +267,7 @@
 /* Data Import/Export */
 "dataPorter.section" = "Datos";
 "dataPorter.export" = "Exportar datos";
+"dataPorter.compressing" = "Comprimiendo...";
 "dataPorter.import" = "Importar datos";
 "dataPorter.encrypt" = "Cifrar exportación";
 "dataPorter.password" = "Contraseña";
@@ -294,6 +295,7 @@
 /* Multi-select */
 "action.merge" = "Combinar";
 "action.mergeCopy" = "Copiar";
+"action.copyDebugInfo" = "Copiar información de depuración";
 "quick.multiSelected" = "%d elementos seleccionados";
 "quick.batchPaste" = "Pegar en lote";
 
@@ -416,6 +418,7 @@
 "cmd.pastePath" = "Pegar ruta";
 "cmd.andNewLine" = " + nueva línea";
 "cmd.transform" = "Transformar";
+"cmd.automation" = "Automatización";
 
 "relay.title" = "Modo Relevo";
 "relay.tab" = "Relevo";
@@ -660,6 +663,7 @@ Usa %@ para pegar uno por uno.";
 "automation.section.builtIn" = "Reglas integradas";
 "automation.section.custom" = "Mis reglas";
 "automation.section.empty" = "(vacío)";
+"automation.section.disabled" = "Desactivado";
 
 /* Automation - Editor */
 "automation.editor.selectRule" = "Selecciona una regla para editar";

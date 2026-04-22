@@ -281,6 +281,7 @@
 /* Data Import/Export */
 "dataPorter.section" = "データ";
 "dataPorter.export" = "データをエクスポート";
+"dataPorter.compressing" = "圧縮中...";
 "dataPorter.import" = "データをインポート";
 "dataPorter.encrypt" = "暗号化してエクスポート";
 "dataPorter.password" = "パスワード";
@@ -308,6 +309,7 @@
 /* Multi-select */
 "action.merge" = "結合";
 "action.mergeCopy" = "コピー";
+"action.copyDebugInfo" = "デバッグ情報をコピー";
 "quick.multiSelected" = "%d 件選択中";
 "quick.batchPaste" = "一括ペースト";
 
@@ -432,6 +434,7 @@
 "cmd.openInPreview" = "「プレビュー」で開く";
 "cmd.andNewLine" = "＋改行";
 "cmd.transform" = "変換";
+"cmd.automation" = "オートメーション";
 
 "relay.title" = "リレーモード";
 "relay.tab" = "リレー";
@@ -677,6 +680,7 @@
 "automation.section.builtIn" = "組み込みルール";
 "automation.section.custom" = "マイルール";
 "automation.section.empty" = "（空）";
+"automation.section.disabled" = "無効";
 "automation.editor.selectRule" = "編集するルールを選択";
 "automation.editor.definition" = "ルール定義";
 "automation.editor.settings" = "設定";

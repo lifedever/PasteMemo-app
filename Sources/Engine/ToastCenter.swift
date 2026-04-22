@@ -14,22 +14,27 @@ final class ToastCenter {
     static let shared = ToastCenter()
 
     private var panel: NSPanel?
-    private var hostingView: NSHostingView<UnifiedToastView>?
+    private var hostingView: NSHostingView<ToastHostContainer>?
+    private let state = ToastCenterState()
     private var autoDismissTask: Task<Void, Never>?
+    private var tearDownTask: Task<Void, Never>?
     /// Fires when PasteMemo itself has focus. Consumes ⌘Z so the source window
     /// doesn't also perform its own undo on top of ours.
     private var undoLocalMonitor: Any?
     /// Fires when another app has focus. Global monitors cannot consume events,
     /// so the target app still receives its native ⌘Z (this is desirable for
     /// paste-and-destroy: the target's paste undoes alongside our history
-    /// restore). The trade-off is that ⌘Z pressed in another app during the
-    /// undo window restores the clip even if the user's intent was unrelated.
+    /// restore).
     private var undoGlobalMonitor: Any?
-    private var currentDescriptor: ToastDescriptor?
     private var currentAction: (() -> Void)?
     /// Guards against posting the same undo toast twice in a row when an
     /// `ObservableObject` republishes the same `pending` state.
     private var currentID = UUID()
+
+    /// Fixed canvas used by the panel. Large enough to fit any reasonable toast
+    /// pill with room for drop shadow AND the slide-in transition, so SwiftUI
+    /// can play the transition without the window frame clipping its edges.
+    private static let canvasSize = NSSize(width: 520, height: 160)
 
     private init() {}
 
@@ -42,27 +47,22 @@ final class ToastCenter {
     ///   (for undo-style toasts) presses ⌘Z while PasteMemo has focus.
     func show(_ descriptor: ToastDescriptor, onAction: (() -> Void)? = nil) {
         autoDismissTask?.cancel()
-        currentDescriptor = descriptor
+        tearDownTask?.cancel()
         currentAction = onAction
         currentID = UUID()
         let thisID = currentID
 
-        let view = UnifiedToastView(descriptor: descriptor, onAction: { [weak self] in
-            self?.invokeAction()
-        })
+        ensurePanel()
+        positionPanel()
+        panel?.orderFrontRegardless()
 
-        if let existing = panel, let hosting = hostingView {
-            hosting.rootView = view
-            hosting.layout()
-            let size = hosting.fittingSize
-            existing.setContentSize(size)
-            reposition(panel: existing, contentSize: size)
-            existing.orderFrontRegardless()
-        } else {
-            buildPanel(with: view)
+        // Spring animation on the SwiftUI side — transition is declared in
+        // ToastHostContainer with `.move(edge: .bottom).combined(with: .opacity)`.
+        withAnimation(.spring(response: 0.48, dampingFraction: 0.7)) {
+            state.current = descriptor
         }
 
-        refreshUndoShortcut()
+        refreshUndoShortcut(descriptor: descriptor)
 
         if let duration = descriptor.duration {
             autoDismissTask = Task { [weak self] in
@@ -77,26 +77,28 @@ final class ToastCenter {
     }
 
     /// Hide the current toast, if any. No-op when nothing is showing.
-    ///
-    /// The stored references (`panel`, `hostingView`) are cleared synchronously
-    /// so a subsequent `show(_:)` on the same tick always builds a fresh panel
-    /// instead of hijacking the one that's fading out. The old panel's fade-out
-    /// completes in its own animation group and only tears itself down.
     func dismiss() {
         autoDismissTask?.cancel()
         autoDismissTask = nil
-        currentDescriptor = nil
         currentAction = nil
         tearDownUndoShortcut()
-        guard let dismissing = panel else { return }
-        panel = nil
-        hostingView = nil
-        NSAnimationContext.runAnimationGroup({ ctx in
-            ctx.duration = 0.18
-            dismissing.animator().alphaValue = 0
-        }, completionHandler: {
-            dismissing.orderOut(nil)
-        })
+        guard state.current != nil else { return }
+
+        withAnimation(.easeIn(duration: 0.26)) {
+            state.current = nil
+        }
+
+        // Defer orderOut until after SwiftUI's removal animation. Tracked by a
+        // Task so a subsequent show() can cancel it and avoid hiding the panel
+        // we just put back on screen.
+        tearDownTask = Task { [weak self] in
+            try? await Task.sleep(for: .milliseconds(300))
+            guard !Task.isCancelled else { return }
+            await MainActor.run {
+                guard let self, self.state.current == nil else { return }
+                self.panel?.orderOut(nil)
+            }
+        }
     }
 
     // MARK: - Internals
@@ -106,18 +108,17 @@ final class ToastCenter {
         action?()
     }
 
-    /// Distance the panel slides during the enter animation. Small enough to
-    /// read as a gentle nudge upward rather than a full tray slide — matches
-    /// the `.move(edge:.bottom)` feel of the original SwiftUI overlay.
-    private static let slideOffset: CGFloat = 14
+    private func ensurePanel() {
+        if panel != nil { return }
 
-    private func buildPanel(with view: UnifiedToastView) {
-        let hosting = NSHostingView(rootView: view)
-        hosting.layout()
-        let size = hosting.fittingSize
+        let container = ToastHostContainer(state: state) { [weak self] in
+            self?.invokeAction()
+        }
+        let host = NSHostingView(rootView: container)
+        host.frame = NSRect(origin: .zero, size: Self.canvasSize)
 
         let newPanel = NSPanel(
-            contentRect: NSRect(origin: .zero, size: size),
+            contentRect: NSRect(origin: .zero, size: Self.canvasSize),
             styleMask: [.nonactivatingPanel, .borderless],
             backing: .buffered,
             defer: false
@@ -130,39 +131,27 @@ final class ToastCenter {
         newPanel.backgroundColor = .clear
         newPanel.isOpaque = false
         newPanel.hasShadow = false
-        newPanel.contentView = hosting
-
-        // Start a bit below the resting position and fade in while sliding up,
-        // so the toast has the same "move(edge:.bottom) + opacity" entrance
-        // the original embedded version had.
-        let restingOrigin = restingOrigin(for: newPanel, contentSize: size)
-        newPanel.setFrameOrigin(NSPoint(x: restingOrigin.x, y: restingOrigin.y - Self.slideOffset))
-        newPanel.alphaValue = 0
-        newPanel.orderFrontRegardless()
-
-        NSAnimationContext.runAnimationGroup { ctx in
-            ctx.duration = 0.22
-            ctx.timingFunction = CAMediaTimingFunction(name: .easeOut)
-            newPanel.animator().alphaValue = 1
-            newPanel.animator().setFrameOrigin(restingOrigin)
-        }
+        newPanel.contentView = host
 
         panel = newPanel
-        hostingView = hosting
+        hostingView = host
     }
 
-    /// Bottom-center of the active screen, well above the dock so the toast
-    /// doesn't get crowded by menus, notifications, or the Control Centre pill.
-    private func restingOrigin(for panel: NSPanel, contentSize: NSSize) -> NSPoint {
-        guard let screen = NSScreen.main else { return .zero }
+    /// Position the panel so the toast pill sits at its resting location
+    /// (horizontal center of the visible frame, ~72pt above the bottom). The
+    /// canvas extends well below and around the pill to give the slide
+    /// transition and drop shadow room to breathe.
+    private func positionPanel() {
+        guard let panel, let screen = NSScreen.main else { return }
         let frame = screen.visibleFrame
-        let x = frame.midX - contentSize.width / 2
-        let y = frame.minY + 72
-        return NSPoint(x: x, y: y)
-    }
-
-    private func reposition(panel: NSPanel, contentSize: NSSize) {
-        panel.setFrameOrigin(restingOrigin(for: panel, contentSize: contentSize))
+        // Toast pill visually rests at screen.minY + 72. The canvas is anchored
+        // so the toast's bottom edge ends up there — `ToastHostContainer`
+        // reserves `bottomInset` pt of transparent space below the pill for the
+        // slide transition + shadow.
+        let restingBottom = frame.minY + 72
+        let y = restingBottom - ToastHostContainer.bottomInset
+        let x = frame.midX - Self.canvasSize.width / 2
+        panel.setFrameOrigin(NSPoint(x: x, y: y))
     }
 
     // MARK: - ⌘Z shortcut
@@ -174,12 +163,11 @@ final class ToastCenter {
     /// which is exactly what we want for paste-and-destroy: the target app's
     /// native ⌘Z rolls back the paste while our callback restores the history
     /// entry.
-    private func refreshUndoShortcut() {
+    private func refreshUndoShortcut(descriptor: ToastDescriptor) {
         tearDownUndoShortcut()
-        guard let descriptor = currentDescriptor,
-              let shortcut = descriptor.action?.shortcut,
-              shortcut == "⌘Z"
-        else { return }
+        guard let shortcut = descriptor.action?.shortcut, shortcut == "⌘Z" else {
+            return
+        }
         undoLocalMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
             guard let self else { return event }
             guard Self.isCmdZ(event) else { return event }
@@ -203,5 +191,41 @@ final class ToastCenter {
     private static func isCmdZ(_ event: NSEvent) -> Bool {
         event.modifierFlags.intersection(.deviceIndependentFlagsMask) == .command
             && event.charactersIgnoringModifiers?.lowercased() == "z"
+    }
+}
+
+// MARK: - SwiftUI container
+
+@MainActor
+final class ToastCenterState: ObservableObject {
+    @Published var current: ToastDescriptor?
+}
+
+/// SwiftUI root view for the toast panel. Owns the slide-in / fade-out
+/// transitions so they ride on SwiftUI's animation engine (no brittle layer
+/// transforms). `bottomInset` reserves transparent space below the pill for
+/// the transition offset and drop shadow — the parent NSPanel is positioned
+/// with the same inset so the pill still rests at the intended screen Y.
+struct ToastHostContainer: View {
+    /// Pt reserved below the pill for shadow + slide-in room. Keep in sync
+    /// with ToastCenter.positionPanel(), which offsets the window by the same
+    /// amount.
+    static let bottomInset: CGFloat = 56
+
+    @ObservedObject var state: ToastCenterState
+    let onAction: () -> Void
+
+    var body: some View {
+        VStack(spacing: 0) {
+            Spacer(minLength: 0)
+            if let descriptor = state.current {
+                UnifiedToastView(descriptor: descriptor, onAction: onAction)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                    .id(descriptor.message)
+            }
+            Color.clear
+                .frame(height: Self.bottomInset)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }

@@ -354,6 +354,7 @@
 /* Data Import/Export */
 "dataPorter.section" = "資料";
 "dataPorter.export" = "匯出資料";
+"dataPorter.compressing" = "壓縮中...";
 "dataPorter.import" = "匯入資料";
 "dataPorter.encrypt" = "加密匯出";
 "dataPorter.password" = "密碼";
@@ -381,6 +382,7 @@
 /* Multi-select */
 "action.merge" = "合併";
 "action.mergeCopy" = "複製";
+"action.copyDebugInfo" = "複製除錯資訊";
 "quick.multiSelected" = "已選取 %d 筆";
 "quick.batchPaste" = "批次貼上";
 
@@ -503,6 +505,7 @@
 "cmd.pastePath" = "貼上路徑";
 "cmd.andNewLine" = "並換行";
 "cmd.transform" = "轉換";
+"cmd.automation" = "自動化";
 
 "relay.title" = "接力模式";
 "relay.tab" = "接力";
@@ -631,6 +634,7 @@
 "automation.section.builtIn" = "內建規則";
 "automation.section.custom" = "我的規則";
 "automation.section.empty" = "（空）";
+"automation.section.disabled" = "未啟用";
 "automation.editor.selectRule" = "選擇一條規則進行編輯";
 "automation.rule.name" = "名稱";
 "automation.rule.enabled" = "啟用";

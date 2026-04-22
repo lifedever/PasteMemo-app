@@ -26,6 +26,9 @@ struct UnifiedToastView: View {
                 actionButton(action)
             }
         }
+        // Match the pill height of the action-button variant so plain
+        // (no-action) toasts don't look visibly shorter.
+        .frame(minHeight: 22)
         .padding(.horizontal, 14)
         .padding(.vertical, 8)
         .background(
