@@ -34,6 +34,10 @@ final class RelayClipboardMonitor {
         let pasteboard = NSPasteboard.general
         guard pasteboard.changeCount != lastChangeCount else { return }
         lastChangeCount = pasteboard.changeCount
+        // Defensive fallback for races where `lastChangeCount` was knocked out of sync
+        // by a third-party clipboard manager writing between our paste and our baseline
+        // update — the self-write marker still identifies this cycle as ours.
+        if pasteboard.isPasteMemoWrite { return }
         // Skip copies from PasteMemo itself (e.g. editing in main window)
         let frontApp = NSWorkspace.shared.frontmostApplication
         if let bundleID = frontApp?.bundleIdentifier, bundleID.contains("pastememo") { return }

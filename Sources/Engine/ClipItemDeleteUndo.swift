@@ -99,11 +99,13 @@ struct ClipItemSnapshot {
     }
 }
 
-/// Shared coordinator for the delete-with-undo toast used by MainWindow and
-/// QuickPanel. Replaces the old confirm-alert flow: one delete can be undone
-/// within `undoWindow`; a new delete commits the previous one (no stacking).
+/// Shared coordinator for the delete-with-undo flow used by MainWindow and
+/// QuickPanel. Replaces the old confirm-alert interaction: one delete can be
+/// undone within `undoWindow`; a new delete commits the previous one
+/// (no stacking). Rendering is delegated to `ToastCenter` so the undo surface
+/// remains reachable after the Quick Panel dismisses itself.
 @MainActor
-final class DeleteUndoCoordinator: ObservableObject {
+final class DeleteUndoCoordinator {
     static let shared = DeleteUndoCoordinator()
 
     struct Pending {
@@ -111,15 +113,14 @@ final class DeleteUndoCoordinator: ObservableObject {
         /// The context used to delete — and therefore the one that must be used
         /// to reinsert so the restored items land in the same store graph.
         let context: ModelContext
-        let expiresAt: Date
     }
 
-    @Published private(set) var pending: Pending?
+    private var pending: Pending?
 
     /// Keep the undo window long enough that a user who thought "oh wait" has
     /// time to move the pointer to the toast, but short enough that the toast
     /// doesn't feel like a permanent status bar.
-    private let undoWindow: TimeInterval = 8
+    private let undoWindow: TimeInterval = 5
 
     private var expirationTask: Task<Void, Never>?
 
@@ -134,11 +135,21 @@ final class DeleteUndoCoordinator: ObservableObject {
         let snapshots = items.map(ClipItemSnapshot.init(from:))
         ClipItemStore.deleteAndNotify(items, from: context)
 
-        pending = Pending(
-            snapshots: snapshots,
-            context: context,
-            expiresAt: Date().addingTimeInterval(undoWindow)
+        pending = Pending(snapshots: snapshots, context: context)
+
+        // ToastCenter drives both visibility and the ⌘Z handler. Duration is
+        // nil because this coordinator owns the 8s window and calls dismiss
+        // itself when it expires (or when a new delete supersedes it); letting
+        // ToastCenter auto-dismiss too would create two independent timers.
+        let descriptor = ToastDescriptor(
+            message: L10n.tr("delete.undo.toast", items.count),
+            icon: .success,
+            action: ToastAction(title: L10n.tr("action.undo"), shortcut: "⌘Z"),
+            duration: nil
         )
+        ToastCenter.shared.show(descriptor) { [weak self] in
+            self?.undo()
+        }
 
         expirationTask = Task { [weak self, undoWindow] in
             try? await Task.sleep(nanoseconds: UInt64(undoWindow * 1_000_000_000))
@@ -170,6 +181,7 @@ final class DeleteUndoCoordinator: ObservableObject {
         if !wasPaused { ClipboardManager.shared.resumeMonitoring() }
 
         self.pending = nil
+        ToastCenter.shared.dismiss()
     }
 
     /// Drops the undo handle without restoring. Called when the window expires
@@ -177,6 +189,8 @@ final class DeleteUndoCoordinator: ObservableObject {
     func commitPending() {
         expirationTask?.cancel()
         expirationTask = nil
+        guard pending != nil else { return }
         pending = nil
+        ToastCenter.shared.dismiss()
     }
 }

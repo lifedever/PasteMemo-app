@@ -44,8 +44,6 @@ struct MainWindowView: View {
     @State private var clearTitle = ""
     @State private var clearProgress: Double = 0
     @State private var clearProgressText = ""
-    @State private var showCopiedToast = false
-    @State private var toastMessage = ""
     @State private var keyMonitor: Any?
     @State private var flagsMonitor: Any?
     @State private var scrollTarget: ClipItem.ID?
@@ -107,8 +105,7 @@ struct MainWindowView: View {
             deleteSelectedItems()
         }
         .onReceive(NotificationCenter.default.publisher(for: Notification.Name("copyItemFromDetail"))) { _ in
-            showCopiedToast = true
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { showCopiedToast = false }
+            ToastCenter.shared.show(ToastDescriptor(message: L10n.tr("action.copied"), icon: .success))
         }
         .onAppear {
             store.sortPinnedFirst = true
@@ -272,25 +269,6 @@ struct MainWindowView: View {
             }
         }
         .overlay {
-            if showCopiedToast {
-                VStack {
-                    Spacer()
-                    Text(toastMessage.isEmpty ? L10n.tr("action.copied") : toastMessage)
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundStyle(.white)
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 8)
-                        .background(.black.opacity(0.75), in: Capsule())
-                        .transition(.opacity.combined(with: .scale(scale: 0.9)))
-                        .padding(.bottom, 20)
-                }
-                .animation(.easeInOut(duration: 0.2), value: showCopiedToast)
-            }
-        }
-        .overlay(alignment: .bottom) {
-            ClipItemUndoToast()
-                .padding(.bottom, 20)
-                .animation(.easeOut(duration: 0.2), value: DeleteUndoCoordinator.shared.pending?.expiresAt)
         }
         .localized()
         .sheet(isPresented: $isClearing) {
@@ -630,6 +608,7 @@ struct MainWindowView: View {
                     item: item,
                     isMultiSelected: selectedItems.count > 1,
                     manualRules: manualRulesForPalette(item: item),
+                    preservedGroupNames: SmartGroupRetention.preservedGroupNames(in: modelContext),
                     onAction: { handleMainCommandAction($0, item: item) },
                     onDismiss: { showCommandPalette = false }
                 )
@@ -866,6 +845,19 @@ struct MainWindowView: View {
         switch action {
         case .paste:
             copyToClipboard(item)
+        case .pasteAndDestroy:
+            // Main window has no target app to paste into, so fall back to
+            // "copy to clipboard, then destroy history" — users can then paste
+            // elsewhere and the sensitive entry is gone regardless.
+            if !item.isPinned && !item.isFavorite,
+               !isItemInPreservedGroup(item) {
+                copyToClipboard(item)
+                let context = modelContext
+                Task { @MainActor in
+                    try? await Task.sleep(for: .milliseconds(500))
+                    DeleteUndoCoordinator.shared.scheduleUndoableDelete(items: [item], context: context)
+                }
+            }
         case .cmdEnter:
             if item.contentType == .link,
                let url = URL(string: item.content.trimmingCharacters(in: .whitespacesAndNewlines)) {
@@ -874,8 +866,7 @@ struct MainWindowView: View {
                 let pasteboard = NSPasteboard.general
                 pasteboard.clearContents()
                 pasteboard.setString(item.content, forType: .string)
-                showCopiedToast = true
-                DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { showCopiedToast = false }
+                ToastCenter.shared.show(ToastDescriptor(message: L10n.tr("action.copied"), icon: .success))
             }
         case .copy:
             if selectedItems.count > 1 {
@@ -916,8 +907,7 @@ struct MainWindowView: View {
             let pasteboard = NSPasteboard.general
             pasteboard.clearContents()
             pasteboard.setString(format, forType: .string)
-            showCopiedToast = true
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { showCopiedToast = false }
+            ToastCenter.shared.show(ToastDescriptor(message: L10n.tr("action.copied"), icon: .success))
         case .showInFinder:
             let paths = item.content.components(separatedBy: "\n").filter { !$0.isEmpty }
             if let first = paths.first {
@@ -959,6 +949,12 @@ struct MainWindowView: View {
         return Array(filtered.prefix(5))
     }
 
+    private func isItemInPreservedGroup(_ item: ClipItem) -> Bool {
+        guard let group = item.groupName, !group.isEmpty else { return false }
+        let preserved = SmartGroupRetention.preservedGroupNames(in: modelContext)
+        return preserved.contains(group)
+    }
+
     private func copySelectedToClipboard() {
         let items = selectedClipItems.sorted { $0.createdAt < $1.createdAt }
         guard !items.isEmpty else { return }
@@ -966,16 +962,12 @@ struct MainWindowView: View {
         let pasteboard = NSPasteboard.general
         pasteboard.clearContents()
         pasteboard.setString(merged, forType: .string)
-        showCopiedToast = true
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { showCopiedToast = false }
+        ToastCenter.shared.show(ToastDescriptor(message: L10n.tr("action.copied"), icon: .success))
     }
 
     private func copyToClipboard(_ item: ClipItem) {
         clipboardManager.writeToPasteboard(item)
-        showCopiedToast = true
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-            showCopiedToast = false
-        }
+        ToastCenter.shared.show(ToastDescriptor(message: L10n.tr("action.copied"), icon: .success))
     }
 
     private func fetchEnabledAutomationRules() -> [AutomationRule] {
@@ -1046,9 +1038,7 @@ struct MainWindowView: View {
         ClipItemStore.saveAndNotify(modelContext)
         ClipItemStore.isBulkOperation = false
 
-        toastMessage = L10n.tr("automation.applied")
-        showCopiedToast = true
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { showCopiedToast = false; toastMessage = "" }
+        ToastCenter.shared.show(ToastDescriptor(message: L10n.tr("automation.applied"), icon: .success))
     }
 
     @MainActor

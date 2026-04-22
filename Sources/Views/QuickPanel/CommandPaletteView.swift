@@ -3,6 +3,11 @@ import SwiftUI
 @MainActor
 enum CommandAction: Hashable {
     case paste
+    /// Paste the item, then delete it from history with an 8s undo window.
+    /// Intended for one-shot values (OTP codes, temporary tokens) that should
+    /// leave no trace after use. Suppressed for pinned / favourited items and
+    /// for clips in a group flagged `preservesItems`.
+    case pasteAndDestroy
     case cmdEnter(label: String)
     case copyColorFormat(format: String, label: String)
     case retryOCR
@@ -23,6 +28,7 @@ enum CommandAction: Hashable {
     var icon: String {
         switch self {
         case .paste: "doc.on.clipboard"
+        case .pasteAndDestroy: "flame"
         case .cmdEnter: "textformat"
         case .copyColorFormat: "paintpalette"
         case .retryOCR: "text.viewfinder"
@@ -42,6 +48,7 @@ enum CommandAction: Hashable {
     var label: String {
         switch self {
         case .paste: L10n.tr("cmd.paste")
+        case .pasteAndDestroy: L10n.tr("cmd.pasteAndDestroy")
         case .cmdEnter(let label): label
         case .copyColorFormat(_, let label): label
         case .retryOCR: L10n.tr("cmd.retryOCR")
@@ -61,6 +68,7 @@ enum CommandAction: Hashable {
     var shortcutKey: String? {
         switch self {
         case .paste: "V"
+        case .pasteAndDestroy: "B"
         case .cmdEnter: "P"
         case .copyColorFormat: "P"
         case .retryOCR: "Y"
@@ -80,6 +88,7 @@ enum CommandAction: Hashable {
     var keyCode: Int? {
         switch self {
         case .paste: 9       // V
+        case .pasteAndDestroy: 11 // B
         case .cmdEnter: 35   // P
         case .copyColorFormat: 35 // P
         case .retryOCR: 16   // Y
@@ -97,8 +106,10 @@ enum CommandAction: Hashable {
     }
 
     var isDestructive: Bool {
-        if case .delete = self { return true }
-        return false
+        switch self {
+        case .delete, .pasteAndDestroy: true
+        default: false
+        }
     }
 }
 
@@ -110,6 +121,9 @@ struct CommandPaletteContent: View {
     /// Manual-trigger rules shown inline in the palette. Capped to 5 at the
     /// call site so a big rule list doesn't drown out built-in actions.
     var manualRules: [AutomationRule] = []
+    /// Group names flagged `preservesItems` at the moment the palette opened.
+    /// Used to suppress `pasteAndDestroy` for items whose group forbids deletion.
+    var preservedGroupNames: Set<String> = []
     let onAction: (CommandAction) -> Void
     let onDismiss: () -> Void
 
@@ -121,8 +135,25 @@ struct CommandPaletteContent: View {
     // keyCodes for digits 1..5 on an ANSI keyboard
     private static let digitKeyCodes: [Int] = [18, 19, 20, 21, 23]
 
+    /// True when the current single-selection item can be paste-and-destroyed.
+    /// Intentionally gated on single selection: multi-select paste-and-destroy is
+    /// ambiguous (delete every selected item? only the active one?) so we skip it
+    /// in that mode. Also suppressed for pinned / favourited items and for items
+    /// whose group opts out of deletion via `SmartGroup.preservesItems`.
+    private var canPasteAndDestroy: Bool {
+        guard !isMultiSelected, let item else { return false }
+        if item.isPinned || item.isFavorite { return false }
+        if let group = item.groupName, !group.isEmpty, preservedGroupNames.contains(group) {
+            return false
+        }
+        return true
+    }
+
     private var actions: [CommandAction] {
         var list: [CommandAction] = [.paste]
+        if canPasteAndDestroy {
+            list.append(.pasteAndDestroy)
+        }
         if let item, item.contentType == .color, let parsed = ColorConverter.parse(item.content) {
             let alt = parsed.alternateFormat
             let altValue = parsed.formatted(alt)

@@ -404,6 +404,7 @@
 // Befehlspalette
 "cmd.title" = "Schnellaktionen";
 "cmd.paste" = "Einfügen";
+"cmd.pasteAndDestroy" = "Einfügen und löschen";
 "cmd.pasteAsPlainText" = "Als Text einfügen";
 "cmd.copyAsPlainText" = "Als Text kopieren";
 "cmd.copy" = "Kopieren";

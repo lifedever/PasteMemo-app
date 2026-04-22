@@ -45,7 +45,6 @@ struct QuickPanelView: View {
     @State private var selectionAnchor: PersistentIdentifier?
     @State private var showAllShortcuts = false
     @State private var relaySplitText: String?
-    @State private var showCopiedToast = false
     @State private var showCommandPalette = false
     @State private var targetApp: NSRunningApplication?
     @State private var isPanelPinned = false
@@ -214,28 +213,6 @@ struct QuickPanelView: View {
             footerBar
         }
         .frame(minWidth: 360, minHeight: 420)
-        .overlay {
-            if showCopiedToast {
-                VStack {
-                    Spacer()
-                    Text(L10n.tr("action.copied"))
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundStyle(.white)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 6)
-                        .background(.black.opacity(0.75), in: Capsule())
-                        .transition(.opacity.combined(with: .scale(scale: 0.9)))
-                        .padding(.bottom, 50)
-                }
-                .animation(.easeInOut(duration: 0.2), value: showCopiedToast)
-            }
-            // Command palette is now shown via popover on the selected row
-        }
-        .overlay(alignment: .bottom) {
-            ClipItemUndoToast()
-                .padding(.bottom, 58)
-                .animation(.easeOut(duration: 0.2), value: DeleteUndoCoordinator.shared.pending?.expiresAt)
-        }
         // Floating group suggestions overlay
         if isShowingSuggestions {
             VStack(spacing: 0) {
@@ -778,6 +755,7 @@ struct QuickPanelView: View {
                     item: item,
                     isMultiSelected: isMultiSelected,
                     manualRules: manualRulesForPalette(item: item),
+                    preservedGroupNames: SmartGroupRetention.preservedGroupNames(in: modelContext),
                     onAction: { handleCommandAction($0) },
                     onDismiss: { showCommandPalette = false; isSearchFocused = true }
                 )
@@ -1308,6 +1286,15 @@ struct QuickPanelView: View {
                    textView.hasMarkedText() {
                     return event
                 }
+                // ⌘⇧↩ is the one-shot "paste and destroy" shortcut, gated to
+                // single-selection items that aren't pinned / favourited / in a
+                // preserved group. The check runs before the hasCmd branch below
+                // so shift isn't swallowed by the plain hasCmd path.
+                if hasCmd, hasShift, !isMultiSelected,
+                   let item = currentItem, canPasteAndDestroy(item) {
+                    handlePasteAndDestroy(item: item)
+                    return nil
+                }
                 if isMultiSelected {
                     handleMultiPaste(asPlainText: hasCmd, forceNewLine: hasShift)
                 } else if hasCmd {
@@ -1384,11 +1371,25 @@ struct QuickPanelView: View {
     }
 
     private func handleCommandAction(_ action: CommandAction) {
+        // paste-and-destroy dismisses the whole Quick Panel instantly inside
+        // its own handler. Setting `showCommandPalette = false` beforehand queues
+        // a SwiftUI overlay dismiss that the subsequent panel.dismiss() then
+        // forces to flush (via layoutSubtreeIfNeeded), stalling the close for
+        // a frame. Skipping the state change here lets the panel go down in one
+        // tick; onDismiss re-asserts the state after the fact as a safety net.
+        if case .pasteAndDestroy = action {
+            if let item = currentItem, canPasteAndDestroy(item) {
+                handlePasteAndDestroy(item: item)
+            }
+            return
+        }
         showCommandPalette = false
         isSearchFocused = true
         switch action {
         case .paste:
             handlePaste(respectAutoPaste: false)
+        case .pasteAndDestroy:
+            break  // handled above
         case .cmdEnter:
             if isMultiSelected {
                 handleMultiPaste(asPlainText: true, forceNewLine: false, respectAutoPaste: false)
@@ -1435,8 +1436,9 @@ struct QuickPanelView: View {
             let pasteboard = NSPasteboard.general
             pasteboard.clearContents()
             pasteboard.setString(format, forType: .string)
-            showCopiedToast = true
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { showCopiedToast = false }
+            // No marker / lastChangeCount update: we want auto-capture to persist the
+            // formatted color as a new history entry (or dedup/update the existing one).
+            ToastCenter.shared.show(ToastDescriptor(message: L10n.tr("action.copied"), icon: .success))
         case .showInFinder:
             if let item = currentItem {
                 let paths = item.content.components(separatedBy: "\n").filter { !$0.isEmpty }
@@ -1611,6 +1613,7 @@ struct QuickPanelView: View {
             let pasteboard = NSPasteboard.general
             pasteboard.clearContents()
             clipboardManager.writeFileURLsToPasteboard(pasteboard, paths: allPaths)
+            pasteboard.markAsPasteMemoWrite()
             clipboardManager.lastChangeCount = pasteboard.changeCount
         }
 
@@ -1645,6 +1648,7 @@ struct QuickPanelView: View {
         pasteboard.clearContents()
         let merged = items.map(\.content).joined(separator: "\n")
         pasteboard.setString(merged, forType: .string)
+        pasteboard.markAsPasteMemoWrite()
         clipboardManager.lastChangeCount = pasteboard.changeCount
         bumpLastUsedPreservingOrder(items)
 
@@ -1654,12 +1658,11 @@ struct QuickPanelView: View {
 
         if dismissAfterCopy {
             QuickPanelWindowController.shared.dismiss()
-            GlobalToast.show(L10n.tr("action.copied"))
+            ToastCenter.shared.show(ToastDescriptor(message: L10n.tr("action.copied"), icon: .success))
             return
         }
 
-        showCopiedToast = true
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { showCopiedToast = false }
+        ToastCenter.shared.show(ToastDescriptor(message: L10n.tr("action.copied"), icon: .success))
     }
 
     private func handleDeleteSelected() {
@@ -1921,6 +1924,7 @@ struct QuickPanelView: View {
             let pasteboard = NSPasteboard.general
             pasteboard.clearContents()
             pasteboard.setString(item.content, forType: .string)
+            pasteboard.markAsPasteMemoWrite()
             clipboardManager.lastChangeCount = pasteboard.changeCount
         } else {
             clipboardManager.writeToPasteboard(item)
@@ -1932,7 +1936,7 @@ struct QuickPanelView: View {
         }
         SoundManager.playCopy()
         QuickPanelWindowController.shared.dismiss()
-        GlobalToast.show(L10n.tr("action.copied"))
+        ToastCenter.shared.show(ToastDescriptor(message: L10n.tr("action.copied"), icon: .success))
     }
 
     private func handlePlainTextPaste(_ item: ClipItem) {
@@ -2043,6 +2047,7 @@ struct QuickPanelView: View {
         let pasteboard = NSPasteboard.general
         pasteboard.clearContents()
         pasteboard.setData(imageData, forType: .tiff)
+        pasteboard.markAsPasteMemoWrite()
         clipboardManager.lastChangeCount = pasteboard.changeCount
         SoundManager.playPaste()
 
@@ -2067,6 +2072,7 @@ struct QuickPanelView: View {
         let pasteboard = NSPasteboard.general
         pasteboard.clearContents()
         pasteboard.setString(item.content, forType: .string)
+        pasteboard.markAsPasteMemoWrite()
         clipboardManager.lastChangeCount = pasteboard.changeCount
         SoundManager.playPaste()
 
@@ -2083,6 +2089,49 @@ struct QuickPanelView: View {
                 try? await Task.sleep(for: .milliseconds(50))
                 clipboardManager.simulatePaste()
             }
+        }
+    }
+
+    /// Whether the given clip qualifies for the paste-and-destroy shortcut.
+    /// Mirrors the palette's `canPasteAndDestroy` gate — pinned / favourited
+    /// items, and clips in a `preservesItems` group, are excluded so the
+    /// one-shot delete can't swallow content the user explicitly kept.
+    private func canPasteAndDestroy(_ item: ClipItem) -> Bool {
+        if item.isPinned || item.isFavorite { return false }
+        if let group = item.groupName, !group.isEmpty {
+            let preserved = SmartGroupRetention.preservedGroupNames(in: modelContext)
+            if preserved.contains(group) { return false }
+        }
+        return true
+    }
+
+    /// Paste the clip via the normal pipeline, then schedule an undoable delete
+    /// a beat later. The delay gives the simulated ⌘V time to land in the target
+    /// app (around 200–300ms in practice) before we queue deletion — undo
+    /// restores the history entry but does not undo the paste itself.
+    ///
+    /// Dismiss is split out from the paste machinery (rather than going through
+    /// `dismissAndPaste`) so the panel disappears in its own runloop tick before
+    /// the `app.activate()` + simulated ⌘V chain hogs the main actor. Otherwise
+    /// the panel visibly lingers for a beat while the paste is dispatched.
+    private func handlePasteAndDestroy(item: ClipItem) {
+        let panelController = QuickPanelWindowController.shared
+        let targetApp = panelController.previousApp
+        panelController.dismiss()
+
+        clipboardManager.writeToPasteboard(item, targetApp: targetApp)
+        item.lastUsedAt = Date()
+        if let ctx = item.modelContext {
+            ClipItemStore.saveAndNotifyLastUsed(ctx)
+        }
+        SoundManager.playPaste()
+        targetApp?.activate()
+        clipboardManager.simulatePaste()
+
+        let modelCtx = modelContext
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(500))
+            DeleteUndoCoordinator.shared.scheduleUndoableDelete(items: [item], context: modelCtx)
         }
     }
 

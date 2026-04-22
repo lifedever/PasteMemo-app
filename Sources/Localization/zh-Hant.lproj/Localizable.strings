@@ -491,6 +491,7 @@
 // 命令面板
 "cmd.title" = "快捷操作";
 "cmd.paste" = "貼上";
+"cmd.pasteAndDestroy" = "貼上並銷毀";
 "cmd.pasteAsPlainText" = "純文字貼上";
 "cmd.copyAsPlainText" = "複製為純文字";
 "cmd.copy" = "複製";

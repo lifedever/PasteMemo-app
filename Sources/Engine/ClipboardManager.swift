@@ -4,7 +4,6 @@ import SwiftData
 
 private let CLIPBOARD_POLL_INTERVAL: TimeInterval = 0.5
 private let PASTE_SIMULATION_DELAY: Duration = .milliseconds(30)
-private let V_KEY_CODE: UInt16 = 0x09
 
 @MainActor
 final class ClipboardManager: ObservableObject {
@@ -112,6 +111,11 @@ final class ClipboardManager: ObservableObject {
         let pasteboard = NSPasteboard.general
         guard pasteboard.changeCount != lastChangeCount else { return }
         lastChangeCount = pasteboard.changeCount
+        // Defensive fallback: even if `lastChangeCount` was knocked out of sync by a
+        // third-party clipboard manager writing between our setData and our baseline
+        // update, the self-write marker still identifies this change as ours and we
+        // skip capturing a duplicate history entry.
+        if pasteboard.isPasteMemoWrite { return }
         captureAndSave()
     }
 
@@ -205,7 +209,13 @@ final class ClipboardManager: ObservableObject {
         // Parallel capture of every independent representation on the pasteboard.
         // `richText` is attached to text (not counted as an independent representation for .mixed judgement).
         let fileURLs = (pasteboard.readObjects(forClasses: [NSURL.self], options: [.urlReadingFileURLsOnly: true]) as? [URL]) ?? []
-        let rawImageData = pasteboard.data(forType: .png) ?? pasteboard.data(forType: .tiff)
+        // Cover the four standard image UTIs so iPhone photos (HEIC), Safari drags
+        // (often JPEG), and classic screenshots (PNG/TIFF) all get recognised as
+        // images rather than falling through to the file / unknown path.
+        let rawImageData = pasteboard.data(forType: .png)
+            ?? pasteboard.data(forType: NSPasteboard.PasteboardType("public.jpeg"))
+            ?? pasteboard.data(forType: NSPasteboard.PasteboardType("public.heic"))
+            ?? pasteboard.data(forType: .tiff)
         let rawText = pasteboard.string(forType: .string)?.trimmingCharacters(in: .whitespacesAndNewlines)
         let richText = captureRichTextData(from: pasteboard)
 
@@ -298,16 +308,63 @@ final class ClipboardManager: ObservableObject {
     /// Protects the database from pathological clipboards (huge embedded PDFs, etc.).
     private static let MAX_SNAPSHOT_BYTES = 50 * 1024 * 1024
 
+    /// Office-internal UTI prefixes that we never want on the pasteboard when PasteMemo
+    /// writes back. Word paste hijacks into its private internal clipboard whenever any
+    /// `com.microsoft.*` type is present and ignores NSPasteboard — so every paste
+    /// replays whatever Word last copied itself instead of our content (issue #28).
+    /// Maccy, the most popular OSS macOS clipboard manager, takes the same approach.
+    /// Stripping here is harmless for non-Word targets (they ignore these types) and
+    /// essential for Word: without the MS types, Word falls back to the standard
+    /// `public.rtf` / `public.html` path. Bold / color / font size survive; only
+    /// Word-internal object references are lost.
+    private static let OFFICE_PRIVATE_TYPE_PREFIXES: [String] = [
+        "com.microsoft."
+    ]
+
+    /// Returns true when the given UTI is an Office-private type that would trigger
+    /// Word's internal-clipboard hijack.
+    private static func isOfficePrivateType(_ rawType: String) -> Bool {
+        OFFICE_PRIVATE_TYPE_PREFIXES.contains { rawType.hasPrefix($0) }
+    }
+
     /// Captures every type on the pasteboard as a binary-plist dictionary. Returns nil if
     /// nothing readable is available, or if the total size exceeds MAX_SNAPSHOT_BYTES.
     /// Replaying this via `restorePasteboardSnapshot` reproduces the original pasteboard
     /// verbatim — that's how we achieve system-native paste in rich-content apps (Word,
     /// Mail, browsers, Notes) that pick UTIs outside the small set we decode ourselves.
+    ///
+    /// Office-private types are dropped at capture time so they never land in the
+    /// database; see `OFFICE_PRIVATE_TYPE_PREFIXES` for rationale.
     private func capturePasteboardSnapshot(from pasteboard: NSPasteboard) -> Data? {
         guard let types = pasteboard.types, !types.isEmpty else { return nil }
+        // Detect Word cross-reference/bookmark copy BEFORE the blanket com.microsoft.*
+        // strip below removes the link markers. When Word places a bookmark link on
+        // the pasteboard, the .pdf representation is a bookmark-link image rather
+        // than real paragraph content; targets that pick PDF first (Pages, Preview)
+        // would paste the link image instead of text. Drop the .pdf in that case
+        // so targets fall through to public.rtf / public.html.
+        let msLinkSource = NSPasteboard.PasteboardType("com.microsoft.LinkSource")
+        let msObjectLink = NSPasteboard.PasteboardType("com.microsoft.ObjectLink")
+        let isWordBookmarkCopy = types.contains(msLinkSource) && types.contains(msObjectLink)
         var dict: [String: Data] = [:]
         var totalBytes = 0
         for type in types {
+            // Skip `dyn.*` aliases — macOS auto-generates them for legacy pasteboard
+            // type names (e.g. `TelegramTextPboardType` also surfaces as `dyn.ah62d4rv4gu8...`).
+            // Both point to identical bytes, so keeping them doubles the stored size
+            // with no benefit.
+            if type.rawValue.hasPrefix("dyn.") { continue }
+            // Never persist the self-write marker in the snapshot. If it ever leaked
+            // into the database, restoring that snapshot would re-apply the marker on
+            // every paste and every subsequent poll would see it as "our write" — a
+            // useless round-trip, and a stale artefact if the marker UTI ever changes.
+            if type == .fromPasteMemo { continue }
+            // Drop Office-private types unconditionally (issue #28) — Word's internal
+            // clipboard hijack reads these and ignores NSPasteboard. This also removes
+            // the LinkSource + ObjectLink pair.
+            if Self.isOfficePrivateType(type.rawValue) { continue }
+            // In a Word bookmark copy, also drop the bogus bookmark-link PDF.
+            if isWordBookmarkCopy, type == .pdf { continue }
             guard let data = pasteboard.data(forType: type) else { continue }
             totalBytes += data.count
             if totalBytes > Self.MAX_SNAPSHOT_BYTES { return nil }
@@ -321,30 +378,16 @@ final class ClipboardManager: ObservableObject {
     /// on success (caller should skip any legacy per-type writes); false on malformed/empty
     /// snapshots so the caller can fall through to the fallback path.
     ///
-    /// - Parameter stripPrivatePrefixes: if non-empty, entries whose UTI starts with any
-    ///   of the given prefixes are dropped before writing. Used to work around Word's
-    ///   internal-clipboard hijack of `com.microsoft.*` types (issue #28): with those
-    ///   types present, Word paste reads from its private cache and ignores our writes;
-    ///   without them, Word falls back to the standard `public.rtf` / `public.html` path.
+    /// Office-private types are stripped on restore as well — defensively, in case the
+    /// snapshot was captured by an older build before capture-time filtering existed.
     @discardableResult
-    func restorePasteboardSnapshot(
-        _ data: Data,
-        to pasteboard: NSPasteboard,
-        stripPrivatePrefixes: [String] = []
-    ) -> Bool {
+    func restorePasteboardSnapshot(_ data: Data, to pasteboard: NSPasteboard) -> Bool {
         guard
             let plist = try? PropertyListSerialization.propertyList(from: data, options: [], format: nil),
             let dict = plist as? [String: Data],
             !dict.isEmpty
         else { return false }
-        let filteredDict: [String: Data]
-        if stripPrivatePrefixes.isEmpty {
-            filteredDict = dict
-        } else {
-            filteredDict = dict.filter { pair in
-                !stripPrivatePrefixes.contains(where: { pair.key.hasPrefix($0) })
-            }
-        }
+        let filteredDict = dict.filter { !Self.isOfficePrivateType($0.key) }
         guard !filteredDict.isEmpty else { return false }
         pasteboard.clearContents()
         for (typeRaw, bytes) in filteredDict {
@@ -769,8 +812,12 @@ final class ClipboardManager: ObservableObject {
         // Exception: if the target is a plain-text-only app (terminals, editors), skip the
         // snapshot — it might carry file URLs / images the target can't use, and the text-only
         // fallback below picks the best textual representation.
+        //
+        // `restorePasteboardSnapshot` itself drops Office-private types (issue #28) so Word
+        // paste doesn't get hijacked by its private internal clipboard.
         if !textOnly, let snapshot = item.pasteboardSnapshot,
            restorePasteboardSnapshot(snapshot, to: pasteboard) {
+            pasteboard.markAsPasteMemoWrite()
             lastChangeCount = pasteboard.changeCount
             skipRelayMonitorIfActive()
             return
@@ -909,6 +956,7 @@ final class ClipboardManager: ObservableObject {
                 writeRichTextData(rtfData, type: item.richTextType, to: pasteboard)
             }
         }
+        pasteboard.markAsPasteMemoWrite()
         lastChangeCount = NSPasteboard.general.changeCount
         skipRelayMonitorIfActive()
     }
@@ -1065,6 +1113,7 @@ final class ClipboardManager: ObservableObject {
                     }
                 }
 
+                pasteboard.markAsPasteMemoWrite()
                 lastChangeCount = pasteboard.changeCount
                 skipRelayMonitorIfActive()
                 try? await Task.sleep(for: PASTE_SIMULATION_DELAY)
@@ -1134,6 +1183,7 @@ final class ClipboardManager: ObservableObject {
         let pasteboard = NSPasteboard.general
         pasteboard.clearContents()
         pasteboard.setString(merged, forType: .string)
+        pasteboard.markAsPasteMemoWrite()
         lastChangeCount = pasteboard.changeCount
         skipRelayMonitorIfActive()
 
@@ -1147,6 +1197,7 @@ final class ClipboardManager: ObservableObject {
         let pasteboard = NSPasteboard.general
         pasteboard.clearContents()
         pasteboard.setString(item.content, forType: .string)
+        pasteboard.markAsPasteMemoWrite()
         lastChangeCount = pasteboard.changeCount
         skipRelayMonitorIfActive()
         SoundManager.playPaste()
@@ -1175,10 +1226,16 @@ final class ClipboardManager: ObservableObject {
     }
 
     private func simulateCommandV() {
-        let source = CGEventSource(stateID: .combinedSessionState)
-        source?.localEventsSuppressionInterval = 0.0
-        let keyDown = CGEvent(keyboardEventSource: source, virtualKey: V_KEY_CODE, keyDown: true)
-        let keyUp = CGEvent(keyboardEventSource: source, virtualKey: V_KEY_CODE, keyDown: false)
+        // privateState: event carries no inherited physical modifier state, so
+        // ⌘V stays exactly ⌘V even if the user is still holding other keys
+        // (global hotkey release timing, Ctrl-based relay triggers, etc.).
+        let source = CGEventSource(stateID: .privateState)
+        // Resolve the V keycode for the current keyboard layout so pure Dvorak /
+        // Colemak / AZERTY users also get ⌘V instead of whatever character sits
+        // at the ANSI V slot in their layout.
+        let vKeyCode = KeyboardLayout.virtualKeyForV()
+        let keyDown = CGEvent(keyboardEventSource: source, virtualKey: vKeyCode, keyDown: true)
+        let keyUp = CGEvent(keyboardEventSource: source, virtualKey: vKeyCode, keyDown: false)
         keyDown?.flags = .maskCommand
         keyUp?.flags = .maskCommand
         keyDown?.post(tap: .cgAnnotatedSessionEventTap)

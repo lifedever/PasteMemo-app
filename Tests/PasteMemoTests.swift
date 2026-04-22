@@ -32,24 +32,29 @@ struct PasteMemoTests {
         #expect(ClipboardManager.shared.pasteboardHasThirdPartyTypes(pb) == false)
     }
 
-    @Test("restorePasteboardSnapshot strips requested UTI prefixes (issue #28 — Word private clipboard hijack)")
-    @MainActor func restoreStripsPrivateTypes() throws {
+    @Test("restorePasteboardSnapshot strips Office-private UTIs (issue #28 — Word private clipboard hijack)")
+    @MainActor func restoreStripsOfficePrivateTypes() throws {
         let pb = NSPasteboard(name: NSPasteboard.Name("pastememo-test-strip-\(UUID().uuidString)"))
+        // Old-format snapshot (pre-capture-filter era) still contains Microsoft-private
+        // types; restore must drop them so Word paste falls back to public.rtf and
+        // doesn't hijack into its internal clipboard cache.
         let snapshotDict: [String: Data] = [
             "public.rtf": Data("rtf-bytes".utf8),
             "public.utf8-plain-text": Data("plain".utf8),
             "com.microsoft.Object-Descriptor": Data([0x01, 0x02]),
             "com.microsoft.DataObject": Data([0x03, 0x04]),
+            "com.microsoft.ole.source.68787.0x1047f01d8": Data([0x05]),
         ]
         let blob = try PropertyListSerialization.data(fromPropertyList: snapshotDict, format: .binary, options: 0)
         pb.clearContents()
-        let ok = ClipboardManager.shared.restorePasteboardSnapshot(blob, to: pb, stripPrivatePrefixes: ["com.microsoft."])
+        let ok = ClipboardManager.shared.restorePasteboardSnapshot(blob, to: pb)
         #expect(ok)
         let restoredTypes = Set((pb.types ?? []).map(\.rawValue))
         #expect(restoredTypes.contains("public.rtf"))
         #expect(restoredTypes.contains("public.utf8-plain-text"))
         #expect(restoredTypes.contains("com.microsoft.Object-Descriptor") == false)
         #expect(restoredTypes.contains("com.microsoft.DataObject") == false)
+        #expect(restoredTypes.contains("com.microsoft.ole.source.68787.0x1047f01d8") == false)
     }
 
     @Test("Detect link content type")
