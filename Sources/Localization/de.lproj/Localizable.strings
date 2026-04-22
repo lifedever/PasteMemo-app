@@ -655,6 +655,7 @@ Verwenden Sie %@ zum Einfügen.";
 "automation.section.builtIn" = "Integrierte Regeln";
 "automation.section.custom" = "Meine Regeln";
 "automation.section.empty" = "(leer)";
+"automation.section.disabled" = "Deaktiviert";
 "automation.editor.selectRule" = "Regel zum Bearbeiten auswählen";
 "automation.editor.definition" = "Regeldefinition";
 "automation.editor.settings" = "Einstellungen";

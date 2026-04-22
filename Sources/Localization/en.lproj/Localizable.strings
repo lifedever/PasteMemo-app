@@ -448,6 +448,7 @@
 "automation.section.builtIn" = "Built-in Rules";
 "automation.section.custom" = "My Rules";
 "automation.section.empty" = "(empty)";
+"automation.section.disabled" = "Disabled";
 "automation.editor.selectRule" = "Select a rule to edit";
 "automation.rule.name" = "Name";
 "automation.rule.enabled" = "Enabled";

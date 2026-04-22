@@ -19,6 +19,15 @@ struct AutomationManagerView: View {
 
     private var builtInRules: [AutomationRule] { rules.filter(\.isBuiltIn) }
     private var customRules: [AutomationRule] { rules.filter { !$0.isBuiltIn } }
+    private var customAutoRules: [AutomationRule] {
+        customRules.filter { $0.enabled && $0.triggerMode == .automatic }
+    }
+    private var customManualRules: [AutomationRule] {
+        customRules.filter { $0.enabled && $0.triggerMode == .manual }
+    }
+    private var customDisabledRules: [AutomationRule] {
+        customRules.filter { !$0.enabled }
+    }
     private var selectedRule: AutomationRule? { rules.first { $0.ruleID == selectedRuleID } }
 
     var body: some View {
@@ -41,14 +50,32 @@ struct AutomationManagerView: View {
                     ruleRow(rule)
                 }
             }
-            Section(L10n.tr("automation.section.custom")) {
-                if customRules.isEmpty {
+            if customRules.isEmpty {
+                Section(L10n.tr("automation.section.custom")) {
                     Text(L10n.tr("automation.section.empty"))
                         .foregroundStyle(.tertiary)
                         .font(.callout)
-                } else {
-                    ForEach(customRules) { rule in
-                        ruleRow(rule)
+                }
+            } else {
+                if !customAutoRules.isEmpty {
+                    Section(L10n.tr("settings.automation.auto")) {
+                        ForEach(customAutoRules) { rule in
+                            ruleRow(rule)
+                        }
+                    }
+                }
+                if !customManualRules.isEmpty {
+                    Section(L10n.tr("settings.automation.manual")) {
+                        ForEach(customManualRules) { rule in
+                            ruleRow(rule)
+                        }
+                    }
+                }
+                if !customDisabledRules.isEmpty {
+                    Section(L10n.tr("automation.section.disabled")) {
+                        ForEach(customDisabledRules) { rule in
+                            ruleRow(rule)
+                        }
                     }
                 }
             }
@@ -62,11 +89,15 @@ struct AutomationManagerView: View {
                 }
                 .buttonStyle(.borderless)
 
-                Button(action: deleteSelectedRule) {
+                Button {
+                    if let rule = selectedRule, !rule.isBuiltIn {
+                        deleteRule(rule)
+                    }
+                } label: {
                     Image(systemName: "minus")
                 }
                 .buttonStyle(.borderless)
-                .disabled(selectedRule == nil || selectedRule?.isBuiltIn == true)
+                .disabled(selectedRule?.isBuiltIn ?? true)
 
                 Spacer()
             }
@@ -169,22 +200,4 @@ struct AutomationManagerView: View {
         }
     }
 
-    private func deleteSelectedRule() {
-        guard let rule = selectedRule, !rule.isBuiltIn else { return }
-
-        let alert = NSAlert()
-        alert.messageText = L10n.tr("automation.delete.confirm")
-        alert.informativeText = L10n.tr("automation.delete.confirmMessage")
-        alert.alertStyle = .warning
-        alert.addButton(withTitle: L10n.tr("action.delete"))
-        alert.addButton(withTitle: L10n.tr("action.cancel"))
-        guard alert.runModal() == .alertFirstButtonReturn else { return }
-
-        let currentID = rule.ruleID
-        modelContext.delete(rule)
-        try? modelContext.save()
-        if selectedRuleID == currentID {
-            selectedRuleID = rules.first(where: { $0.ruleID != currentID })?.ruleID
-        }
-    }
 }

@@ -663,6 +663,7 @@ Utilisez %@ pour coller un par un.";
 "automation.section.builtIn" = "Règles intégrées";
 "automation.section.custom" = "Mes règles";
 "automation.section.empty" = "(vide)";
+"automation.section.disabled" = "Désactivé";
 
 /* Automation Editor */
 "automation.editor.selectRule" = "Sélectionnez une règle à modifier";

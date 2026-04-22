@@ -634,6 +634,7 @@
 "automation.section.builtIn" = "內建規則";
 "automation.section.custom" = "我的規則";
 "automation.section.empty" = "（空）";
+"automation.section.disabled" = "未啟用";
 "automation.editor.selectRule" = "選擇一條規則進行編輯";
 "automation.rule.name" = "名稱";
 "automation.rule.enabled" = "啟用";

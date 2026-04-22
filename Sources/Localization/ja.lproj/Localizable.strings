@@ -680,6 +680,7 @@
 "automation.section.builtIn" = "組み込みルール";
 "automation.section.custom" = "マイルール";
 "automation.section.empty" = "（空）";
+"automation.section.disabled" = "無効";
 "automation.editor.selectRule" = "編集するルールを選択";
 "automation.editor.definition" = "ルール定義";
 "automation.editor.settings" = "設定";

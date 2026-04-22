@@ -646,6 +646,7 @@
 "automation.section.builtIn" = "Встроенные правила";
 "automation.section.custom" = "Мои правила";
 "automation.section.empty" = "(пусто)";
+"automation.section.disabled" = "Отключено";
 "automation.editor.selectRule" = "Выберите правило для редактирования";
 "automation.rule.name" = "Название";
 "automation.rule.enabled" = "Включено";

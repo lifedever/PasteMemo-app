@@ -663,6 +663,7 @@
 "automation.section.builtIn" = "기본 규칙";
 "automation.section.custom" = "내 규칙";
 "automation.section.empty" = "(비어 있음)";
+"automation.section.disabled" = "비활성화";
 "automation.editor.selectRule" = "편집할 규칙을 선택하세요";
 "automation.editor.definition" = "규칙 정의";
 "automation.editor.settings" = "설정";

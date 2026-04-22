@@ -646,6 +646,7 @@ Gunakan %@ untuk menempel satu per satu.";
 "automation.section.builtIn" = "Aturan Bawaan";
 "automation.section.custom" = "Aturan Saya";
 "automation.section.empty" = "(kosong)";
+"automation.section.disabled" = "Dinonaktifkan";
 "automation.editor.selectRule" = "Pilih aturan untuk diedit";
 "automation.rule.name" = "Nama";
 "automation.rule.enabled" = "Aktif";

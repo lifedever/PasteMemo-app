@@ -635,6 +635,7 @@ Usa %@ per incollare uno per uno.";
 "automation.section.builtIn" = "Regole integrate";
 "automation.section.custom" = "Le mie regole";
 "automation.section.empty" = "(vuoto)";
+"automation.section.disabled" = "Disabilitata";
 "automation.editor.selectRule" = "Seleziona una regola da modificare";
 "automation.rule.name" = "Nome";
 "automation.rule.enabled" = "Attivo";

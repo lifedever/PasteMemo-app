@@ -449,6 +449,7 @@
 "automation.section.builtIn" = "内置规则";
 "automation.section.custom" = "我的规则";
 "automation.section.empty" = "（空）";
+"automation.section.disabled" = "未启用";
 "automation.editor.selectRule" = "选择一条规则进行编辑";
 "automation.rule.name" = "名称";
 "automation.rule.enabled" = "启用";

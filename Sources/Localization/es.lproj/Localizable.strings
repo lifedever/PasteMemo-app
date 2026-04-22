@@ -663,6 +663,7 @@ Usa %@ para pegar uno por uno.";
 "automation.section.builtIn" = "Reglas integradas";
 "automation.section.custom" = "Mis reglas";
 "automation.section.empty" = "(vacío)";
+"automation.section.disabled" = "Desactivado";
 
 /* Automation - Editor */
 "automation.editor.selectRule" = "Selecciona una regla para editar";
