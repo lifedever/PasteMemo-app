@@ -121,6 +121,7 @@
 "action.clearConfirm" = "Alle Elemente außer Favoriten und angehefteten Elementen werden gelöscht.";
 "action.clearScope.type" = "Alle Elemente dieses Typs löschen";
 "action.clearScope.group" = "Alle Elemente in dieser Gruppe löschen";
+"action.clearScope.group.disabledHelp" = "Diese Gruppe ist als dauerhaft markiert, daher können ihre Elemente nicht gelöscht werden.";
 "action.clearScope.app" = "Alle Elemente aus dieser App löschen";
 "action.clearScope.title" = "„%@“ leeren";
 "action.clearScope.confirm" = "%d Elemente werden gelöscht (angeheftete Elemente sowie Elemente in dauerhaften Gruppen bleiben erhalten).";

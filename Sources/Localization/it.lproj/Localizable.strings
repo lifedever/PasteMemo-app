@@ -214,6 +214,7 @@
 "action.clearConfirm" = "Verranno eliminati tutti gli elementi tranne quelli fissati.";
 "action.clearScope.type" = "Svuota gli elementi di questo tipo";
 "action.clearScope.group" = "Svuota gli elementi di questo gruppo";
+"action.clearScope.group.disabledHelp" = "Questo gruppo è contrassegnato come permanente, quindi i suoi elementi non possono essere svuotati.";
 "action.clearScope.app" = "Svuota gli elementi di questa app";
 "action.clearScope.title" = "Svuota «%@»";
 "action.clearScope.confirm" = "Verranno eliminati %d elementi non fissati. Gli elementi nei gruppi con conservazione permanente non verranno rimossi.";

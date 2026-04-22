@@ -121,6 +121,7 @@
 "action.clearConfirm" = "Se eliminarán todos los elementos excepto los favoritos y los fijados.";
 "action.clearScope.type" = "Vaciar los elementos de este tipo";
 "action.clearScope.group" = "Vaciar los elementos de este grupo";
+"action.clearScope.group.disabledHelp" = "Este grupo está marcado como permanente, por lo que no se pueden vaciar sus elementos.";
 "action.clearScope.app" = "Vaciar los elementos de esta app";
 "action.clearScope.title" = "Vaciar «%@»";
 "action.clearScope.confirm" = "Se eliminarán %d elementos no fijados. Los elementos de grupos permanentes no se eliminarán.";

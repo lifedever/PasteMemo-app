@@ -129,6 +129,7 @@
 "action.clearConfirm" = "お気に入りとピン留めを除くすべてのアイテムが削除されます。";
 "action.clearScope.type" = "この種類のアイテムをすべて削除";
 "action.clearScope.group" = "このグループ内のアイテムをすべて削除";
+"action.clearScope.group.disabledHelp" = "このグループは永久保存に設定されているため、中のアイテムは削除できません。";
 "action.clearScope.app" = "このアプリからのアイテムをすべて削除";
 "action.clearScope.title" = "「%@」を削除";
 "action.clearScope.confirm" = "ピン留めされていない %d 件のアイテムが削除されます。永久保存グループ内のアイテムは削除されません。";

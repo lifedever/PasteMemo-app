@@ -238,6 +238,7 @@
 "action.clearConfirm" = "This will delete all items except pinned items.";
 "action.clearScope.type" = "Clear All Items of This Type";
 "action.clearScope.group" = "Clear All Items in This Group";
+"action.clearScope.group.disabledHelp" = "This group is marked as permanent, so its items can't be cleared.";
 "action.clearScope.app" = "Clear All Items from This App";
 "action.clearScope.title" = "Clear \"%@\"";
 "action.clearScope.confirm" = "This will delete %d items (pinned items and items in permanent groups will be kept).";

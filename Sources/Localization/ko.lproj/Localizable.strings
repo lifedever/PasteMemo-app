@@ -121,6 +121,7 @@
 "action.clearConfirm" = "즐겨찾기와 고정된 항목을 제외한 모든 항목이 삭제됩니다.";
 "action.clearScope.type" = "이 유형의 항목 모두 지우기";
 "action.clearScope.group" = "이 그룹의 항목 모두 지우기";
+"action.clearScope.group.disabledHelp" = "이 그룹은 영구 보관으로 설정되어 있어 내부 항목을 지울 수 없습니다.";
 "action.clearScope.app" = "이 앱의 항목 모두 지우기";
 "action.clearScope.title" = "「%@」 지우기";
 "action.clearScope.confirm" = "고정되지 않은 %d개의 항목이 삭제됩니다. 영구 보관 그룹의 항목은 삭제되지 않습니다.";

@@ -215,6 +215,7 @@
 "action.clearConfirm" = "將刪除所有未置頂的條目。";
 "action.clearScope.type" = "清空此類型下的條目";
 "action.clearScope.group" = "清空此分組下的條目";
+"action.clearScope.group.disabledHelp" = "此分組已啟用永久保留，不能清空其中條目。";
 "action.clearScope.app" = "清空此 App 下的條目";
 "action.clearScope.title" = "清空「%@」";
 "action.clearScope.confirm" = "將刪除 %d 條未置頂的條目，永久保留分組中的條目不會被清除。";

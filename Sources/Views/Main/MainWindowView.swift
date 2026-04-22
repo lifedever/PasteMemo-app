@@ -405,6 +405,8 @@ struct MainWindowView: View {
                             Button(L10n.tr("action.clearScope.group"), role: .destructive) {
                                 clearItems(inScope: .group(group.name))
                             }
+                            .disabled(group.preservesItems)
+                            .help(group.preservesItems ? L10n.tr("action.clearScope.group.disabledHelp") : "")
                             Button(L10n.tr("action.deleteGroup"), role: .destructive) {
                                 let alert = NSAlert()
                                 alert.messageText = L10n.tr("action.deleteGroup")

@@ -121,6 +121,7 @@
 "action.clearConfirm" = "Tous les éléments seront supprimés, sauf les favoris et les éléments épinglés.";
 "action.clearScope.type" = "Effacer tous les éléments de ce type";
 "action.clearScope.group" = "Effacer tous les éléments de ce groupe";
+"action.clearScope.group.disabledHelp" = "Ce groupe est défini comme permanent, ses éléments ne peuvent donc pas être effacés.";
 "action.clearScope.app" = "Effacer tous les éléments de cette app";
 "action.clearScope.title" = "Effacer « %@ »";
 "action.clearScope.confirm" = "Cette action supprimera %d éléments (les éléments épinglés et ceux des groupes permanents seront conservés).";

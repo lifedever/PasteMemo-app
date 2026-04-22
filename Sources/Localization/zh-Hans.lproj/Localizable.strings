@@ -238,6 +238,7 @@
 "action.clearConfirm" = "将删除所有未置顶的条目。";
 "action.clearScope.type" = "清空此类型下的条目";
 "action.clearScope.group" = "清空此分组下的条目";
+"action.clearScope.group.disabledHelp" = "此分组已启用永久保存，不能清空其中条目。";
 "action.clearScope.app" = "清空此 App 下的条目";
 "action.clearScope.title" = "清空「%@」";
 "action.clearScope.confirm" = "将删除 %d 条未置顶的条目，永久保存分组中的条目不会被清除。";
