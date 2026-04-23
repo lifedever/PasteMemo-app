@@ -536,11 +536,13 @@ final class QuickPanelWindowController {
             object: nil,
             queue: nil
         ) { [weak self] _ in
-            guard let self, !self.isPinned, !self.suppressDismiss else { return }
-            let isMouseDown = NSEvent.pressedMouseButtons != 0
-            let mouseInPanel = self.panel?.frame.contains(NSEvent.mouseLocation) ?? false
-            if isMouseDown, mouseInPanel { return }
-            Task { @MainActor in self.dismiss() }
+            Task { @MainActor [weak self] in
+                guard let self, !self.isPinned, !self.suppressDismiss else { return }
+                let isMouseDown = NSEvent.pressedMouseButtons != 0
+                let mouseInPanel = self.panel?.frame.contains(NSEvent.mouseLocation) ?? false
+                if isMouseDown, mouseInPanel { return }
+                self.dismiss()
+            }
         }
         // Panel lost key (e.g. another window took focus, or Cmd+Tab)
         resignKeyObserver = NotificationCenter.default.addObserver(
@@ -548,17 +550,19 @@ final class QuickPanelWindowController {
             object: panel,
             queue: nil
         ) { [weak self] _ in
-            guard let self, !self.suppressDismiss else { return }
-            if self.isPinned {
-                // When pinned and panel loses key (user clicked another app), release
-                // the SwiftUI FocusState so it stops fighting to become key again.
-                NotificationCenter.default.post(name: .quickPanelPinnedResignKey, object: nil)
-                return
+            Task { @MainActor [weak self] in
+                guard let self, !self.suppressDismiss else { return }
+                if self.isPinned {
+                    // When pinned and panel loses key (user clicked another app), release
+                    // the SwiftUI FocusState so it stops fighting to become key again.
+                    NotificationCenter.default.post(name: .quickPanelPinnedResignKey, object: nil)
+                    return
+                }
+                let isMouseDown = NSEvent.pressedMouseButtons != 0
+                let mouseInPanel = self.panel?.frame.contains(NSEvent.mouseLocation) ?? false
+                if isMouseDown, mouseInPanel { return }
+                self.dismiss()
             }
-            let isMouseDown = NSEvent.pressedMouseButtons != 0
-            let mouseInPanel = self.panel?.frame.contains(NSEvent.mouseLocation) ?? false
-            if isMouseDown, mouseInPanel { return }
-            Task { @MainActor in self.dismiss() }
         }
     }
 
@@ -588,7 +592,9 @@ final class QuickPanelWindowController {
             object: panel,
             queue: .main
         ) { [weak self] _ in
-            self?.handleWindowMove()
+            Task { @MainActor [weak self] in
+                self?.handleWindowMove()
+            }
         }
         let onMouseUp: () -> Void = { [weak self] in
             self?.snapGuide?.orderOut(nil)

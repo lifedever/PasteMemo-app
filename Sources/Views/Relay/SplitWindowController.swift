@@ -73,15 +73,17 @@ final class SplitWindowController {
 
         // Observe size changes
         let observation = hosting.observe(\.preferredContentSize, options: [.new, .initial]) { [weak panel] controller, _ in
-            guard let panel else { return }
-            let size = controller.preferredContentSize
-            guard size.height > 0 else { return }
-            var frame = panel.frame
-            let newHeight = min(size.height, 500)
-            frame.origin.y -= (newHeight - frame.height)
-            frame.size.height = newHeight
-            frame.size.width = 340
-            panel.setFrame(frame, display: true)
+            Task { @MainActor in
+                guard let panel else { return }
+                let size = controller.preferredContentSize
+                guard size.height > 0 else { return }
+                var frame = panel.frame
+                let newHeight = min(size.height, 500)
+                frame.origin.y -= (newHeight - frame.height)
+                frame.size.height = newHeight
+                frame.size.width = 340
+                panel.setFrame(frame, display: true)
+            }
         }
         // Store observation to keep it alive
         objc_setAssociatedObject(panel, "sizeObservation", observation, .OBJC_ASSOCIATION_RETAIN)

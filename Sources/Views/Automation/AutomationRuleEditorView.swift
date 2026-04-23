@@ -153,7 +153,8 @@ struct AutomationRuleEditorView: View {
                     saveSettings()
                     if newValue {
                         requestNotificationPermission { granted in
-                            if !granted {
+                            guard !granted else { return }
+                            Task { @MainActor in
                                 rule.notifyOnTrigger = false
                                 saveSettings()
                             }

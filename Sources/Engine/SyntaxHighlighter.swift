@@ -30,6 +30,7 @@ struct SyntaxTheme {
     let deletion: NSColor
     let addition: NSColor
 
+    @MainActor
     static var current: SyntaxTheme {
         let isDark = NSApp.effectiveAppearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
         return isDark ? .dark : .light

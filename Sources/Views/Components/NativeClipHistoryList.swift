@@ -282,7 +282,7 @@ struct NativeClipHistoryList<RowContent: View, HeaderContent: View, ContextMenuC
         }
 
         func applyScrollTarget(_ scrollTargetID: PersistentIdentifier?) {
-            guard let tableView else { return }
+            guard tableView != nil else { return }
             guard let scrollTargetID,
                   let row = parent.rowIndexByItemID[scrollTargetID]
             else {

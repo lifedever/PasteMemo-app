@@ -1139,7 +1139,15 @@ struct QuickPanelView: View {
                 // NSPopover 内的键盘监听偶发收不到字母键，这里只对高频字母快捷键做一层兜底，
                 // 用最小改动修复「⌘K 后按 P 无反应」。
                 switch Int(event.keyCode) {
-                case 53, 40 where hasCmd, 13 where hasCmd:
+                case 53:
+                    showCommandPalette = false
+                    isSearchFocused = true
+                    return nil
+                case 40 where hasCmd:
+                    showCommandPalette = false
+                    isSearchFocused = true
+                    return nil
+                case 13 where hasCmd:
                     showCommandPalette = false
                     isSearchFocused = true
                     return nil

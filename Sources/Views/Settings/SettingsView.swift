@@ -189,7 +189,7 @@ struct GeneralTab: View {
         let task = Process()
         task.executableURL = URL(fileURLWithPath: "/bin/sh")
         task.arguments = ["-c", "sleep 1 && open \"\(path)\""]
-        try? task.launch()
+        task.launch()
         AppDelegate.shouldReallyQuit = true
         NSApp.terminate(nil)
     }

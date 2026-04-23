@@ -1,5 +1,5 @@
 import SwiftUI
-import AppKit
+@preconcurrency import AppKit
 
 /// Detects right-click via NSEvent local monitor. Does NOT interfere with
 /// any SwiftUI gesture or hit-testing — completely transparent.
@@ -44,11 +44,18 @@ private struct RightClickDetector: NSViewRepresentable {
 
         func startMonitor() {
             monitor = NSEvent.addLocalMonitorForEvents(matching: .rightMouseDown) { [weak self] event in
-                guard let self, let view = self.view, let window = view.window,
-                      event.window === window else { return event }
-                let point = view.convert(event.locationInWindow, from: nil)
-                if view.bounds.contains(point) {
-                    self.action()
+                let eventWindowNumber = event.windowNumber
+                let locationInWindow = event.locationInWindow
+                let view = self?.view
+                let shouldTrigger = MainActor.assumeIsolated { () -> Bool in
+                    guard let view,
+                          let window = view.window,
+                          window.windowNumber == eventWindowNumber else { return false }
+                    let point = view.convert(locationInWindow, from: nil)
+                    return view.bounds.contains(point)
+                }
+                if shouldTrigger {
+                    self?.action()
                 }
                 return event // always pass through
             }

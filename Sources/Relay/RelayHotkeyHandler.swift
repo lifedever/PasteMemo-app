@@ -93,7 +93,7 @@ final class RelayHotkeyHandler {
     }
 
     private func registerHotKey(id: UInt32, keyCode: Int, modifiers: Int) {
-        var hotKeyID = EventHotKeyID(signature: RELAY_HOTKEY_SIGNATURE, id: id)
+        let hotKeyID = EventHotKeyID(signature: RELAY_HOTKEY_SIGNATURE, id: id)
         var ref: EventHotKeyRef?
         RegisterEventHotKey(
             UInt32(keyCode),

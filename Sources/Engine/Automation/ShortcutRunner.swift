@@ -1,6 +1,6 @@
 import Foundation
 import AppKit
-import UserNotifications
+@preconcurrency import UserNotifications
 
 enum ShortcutRunnerError: LocalizedError {
     case shortcutsCLINotFound
@@ -310,7 +310,7 @@ enum ShortcutNotifier {
     /// notification, so we gate `add` on the async settings callback.
     private static func deliver(
         content: UNNotificationContent,
-        completion: ((Bool) -> Void)? = nil
+        completion: (@Sendable (Bool) -> Void)? = nil
     ) {
         guard Bundle.main.bundleIdentifier != nil else {
             completion?(false); return
@@ -339,7 +339,7 @@ enum ShortcutNotifier {
     private static func post(
         _ content: UNNotificationContent,
         via center: UNUserNotificationCenter,
-        completion: ((Bool) -> Void)?
+        completion: (@Sendable (Bool) -> Void)?
     ) {
         let request = UNNotificationRequest(
             identifier: UUID().uuidString, content: content, trigger: nil

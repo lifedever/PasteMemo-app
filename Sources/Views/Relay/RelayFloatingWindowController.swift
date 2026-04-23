@@ -124,10 +124,12 @@ final class RelayFloatingWindowController {
             object: panel,
             queue: .main
         ) { [weak self] _ in
-            guard let self, let win = self.window else { return }
-            let w = min(max(win.frame.size.width, MIN_WIDTH), MAX_WIDTH)
-            UserDefaults.standard.set(Double(w), forKey: WIDTH_PREF_KEY)
-            self.pinTopRight(win)
+            Task { @MainActor [weak self] in
+                guard let self, let win = self.window else { return }
+                let w = min(max(win.frame.size.width, MIN_WIDTH), MAX_WIDTH)
+                UserDefaults.standard.set(Double(w), forKey: WIDTH_PREF_KEY)
+                self.pinTopRight(win)
+            }
         }
     }
 
