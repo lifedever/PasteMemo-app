@@ -673,6 +673,9 @@
 
 /* Accessibility - Lost Permission */
 "accessibility.lost.later" = "後で";
+"reinstall.required.title" = "アプリファイルが不完全です";
+"reinstall.required.message" = "アップデート後、一部のファイルが不足しています。DMG を再ダウンロードして再インストールしてください。データと権限は保持されます。";
+"reinstall.required.action" = "ダウンロードページを開く";
 "accessibility.lost.message" = "アプリのアップデート後、macOS は再認証を要求します。「アクセシビリティ設定を開く」をクリックしたあと、リストで既存の PasteMemo を選択して − をクリックして削除し、フローティングパネルから新しいバージョンをドラッグしてください。";
 "accessibility.lost.title" = "アクセシビリティ権限が必要です";
 

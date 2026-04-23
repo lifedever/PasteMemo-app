@@ -263,6 +263,9 @@
 "accessibility.lost.title" = "Permesso di accessibilità richiesto";
 "accessibility.lost.message" = "Dopo un aggiornamento, macOS richiede una nuova autorizzazione. Dopo aver fatto clic su «Apri Accessibilità», seleziona la voce PasteMemo esistente e fai clic su − per rimuoverla, quindi trascina la nuova versione dal pannello flottante.";
 "accessibility.lost.later" = "Più tardi";
+"reinstall.required.title" = "File dell'app incompleti";
+"reinstall.required.message" = "Alcuni file risultano mancanti dopo l'aggiornamento. Scarica di nuovo il DMG e reinstalla. I tuoi dati e le autorizzazioni saranno preservati.";
+"reinstall.required.action" = "Apri pagina di download";
 "onboarding.back" = "Indietro";
 "onboarding.next" = "Avanti";
 "onboarding.done" = "Inizia";

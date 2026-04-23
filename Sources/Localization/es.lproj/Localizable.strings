@@ -656,6 +656,9 @@ Usa %@ para pegar uno por uno.";
 
 /* Accessibility - Permission Lost */
 "accessibility.lost.later" = "Más tarde";
+"reinstall.required.title" = "Archivos de la app incompletos";
+"reinstall.required.message" = "Faltan algunos archivos tras la actualización. Vuelve a descargar el DMG y reinstálalo. Tus datos y permisos se conservarán.";
+"reinstall.required.action" = "Abrir página de descarga";
 "accessibility.lost.message" = "Tras una actualización de la app, macOS requiere reautorización. Después de hacer clic en «Abrir Accesibilidad», selecciona la entrada existente de PasteMemo y haz clic en − para eliminarla; luego arrastra la nueva versión desde el panel flotante.";
 "accessibility.lost.title" = "Se requiere permiso de accesibilidad";
 

@@ -656,6 +656,9 @@ Utilisez %@ pour coller un par un.";
 
 /* Accessibility */
 "accessibility.lost.later" = "Plus tard";
+"reinstall.required.title" = "Fichiers d'application incomplets";
+"reinstall.required.message" = "Certains fichiers sont manquants après la mise à jour. Veuillez retélécharger le DMG et réinstaller. Vos données et autorisations seront préservées.";
+"reinstall.required.action" = "Ouvrir la page de téléchargement";
 "accessibility.lost.message" = "Après une mise à jour, macOS exige une nouvelle autorisation. Après avoir cliqué sur « Ouvrir Accessibilité », sélectionnez l'entrée PasteMemo existante et cliquez sur − pour la supprimer, puis glissez la nouvelle version depuis le panneau flottant.";
 "accessibility.lost.title" = "Autorisation d'accessibilité requise";
 

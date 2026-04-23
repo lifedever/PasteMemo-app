@@ -265,6 +265,9 @@
 "accessibility.lost.title" = "需要輔助使用權限";
 "accessibility.lost.message" = "應用程式更新後，macOS 要求重新授權。點擊「打開輔助使用設定」後，請先在列表裡選取 PasteMemo 並點 − 刪除，然後從懸浮面板拖入新版本。";
 "accessibility.lost.later" = "稍後";
+"reinstall.required.title" = "應用程式檔案不完整";
+"reinstall.required.message" = "App 升級時有檔案缺失，請重新下載 DMG 覆蓋安裝。你的資料與授權都會保留。";
+"reinstall.required.action" = "開啟下載頁";
 "onboarding.back" = "上一步";
 "onboarding.next" = "下一步";
 "onboarding.done" = "開始使用";

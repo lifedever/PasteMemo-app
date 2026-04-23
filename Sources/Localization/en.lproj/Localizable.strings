@@ -289,6 +289,9 @@
 "accessibility.lost.title" = "Accessibility Permission Required";
 "accessibility.lost.message" = "After an app update, macOS requires re-authorization. After clicking Open Accessibility Settings, select the existing PasteMemo entry and click − to remove it, then drag the new version from the floating panel.";
 "accessibility.lost.later" = "Later";
+"reinstall.required.title" = "App Files Incomplete";
+"reinstall.required.message" = "Some files are missing after the update. Please re-download the DMG and reinstall. Your data and permissions will be preserved.";
+"reinstall.required.action" = "Open Download Page";
 "onboarding.back" = "Back";
 "onboarding.skip" = "Skip";
 "onboarding.next" = "Next";

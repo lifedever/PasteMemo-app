@@ -648,6 +648,9 @@ Verwenden Sie %@ zum Einfügen.";
 
 /* Onboarding - Accessibility */
 "accessibility.lost.later" = "Später";
+"reinstall.required.title" = "App-Dateien unvollständig";
+"reinstall.required.message" = "Nach dem Update fehlen einige Dateien. Bitte lade das DMG erneut herunter und installiere es neu. Deine Daten und Berechtigungen bleiben erhalten.";
+"reinstall.required.action" = "Downloadseite öffnen";
 "accessibility.lost.message" = "Nach einem App-Update verlangt macOS eine erneute Berechtigung. Nach dem Klick auf „Bedienungshilfen öffnen“ wähle den vorhandenen PasteMemo-Eintrag aus, klicke auf −, um ihn zu entfernen, und ziehe dann die neue Version aus dem schwebenden Panel.";
 "accessibility.lost.title" = "Bedienungshilfen-Berechtigung erforderlich";
 

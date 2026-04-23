@@ -162,19 +162,21 @@ final class UpdateChecker: ObservableObject {
         }
 
         let destApp = Bundle.main.bundlePath
+        // Glob every *.bundle so future SwiftPM deps don't silently leave stale
+        // or missing resource bundles behind (see Bundle.module SIGTRAP: issue #38).
         let script = """
         #!/bin/bash
         sleep 2
         # Replace contents only, preserve app bundle identity for accessibility permissions
         rm -rf "\(destApp)/Contents/MacOS"
         rm -rf "\(destApp)/Contents/Resources"
-        rm -rf "\(destApp)/PasteMemo_PasteMemo.bundle"
+        rm -rf "\(destApp)"/*.bundle
         cp -R "\(sourceApp)/Contents/MacOS" "\(destApp)/Contents/MacOS"
         cp -R "\(sourceApp)/Contents/Resources" "\(destApp)/Contents/Resources"
         cp "\(sourceApp)/Contents/Info.plist" "\(destApp)/Contents/Info.plist"
-        if [ -d "\(sourceApp)/PasteMemo_PasteMemo.bundle" ]; then
-            cp -R "\(sourceApp)/PasteMemo_PasteMemo.bundle" "\(destApp)/"
-        fi
+        for b in "\(sourceApp)"/*.bundle; do
+            [ -d "$b" ] && cp -R "$b" "\(destApp)/"
+        done
         hdiutil detach "\(mountPoint)" -quiet 2>/dev/null
         open "\(destApp)"
         rm -f "$0"
