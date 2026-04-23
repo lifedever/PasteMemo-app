@@ -19,41 +19,31 @@ enum BackupEngine {
         let groups = (try? context.fetch(FetchDescriptor<SmartGroup>())) ?? []
         let rules = (try? context.fetch(FetchDescriptor<AutomationRule>())) ?? []
 
-        // Build ExportItems in batches on the main thread (SwiftData requires it),
-        // yielding between batches so the UI stays responsive during large backups.
         let total = clipItems.count
-        var exportItems: [ExportItem] = []
-        exportItems.reserveCapacity(total)
-        let batchSize = 100
-        for i in stride(from: 0, to: total, by: batchSize) {
-            let end = min(i + batchSize, total)
-            for j in i..<end {
-                exportItems.append(DataPorter.buildSingleExportItem(clipItems[j]))
-            }
-            progress(end, total, false)
-            await Task.yield()
+
+        // Stream-encode each ExportItem and stream-compress to a temp file. Avoids
+        // holding the full [ExportItem] array, encoded JSON Data, and zlib output
+        // buffer in memory simultaneously — peak memory used to scale ~4× with
+        // total clip bytes (issue #39).
+        let tempURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("pastememo-backup-\(UUID().uuidString).zlib")
+        defer { try? FileManager.default.removeItem(at: tempURL) }
+
+        try await DataPorter.encodeAndCompress(
+            clipItems: clipItems,
+            groups: groups,
+            rules: rules,
+            to: tempURL
+        ) { current, _ in
+            progress(current, total, false)
         }
-        // Switch UI to the "finalizing" state: compression + upload run on a
-        // background task but can still take a few seconds for large backups.
         progress(total, total, true)
-        // Groups / rules are tiny, map in one shot.
-        let exportGroups = groups.map(DataPorter.buildSingleExportGroup)
-        let exportRules = rules.map(DataPorter.buildSingleExportRule)
 
-        let payload = ExportPayload(
-            version: DataPorter.currentVersion,
-            exportDate: Date(),
-            items: exportItems,
-            groups: exportGroups,
-            rules: exportRules
-        )
-
-        // Encode + zlib compression are CPU-heavy for thousands of items (especially with
-        // base64-encoded images) — run them off the main actor.
-        let fileData = try await Task.detached(priority: .userInitiated) {
-            let jsonData = try DataPorter.encodeAndCompress(payload)
-            return DataPorterCrypto.wrapPlaintext(jsonData)
-        }.value
+        // Read the compressed file once + prepend the 6-byte plaintext envelope.
+        // upload(data:) still takes a Data; switching destinations to a streaming
+        // upload would cut peak further but is out of scope for this fix.
+        let compressedData = try Data(contentsOf: tempURL)
+        let fileData = DataPorterCrypto.wrapPlaintext(compressedData)
 
         let currentSlot = UserDefaults.standard.integer(forKey: "backupCurrentSlot")
         let nextSlot = (currentSlot % maxSlots) + 1

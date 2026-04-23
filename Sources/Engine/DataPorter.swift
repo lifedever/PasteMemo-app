@@ -1,3 +1,4 @@
+import Compression
 import Foundation
 import SwiftData
 
@@ -114,6 +115,66 @@ enum DataPorter {
         encoder.dateEncodingStrategy = .iso8601
         let jsonData = try encoder.encode(payload)
         return (try? (jsonData as NSData).compressed(using: .zlib) as Data) ?? jsonData
+    }
+
+    /// Streaming variant: encode each ExportItem individually and feed bytes through
+    /// a zlib OutputFilter into `outputURL`. Avoids holding the full `[ExportItem]`
+    /// array, the encoded JSON Data, and the compression buffer in memory at the
+    /// same time — peak memory drops from ~4× raw to ~1× single-item base64 + zlib
+    /// internal buffer. Output format is identical to `encodeAndCompress(_:)` so
+    /// the existing decode path works unchanged.
+    @MainActor
+    static func encodeAndCompress(
+        clipItems: [ClipItem],
+        groups: [SmartGroup],
+        rules: [AutomationRule],
+        to outputURL: URL,
+        progress: @MainActor @escaping (_ current: Int, _ total: Int) -> Void = { _, _ in }
+    ) async throws {
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+
+        FileManager.default.createFile(atPath: outputURL.path, contents: nil)
+        let outHandle = try FileHandle(forWritingTo: outputURL)
+        defer { try? outHandle.close() }
+
+        let outputFilter = try OutputFilter(.compress, using: .zlib) { data in
+            if let data = data, !data.isEmpty {
+                outHandle.write(data)
+            }
+        }
+
+        let isoFormatter = ISO8601DateFormatter()
+        let prefix = "{\"version\":\(currentVersion),\"exportDate\":\"\(isoFormatter.string(from: Date()))\",\"items\":["
+        try outputFilter.write(Data(prefix.utf8))
+
+        let total = clipItems.count
+        var first = true
+        for (index, clip) in clipItems.enumerated() {
+            try autoreleasepool {
+                let item = buildSingleExportItem(clip)
+                let itemData = try encoder.encode(item)
+                if !first {
+                    try outputFilter.write(Data(",".utf8))
+                }
+                try outputFilter.write(itemData)
+                first = false
+            }
+            // Yield every 16 items so the UI stays responsive during large backups.
+            if index % 16 == 0 {
+                progress(index + 1, total)
+                await Task.yield()
+            }
+        }
+        progress(total, total)
+
+        // Groups + rules are tiny relative to clips; encode them in one shot.
+        try outputFilter.write(Data("],\"groups\":".utf8))
+        try outputFilter.write(encoder.encode(groups.map(buildSingleExportGroup)))
+        try outputFilter.write(Data(",\"rules\":".utf8))
+        try outputFilter.write(encoder.encode(rules.map(buildSingleExportRule)))
+        try outputFilter.write(Data("}".utf8))
+        try outputFilter.finalize()
     }
 
     /// Decompress zlib data if needed, otherwise return as-is (backward compatible with uncompressed exports)
