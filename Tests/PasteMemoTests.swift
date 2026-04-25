@@ -544,6 +544,33 @@ struct PasteMemoTests {
         #expect(QuickPreviewPane.displayPath(for: url) == "/docs/page?ref=abc&lang=en")
     }
 
+    @Test("Data image URI helper detects and decodes base64 image payloads")
+    func dataImageURIHelperDecodesPayload() throws {
+        let png1x1 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAFgwJ/lQn4NwAAAABJRU5ErkJggg=="
+        let uri = "  data:image/png;base64,\(png1x1)"
+
+        #expect(DataImageURI.isDataImageURI(uri))
+        #expect(DataImageURI.isBase64DataImageURI(uri))
+        let data = try #require(DataImageURI.decodedImageData(from: uri))
+        #expect(data.starts(with: [0x89, 0x50, 0x4E, 0x47]))
+    }
+
+    @Test("Data image URI helper keeps non-base64 image payloads out of decode path")
+    func dataImageURIHelperDistinguishesNonBase64Payloads() {
+        let uri = "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%3E%3C/svg%3E"
+
+        #expect(DataImageURI.isDataImageURI(uri))
+        #expect(!DataImageURI.isBase64DataImageURI(uri))
+        #expect(DataImageURI.decodedImageData(from: uri) == nil)
+    }
+
+    @Test("Data image URI helper refuses payloads above decoded byte cap")
+    func dataImageURIHelperHonorsDecodedByteCap() {
+        let uri = "data:image/png;base64,QUJDRA=="
+
+        #expect(DataImageURI.decodedImageData(from: uri, maxDecodedBytes: 2) == nil)
+    }
+
     @Test("OCR language list prioritizes Chinese when app language is Chinese")
     func ocrLanguagePriorityForChinese() {
         let languages = ImageOCRService.preferredRecognitionLanguages(appLanguage: "zh-Hans")

@@ -9,6 +9,7 @@ struct QuickPreviewPane: View {
     @State private var allowHeavyPreview = false
     @State private var webPreviewReady = false
     @State private var cachedCodeSummary: CodePreviewSummary?
+    @State private var dataURIImageData: Data?
 
     struct CodePreviewSummary: Equatable {
         let language: CodeLanguage
@@ -105,6 +106,7 @@ struct QuickPreviewPane: View {
             allowHeavyPreview = false
             webPreviewReady = false
             cachedCodeSummary = nil
+            dataURIImageData = nil
             retryLinkMetadataIfNeeded()
 
             if item.contentType == .code {
@@ -121,6 +123,16 @@ struct QuickPreviewPane: View {
             try? await Task.sleep(for: heavyPreviewDelay)
             guard !Task.isCancelled else { return }
             allowHeavyPreview = true
+
+            if item.contentType == .link,
+               shouldRenderBase64DataImagePreview {
+                let content = item.content
+                let decoded = await Task.detached(priority: .userInitiated) {
+                    DataImageURI.decodedImageData(from: content)
+                }.value
+                guard !Task.isCancelled else { return }
+                dataURIImageData = decoded
+            }
         }
         } // zombie-object guard: isDeleted alone is unsafe after deleteAndNotify — see QuickPanelView.swift
     }
@@ -408,9 +420,10 @@ struct QuickPreviewPane: View {
 
     @ViewBuilder
     private var linkPreview: some View {
-        let trimmed = item.content.trimmingCharacters(in: .whitespacesAndNewlines)
-        if let url = URL(string: trimmed) {
-            let webviewActive = ((imageLinkPreviewEnabled && LinkMetadataFetcher.isImageURL(trimmed)) || webPreviewEnabled) && allowHeavyPreview
+        if shouldRenderBase64DataImagePreview {
+            dataURIImagePreview
+        } else if let url = URL(string: item.content.trimmingCharacters(in: .whitespacesAndNewlines)) {
+            let webviewActive = ((imageLinkPreviewEnabled && LinkMetadataFetcher.isImageURL(item.content)) || webPreviewEnabled) && allowHeavyPreview
             if webviewActive {
                 ZStack {
                     // WebView 始终驻留，加载完成前透明
@@ -455,6 +468,22 @@ struct QuickPreviewPane: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .padding(14)
         }
+    }
+
+    private var shouldRenderBase64DataImagePreview: Bool {
+        DataImageURI.isBase64DataImageURI(item.content) && (imageLinkPreviewEnabled || webPreviewEnabled)
+    }
+
+    private var dataURIImagePreview: some View {
+        AsyncPreviewImageView(
+            data: dataURIImageData,
+            cacheKey: "data-uri-\(item.itemID)",
+            maxPixelSize: 1100,
+            cornerRadius: 6,
+            thumbnailSize: 180
+        )
+        .padding(10)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     // MARK: - Link Static Preview
@@ -657,6 +686,7 @@ struct QuickPreviewPane: View {
 
     private func retryLinkMetadataIfNeeded() {
         guard item.contentType == .link,
+              !DataImageURI.isDataImageURI(item.content),
               item.linkTitle == nil,
               let context = item.modelContext,
               let _ = URL(string: item.content.trimmingCharacters(in: .whitespacesAndNewlines))
