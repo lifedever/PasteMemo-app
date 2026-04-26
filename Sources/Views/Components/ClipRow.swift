@@ -11,6 +11,7 @@ struct ClipRow: View {
     var searchText: String = ""
     @AppStorage(OCRTaskCoordinator.enableOCRKey) private var ocrEnabled = true
     @AppStorage("imageLinkPreviewEnabled") private var imageLinkPreviewEnabled = true
+    @State private var dataURIThumbnailImage: NSImage?
 
     var body: some View {
         if item.isDeleted {
@@ -82,15 +83,32 @@ struct ClipRow: View {
                 .clipShape(RoundedRectangle(cornerRadius: 6))
                 .overlay(alignment: .bottomTrailing) { imageFormatBadge }
         } else if item.contentType == .link, imageLinkPreviewEnabled,
+                  DataImageURI.isBase64DataImageURI(item.content) {
+            Group {
+                if let img = dataURIThumbnailImage {
+                    Image(nsImage: img)
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                        .frame(width: 36, height: 36)
+                        .clipShape(RoundedRectangle(cornerRadius: 6))
+                } else {
+                    linkFaviconThumbnail
+                }
+            }
+            .task(id: item.itemID) {
+                dataURIThumbnailImage = nil
+                let content = item.content
+                let data = await Task.detached(priority: .userInitiated) {
+                    DataImageURI.decodedImageData(from: content)
+                }.value
+                guard !Task.isCancelled,
+                      let data,
+                      let image = NSImage(data: data) else { return }
+                dataURIThumbnailImage = image
+            }
+        } else if item.contentType == .link, imageLinkPreviewEnabled,
                   LinkMetadataFetcher.isImageURL(item.content) {
-            if let img = Self.decodeDataURIImage(item.content) {
-                Image(nsImage: img)
-                    .resizable()
-                    .aspectRatio(contentMode: .fill)
-                    .frame(width: 36, height: 36)
-                    .clipShape(RoundedRectangle(cornerRadius: 6))
-                    .overlay(alignment: .bottomTrailing) { imageFormatBadge }
-            } else if let url = URL(string: item.content) {
+            if let url = URL(string: item.content) {
                 AsyncImage(url: url) { phase in
                     switch phase {
                     case .success(let image):
@@ -370,15 +388,6 @@ struct ClipRow: View {
     private func isDirectory(_ path: String) -> Bool {
         var isDir: ObjCBool = false
         return FileManager.default.fileExists(atPath: path, isDirectory: &isDir) && isDir.boolValue
-    }
-
-    private static func decodeDataURIImage(_ content: String) -> NSImage? {
-        let trimmed = content.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard trimmed.hasPrefix("data:image/"),
-              let commaIndex = trimmed.firstIndex(of: ",") else { return nil }
-        let base64String = String(trimmed[trimmed.index(after: commaIndex)...])
-        guard let data = Data(base64Encoded: base64String, options: .ignoreUnknownCharacters) else { return nil }
-        return NSImage(data: data)
     }
 
     private var isMultiFile: Bool {
