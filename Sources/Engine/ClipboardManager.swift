@@ -292,8 +292,17 @@ final class ClipboardManager: ObservableObject {
         // to the origin restores the hidden payload.
         guard let content = rawText, !content.isEmpty else { return nil }
         let detected = detectContentType(content)
+        // Pre-decode `data:image/...;base64,` URIs into `imageData` so the row,
+        // preview pane, and properties panel can render from a normal image bytes
+        // representation instead of re-decoding the multi-megabyte string on every
+        // access. The original URI string stays in `content` so paste-back returns
+        // exactly what the user copied.
+        let dataURIImageData: Data? = (detected.type == .link && DataImageURI.isBase64DataImageURI(content))
+            ? DataImageURI.decodedImageData(from: content)
+            : nil
         return ClipItem(
             content: content, contentType: detected.type,
+            imageData: dataURIImageData,
             sourceApp: sourceApp, codeLanguage: detected.language,
             pasteboardSnapshot: snapshot
         )
@@ -1073,7 +1082,10 @@ final class ClipboardManager: ObservableObject {
             }
         default:
             // writeObjects clears the pasteboard, so image (if present) goes first, then string/rtf are additive.
-            if let imgData = item.imageData {
+            // Skip image write for `.link` clips — `imageData` on a link is a
+            // pre-decoded preview for base64 `data:image/...` URIs; the user's
+            // copy intent is the URI string, so paste must hand back exactly that.
+            if item.contentType != .link, let imgData = item.imageData {
                 if let image = NSImage(data: imgData) {
                     pasteboard.writeObjects([image])
                 } else {

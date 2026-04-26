@@ -370,9 +370,19 @@ struct PasteMemoApp: App {
             )
         """)
 
-        // Auto-sync triggers
+        // Auto-sync triggers. The `WHEN length(...) <= 262144` guard skips FTS
+        // indexing for content over 256 KB — trigram tokenization on multi-MB
+        // strings (e.g. inline base64 `data:image/...` URIs) blocks the SQLite
+        // commit on the main thread for several seconds. Skipping these from
+        // search is acceptable: substring search across megabytes of base64 is
+        // not useful, and the row itself remains fully addressable by metadata.
+        // Drop & recreate so existing stores pick up the guard.
+        db.execute("DROP TRIGGER IF EXISTS clip_fts_insert")
+        db.execute("DROP TRIGGER IF EXISTS clip_fts_update")
         db.execute("""
-            CREATE TRIGGER IF NOT EXISTS clip_fts_insert AFTER INSERT ON ZCLIPITEM BEGIN
+            CREATE TRIGGER clip_fts_insert AFTER INSERT ON ZCLIPITEM
+            WHEN COALESCE(length(NEW.ZCONTENT), 0) <= 262144
+            BEGIN
                 INSERT INTO clip_fts(itemID, content, displayTitle, linkTitle, ocrText)
                 VALUES (NEW.ZITEMID, COALESCE(NEW.ZCONTENT, ''), COALESCE(NEW.ZDISPLAYTITLE, ''), COALESCE(NEW.ZLINKTITLE, ''), COALESCE(NEW.ZOCRTEXT, ''));
             END
@@ -382,21 +392,31 @@ struct PasteMemoApp: App {
                 DELETE FROM clip_fts WHERE itemID = OLD.ZITEMID;
             END
         """)
+        // The DELETE runs unconditionally so a row that grew past the size guard
+        // gets removed from FTS even when the new content can't be re-indexed.
+        // The INSERT uses a `WHERE` selector instead of a trigger-level `WHEN`
+        // so the same trigger can both clean up and (when small enough) re-add.
         db.execute("""
-            CREATE TRIGGER IF NOT EXISTS clip_fts_update AFTER UPDATE OF ZCONTENT, ZDISPLAYTITLE, ZLINKTITLE, ZOCRTEXT ON ZCLIPITEM BEGIN
+            CREATE TRIGGER clip_fts_update AFTER UPDATE OF ZCONTENT, ZDISPLAYTITLE, ZLINKTITLE, ZOCRTEXT ON ZCLIPITEM
+            BEGIN
                 DELETE FROM clip_fts WHERE itemID = OLD.ZITEMID;
                 INSERT INTO clip_fts(itemID, content, displayTitle, linkTitle, ocrText)
-                VALUES (NEW.ZITEMID, COALESCE(NEW.ZCONTENT, ''), COALESCE(NEW.ZDISPLAYTITLE, ''), COALESCE(NEW.ZLINKTITLE, ''), COALESCE(NEW.ZOCRTEXT, ''));
+                SELECT NEW.ZITEMID, COALESCE(NEW.ZCONTENT, ''), COALESCE(NEW.ZDISPLAYTITLE, ''), COALESCE(NEW.ZLINKTITLE, ''), COALESCE(NEW.ZOCRTEXT, '')
+                WHERE COALESCE(length(NEW.ZCONTENT), 0) <= 262144;
             END
         """)
 
-        // Populate FTS from existing data if empty
+        // Populate FTS from existing data if empty. Mirror the trigger guard
+        // so a one-time backfill doesn't choke on legacy rows that pre-date
+        // the size cap (e.g. 10 MB base64 data URIs ingested before the
+        // pre-decode landed).
         let count = db.queryStrings("SELECT COUNT(*) FROM clip_fts")
         if count.first == "0" {
             db.execute("""
                 INSERT INTO clip_fts(itemID, content, displayTitle, linkTitle, ocrText)
                 SELECT ZITEMID, COALESCE(ZCONTENT, ''), COALESCE(ZDISPLAYTITLE, ''), COALESCE(ZLINKTITLE, ''), COALESCE(ZOCRTEXT, '')
                 FROM ZCLIPITEM
+                WHERE COALESCE(length(ZCONTENT), 0) <= 262144
             """)
         }
     }

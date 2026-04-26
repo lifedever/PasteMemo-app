@@ -83,7 +83,22 @@ struct ClipRow: View {
                 .clipShape(RoundedRectangle(cornerRadius: 6))
                 .overlay(alignment: .bottomTrailing) { imageFormatBadge }
         } else if item.contentType == .link, imageLinkPreviewEnabled,
+                  let data = item.imageData,
+                  let img = ImageCache.shared.thumbnail(for: data, key: item.itemID) {
+            // Fast path: data URI links pre-decoded at capture time keep the
+            // bytes in `imageData`, so we render synchronously like raw image clips
+            // instead of decoding the multi-megabyte URI string on every appearance.
+            Image(nsImage: img)
+                .resizable()
+                .aspectRatio(contentMode: .fill)
+                .frame(width: 36, height: 36)
+                .clipShape(RoundedRectangle(cornerRadius: 6))
+                .overlay(alignment: .bottomTrailing) { imageFormatBadge }
+        } else if item.contentType == .link, imageLinkPreviewEnabled,
                   DataImageURI.isBase64DataImageURI(item.content) {
+            // Legacy fallback: pre-existing data URI clips ingested before the
+            // `imageData` pre-decode. Async-decode the URI string so the main
+            // thread doesn't block on multi-MB base64.
             Group {
                 if let img = dataURIThumbnailImage {
                     Image(nsImage: img)
@@ -91,19 +106,24 @@ struct ClipRow: View {
                         .aspectRatio(contentMode: .fill)
                         .frame(width: 36, height: 36)
                         .clipShape(RoundedRectangle(cornerRadius: 6))
+                        .overlay(alignment: .bottomTrailing) { imageFormatBadge }
                 } else {
                     linkFaviconThumbnail
                 }
             }
             .task(id: item.itemID) {
+                let key = item.itemID
+                if let cached = ImageCache.shared.cachedThumbnail(for: key, size: 36) {
+                    dataURIThumbnailImage = cached
+                    return
+                }
                 dataURIThumbnailImage = nil
                 let content = item.content
-                let data = await Task.detached(priority: .userInitiated) {
-                    DataImageURI.decodedImageData(from: content)
+                let image = await Task.detached(priority: .userInitiated) {
+                    guard let data = DataImageURI.decodedImageData(from: content) else { return nil as NSImage? }
+                    return ImageCache.shared.thumbnail(for: data, key: key, size: 36)
                 }.value
-                guard !Task.isCancelled,
-                      let data,
-                      let image = NSImage(data: data) else { return }
+                guard !Task.isCancelled, let image else { return }
                 dataURIThumbnailImage = image
             }
         } else if item.contentType == .link, imageLinkPreviewEnabled,
@@ -202,6 +222,10 @@ struct ClipRow: View {
     }
 
     private var resolvedImageFormatLabel: String? {
+        // Data URI image: parse MIME from header (cheap, no decode).
+        if DataImageURI.isDataImageURI(item.content) {
+            return DataImageURI.formatLabel(in: item.content)
+        }
         // File-backed image: derive from path extension (cheap, no data read).
         if item.content != "[Image]", !item.content.isEmpty {
             let firstPath = item.content.components(separatedBy: "\n").first ?? ""

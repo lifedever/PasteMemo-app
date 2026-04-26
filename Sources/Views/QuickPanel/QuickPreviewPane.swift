@@ -125,7 +125,11 @@ struct QuickPreviewPane: View {
             allowHeavyPreview = true
 
             if item.contentType == .link,
-               shouldRenderBase64DataImagePreview {
+               shouldRenderBase64DataImagePreview,
+               item.imageData == nil {
+                // Legacy fallback: pre-existing clips without `imageData` need the
+                // URI string decoded once. New clips already have bytes in
+                // `imageData` from capture-time pre-decode, so we skip this path.
                 let content = item.content
                 let decoded = await Task.detached(priority: .userInitiated) {
                     DataImageURI.decodedImageData(from: content)
@@ -471,12 +475,16 @@ struct QuickPreviewPane: View {
     }
 
     private var shouldRenderBase64DataImagePreview: Bool {
-        DataImageURI.isBase64DataImageURI(item.content) && (imageLinkPreviewEnabled || webPreviewEnabled)
+        guard imageLinkPreviewEnabled || webPreviewEnabled else { return false }
+        // `imageData` set on a `.link` clip means capture-time pre-decode of a
+        // base64 data URI — fast path, no need to materialize the URI string here.
+        if item.imageData != nil { return true }
+        return DataImageURI.isBase64DataImageURI(item.content)
     }
 
     private var dataURIImagePreview: some View {
         AsyncPreviewImageView(
-            data: dataURIImageData,
+            data: item.imageData ?? dataURIImageData,
             cacheKey: "data-uri-\(item.itemID)",
             maxPixelSize: 1100,
             cornerRadius: 6,

@@ -571,6 +571,46 @@ struct PasteMemoTests {
         #expect(DataImageURI.decodedImageData(from: uri, maxDecodedBytes: 2) == nil)
     }
 
+    @Test("Data image URI helper extracts MIME subtype and format label without decoding")
+    func dataImageURIHelperExtractsFormatLabel() {
+        #expect(DataImageURI.mimeSubtype(in: "data:image/png;base64,AAAA") == "png")
+        #expect(DataImageURI.formatLabel(in: "data:image/png;base64,AAAA") == "PNG")
+        #expect(DataImageURI.formatLabel(in: "data:image/jpeg;base64,AAAA") == "JPG")
+        #expect(DataImageURI.formatLabel(in: "data:image/svg+xml,%3Csvg%3E%3C/svg%3E") == "SVG")
+        #expect(DataImageURI.formatLabel(in: "data:image/heic;base64,AAAA") == "HEIC")
+        #expect(DataImageURI.formatLabel(in: "https://example.com/foo.png") == nil)
+    }
+
+    @Test("Data image URI helper estimates decoded size without performing the decode")
+    func dataImageURIHelperEstimatesDecodedSize() {
+        // 8 base64 chars → 6 decoded bytes (8 * 3 / 4)
+        #expect(DataImageURI.estimatedDecodedSize(in: "data:image/png;base64,QUJDREVGRw==") == 9)
+        // Non-base64 data URI returns nil so callers don't conflate with raw bytes.
+        #expect(DataImageURI.estimatedDecodedSize(in: "data:image/svg+xml,%3Csvg/%3E") == nil)
+    }
+
+    @Test("Data image URI helper reads pixel dimensions via CGImageSource")
+    func dataImageURIHelperReadsDimensions() throws {
+        let png1x1 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAFgwJ/lQn4NwAAAABJRU5ErkJggg=="
+        let data = try #require(DataImageURI.decodedImageData(from: "data:image/png;base64,\(png1x1)"))
+        let dims = try #require(DataImageURI.dimensions(of: data))
+        #expect(dims.width == 1)
+        #expect(dims.height == 1)
+    }
+
+    @Test("ClipItem.buildTitle collapses base64 data URI links into a short marker")
+    @MainActor
+    func clipItemBuildTitleCollapsesDataURI() {
+        let png1x1 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAFgwJ/lQn4NwAAAABJRU5ErkJggg=="
+        let uri = "data:image/png;base64,\(png1x1)"
+        // The title is what SwiftUI / SwiftData materialize on every list row,
+        // so it must NOT carry the megabyte-scale URI string itself.
+        #expect(ClipItem.buildTitle(content: uri, contentType: .link) == "[Data Image: PNG]")
+        #expect(ClipItem.buildTitle(content: "data:image/svg+xml,%3Csvg/%3E", contentType: .link) == "[Data Image: SVG]")
+        // Non data URI links keep their content as-is for the regular shortcut UX.
+        #expect(ClipItem.buildTitle(content: "https://example.com/x", contentType: .link) == "https://example.com/x")
+    }
+
     @Test("OCR language list prioritizes Chinese when app language is Chinese")
     func ocrLanguagePriorityForChinese() {
         let languages = ImageOCRService.preferredRecognitionLanguages(appLanguage: "zh-Hans")

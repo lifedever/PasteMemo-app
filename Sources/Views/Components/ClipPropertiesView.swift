@@ -13,6 +13,7 @@ struct ClipPropertiesView: View {
     }
 
     @State private var textStats: TextStats?
+    @State private var dataImageDimensions: CGSize?
 
     @ViewBuilder
     var body: some View {
@@ -35,6 +36,19 @@ struct ClipPropertiesView: View {
             }.value
             if !Task.isCancelled {
                 textStats = stats
+            }
+        }
+        .task(id: "\(item.itemID):dataimg") {
+            dataImageDimensions = nil
+            guard item.contentType == .link,
+                  DataImageURI.isBase64DataImageURI(item.content) else { return }
+            let content = item.content
+            let dims = await Task.detached(priority: .userInitiated) { () -> CGSize? in
+                guard let data = DataImageURI.decodedImageData(from: content) else { return nil }
+                return DataImageURI.dimensions(of: data)
+            }.value
+            if !Task.isCancelled {
+                dataImageDimensions = dims
             }
         }
         }
@@ -227,7 +241,16 @@ struct ClipPropertiesView: View {
 
     // MARK: - Link
 
+    @ViewBuilder
     private var linkProperties: some View {
+        if DataImageURI.isDataImageURI(item.content) {
+            dataImageProperties
+        } else {
+            regularLinkProperties
+        }
+    }
+
+    private var regularLinkProperties: some View {
         let trimmed = item.content.trimmingCharacters(in: .whitespacesAndNewlines)
         return Group {
             if let title = item.linkTitle {
@@ -242,6 +265,43 @@ struct ClipPropertiesView: View {
             }
             propDivider
             propRow(L10n.tr("detail.chars"), "\(item.content.count)")
+        }
+    }
+
+    /// Properties for inline `data:image/...` clipboard items — show the same
+    /// dimensions/size/format trio as regular images so the panel doesn't fall
+    /// silent for a clip type that's clearly a picture.
+    @ViewBuilder
+    private var dataImageProperties: some View {
+        // Prefer the pre-decoded `imageData` populated at capture time: reading
+        // dimensions / size / format from bytes is O(1) and skips re-decoding
+        // the URI string. Falls back to the async-derived dimensions and the
+        // URI header for legacy clips ingested before the pre-decode.
+        if let data = item.imageData {
+            if let dims = ImageCache.shared.imageDimensions(for: data) {
+                propDivider
+                propRow(L10n.tr("detail.dimensions"), "\(Int(dims.width))×\(Int(dims.height))")
+            }
+            propDivider
+            propRow(L10n.tr("detail.size"), formatFileSize(data.count))
+            if let format = imageFormatLabel(fromData: data) {
+                propDivider
+                propRow(L10n.tr("detail.format"), format)
+            }
+        } else {
+            if let dims = dataImageDimensions {
+                propDivider
+                propRow(L10n.tr("detail.dimensions"), "\(Int(dims.width))×\(Int(dims.height))")
+            }
+            if DataImageURI.isBase64DataImageURI(item.content),
+               let bytes = DataImageURI.estimatedDecodedSize(in: item.content) {
+                propDivider
+                propRow(L10n.tr("detail.size"), formatFileSize(bytes))
+            }
+            if let format = DataImageURI.formatLabel(in: item.content) {
+                propDivider
+                propRow(L10n.tr("detail.format"), format)
+            }
         }
     }
 

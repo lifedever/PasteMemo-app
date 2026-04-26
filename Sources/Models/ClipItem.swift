@@ -301,6 +301,15 @@ final class ClipItem {
             }
             return firstName
         case .link:
+            // base64 data URIs can be megabytes long — store a short marker as the
+            // display title so SwiftData doesn't materialize a giant string for
+            // every list render. The full URI stays in `content` for paste-back.
+            if DataImageURI.isDataImageURI(content) {
+                if let format = DataImageURI.formatLabel(in: content) {
+                    return "[Data Image: \(format)]"
+                }
+                return "[Data Image]"
+            }
             return content
         case .color:
             return content
