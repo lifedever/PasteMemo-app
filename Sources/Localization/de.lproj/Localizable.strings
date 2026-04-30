@@ -180,6 +180,7 @@
 "settings.linkPreview" = "Links & Vorschauen";
 "settings.linkPreview.footer" = "Diese Schalter steuern, ob PasteMemo Netzwerkanfragen für kopierte Links sendet. Sind alle deaktiviert, geht PasteMemo nur für Update-Prüfungen online.";
 "settings.linkPreview.footer.offline" = "Offline-Modus ist aktiv – die obigen Schalter sind deaktiviert. Sie können ihn im Tab „Datenschutz\" abschalten.";
+"settings.richTextPreview" = "Rich-Text-Vorschau";
 "settings.showGuide" = "Willkommensführung anzeigen";
 
 /* Pro */

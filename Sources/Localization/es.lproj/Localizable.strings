@@ -180,6 +180,7 @@
 "settings.linkPreview" = "Enlaces y vistas previas";
 "settings.linkPreview.footer" = "Estos interruptores controlan si PasteMemo realiza solicitudes de red para enlaces copiados. Desactívalos todos y PasteMemo solo se conectará para comprobar actualizaciones.";
 "settings.linkPreview.footer.offline" = "El modo sin conexión está activo: los interruptores anteriores están deshabilitados. Desactívalo en la pestaña «Privacidad».";
+"settings.richTextPreview" = "Vista previa de texto enriquecido";
 "settings.showGuide" = "Mostrar guía de bienvenida";
 
 /* Pro */

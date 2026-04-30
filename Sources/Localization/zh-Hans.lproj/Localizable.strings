@@ -159,6 +159,7 @@
 "settings.linkPreview" = "链接与预览";
 "settings.linkPreview.footer" = "以上开关共同决定 PasteMemo 是否为复制的链接发起网络请求。全部关闭后，PasteMemo 仅在检查更新时联网。";
 "settings.linkPreview.footer.offline" = "已开启单机模式：以上开关被覆盖为关闭。前往「隐私」标签可关闭单机模式。";
+"settings.richTextPreview" = "富文本预览";
 "settings.ocr" = "图片 OCR";
 "settings.ocr.enable" = "启用图片 OCR";
 "settings.ocr.auto" = "自动处理新图片";

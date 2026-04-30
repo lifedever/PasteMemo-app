@@ -194,6 +194,7 @@
 "settings.linkPreview" = "リンクとプレビュー";
 "settings.linkPreview.footer" = "上記のスイッチで、コピーされたリンクに対してネットワークリクエストを行うかどうかを制御します。すべてオフにすると、アップデート確認以外では一切通信しません。";
 "settings.linkPreview.footer.offline" = "オフラインモードが有効：上記のスイッチは無効化されます。「プライバシー」タブで切り替えられます。";
+"settings.richTextPreview" = "リッチテキストプレビュー";
 "settings.showGuide" = "ウェルカムガイドを表示";
 
 /* Pro */

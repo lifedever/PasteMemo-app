@@ -180,6 +180,7 @@
 "settings.linkPreview" = "링크 및 미리보기";
 "settings.linkPreview.footer" = "위 스위치는 PasteMemo가 복사한 링크에 대해 네트워크 요청을 보낼지 여부를 결정합니다. 모두 끄면 업데이트 확인 외에는 인터넷에 연결되지 않습니다.";
 "settings.linkPreview.footer.offline" = "오프라인 모드가 켜져 있어 위 스위치는 비활성 상태입니다. 「개인정보」 탭에서 끌 수 있습니다.";
+"settings.richTextPreview" = "서식 있는 텍스트 미리보기";
 "settings.showGuide" = "환영 가이드 표시";
 
 /* Pro */

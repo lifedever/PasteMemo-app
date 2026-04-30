@@ -366,6 +366,7 @@ struct ClipDetailView: View {
             text: item.content,
             richTextData: item.richTextData,
             richTextType: item.richTextType,
+            allowRichRender: richTextPreviewEnabled,
             itemID: item.itemID
         )
             .id("\(item.persistentModelID)-\(textRefreshID)-\(item.content.hashValue)")
@@ -452,6 +453,7 @@ struct ClipDetailView: View {
     @AppStorage("webPreviewEnabled") private var webPreviewEnabled = true
     @AppStorage("imageLinkPreviewEnabled") private var imageLinkPreviewEnabled = true
     @AppStorage("offlineModeEnabled") private var offlineModeEnabled = false
+    @AppStorage(QuickPanelSettings.richTextPreviewEnabledKey) private var richTextPreviewEnabled = true
 
     @ViewBuilder
     private var linkPreview: some View {
