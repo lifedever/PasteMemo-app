@@ -30,6 +30,13 @@ final class RelayClipboardMonitor {
         lastChangeCount = NSPasteboard.general.changeCount
     }
 
+    /// Reset the consecutive-duplicate fingerprint so a clip that just got cleared from
+    /// the queue can be re-enqueued by re-copying the same content. Without this, the
+    /// fingerprint persists across `clearAll` and silently drops the next identical copy.
+    func resetDedup() {
+        lastContentKey = ""
+    }
+
     private func poll() {
         let pasteboard = NSPasteboard.general
         guard pasteboard.changeCount != lastChangeCount else { return }

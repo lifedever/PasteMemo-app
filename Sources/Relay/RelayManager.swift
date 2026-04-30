@@ -174,6 +174,9 @@ final class RelayManager {
         lastRecirculationExpiry = nil
         items.removeAll()
         currentIndex = 0
+        // 重置 monitor 的去重 fingerprint，否则清空前最后一条内容的 hash 会留在
+        // RelayClipboardMonitor.lastContentKey,清空后重新复制同样内容会被静默 dedup 掉。
+        monitor?.resetDedup()
         windowController?.updateSize(for: 0)
     }
 
@@ -445,12 +448,22 @@ final class RelayManager {
             await previous?.value
             guard let self else { return }
             while !Task.isCancelled, self.isActive, !self.isPaused, !self.isQueueExhausted {
-                await self.performOnePaste()
+                await self.performOnePaste(burst: true)
                 // 每条之间额外停顿，让目标 App 完成本次粘贴 + 处理 post-paste-key 后再下一条。
-                try? await Task.sleep(for: .milliseconds(150))
+                try? await Task.sleep(for: .milliseconds(30))
             }
             self.isPastingAll = false
             self.pasteAllTask = nil
+            // pasteAll 自己处理结束语义：永远只跑一遍，不受 loopEnabled 控制。
+            // 跑完后：开了循环 → 重置到第一条留在接力模式；没开循环 → 走默认 autoExit 行为。
+            if !Task.isCancelled, self.isActive, self.isQueueExhausted {
+                SoundManager.playRelayComplete()
+                if self.loopEnabled {
+                    self.restartQueue()
+                } else if self.autoExitOnEmpty {
+                    self.deactivate(clearQueue: true)
+                }
+            }
         }
         pasteAllTask = task
         currentPasteTask = task
@@ -463,9 +476,9 @@ final class RelayManager {
     }
 
     @MainActor
-    private func performOnePaste() async {
+    private func performOnePaste(burst: Bool = false) async {
         guard let item = advance() else {
-            handleQueueExhausted()
+            if !burst { handleQueueExhausted() }
             return
         }
         guard let mon = monitor else { return }
@@ -477,26 +490,27 @@ final class RelayManager {
 
         // Plain-text override takes precedence — user explicitly chose string-only paste.
         if pasteAsPlainText || !matchedActions.isEmpty {
-            await RelayPaster.paste(item.content, actions: matchedActions, monitor: mon)
+            await RelayPaster.paste(item.content, actions: matchedActions, monitor: mon, burst: burst)
         } else if let snapshot = item.pasteboardSnapshot {
             // Rich-text / native-fidelity path: replay the source's original pasteboard bytes.
-            await RelayPaster.pasteSnapshot(snapshot, monitor: mon)
+            await RelayPaster.pasteSnapshot(snapshot, monitor: mon, burst: burst)
         } else {
             switch item.contentKind {
             case .image:
                 if let imageData = item.imageBytesForExport() {
-                    await RelayPaster.pasteImage(imageData, monitor: mon)
+                    await RelayPaster.pasteImage(imageData, monitor: mon, burst: burst)
                 } else {
-                    await RelayPaster.paste(item.content, monitor: mon)
+                    await RelayPaster.paste(item.content, monitor: mon, burst: burst)
                 }
             case .file:
-                await RelayPaster.pasteFile(item.content, imageData: item.imageBytesForExport(), monitor: mon)
+                await RelayPaster.pasteFile(item.content, imageData: item.imageBytesForExport(), monitor: mon, burst: burst)
             case .text:
-                await RelayPaster.paste(item.content, monitor: mon)
+                await RelayPaster.paste(item.content, monitor: mon, burst: burst)
             }
         }
         SoundManager.playPaste()
-        if isQueueExhausted {
+        // pasteAll (burst) 模式下，结束语义由 pasteAll 任务自己处理；这里跳过避免循环回放。
+        if !burst, isQueueExhausted {
             handleQueueExhausted()
         }
     }

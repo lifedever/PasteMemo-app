@@ -1,6 +1,11 @@
 import AppKit
 
 private let PASTE_DELAY: Duration = .milliseconds(100)
+private let POST_PASTE_DELAY: Duration = .milliseconds(100)
+// 一键全部粘贴（burst 模式）：连续粘到同一个目标 App，不需要给系统切窗/AX 留太多余量。
+// 实测从 100/100ms 降到 20/20ms 单条耗时缩到 ~60ms（含事件本身），100 条从 ~38s 降到 ~6s。
+private let BURST_PASTE_DELAY: Duration = .milliseconds(20)
+private let BURST_POST_PASTE_DELAY: Duration = .milliseconds(20)
 
 @MainActor
 enum RelayPaster {
@@ -8,21 +13,21 @@ enum RelayPaster {
     /// Write text to system pasteboard and simulate Cmd+V. Callers decide whether to
     /// pass `actions` by checking the active relay rule's conditions first; if the
     /// conditions don't match, pass an empty array to paste the content verbatim.
-    static func paste(_ text: String, actions: [RuleAction] = [], monitor: RelayClipboardMonitor) async {
+    static func paste(_ text: String, actions: [RuleAction] = [], monitor: RelayClipboardMonitor, burst: Bool = false) async {
         let transformed = actions.isEmpty ? text : AutomationEngine.apply(actions, to: text)
         let pasteboard = NSPasteboard.general
         pasteboard.clearContents()
         pasteboard.setString(transformed, forType: .string)
         pasteboard.markAsPasteMemoWrite()
         monitor.skipNextChange()
-        try? await Task.sleep(for: PASTE_DELAY)
+        try? await Task.sleep(for: burst ? BURST_PASTE_DELAY : PASTE_DELAY)
         simulateCommandV()
-        try? await Task.sleep(for: .milliseconds(100))
+        try? await Task.sleep(for: burst ? BURST_POST_PASTE_DELAY : POST_PASTE_DELAY)
         simulatePostPasteKey()
     }
 
     /// Write image data to system pasteboard and simulate Cmd+V.
-    static func pasteImage(_ data: Data, monitor: RelayClipboardMonitor) async {
+    static func pasteImage(_ data: Data, monitor: RelayClipboardMonitor, burst: Bool = false) async {
         let pasteboard = NSPasteboard.general
         pasteboard.clearContents()
         if let image = NSImage(data: data) {
@@ -33,16 +38,16 @@ enum RelayPaster {
         }
         pasteboard.markAsPasteMemoWrite()
         monitor.skipNextChange()
-        try? await Task.sleep(for: PASTE_DELAY)
+        try? await Task.sleep(for: burst ? BURST_PASTE_DELAY : PASTE_DELAY)
         simulateCommandV()
-        try? await Task.sleep(for: .milliseconds(100))
+        try? await Task.sleep(for: burst ? BURST_POST_PASTE_DELAY : POST_PASTE_DELAY)
         simulatePostPasteKey()
     }
 
     /// Write file URLs to system pasteboard and simulate Cmd+V. When `imageData` is provided
     /// (single image file case), also attach the decoded NSImage in the same writeObjects
     /// call so targets like Word embed the image rather than pasting a filename string.
-    static func pasteFile(_ pathsContent: String, imageData: Data? = nil, monitor: RelayClipboardMonitor) async {
+    static func pasteFile(_ pathsContent: String, imageData: Data? = nil, monitor: RelayClipboardMonitor, burst: Bool = false) async {
         let paths = pathsContent.components(separatedBy: "\n").filter { !$0.isEmpty }
         let pasteboard = NSPasteboard.general
         pasteboard.clearContents()
@@ -63,9 +68,9 @@ enum RelayPaster {
 
         pasteboard.markAsPasteMemoWrite()
         monitor.skipNextChange()
-        try? await Task.sleep(for: PASTE_DELAY)
+        try? await Task.sleep(for: burst ? BURST_PASTE_DELAY : PASTE_DELAY)
         simulateCommandV()
-        try? await Task.sleep(for: .milliseconds(100))
+        try? await Task.sleep(for: burst ? BURST_POST_PASTE_DELAY : POST_PASTE_DELAY)
         simulatePostPasteKey()
     }
 
@@ -73,14 +78,14 @@ enum RelayPaster {
     /// Used for rich-text clips (备忘录/Word/Excel/网页图文) to achieve native-fidelity paste.
     /// `restorePasteboardSnapshot` internally drops Office-private UTIs so Word paste
     /// doesn't get hijacked by its private internal clipboard (issue #28).
-    static func pasteSnapshot(_ snapshot: Data, monitor: RelayClipboardMonitor) async {
+    static func pasteSnapshot(_ snapshot: Data, monitor: RelayClipboardMonitor, burst: Bool = false) async {
         let pasteboard = NSPasteboard.general
         _ = ClipboardManager.shared.restorePasteboardSnapshot(snapshot, to: pasteboard)
         pasteboard.markAsPasteMemoWrite()
         monitor.skipNextChange()
-        try? await Task.sleep(for: PASTE_DELAY)
+        try? await Task.sleep(for: burst ? BURST_PASTE_DELAY : PASTE_DELAY)
         simulateCommandV()
-        try? await Task.sleep(for: .milliseconds(100))
+        try? await Task.sleep(for: burst ? BURST_POST_PASTE_DELAY : POST_PASTE_DELAY)
         simulatePostPasteKey()
     }
 
