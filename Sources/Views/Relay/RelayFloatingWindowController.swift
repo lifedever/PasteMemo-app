@@ -83,10 +83,8 @@ final class RelayFloatingWindowController {
         let resizeHandle = ResizeHandleView(
             minWidth: MIN_WIDTH,
             maxWidth: MAX_WIDTH,
-            pinTopRight: { [weak self] in
-                guard let self, let win = self.window else { return }
-                self.pinTopRight(win)
-            },
+            // 用户拖完不再贴右上：当前会话保留窗口位置，下次重新打开才回到默认。
+            pinTopRight: { },
             save: { width in
                 UserDefaults.standard.set(Double(width), forKey: WIDTH_PREF_KEY)
             }
@@ -128,7 +126,8 @@ final class RelayFloatingWindowController {
                 guard let self, let win = self.window else { return }
                 let w = min(max(win.frame.size.width, MIN_WIDTH), MAX_WIDTH)
                 UserDefaults.standard.set(Double(w), forKey: WIDTH_PREF_KEY)
-                self.pinTopRight(win)
+                // 不贴右上：会话内保持用户拖到的位置；resizeToFit 已经做 top-anchored grow，
+                // 内容增减时窗口的顶部相对位置不变，跟着内容向下生长 / 收缩即可。
             }
         }
     }
