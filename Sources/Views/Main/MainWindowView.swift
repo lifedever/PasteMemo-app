@@ -750,9 +750,15 @@ struct MainWindowView: View {
         let id = item.persistentModelID
         let now = Date()
 
-        // 时间戳追踪双击：与 QuickPanelView.handleItemClick 保持同一模式。
-        // 双击触发时复用右键菜单"复制"的语义——多选包含当前行就合并复制，否则单条复制。
+        // 双击复制：检测到 0.3s 内同行二次点击，先把 click 1 改动的选中态还原回去
+        // （避免 detail pane 闪一下又变化），再按右键菜单"复制"的语义执行——
+        // 多选包含当前行就合并复制，否则单条复制。单击响应不延迟。
         if lastClickedID == id, now.timeIntervalSince(lastClickTime) < 0.3 {
+            if let snap = preClickSnapshot {
+                selectedItems = snap.selected
+                selectionAnchor = snap.anchor
+                navigationCursor = snap.cursor
+            }
             if selectedItems.contains(id), selectedItems.count > 1 {
                 copySelectedToClipboard()
             } else {
@@ -760,8 +766,12 @@ struct MainWindowView: View {
             }
             lastClickedID = nil
             lastClickTime = .distantPast
+            preClickSnapshot = nil
             return
         }
+
+        // 在改动选中态前保存快照，留给紧随其后的可能双击还原。
+        preClickSnapshot = (selectedItems, selectionAnchor, navigationCursor)
 
         let previousCursor = navigationCursor
         navigationCursor = id
@@ -819,6 +829,7 @@ struct MainWindowView: View {
     @State private var selectionAnchor: ClipItem.ID?
     @State private var lastClickedID: ClipItem.ID?
     @State private var lastClickTime: Date = .distantPast
+    @State private var preClickSnapshot: (selected: Set<ClipItem.ID>, anchor: ClipItem.ID?, cursor: ClipItem.ID?)?
 
     private func moveSelection(direction: MoveDirection, extendSelection: Bool = false) {
         let items = visualOrderedItems
