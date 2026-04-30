@@ -748,6 +748,21 @@ struct MainWindowView: View {
     private func handleRowClick(_ item: ClipItem) {
         let flags = NSApp.currentEvent?.modifierFlags ?? []
         let id = item.persistentModelID
+        let now = Date()
+
+        // 时间戳追踪双击：与 QuickPanelView.handleItemClick 保持同一模式。
+        // 双击触发时复用右键菜单"复制"的语义——多选包含当前行就合并复制，否则单条复制。
+        if lastClickedID == id, now.timeIntervalSince(lastClickTime) < 0.3 {
+            if selectedItems.contains(id), selectedItems.count > 1 {
+                copySelectedToClipboard()
+            } else {
+                copyToClipboard(item)
+            }
+            lastClickedID = nil
+            lastClickTime = .distantPast
+            return
+        }
+
         let previousCursor = navigationCursor
         navigationCursor = id
 
@@ -778,6 +793,8 @@ struct MainWindowView: View {
             ) else {
                 selectedItems = [id]
                 selectionAnchor = id
+                lastClickedID = id
+                lastClickTime = now
                 return
             }
             selectedItems = selection
@@ -791,12 +808,17 @@ struct MainWindowView: View {
                 selectionAnchor = id
             }
         }
+
+        lastClickedID = id
+        lastClickTime = now
     }
 
     private enum MoveDirection { case up, down }
 
     @State private var navigationCursor: ClipItem.ID?
     @State private var selectionAnchor: ClipItem.ID?
+    @State private var lastClickedID: ClipItem.ID?
+    @State private var lastClickTime: Date = .distantPast
 
     private func moveSelection(direction: MoveDirection, extendSelection: Bool = false) {
         let items = visualOrderedItems
