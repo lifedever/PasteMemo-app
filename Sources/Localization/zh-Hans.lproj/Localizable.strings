@@ -725,6 +725,9 @@
 "relay.autoExit" = "队列清空后自动退出";
 "relay.previous" = "上一条";
 "relay.skip" = "跳过";
+"relay.pasteAll" = "全部粘贴";
+"relay.pasteAll.stop" = "停止";
+"relay.pasteAll.help" = "按顺序逐条粘贴队列中所有剩余条目（⌥⌃V）";
 "relay.delete" = "删除";
 "relay.setCurrent" = "设为当前";
 "relay.split" = "拆分";

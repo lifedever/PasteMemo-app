@@ -505,6 +505,9 @@
 "relay.autoExit" = "キューが空になったら自動終了";
 "relay.previous" = "前へ";
 "relay.skip" = "スキップ";
+"relay.pasteAll" = "すべて貼り付け";
+"relay.pasteAll.stop" = "停止";
+"relay.pasteAll.help" = "キュー内の残りすべての項目を順番に貼り付け（⌥⌃V）";
 "relay.delete" = "削除";
 "relay.setCurrent" = "現在に設定";
 "relay.split" = "分割";

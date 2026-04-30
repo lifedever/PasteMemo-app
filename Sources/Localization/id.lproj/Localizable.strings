@@ -496,6 +496,9 @@
 "relay.autoExit" = "Keluar otomatis saat antrian kosong";
 "relay.previous" = "Sebelumnya";
 "relay.skip" = "Lewati";
+"relay.pasteAll" = "Tempel semua";
+"relay.pasteAll.stop" = "Berhenti";
+"relay.pasteAll.help" = "Tempel semua item antrian yang tersisa secara berurutan (⌥⌃V)";
 "relay.delete" = "Hapus";
 "relay.setCurrent" = "Jadikan saat ini";
 "relay.split" = "Bagi";

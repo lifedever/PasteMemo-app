@@ -499,6 +499,9 @@
 "relay.autoExit" = "Авто-выход при пустой очереди";
 "relay.previous" = "Назад";
 "relay.skip" = "Пропустить";
+"relay.pasteAll" = "Вставить все";
+"relay.pasteAll.stop" = "Остановить";
+"relay.pasteAll.help" = "Вставить все оставшиеся элементы очереди по порядку (⌥⌃V)";
 "relay.delete" = "Удалить";
 "relay.setCurrent" = "Сделать текущим";
 "relay.split" = "Разделить";

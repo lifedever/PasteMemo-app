@@ -15,6 +15,7 @@ final class RelayManager {
     private var lastRecirculationExpiry: Task<Void, Never>?
     var isActive = false
     var isPaused = false
+    var isPastingAll = false
     var autoExitOnEmpty = true
     var pasteAsPlainText: Bool {
         get { UserDefaults.standard.bool(forKey: "relayPasteAsPlainText") }
@@ -258,6 +259,7 @@ final class RelayManager {
     /// Task N+1's pasteboard write overwrites Task N's before the target app
     /// has finished reading it (issue #28: Word pastes only the last snapshot).
     private var currentPasteTask: Task<Void, Never>?
+    private var pasteAllTask: Task<Void, Never>?
 
     // MARK: - Mode Lifecycle
 
@@ -388,6 +390,9 @@ final class RelayManager {
         handler.onPrevious = { [weak self] in
             Task { @MainActor in self?.rollback() }
         }
+        handler.onPasteAll = { [weak self] in
+            Task { @MainActor in self?.pasteAll() }
+        }
         handler.start()
         hotkeyHandler = handler
     }
@@ -422,6 +427,39 @@ final class RelayManager {
             await previous?.value
             await self?.performOnePaste()
         }
+    }
+
+    /// 一键粘贴整个队列剩余条目。每条之间停顿 150ms 让目标 App 处理。
+    /// - 已经在粘贴中（isPastingAll==true）→ 当作"停止"处理，取消任务
+    /// - 暂停 / 不在 active / 队列空 → 不启动
+    /// - 中途用户暂停接力（isPaused）或队列耗尽 → 退出循环
+    func pasteAll() {
+        if isPastingAll {
+            cancelPasteAll()
+            return
+        }
+        guard isActive, !isPaused, !isQueueExhausted else { return }
+        isPastingAll = true
+        let previous = currentPasteTask
+        let task = Task { @MainActor [weak self] in
+            await previous?.value
+            guard let self else { return }
+            while !Task.isCancelled, self.isActive, !self.isPaused, !self.isQueueExhausted {
+                await self.performOnePaste()
+                // 每条之间额外停顿，让目标 App 完成本次粘贴 + 处理 post-paste-key 后再下一条。
+                try? await Task.sleep(for: .milliseconds(150))
+            }
+            self.isPastingAll = false
+            self.pasteAllTask = nil
+        }
+        pasteAllTask = task
+        currentPasteTask = task
+    }
+
+    func cancelPasteAll() {
+        pasteAllTask?.cancel()
+        pasteAllTask = nil
+        isPastingAll = false
     }
 
     @MainActor

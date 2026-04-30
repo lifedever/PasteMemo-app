@@ -17,6 +17,7 @@ final class RelayHotkeyHandler {
     var onPaste: (() -> Void)?
     var onSkip: (() -> Void)?
     var onPrevious: (() -> Void)?
+    var onPasteAll: (() -> Void)?
 
     var pasteKeyCode: Int {
         guard UserDefaults.standard.object(forKey: "relayPasteKeyCode") != nil else { return DEFAULT_RELAY_KEY_CODE }
@@ -28,6 +29,17 @@ final class RelayHotkeyHandler {
         return UserDefaults.standard.integer(forKey: "relayPasteModifiers")
     }
 
+    /// Paste-all 默认 ⌥⌃V，复用 paste 的键码加 option 修饰键，跟单条粘贴语义对齐。
+    var pasteAllKeyCode: Int {
+        guard UserDefaults.standard.object(forKey: "relayPasteAllKeyCode") != nil else { return pasteKeyCode }
+        return UserDefaults.standard.integer(forKey: "relayPasteAllKeyCode")
+    }
+
+    var pasteAllModifiers: Int {
+        guard UserDefaults.standard.object(forKey: "relayPasteAllModifiers") != nil else { return optionKey | controlKey }
+        return UserDefaults.standard.integer(forKey: "relayPasteAllModifiers")
+    }
+
     func start() {
         installEventHandler()
         // ID 1: Paste (Ctrl+V)
@@ -36,6 +48,8 @@ final class RelayHotkeyHandler {
         registerHotKey(id: 2, keyCode: RIGHT_ARROW_KEY_CODE, modifiers: controlKey)
         // ID 3: Previous (Ctrl+Left)
         registerHotKey(id: 3, keyCode: LEFT_ARROW_KEY_CODE, modifiers: controlKey)
+        // ID 4: Paste All (Option+Ctrl+V)
+        registerHotKey(id: 4, keyCode: pasteAllKeyCode, modifiers: pasteAllModifiers)
     }
 
     func stop() {
@@ -80,6 +94,7 @@ final class RelayHotkeyHandler {
                     case 1: RelayHotkeyHandler.current?.onPaste?()
                     case 2: RelayHotkeyHandler.current?.onSkip?()
                     case 3: RelayHotkeyHandler.current?.onPrevious?()
+                    case 4: RelayHotkeyHandler.current?.onPasteAll?()
                     default: break
                     }
                 }

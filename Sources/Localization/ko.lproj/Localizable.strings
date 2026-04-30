@@ -489,6 +489,9 @@
 "relay.autoExit" = "대기열이 비면 자동 종료";
 "relay.previous" = "이전";
 "relay.skip" = "건너뛰기";
+"relay.pasteAll" = "모두 붙여넣기";
+"relay.pasteAll.stop" = "중지";
+"relay.pasteAll.help" = "큐의 남은 모든 항목을 순서대로 붙여넣기 (⌥⌃V)";
 "relay.delete" = "삭제";
 "relay.setCurrent" = "현재로 설정";
 "relay.split" = "분할";

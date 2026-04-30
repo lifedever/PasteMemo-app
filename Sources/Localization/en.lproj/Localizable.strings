@@ -724,6 +724,9 @@
 "relay.autoExit" = "Auto exit when queue empty";
 "relay.previous" = "Previous";
 "relay.skip" = "Skip";
+"relay.pasteAll" = "Paste All";
+"relay.pasteAll.stop" = "Stop";
+"relay.pasteAll.help" = "Paste all remaining queue items in order (⌥⌃V)";
 "relay.delete" = "Delete";
 "relay.setCurrent" = "Set as Current";
 "relay.split" = "Split";

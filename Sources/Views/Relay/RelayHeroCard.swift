@@ -257,6 +257,24 @@ struct RelayHeroCard: View {
             }
             .buttonStyle(.plain)
             .disabled(manager.isQueueExhausted)
+
+            Button {
+                manager.pasteAll()
+            } label: {
+                HStack(spacing: 3) {
+                    Image(systemName: manager.isPastingAll ? "stop.fill" : "play.fill")
+                    Text(manager.isPastingAll ? L10n.tr("relay.pasteAll.stop") : L10n.tr("relay.pasteAll"))
+                }
+                .font(.system(size: 12, weight: .semibold))
+                .padding(.horizontal, 12)
+                .padding(.vertical, 5)
+                .foregroundStyle(manager.isPastingAll ? Color.red : .green)
+                .background((manager.isPastingAll ? Color.red : .green).opacity(0.18), in: Capsule())
+                .overlay(Capsule().stroke((manager.isPastingAll ? Color.red : .green).opacity(0.35), lineWidth: 1))
+            }
+            .buttonStyle(.plain)
+            .disabled(manager.isQueueExhausted && !manager.isPastingAll)
+            .help(L10n.tr("relay.pasteAll.help"))
         }
         .padding(.horizontal, 14)
         .padding(.bottom, 10)

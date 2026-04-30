@@ -579,6 +579,9 @@
 "relay.autoExit" = "佇列清空後自動退出";
 "relay.previous" = "上一條";
 "relay.skip" = "跳過";
+"relay.pasteAll" = "全部貼上";
+"relay.pasteAll.stop" = "停止";
+"relay.pasteAll.help" = "依序貼上佇列剩餘的所有項目（⌥⌃V）";
 "relay.delete" = "刪除";
 "relay.setCurrent" = "設為當前";
 "relay.split" = "拆分";
