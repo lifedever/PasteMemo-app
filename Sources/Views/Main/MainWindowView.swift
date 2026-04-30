@@ -649,6 +649,13 @@ struct MainWindowView: View {
     @ViewBuilder
     private func mainListContextMenu(item: ClipItem) -> some View {
         if item.isDeleted { EmptyView() } else {
+            Button(L10n.tr("action.mergeCopy")) {
+                if selectedItems.contains(item.persistentModelID), selectedItems.count > 1 {
+                    copySelectedToClipboard()
+                } else {
+                    copyToClipboard(item)
+                }
+            }
             Button(item.isPinned ? L10n.tr("action.unpin") : L10n.tr("action.pin")) {
                 if selectedItems.contains(item.persistentModelID), selectedItems.count > 1 {
                     let items = selectedClipItems
@@ -669,13 +676,6 @@ struct MainWindowView: View {
                     item.isSensitive.toggle()
                 }
                 ClipItemStore.saveAndNotify(modelContext)
-            }
-            Button(L10n.tr("action.mergeCopy")) {
-                if selectedItems.contains(item.persistentModelID), selectedItems.count > 1 {
-                    copySelectedToClipboard()
-                } else {
-                    copyToClipboard(item)
-                }
             }
             if selectedItems.count > 1, selectedClipItems.allSatisfy({ $0.contentType.isMergeable }) {
                 Button(L10n.tr("action.merge")) { mergeSelectedItems() }
