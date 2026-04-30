@@ -66,6 +66,14 @@
 "settings.menuBarIconStyle" = "Icône de la barre des menus";
 "settings.menuBarIconStyle.outline" = "Contour";
 "settings.menuBarIconStyle.filled" = "Rempli";
+"settings.menuBar.leftClickAction" = "Action du clic gauche sur la barre de menu";
+"settings.menuBar.leftClickAction.help" = "Action lors du clic gauche sur l'icône de la barre de menu ; le clic droit affiche toujours le menu";
+"menuBar.leftClick.menu" = "Afficher le menu";
+"menuBar.leftClick.openManager" = "Ouvrir le gestionnaire";
+"menuBar.leftClick.quickPanel" = "Ouvrir le collage rapide";
+"menuBar.leftClick.toggleRelay" = "Basculer le mode relais";
+"menuBar.leftClick.togglePause" = "Pause / Reprise de la surveillance du presse-papiers";
+"menuBar.leftClick.openSettings" = "Ouvrir les réglages";
 "settings.currentVersion" = "Version actuelle";
 
 /* Pro */

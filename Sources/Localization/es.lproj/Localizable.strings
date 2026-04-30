@@ -66,6 +66,14 @@
 "settings.menuBarIconStyle" = "Icono de la barra de menús";
 "settings.menuBarIconStyle.outline" = "Contorno";
 "settings.menuBarIconStyle.filled" = "Relleno";
+"settings.menuBar.leftClickAction" = "Acción del clic izquierdo en la barra de menús";
+"settings.menuBar.leftClickAction.help" = "Acción al hacer clic izquierdo en el icono de la barra de menús; el clic derecho siempre muestra el menú";
+"menuBar.leftClick.menu" = "Mostrar menú";
+"menuBar.leftClick.openManager" = "Abrir gestor";
+"menuBar.leftClick.quickPanel" = "Abrir pegado rápido";
+"menuBar.leftClick.toggleRelay" = "Alternar modo relevo";
+"menuBar.leftClick.togglePause" = "Pausar / Reanudar monitoreo del portapapeles";
+"menuBar.leftClick.openSettings" = "Abrir ajustes";
 "settings.currentVersion" = "Versión actual";
 
 /* Pro */

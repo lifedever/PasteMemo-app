@@ -39,6 +39,7 @@ struct SettingsView: View {
 struct GeneralTab: View {
     @AppStorage("appearanceMode") private var appearanceMode = "system"
     @AppStorage("menuBarIconStyle") private var menuBarIconStyle = "outline"
+    @AppStorage(MenuBarLeftClickAction.storageKey) private var menuBarLeftClickActionRaw = MenuBarLeftClickAction.menu.rawValue
     @ObservedObject private var languageManager = LanguageManager.shared
     @AppStorage("launchAtLogin") private var launchAtLogin = false
     @AppStorage("hideDockIcon") private var hideDockIcon = false
@@ -116,6 +117,13 @@ struct GeneralTab: View {
                     }
                     .tag("filled")
                 }
+
+                Picker(L10n.tr("settings.menuBar.leftClickAction"), selection: $menuBarLeftClickActionRaw) {
+                    ForEach(MenuBarLeftClickAction.allCases, id: \.rawValue) { action in
+                        Text(L10n.tr(action.l10nKey)).tag(action.rawValue)
+                    }
+                }
+                .help(L10n.tr("settings.menuBar.leftClickAction.help"))
 
                 Picker(L10n.tr("settings.language"), selection: $languageManager.current) {
                     ForEach(L10n.supportedLanguages, id: \.code) { lang in

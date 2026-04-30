@@ -98,6 +98,14 @@
 "settings.menuBarIconStyle" = "狀態列圖示";
 "settings.menuBarIconStyle.outline" = "描邊";
 "settings.menuBarIconStyle.filled" = "填充";
+"settings.menuBar.leftClickAction" = "狀態列圖示左鍵動作";
+"settings.menuBar.leftClickAction.help" = "左鍵單擊狀態列圖示時執行的動作；右鍵永遠彈出選單";
+"menuBar.leftClick.menu" = "彈出選單";
+"menuBar.leftClick.openManager" = "開啟管理器";
+"menuBar.leftClick.quickPanel" = "開啟快捷貼上";
+"menuBar.leftClick.toggleRelay" = "切換接力模式";
+"menuBar.leftClick.togglePause" = "暫停 / 繼續剪貼簿監聽";
+"menuBar.leftClick.openSettings" = "開啟設定";
 "settings.currentVersion" = "目前版本";
 "settings.features" = "功能";
 "settings.shortcuts" = "快捷鍵";

@@ -97,6 +97,14 @@
 "settings.menuBarIconStyle" = "Значок строки меню";
 "settings.menuBarIconStyle.outline" = "Контур";
 "settings.menuBarIconStyle.filled" = "Заливка";
+"settings.menuBar.leftClickAction" = "Действие при левом клике на иконке меню";
+"settings.menuBar.leftClickAction.help" = "Действие при левом клике на иконку строки меню; правый клик всегда показывает меню";
+"menuBar.leftClick.menu" = "Показать меню";
+"menuBar.leftClick.openManager" = "Открыть менеджер";
+"menuBar.leftClick.quickPanel" = "Открыть быструю вставку";
+"menuBar.leftClick.toggleRelay" = "Переключить режим эстафеты";
+"menuBar.leftClick.togglePause" = "Приостановить / возобновить мониторинг буфера";
+"menuBar.leftClick.openSettings" = "Открыть настройки";
 "settings.currentVersion" = "Текущая версия";
 "settings.features" = "Функции";
 "settings.shortcuts" = "Горячие клавиши";

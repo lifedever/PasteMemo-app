@@ -105,6 +105,14 @@
 "settings.menuBarIconStyle" = "状态栏图标";
 "settings.menuBarIconStyle.outline" = "描边";
 "settings.menuBarIconStyle.filled" = "填充";
+"settings.menuBar.leftClickAction" = "状态栏图标左键动作";
+"settings.menuBar.leftClickAction.help" = "左键单击状态栏图标时执行的动作；右键始终弹菜单";
+"menuBar.leftClick.menu" = "弹出菜单";
+"menuBar.leftClick.openManager" = "打开管理器";
+"menuBar.leftClick.quickPanel" = "打开快捷粘贴";
+"menuBar.leftClick.toggleRelay" = "切换接力模式";
+"menuBar.leftClick.togglePause" = "暂停 / 继续剪贴板监听";
+"menuBar.leftClick.openSettings" = "打开设置";
 "settings.currentVersion" = "当前版本";
 "settings.features" = "功能";
 "settings.shortcuts" = "快捷键";

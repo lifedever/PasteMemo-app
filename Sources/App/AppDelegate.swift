@@ -42,9 +42,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         UsageTracker.pingIfNeeded()
 
-        // Hide SwiftUI auto-created windows
+        // SwiftUI auto-creates main window briefly so MainWindowView.onAppear runs
+        // and registers AppAction.shared closures. Then we hide it; user reopens
+        // explicitly via status bar / hotkey.
         hideAllMainWindows(NSApp)
         isLaunchComplete = true
+
+        // 自定义状态栏图标（支持左/右键不同动作）—— 取代原来的 MenuBarExtra(.menu)。
+        StatusBarController.shared.install()
 
         let hasCompletedOnboarding = UserDefaults.standard.bool(forKey: "hasCompletedOnboarding")
         let needsAccessibility = !AXIsProcessTrusted()

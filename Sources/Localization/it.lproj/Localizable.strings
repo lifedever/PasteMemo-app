@@ -97,6 +97,14 @@
 "settings.menuBarIconStyle" = "Icona barra dei menu";
 "settings.menuBarIconStyle.outline" = "Contorno";
 "settings.menuBarIconStyle.filled" = "Pieno";
+"settings.menuBar.leftClickAction" = "Azione del clic sinistro nella barra dei menu";
+"settings.menuBar.leftClickAction.help" = "Azione al clic sinistro sull'icona della barra dei menu; il clic destro mostra sempre il menu";
+"menuBar.leftClick.menu" = "Mostra menu";
+"menuBar.leftClick.openManager" = "Apri Gestore";
+"menuBar.leftClick.quickPanel" = "Apri Incolla Rapido";
+"menuBar.leftClick.toggleRelay" = "Attiva/disattiva modalità staffetta";
+"menuBar.leftClick.togglePause" = "Sospendi / Riprendi monitoraggio appunti";
+"menuBar.leftClick.openSettings" = "Apri impostazioni";
 "settings.currentVersion" = "Versione attuale";
 "settings.features" = "Funzionalità";
 "settings.shortcuts" = "Scorciatoie";

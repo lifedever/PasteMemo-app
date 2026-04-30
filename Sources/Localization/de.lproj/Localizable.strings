@@ -66,6 +66,14 @@
 "settings.menuBarIconStyle" = "Menüleisten-Symbol";
 "settings.menuBarIconStyle.outline" = "Umriss";
 "settings.menuBarIconStyle.filled" = "Ausgefüllt";
+"settings.menuBar.leftClickAction" = "Aktion bei Linksklick auf Menüleiste";
+"settings.menuBar.leftClickAction.help" = "Aktion beim Linksklick auf das Menüleisten-Symbol; Rechtsklick zeigt immer das Menü an";
+"menuBar.leftClick.menu" = "Menü anzeigen";
+"menuBar.leftClick.openManager" = "Manager öffnen";
+"menuBar.leftClick.quickPanel" = "Schnellpanel öffnen";
+"menuBar.leftClick.toggleRelay" = "Relay-Modus umschalten";
+"menuBar.leftClick.togglePause" = "Zwischenablage-Überwachung pausieren / fortsetzen";
+"menuBar.leftClick.openSettings" = "Einstellungen öffnen";
 "settings.currentVersion" = "Aktuelle Version";
 
 /* Pro */

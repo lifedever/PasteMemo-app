@@ -6,8 +6,6 @@ import AppKit
 struct PasteMemoApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     @AppStorage("appearanceMode") private var appearanceMode: String = "system"
-    @AppStorage("menuBarIconStyle") private var menuBarIconStyle: String = "outline"
-    @ObservedObject private var clipboardManager = ClipboardManager.shared
     @AppStorage("alwaysOnTop") private var alwaysOnTop = false
 
     var body: some Scene {
@@ -97,17 +95,8 @@ struct PasteMemoApp: App {
                 .environmentObject(ClipboardManager.shared)
                 .modelContainer(Self.sharedModelContainer)
         }
-
-        MenuBarExtra {
-            MenuBarContent()
-        } label: {
-            if let image = Self.menuBarIcon(paused: clipboardManager.isPaused, relay: RelayManager.shared.isActive, filled: menuBarIconStyle == "filled") {
-                Image(nsImage: image)
-            } else {
-                Image(systemName: "doc.on.clipboard")
-            }
-        }
-        .menuBarExtraStyle(.menu)
+        // 状态栏图标改用 AppKit 的 NSStatusItem 实现（StatusBarController），
+        // 这样能区分左/右键、支持左键自定义动作。AppDelegate 在启动时安装。
     }
 
     // MARK: - Menu Bar Icon
@@ -116,7 +105,7 @@ struct PasteMemoApp: App {
         return menuBarIcon(paused: false, filled: filled)
     }
 
-    private static func menuBarIcon(paused: Bool, relay: Bool = false, filled: Bool = false) -> NSImage? {
+    static func menuBarIcon(paused: Bool, relay: Bool = false, filled: Bool = false) -> NSImage? {
         let size = NSSize(width: 18, height: 18)
         let image = NSImage(size: size, flipped: true) { rect in
             drawCards(in: rect, filled: filled)

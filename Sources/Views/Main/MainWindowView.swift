@@ -39,6 +39,7 @@ struct MainWindowView: View {
         return store.items.first { $0.persistentModelID == id }
     }
     @Environment(\.openWindow) private var openWindow
+    @Environment(\.openSettings) private var openSettings
     @State private var showDeleteConfirm = false
     @State private var isClearing = false
     @State private var clearTitle = ""
@@ -308,6 +309,20 @@ struct MainWindowView: View {
                 }
                 NSApp.activate(ignoringOtherApps: true)
                 UsageTracker.pingIfNeeded(source: .main)
+            }
+            AppAction.shared.openSettings = { [openSettings] in
+                if !UserDefaults.standard.bool(forKey: "hideDockIcon") {
+                    NSApp.setActivationPolicy(.regular)
+                }
+                NSApp.activate(ignoringOtherApps: true)
+                openSettings()
+            }
+            AppAction.shared.openAutomationManager = { [openWindow] in
+                if !UserDefaults.standard.bool(forKey: "hideDockIcon") {
+                    NSApp.setActivationPolicy(.regular)
+                }
+                openWindow(id: "automationManager")
+                NSApp.activate(ignoringOtherApps: true)
             }
         }
         .onChange(of: relaySplitText) {

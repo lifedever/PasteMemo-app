@@ -97,6 +97,14 @@
 "settings.menuBarIconStyle" = "Ikon Bilah Menu";
 "settings.menuBarIconStyle.outline" = "Garis Luar";
 "settings.menuBarIconStyle.filled" = "Terisi";
+"settings.menuBar.leftClickAction" = "Aksi Klik Kiri Bilah Menu";
+"settings.menuBar.leftClickAction.help" = "Aksi saat klik kiri ikon bilah menu; klik kanan selalu menampilkan menu";
+"menuBar.leftClick.menu" = "Tampilkan Menu";
+"menuBar.leftClick.openManager" = "Buka Manajer";
+"menuBar.leftClick.quickPanel" = "Buka Tempel Cepat";
+"menuBar.leftClick.toggleRelay" = "Alihkan Mode Estafet";
+"menuBar.leftClick.togglePause" = "Jeda / Lanjutkan Monitor Papan Klip";
+"menuBar.leftClick.openSettings" = "Buka Pengaturan";
 "settings.currentVersion" = "Versi Saat Ini";
 "settings.features" = "Fitur";
 "settings.shortcuts" = "Pintasan";

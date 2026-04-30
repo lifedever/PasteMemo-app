@@ -66,6 +66,14 @@
 "settings.menuBarIconStyle" = "メニューバーアイコン";
 "settings.menuBarIconStyle.outline" = "アウトライン";
 "settings.menuBarIconStyle.filled" = "塗りつぶし";
+"settings.menuBar.leftClickAction" = "ステータスバー左クリックの動作";
+"settings.menuBar.leftClickAction.help" = "ステータスバーアイコンを左クリックしたときの動作；右クリックは常にメニューを表示します";
+"menuBar.leftClick.menu" = "メニューを表示";
+"menuBar.leftClick.openManager" = "マネージャーを開く";
+"menuBar.leftClick.quickPanel" = "クイック貼り付けを開く";
+"menuBar.leftClick.toggleRelay" = "リレーモードの切り替え";
+"menuBar.leftClick.togglePause" = "クリップボード監視を一時停止 / 再開";
+"menuBar.leftClick.openSettings" = "設定を開く";
 "settings.currentVersion" = "現在のバージョン";
 
 /* Pro */

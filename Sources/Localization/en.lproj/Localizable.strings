@@ -105,6 +105,14 @@
 "settings.menuBarIconStyle" = "Menu Bar Icon";
 "settings.menuBarIconStyle.outline" = "Outline";
 "settings.menuBarIconStyle.filled" = "Filled";
+"settings.menuBar.leftClickAction" = "Status Bar Left-Click Action";
+"settings.menuBar.leftClickAction.help" = "Action when left-clicking the status bar icon; right-click always shows the menu";
+"menuBar.leftClick.menu" = "Show Menu";
+"menuBar.leftClick.openManager" = "Open Manager";
+"menuBar.leftClick.quickPanel" = "Open Quick Paste";
+"menuBar.leftClick.toggleRelay" = "Toggle Relay Mode";
+"menuBar.leftClick.togglePause" = "Pause / Resume Clipboard Monitoring";
+"menuBar.leftClick.openSettings" = "Open Settings";
 "settings.currentVersion" = "Current Version";
 "settings.features" = "Features";
 "settings.shortcuts" = "Shortcuts";

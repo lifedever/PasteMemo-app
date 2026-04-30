@@ -66,6 +66,14 @@
 "settings.menuBarIconStyle" = "메뉴 막대 아이콘";
 "settings.menuBarIconStyle.outline" = "윤곽선";
 "settings.menuBarIconStyle.filled" = "채움";
+"settings.menuBar.leftClickAction" = "상태 표시줄 좌클릭 동작";
+"settings.menuBar.leftClickAction.help" = "상태 표시줄 아이콘을 좌클릭할 때 수행할 동작; 우클릭은 항상 메뉴를 표시합니다";
+"menuBar.leftClick.menu" = "메뉴 표시";
+"menuBar.leftClick.openManager" = "매니저 열기";
+"menuBar.leftClick.quickPanel" = "빠른 붙여넣기 열기";
+"menuBar.leftClick.toggleRelay" = "릴레이 모드 전환";
+"menuBar.leftClick.togglePause" = "클립보드 모니터링 일시 정지 / 재개";
+"menuBar.leftClick.openSettings" = "설정 열기";
 "settings.currentVersion" = "현재 버전";
 
 /* Pro */
