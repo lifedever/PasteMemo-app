@@ -497,6 +497,7 @@
 "relay.previous" = "Sebelumnya";
 "relay.skip" = "Lewati";
 "relay.delete" = "Hapus";
+"relay.setCurrent" = "Jadikan saat ini";
 "relay.split" = "Bagi";
 "relay.addToQueue" = "Tambahkan ke antrian relay";
 "relay.splitAndRelay" = "Bagi & relay";

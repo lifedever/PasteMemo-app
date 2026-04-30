@@ -726,6 +726,7 @@
 "relay.previous" = "上一条";
 "relay.skip" = "跳过";
 "relay.delete" = "删除";
+"relay.setCurrent" = "设为当前";
 "relay.split" = "拆分";
 "relay.addToQueue" = "加入接力队列";
 "relay.splitAndRelay" = "拆分并接力";

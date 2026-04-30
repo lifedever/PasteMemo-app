@@ -578,6 +578,7 @@ Usa %@ per incollare uno per uno.";
 "relay.previous" = "Precedente";
 "relay.skip" = "Salta";
 "relay.delete" = "Elimina";
+"relay.setCurrent" = "Imposta come corrente";
 "relay.split" = "Dividi";
 "relay.addToQueue" = "Aggiungi alla coda staffetta";
 "relay.splitAndRelay" = "Dividi e staffetta";

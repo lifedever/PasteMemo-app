@@ -490,6 +490,7 @@ Verwenden Sie %@ zum Einfügen.";
 "relay.previous" = "Zurück";
 "relay.skip" = "Überspringen";
 "relay.delete" = "Löschen";
+"relay.setCurrent" = "Als aktuell festlegen";
 "relay.split" = "Aufteilen";
 "relay.addToQueue" = "Zur Relay-Warteschlange";
 "relay.splitAndRelay" = "Aufteilen & Relay";

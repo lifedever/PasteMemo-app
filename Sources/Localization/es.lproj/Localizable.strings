@@ -490,6 +490,7 @@ Usa %@ para pegar uno por uno.";
 "relay.previous" = "Anterior";
 "relay.skip" = "Omitir";
 "relay.delete" = "Eliminar";
+"relay.setCurrent" = "Establecer como actual";
 "relay.split" = "Dividir";
 "relay.addToQueue" = "Añadir a cola relevo";
 "relay.splitAndRelay" = "Dividir y relevo";

@@ -506,6 +506,7 @@
 "relay.previous" = "前へ";
 "relay.skip" = "スキップ";
 "relay.delete" = "削除";
+"relay.setCurrent" = "現在に設定";
 "relay.split" = "分割";
 "relay.addToQueue" = "リレーキューに追加";
 "relay.splitAndRelay" = "分割してリレー";

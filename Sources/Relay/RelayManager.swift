@@ -126,6 +126,26 @@ final class RelayManager {
         items[currentIndex].state = .current
     }
 
+    /// 跳转到任意条目作为新的当前行。
+    /// - 前进跳跃：跨过的条目（旧 current 到目标前一项）置为 `.skipped`，等价于连按多次 skip。
+    /// - 倒退跳跃：跨过的条目（目标后一项到旧 current）全部回到 `.pending`，等价于"重新处理这一段"。
+    /// - 目标自身：直接设为 `.current`，原状态（done / skipped 等）被覆盖。
+    func jumpTo(index: Int) {
+        guard index >= 0, index < items.count, index != currentIndex else { return }
+        if index > currentIndex {
+            for i in currentIndex..<index where items[i].state != .done && items[i].state != .skipped {
+                items[i].state = .skipped
+            }
+        } else {
+            let upper = min(currentIndex, items.count - 1)
+            for i in (index + 1)...upper {
+                items[i].state = .pending
+            }
+        }
+        currentIndex = index
+        items[index].state = .current
+    }
+
     func deleteItem(at index: Int) {
         guard index >= 0, index < items.count else { return }
         let removed = items[index]

@@ -67,7 +67,15 @@ struct RelayQueueList: View {
                             manager: manager,
                             draggingItem: $draggingItem
                         ))
+                        .onTapGesture(count: 2) {
+                            manager.jumpTo(index: index)
+                        }
                         .contextMenu {
+                            if item.state != .current {
+                                Button(L10n.tr("relay.setCurrent")) {
+                                    manager.jumpTo(index: index)
+                                }
+                            }
                             if item.content.count > 1 {
                                 Button(L10n.tr("relay.split")) { splitTargetIndex = index }
                             }

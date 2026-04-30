@@ -580,6 +580,7 @@
 "relay.previous" = "上一條";
 "relay.skip" = "跳過";
 "relay.delete" = "刪除";
+"relay.setCurrent" = "設為當前";
 "relay.split" = "拆分";
 "relay.addToQueue" = "加入接力佇列";
 "relay.splitAndRelay" = "拆分並接力";
