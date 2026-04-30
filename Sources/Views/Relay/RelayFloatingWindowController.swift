@@ -6,6 +6,7 @@ private let MAX_WIDTH: CGFloat = 800
 private let DEFAULT_WIDTH: CGFloat = 320
 private let SCREEN_MARGIN: CGFloat = 16
 private let MAX_HEIGHT: CGFloat = 500
+private let HANDLE_WIDTH: CGFloat = 8
 private let WIDTH_PREF_KEY = "relayPanelWidth"
 
 @MainActor
@@ -57,7 +58,7 @@ final class RelayFloatingWindowController {
         panel.hasShadow = true
         panel.acceptsMouseMovedEvents = true
 
-        let container = NSView(frame: NSRect(x: 0, y: 0, width: initialWidth, height: 200))
+        let container = HoverTrackingContainerView(frame: NSRect(x: 0, y: 0, width: initialWidth, height: 200))
         container.wantsLayer = true
         container.layer?.cornerRadius = 12
         container.layer?.masksToBounds = true
@@ -79,24 +80,27 @@ final class RelayFloatingWindowController {
             hostingView.trailingAnchor.constraint(equalTo: container.trailingAnchor),
         ])
 
-        // Left-edge resize handle (borderless panels don't show resize cursor natively)
-        let resizeHandle = ResizeHandleView(
-            minWidth: MIN_WIDTH,
-            maxWidth: MAX_WIDTH,
-            // 用户拖完不再贴右上：当前会话保留窗口位置，下次重新打开才回到默认。
-            pinTopRight: { },
-            save: { width in
-                UserDefaults.standard.set(Double(width), forKey: WIDTH_PREF_KEY)
+        // Container 自己驱动 cursor + 拖拽：不挂 sibling 子视图，避免和 SwiftUI 行的
+        // .onHover tracking area 重叠互抢事件（之前左侧 handle 永久亮 + 光标不切换的根因）。
+        // SwiftUI 内容继续 edge-to-edge 显示，靠 container 在 mouseDown 拦截边缘点击实现 resize。
+        container.handleWidth = HANDLE_WIDTH
+        container.onResize = { [weak panel] newWidth, edge in
+            guard let panel else { return }
+            var frame = panel.frame
+            switch edge {
+            case .left:
+                let rightEdge = frame.maxX
+                frame.size.width = newWidth
+                frame.origin.x = rightEdge - newWidth
+            case .right:
+                frame.size.width = newWidth
             }
-        )
-        resizeHandle.translatesAutoresizingMaskIntoConstraints = false
-        container.addSubview(resizeHandle)
-        NSLayoutConstraint.activate([
-            resizeHandle.topAnchor.constraint(equalTo: container.topAnchor),
-            resizeHandle.bottomAnchor.constraint(equalTo: container.bottomAnchor),
-            resizeHandle.leadingAnchor.constraint(equalTo: container.leadingAnchor),
-            resizeHandle.widthAnchor.constraint(equalToConstant: 8),
-        ])
+            panel.setFrame(frame, display: true, animate: false)
+            UserDefaults.standard.set(Double(newWidth), forKey: WIDTH_PREF_KEY)
+        }
+        container.minWidth = MIN_WIDTH
+        container.maxWidth = MAX_WIDTH
+        container.installIndicators()
 
         panel.contentView = container
 
@@ -190,63 +194,90 @@ private final class WindowCloseDelegate: NSObject, NSWindowDelegate {
     func windowWillClose(_ notification: Notification) { onClose() }
 }
 
-/// Custom resize handle along the left edge for borderless panels.
-/// Uses NSTrackingArea with .activeAlways so the cursor updates on
-/// nonactivating panels (where the standard addCursorRect path is skipped).
-private final class ResizeHandleView: NSView {
-    private let minWidth: CGFloat
-    private let maxWidth: CGFloat
-    private let pinTopRight: () -> Void
-    private let save: (CGFloat) -> Void
-    private var dragStartWidth: CGFloat = 0
-    private var dragStartX: CGFloat = 0
+/// Container view that owns BOTH the window-wide hover tracking AND the
+/// edge-resize cursor / drag interaction. Driving everything from the container
+/// (instead of sibling handle subviews) avoids tracking-area collisions with
+/// SwiftUI's own `.onHover` regions inside the hosted content.
+private final class HoverTrackingContainerView: NSView {
+    enum Edge { case left, right }
+
+    var handleWidth: CGFloat = 8
+    var minWidth: CGFloat = 320
+    var maxWidth: CGFloat = 800
+    var onResize: ((CGFloat, Edge) -> Void)?
+
     private var trackingArea: NSTrackingArea?
-    private var isHovering = false { didSet { indicator.alphaValue = isHovering ? 1 : 0 } }
+    private var isWindowHovered = false { didSet { updateIndicators() } }
+    private var hoveredEdge: Edge? {
+        didSet {
+            updateIndicators()
+            // SwiftUI 的 NSHostingView 会在 mouseMoved 中重置光标为箭头，普通 NSCursor.set 抢不过它。
+            // push/pop 把 resize 光标压到全局栈顶，离开边缘再 pop 还原。
+            if hoveredEdge != nil, oldValue == nil {
+                NSCursor.resizeLeftRight.push()
+            } else if hoveredEdge == nil, oldValue != nil {
+                NSCursor.pop()
+            }
+        }
+    }
+    private var dragEdge: Edge?
+    private var dragStartWidth: CGFloat = 0
+    private var dragStartScreenX: CGFloat = 0
 
-    private let indicator: NSView = {
-        let v = NSView()
-        v.wantsLayer = true
-        v.layer?.backgroundColor = NSColor.secondaryLabelColor.withAlphaComponent(0.35).cgColor
-        v.layer?.cornerRadius = 1
-        v.alphaValue = 0
-        return v
-    }()
+    private let leftIndicator = HoverTrackingContainerView.makeIndicator()
+    private let rightIndicator = HoverTrackingContainerView.makeIndicator()
 
-    init(
-        minWidth: CGFloat,
-        maxWidth: CGFloat,
-        pinTopRight: @escaping () -> Void,
-        save: @escaping (CGFloat) -> Void
-    ) {
-        self.minWidth = minWidth
-        self.maxWidth = maxWidth
-        self.pinTopRight = pinTopRight
-        self.save = save
-        super.init(frame: .zero)
-        indicator.translatesAutoresizingMaskIntoConstraints = false
-        addSubview(indicator)
+    override init(frame frameRect: NSRect) {
+        super.init(frame: frameRect)
+    }
+    required init?(coder: NSCoder) { nil }
+
+    /// 在所有内容子视图（visualEffect / hostingView）添加完后调用，把指示条提到 z-order 顶部。
+    func installIndicators() {
+        addSubview(leftIndicator)
+        addSubview(rightIndicator)
         NSLayoutConstraint.activate([
-            indicator.widthAnchor.constraint(equalToConstant: 2),
-            indicator.heightAnchor.constraint(equalToConstant: 28),
-            indicator.centerXAnchor.constraint(equalTo: centerXAnchor),
-            indicator.centerYAnchor.constraint(equalTo: centerYAnchor),
+            leftIndicator.widthAnchor.constraint(equalToConstant: 3),
+            leftIndicator.heightAnchor.constraint(equalToConstant: 36),
+            leftIndicator.centerYAnchor.constraint(equalTo: centerYAnchor),
+            leftIndicator.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 3),
+
+            rightIndicator.widthAnchor.constraint(equalToConstant: 3),
+            rightIndicator.heightAnchor.constraint(equalToConstant: 36),
+            rightIndicator.centerYAnchor.constraint(equalTo: centerYAnchor),
+            rightIndicator.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -3),
         ])
     }
 
-    required init?(coder: NSCoder) { nil }
-
-    override func hitTest(_ point: NSPoint) -> NSView? {
-        // hitTest receives point in SUPERVIEW coordinates. Claim hits inside our frame
-        // so SwiftUI hostingView (which is a sibling below us) doesn't swallow the event.
-        if frame.contains(point) { return self }
-        return nil
+    private static func makeIndicator() -> NSView {
+        let v = NSView()
+        v.translatesAutoresizingMaskIntoConstraints = false
+        v.wantsLayer = true
+        v.layer?.backgroundColor = NSColor.secondaryLabelColor.cgColor
+        v.layer?.cornerRadius = 1.5
+        v.alphaValue = 0
+        return v
     }
+
+    private func updateIndicators() {
+        // 三档：贴边悬浮/拖拽 → 高亮；只在窗口里 → 淡显；都不在 → 隐藏。
+        // 把动画时长拉长到 0.18s 让淡入淡出更柔和。
+        let leftTarget: CGFloat = (dragEdge == .left || hoveredEdge == .left) ? 0.65
+            : (isWindowHovered ? 0.28 : 0)
+        let rightTarget: CGFloat = (dragEdge == .right || hoveredEdge == .right) ? 0.65
+            : (isWindowHovered ? 0.28 : 0)
+        NSAnimationContext.runAnimationGroup { ctx in
+            ctx.duration = 0.18
+            leftIndicator.animator().alphaValue = leftTarget
+            rightIndicator.animator().alphaValue = rightTarget
+        }
+    }
+
+    // MARK: - Tracking + cursor
 
     override func updateTrackingAreas() {
         super.updateTrackingAreas()
-        if let existing = trackingArea {
-            removeTrackingArea(existing)
-        }
+        if let existing = trackingArea { removeTrackingArea(existing) }
         let area = NSTrackingArea(
             rect: bounds,
             options: [.cursorUpdate, .mouseMoved, .mouseEnteredAndExited, .activeAlways, .inVisibleRect],
@@ -257,49 +288,67 @@ private final class ResizeHandleView: NSView {
         trackingArea = area
     }
 
-    override func cursorUpdate(with event: NSEvent) {
-        NSCursor.resizeLeftRight.set()
-    }
-
-    override func mouseMoved(with event: NSEvent) {
-        NSCursor.resizeLeftRight.set()
-    }
-
     override func mouseEntered(with event: NSEvent) {
-        isHovering = true
-        NSCursor.resizeLeftRight.set()
+        isWindowHovered = true
+        updateEdgeFor(point: convert(event.locationInWindow, from: nil))
+    }
+    override func mouseExited(with event: NSEvent) {
+        isWindowHovered = false
+        hoveredEdge = nil
+    }
+    override func mouseMoved(with event: NSEvent) {
+        updateEdgeFor(point: convert(event.locationInWindow, from: nil))
+    }
+    override func cursorUpdate(with event: NSEvent) {
+        if hoveredEdge != nil {
+            NSCursor.resizeLeftRight.set()
+        } else {
+            super.cursorUpdate(with: event)
+        }
     }
 
-    override func mouseExited(with event: NSEvent) {
-        isHovering = false
+    private func updateEdgeFor(point: NSPoint) {
+        let edge: Edge?
+        if point.x < handleWidth { edge = .left }
+        else if point.x > bounds.width - handleWidth { edge = .right }
+        else { edge = nil }
+        if edge != hoveredEdge { hoveredEdge = edge }
+    }
+
+    // MARK: - Drag-to-resize (only when click lands in edge zone)
+
+    override func hitTest(_ point: NSPoint) -> NSView? {
+        // 只在边缘 8px 内 claim 点击;中间区域让给 SwiftUI 内容正常交互。
+        let local = convert(point, from: superview)
+        if local.x < handleWidth || local.x > bounds.width - handleWidth {
+            return self
+        }
+        return super.hitTest(point)
     }
 
     override func mouseDown(with event: NSEvent) {
         guard let window else { return }
+        let local = convert(event.locationInWindow, from: nil)
+        if local.x < handleWidth { dragEdge = .left }
+        else if local.x > bounds.width - handleWidth { dragEdge = .right }
+        else { dragEdge = nil; return }
         dragStartWidth = window.frame.size.width
-        dragStartX = NSEvent.mouseLocation.x
+        dragStartScreenX = NSEvent.mouseLocation.x
+        updateIndicators()
     }
 
     override func mouseDragged(with event: NSEvent) {
-        guard let window else { return }
+        guard let edge = dragEdge else { return }
         let currentX = NSEvent.mouseLocation.x
-        let delta = dragStartX - currentX  // pulling left = widening (right edge pinned)
+        let delta = (edge == .left) ? (dragStartScreenX - currentX) : (currentX - dragStartScreenX)
         var newWidth = dragStartWidth + delta
         newWidth = min(max(newWidth, minWidth), maxWidth)
-
-        var frame = window.frame
-        let rightEdge = frame.maxX
-        frame.size.width = newWidth
-        frame.origin.x = rightEdge - newWidth
-        window.setFrame(frame, display: true, animate: false)
-        // Update AppStorage so SwiftUI content re-renders its .frame(width:) in sync
-        save(newWidth)
+        onResize?(newWidth, edge)
     }
 
     override func mouseUp(with event: NSEvent) {
-        guard let window else { return }
-        save(window.frame.size.width)
-        pinTopRight()
+        dragEdge = nil
+        updateIndicators()
     }
 }
 
