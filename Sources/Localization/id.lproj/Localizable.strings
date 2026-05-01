@@ -593,6 +593,14 @@ Gunakan %@ untuk menempel satu per satu.";
 
 /* Missing Keys - Actions */
 "cmd.showInFinder" = "Tampilkan di Finder";
+"cmd.saveAsFile" = "Simpan sebagai…";
+"saveAs.save" = "Simpan";
+"saveAs.chooseFolderPrompt" = "Ekspor";
+"saveAs.chooseFolderMessage" = "Pilih folder untuk menyalin %d item.";
+"saveAs.saved" = "Disimpan ke %@";
+"saveAs.failed" = "Tidak dapat menyimpan berkas.";
+"saveAs.exportedCount" = "%d berkas diekspor.";
+"saveAs.exportedPartial" = "%d dari %d berkas diekspor.";
 "cmd.copyAs" = "Salin sebagai %@";
 "relay.reverse" = "Balik Urutan";
 "relay.clearAll" = "Hapus Semua";

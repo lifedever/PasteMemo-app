@@ -124,6 +124,7 @@ struct ClipDetailView: View {
                     editButtons
                 } else {
                     copyButton
+                    if ClipItemSaveToFilePresenter.canSaveAsFile(item) { saveAsFileButton }
                     if isEditableType { editButtons }
                     sensitiveButton
                     pinButton
@@ -143,6 +144,17 @@ struct ClipDetailView: View {
             )
         } label: {
             Label(L10n.tr("action.copy"), systemImage: "doc.on.doc")
+                .font(.system(size: 12))
+        }
+        .buttonStyle(.bordered)
+        .controlSize(.small)
+    }
+
+    private var saveAsFileButton: some View {
+        Button {
+            ClipItemSaveToFilePresenter.beginSave(item)
+        } label: {
+            Label(L10n.tr("cmd.saveAsFile"), systemImage: "square.and.arrow.down.on.square")
                 .font(.system(size: 12))
         }
         .buttonStyle(.bordered)

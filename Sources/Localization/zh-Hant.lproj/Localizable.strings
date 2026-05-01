@@ -623,6 +623,14 @@
 
 /* 缺失的鍵 - 操作 */
 "cmd.showInFinder" = "在 Finder 中顯示";
+"cmd.saveAsFile" = "另存為";
+"saveAs.save" = "儲存";
+"saveAs.chooseFolderPrompt" = "輸出";
+"saveAs.chooseFolderMessage" = "選擇要將 %d 個項目複製到哪個檔案夾。";
+"saveAs.saved" = "已儲存至 %@";
+"saveAs.failed" = "無法儲存檔案。";
+"saveAs.exportedCount" = "已輸出 %d 個檔案。";
+"saveAs.exportedPartial" = "已輸出 %d / %d 個檔案。";
 "cmd.copyAs" = "複製為 %@";
 "relay.reverse" = "反轉順序";
 "relay.clearAll" = "清空所有";

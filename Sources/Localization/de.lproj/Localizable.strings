@@ -657,6 +657,14 @@ Verwenden Sie %@ zum Einfügen.";
 /* Command Palette (additional) */
 "cmd.copyAs" = "Kopieren als %@";
 "cmd.showInFinder" = "Im Finder anzeigen";
+"cmd.saveAsFile" = "Speichern unter…";
+"saveAs.save" = "Sichern";
+"saveAs.chooseFolderPrompt" = "Exportieren";
+"saveAs.chooseFolderMessage" = "Ordner wählen, in den %d Objekte kopiert werden.";
+"saveAs.saved" = "Gespeichert unter %@";
+"saveAs.failed" = "Datei konnte nicht gespeichert werden.";
+"saveAs.exportedCount" = "%d Dateien exportiert.";
+"saveAs.exportedPartial" = "%d von %d Dateien exportiert.";
 
 /* Onboarding - Accessibility */
 "accessibility.lost.later" = "Später";

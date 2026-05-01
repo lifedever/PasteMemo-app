@@ -596,6 +596,14 @@
 
 /* Missing Keys - Actions */
 "cmd.showInFinder" = "Показать в Finder";
+"cmd.saveAsFile" = "Сохранить как…";
+"saveAs.save" = "Сохранить";
+"saveAs.chooseFolderPrompt" = "Экспорт";
+"saveAs.chooseFolderMessage" = "Выберите папку для копирования %d элементов.";
+"saveAs.saved" = "Сохранено в %@";
+"saveAs.failed" = "Не удалось сохранить файл.";
+"saveAs.exportedCount" = "Экспортировано файлов: %d.";
+"saveAs.exportedPartial" = "Экспортировано %d из %d файлов.";
 "cmd.copyAs" = "Копировать как %@";
 "relay.reverse" = "Обратный порядок";
 "relay.clearAll" = "Очистить всё";
