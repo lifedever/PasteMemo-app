@@ -6,7 +6,7 @@ struct QuickPreviewPane: View {
     let item: ClipItem
     var searchText: String = ""
     @AppStorage(OCRTaskCoordinator.enableOCRKey) private var ocrEnabled = true
-    @AppStorage(QuickPanelSettings.richTextPreviewEnabledKey) private var richTextPreviewEnabled = true
+    @AppStorage("richTextPreviewEnabled") private var richTextPreviewEnabled = true
     @State private var allowHeavyPreview = false
     @State private var webPreviewReady = false
     @State private var cachedCodeSummary: CodePreviewSummary?

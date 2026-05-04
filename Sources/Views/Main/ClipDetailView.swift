@@ -453,7 +453,7 @@ struct ClipDetailView: View {
     @AppStorage("webPreviewEnabled") private var webPreviewEnabled = true
     @AppStorage("imageLinkPreviewEnabled") private var imageLinkPreviewEnabled = true
     @AppStorage("offlineModeEnabled") private var offlineModeEnabled = false
-    @AppStorage(QuickPanelSettings.richTextPreviewEnabledKey) private var richTextPreviewEnabled = true
+    @AppStorage("richTextPreviewEnabled") private var richTextPreviewEnabled = true
 
     @ViewBuilder
     private var linkPreview: some View {

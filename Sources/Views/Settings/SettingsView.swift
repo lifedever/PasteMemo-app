@@ -359,8 +359,8 @@ struct PreferencesTab: View {
     @AppStorage("webPreviewEnabled") private var webPreviewEnabled = true
     @AppStorage("imageLinkPreviewEnabled") private var imageLinkPreviewEnabled = true
     @AppStorage("previewExecutesJavaScript") private var previewExecutesJavaScript = true
+    @AppStorage("richTextPreviewEnabled") private var richTextPreviewEnabled = true
     @AppStorage("offlineModeEnabled") private var offlineModeEnabled = false
-    @AppStorage(QuickPanelSettings.richTextPreviewEnabledKey) private var richTextPreviewEnabled = true
     @AppStorage(QuickPanelSettings.launchAnimationEnabledKey) private var quickPanelLaunchAnimationEnabled = true
     @AppStorage(QuickPanelSettings.secondaryRowKey) private var quickPanelSecondaryRow = QuickPanelSecondaryRow.types.rawValue
     @AppStorage(QuickPanelPositionSettings.modeKey) private var quickPanelPositionMode = QuickPanelPositionMode.screenCenter.rawValue
@@ -456,13 +456,13 @@ struct PreferencesTab: View {
                 Toggle(L10n.tr("settings.imageLinkPreview"), isOn: $imageLinkPreviewEnabled)
                 Toggle(L10n.tr("settings.previewExecutesJavaScript"), isOn: $previewExecutesJavaScript)
                     .disabled(!webPreviewEnabled || offlineModeEnabled)
+                Toggle(L10n.tr("settings.richTextPreview"), isOn: $richTextPreviewEnabled)
             } header: {
                 Text(L10n.tr("settings.linkPreview"))
             } footer: {
                 Text(L10n.tr(offlineModeEnabled ? "settings.linkPreview.footer.offline" : "settings.linkPreview.footer"))
                     .font(.footnote)
                     .foregroundStyle(.secondary)
-                Toggle(L10n.tr("settings.richTextPreview"), isOn: $richTextPreviewEnabled)
             }
             .disabled(offlineModeEnabled)
 

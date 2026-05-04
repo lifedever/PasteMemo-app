@@ -41,7 +41,6 @@ enum QuickPanelPositionSettings {
 enum QuickPanelSettings {
     static let launchAnimationEnabledKey = "quickPanelLaunchAnimationEnabled"
     static let secondaryRowKey = "quickPanelSecondaryRow"
-    static let richTextPreviewEnabledKey = "richTextPreviewEnabled"
 }
 
 enum QuickPanelSecondaryRow: String, CaseIterable {
