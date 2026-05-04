@@ -359,6 +359,7 @@ struct PreferencesTab: View {
     @AppStorage("webPreviewEnabled") private var webPreviewEnabled = true
     @AppStorage("imageLinkPreviewEnabled") private var imageLinkPreviewEnabled = true
     @AppStorage("previewExecutesJavaScript") private var previewExecutesJavaScript = true
+    @AppStorage("richTextPreviewEnabled") private var richTextPreviewEnabled = true
     @AppStorage("offlineModeEnabled") private var offlineModeEnabled = false
     @AppStorage(QuickPanelSettings.launchAnimationEnabledKey) private var quickPanelLaunchAnimationEnabled = true
     @AppStorage(QuickPanelSettings.secondaryRowKey) private var quickPanelSecondaryRow = QuickPanelSecondaryRow.types.rawValue
@@ -455,6 +456,7 @@ struct PreferencesTab: View {
                 Toggle(L10n.tr("settings.imageLinkPreview"), isOn: $imageLinkPreviewEnabled)
                 Toggle(L10n.tr("settings.previewExecutesJavaScript"), isOn: $previewExecutesJavaScript)
                     .disabled(!webPreviewEnabled || offlineModeEnabled)
+                Toggle(L10n.tr("settings.richTextPreview"), isOn: $richTextPreviewEnabled)
             } header: {
                 Text(L10n.tr("settings.linkPreview"))
             } footer: {

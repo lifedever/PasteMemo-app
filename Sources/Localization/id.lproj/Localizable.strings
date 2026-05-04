@@ -149,6 +149,7 @@
 "settings.linkPreview" = "Tautan & Pratinjau";
 "settings.linkPreview.footer" = "Sakelar ini mengontrol apakah PasteMemo membuat permintaan jaringan untuk tautan yang disalin. Matikan semuanya dan PasteMemo hanya akan online untuk memeriksa pembaruan.";
 "settings.linkPreview.footer.offline" = "Mode offline aktif: sakelar di atas dinonaktifkan. Matikan di tab «Privasi».";
+"settings.richTextPreview" = "Pratinjau rich text";
 
 /* Pro */
 "pro.title" = "Upgrade ke PasteMemo Pro";

@@ -150,6 +150,7 @@
 "settings.linkPreview" = "連結與預覽";
 "settings.linkPreview.footer" = "以上開關共同決定 PasteMemo 是否為複製的連結發起網路請求。全部關閉後，PasteMemo 僅在檢查更新時聯網。";
 "settings.linkPreview.footer.offline" = "已開啟單機模式：以上開關被覆蓋為關閉。前往「隱私」標籤可關閉單機模式。";
+"settings.richTextPreview" = "富文本預覽";
 
 /* Pro */
 "pro.title" = "升級到 PasteMemo Pro";

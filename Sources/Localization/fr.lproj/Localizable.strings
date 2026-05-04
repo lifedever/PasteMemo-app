@@ -180,6 +180,7 @@
 "settings.linkPreview" = "Liens et aperçus";
 "settings.linkPreview.footer" = "Ces commutateurs contrôlent si PasteMemo effectue des requêtes réseau pour les liens copiés. Désactivez-les tous et PasteMemo ne se connecte qu'aux vérifications de mises à jour.";
 "settings.linkPreview.footer.offline" = "Le mode hors ligne est activé : les commutateurs ci-dessus sont désactivés. Désactivez-le dans l'onglet « Confidentialité ».";
+"settings.richTextPreview" = "Aperçu du texte enrichi";
 "settings.showGuide" = "Afficher le guide de bienvenue";
 
 /* Pro */

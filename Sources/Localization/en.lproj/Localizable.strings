@@ -159,6 +159,7 @@
 "settings.linkPreview" = "Links & Previews";
 "settings.linkPreview.footer" = "These switches control whether PasteMemo makes any network requests for copied links. Turn them all off and PasteMemo only goes online to check for updates.";
 "settings.linkPreview.footer.offline" = "Offline mode is on: the switches above are overridden off. Turn it off in the Privacy tab.";
+"settings.richTextPreview" = "Rich text preview";
 "settings.ocr" = "Image OCR";
 "settings.ocr.enable" = "Enable image OCR";
 "settings.ocr.auto" = "Process new images automatically";
