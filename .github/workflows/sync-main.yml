@@ -1,0 +1,51 @@
+name: Sync main with develop
+
+# main is no longer used as a release anchor — develop is the default branch
+# and where all work lands. This workflow keeps main fast-forwarded to develop
+# so the branch doesn't drift back into the "stale at v1.3.0" state we found
+# during v1.6.8 prep.
+#
+# If someone pushes directly to main (creating commits not on develop), the
+# fast-forward will fail and the workflow will surface a loud error so we can
+# investigate instead of silently overwriting their work.
+
+on:
+  push:
+    branches: [develop]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  ff-main:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Fast-forward main to origin/develop
+        run: |
+          git config user.name "lifedever-bot"
+          git config user.email "bot@lifedever.com"
+          git fetch origin develop
+
+          if ! git merge-base --is-ancestor main origin/develop; then
+            echo "::error::main has commits not on develop — refusing to fast-forward."
+            echo "Check git log main..origin/develop and resolve manually before re-running."
+            exit 1
+          fi
+
+          BEFORE=$(git rev-parse main)
+          git merge --ff-only origin/develop
+          AFTER=$(git rev-parse main)
+
+          if [ "$BEFORE" = "$AFTER" ]; then
+            echo "main is already up to date with develop ($AFTER) — nothing to push."
+            exit 0
+          fi
+
+          echo "Fast-forwarding main: $BEFORE -> $AFTER"
+          git push origin main
