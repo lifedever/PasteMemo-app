@@ -59,9 +59,22 @@ struct NativeTextView: NSViewRepresentable {
 
         // Fast path: rich render disabled OR no rich data — render plain string only, skip all decoding.
         guard allowRichRender, let rtfData = richTextData else {
+            let wasRich = context.coordinator.lastRichTextData != nil
             context.coordinator.lastRichTextData = nil
             context.coordinator.lastLayoutWidth = 0
-            if textView.string != text {
+            if wasRich {
+                // Switching from rich → plain on the same view: setting
+                // `.string` only replaces the characters and keeps the prior
+                // attributed run's typing attributes (bold/colors/font), so
+                // the visual still looks formatted. Force a fully attributed
+                // overwrite with the default plain attrs to clear all
+                // inherited formatting.
+                let plain = NSAttributedString(string: text, attributes: [
+                    .font: NSFont.systemFont(ofSize: 13),
+                    .foregroundColor: NSColor.labelColor,
+                ])
+                textView.textStorage?.setAttributedString(plain)
+            } else if textView.string != text {
                 textView.string = text
             }
             return
