@@ -145,6 +145,10 @@
 "settings.showLinkURL" = "Mostra URL invece del titolo per i link";
 "settings.webPreview" = "Anteprima web";
 "settings.imageLinkPreview" = "Anteprima link immagine";
+"settings.previewExecutesJavaScript" = "Esegui JavaScript nelle anteprime";
+"settings.linkPreview" = "Collegamenti e anteprime";
+"settings.linkPreview.footer" = "Questi interruttori controllano se PasteMemo effettua richieste di rete per i collegamenti copiati. Disattivandoli tutti, PasteMemo si connette solo per controllare gli aggiornamenti.";
+"settings.linkPreview.footer.offline" = "La modalità offline è attiva: gli interruttori sopra sono disabilitati. Disattivala nella scheda «Privacy».";
 
 /* Pro */
 "pro.title" = "Passa a PasteMemo Pro";
@@ -398,6 +402,8 @@
 
 /* Privacy */
 "settings.privacy" = "Privacy";
+"settings.privacy.offlineMode" = "Modalità offline";
+"settings.privacy.offlineMode.hint" = "Se attiva, PasteMemo non effettua alcuna richiesta di rete tranne il controllo aggiornamenti. Anteprime dei link, caricamento immagini e analisi anonime sono tutti disattivati.";
 "settings.privacy.sensitive" = "Contenuti sensibili";
 "settings.privacy.sensitiveDetection" = "Rileva automaticamente contenuti sensibili";
 "settings.privacy.sensitiveHint" = "Maschera automaticamente password, chiavi API, token e altri dati sensibili copiati negli appunti.";

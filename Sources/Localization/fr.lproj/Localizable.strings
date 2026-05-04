@@ -176,6 +176,10 @@
 "settings.showLinkURL" = "Afficher l'URL au lieu du titre pour les liens";
 "settings.webPreview" = "Aperçu web";
 "settings.imageLinkPreview" = "Aperçu des liens d'image";
+"settings.previewExecutesJavaScript" = "Exécuter JavaScript dans les aperçus";
+"settings.linkPreview" = "Liens et aperçus";
+"settings.linkPreview.footer" = "Ces commutateurs contrôlent si PasteMemo effectue des requêtes réseau pour les liens copiés. Désactivez-les tous et PasteMemo ne se connecte qu'aux vérifications de mises à jour.";
+"settings.linkPreview.footer.offline" = "Le mode hors ligne est activé : les commutateurs ci-dessus sont désactivés. Désactivez-le dans l'onglet « Confidentialité ».";
 "settings.showGuide" = "Afficher le guide de bienvenue";
 
 /* Pro */
@@ -310,6 +314,8 @@
 
 /* Privacy */
 "settings.privacy" = "Confidentialité";
+"settings.privacy.offlineMode" = "Mode hors ligne";
+"settings.privacy.offlineMode.hint" = "Activé, PasteMemo n'effectue aucune requête réseau hormis la vérification des mises à jour. Les aperçus de liens, le chargement d'images et l'analyse anonyme sont désactivés.";
 "settings.privacy.sensitive" = "Contenu sensible";
 "settings.privacy.sensitiveDetection" = "Détecter automatiquement le contenu sensible";
 "settings.privacy.sensitiveHint" = "Masque automatiquement les mots de passe, clés API, tokens et autres données sensibles copiées dans le presse-papiers.";

@@ -27,7 +27,12 @@ enum UsageTracker {
     static let ANALYTICS_ASKED_KEY = "analyticsAsked"
 
     static var isEnabled: Bool {
-        get { UserDefaults.standard.object(forKey: ANALYTICS_ENABLED_KEY) as? Bool ?? true }
+        get {
+            // Offline mode is the master kill switch — when on, no anonymous
+            // ping leaves the machine regardless of the analytics preference.
+            if UserDefaults.standard.bool(forKey: "offlineModeEnabled") { return false }
+            return UserDefaults.standard.object(forKey: ANALYTICS_ENABLED_KEY) as? Bool ?? true
+        }
         set { UserDefaults.standard.set(newValue, forKey: ANALYTICS_ENABLED_KEY) }
     }
 

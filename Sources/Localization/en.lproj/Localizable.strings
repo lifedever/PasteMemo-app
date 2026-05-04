@@ -155,6 +155,10 @@
 "settings.showLinkURL" = "Show URL instead of page title for links";
 "settings.webPreview" = "Web preview";
 "settings.imageLinkPreview" = "Image link preview";
+"settings.previewExecutesJavaScript" = "Run JavaScript in previews";
+"settings.linkPreview" = "Links & Previews";
+"settings.linkPreview.footer" = "These switches control whether PasteMemo makes any network requests for copied links. Turn them all off and PasteMemo only goes online to check for updates.";
+"settings.linkPreview.footer.offline" = "Offline mode is on: the switches above are overridden off. Turn it off in the Privacy tab.";
 "settings.ocr" = "Image OCR";
 "settings.ocr.enable" = "Enable image OCR";
 "settings.ocr.auto" = "Process new images automatically";
@@ -439,6 +443,8 @@
 
 /* Privacy */
 "settings.privacy" = "Privacy";
+"settings.privacy.offlineMode" = "Offline mode";
+"settings.privacy.offlineMode.hint" = "When on, PasteMemo never makes a network request — link previews, image link loading, and anonymous analytics are all suppressed. Update checks still run.";
 "settings.privacy.sensitive" = "Sensitive Content";
 "settings.privacy.sensitiveDetection" = "Auto-detect sensitive content";
 "settings.privacy.sensitiveHint" = "Automatically masks passwords, API keys, tokens, and other sensitive data copied to the clipboard.";

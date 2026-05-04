@@ -451,11 +451,13 @@ struct ClipDetailView: View {
 
     @AppStorage("webPreviewEnabled") private var webPreviewEnabled = true
     @AppStorage("imageLinkPreviewEnabled") private var imageLinkPreviewEnabled = true
+    @AppStorage("offlineModeEnabled") private var offlineModeEnabled = false
 
     @ViewBuilder
     private var linkPreview: some View {
         if let url = URL(string: item.content.trimmingCharacters(in: .whitespacesAndNewlines)) {
-            if (imageLinkPreviewEnabled && LinkMetadataFetcher.isImageURL(item.content)) || webPreviewEnabled {
+            if !offlineModeEnabled,
+               (imageLinkPreviewEnabled && LinkMetadataFetcher.isImageURL(item.content)) || webPreviewEnabled {
                 linkWebPreview(url: url)
             } else {
                 linkStaticPreview(url: url)

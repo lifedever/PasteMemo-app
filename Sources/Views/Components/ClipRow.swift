@@ -11,6 +11,7 @@ struct ClipRow: View {
     var searchText: String = ""
     @AppStorage(OCRTaskCoordinator.enableOCRKey) private var ocrEnabled = true
     @AppStorage("imageLinkPreviewEnabled") private var imageLinkPreviewEnabled = true
+    @AppStorage("offlineModeEnabled") private var offlineModeEnabled = false
     @State private var dataURIThumbnailImage: NSImage?
 
     var body: some View {
@@ -126,7 +127,7 @@ struct ClipRow: View {
                 guard !Task.isCancelled, let image else { return }
                 dataURIThumbnailImage = image
             }
-        } else if item.contentType == .link, imageLinkPreviewEnabled,
+        } else if item.contentType == .link, imageLinkPreviewEnabled, !offlineModeEnabled,
                   LinkMetadataFetcher.isImageURL(item.content) {
             if let url = URL(string: item.content) {
                 AsyncImage(url: url) { phase in

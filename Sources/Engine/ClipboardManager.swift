@@ -752,6 +752,17 @@ final class ClipboardManager: ObservableObject {
         guard item.contentType == .link else { return }
         guard item.linkTitle == nil || item.faviconData == nil else { return }
 
+        // Honour the user's privacy preferences: offline mode is the master
+        // override (no network at all); otherwise disabling web preview or
+        // preferring the raw URL also suppresses the background metadata
+        // fetch — without this gate, PasteMemo silently GETs every copied
+        // link (issue #46).
+        let defaults = UserDefaults.standard
+        if defaults.bool(forKey: "offlineModeEnabled") { return }
+        let webPreviewEnabled = (defaults.object(forKey: "webPreviewEnabled") as? Bool) ?? true
+        let showLinkURL = (defaults.object(forKey: "showLinkURL") as? Bool) ?? false
+        guard webPreviewEnabled, !showLinkURL else { return }
+
         let targetItem = item
         Task {
             let metadata = await LinkMetadataFetcher.shared.fetchMetadata(urlString: targetItem.content)

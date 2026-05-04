@@ -190,6 +190,10 @@
 "settings.showLinkURL" = "リンクをページタイトルではなくURLで表示";
 "settings.webPreview" = "Webプレビュー";
 "settings.imageLinkPreview" = "画像リンクプレビュー";
+"settings.previewExecutesJavaScript" = "プレビューで JavaScript を実行";
+"settings.linkPreview" = "リンクとプレビュー";
+"settings.linkPreview.footer" = "上記のスイッチで、コピーされたリンクに対してネットワークリクエストを行うかどうかを制御します。すべてオフにすると、アップデート確認以外では一切通信しません。";
+"settings.linkPreview.footer.offline" = "オフラインモードが有効：上記のスイッチは無効化されます。「プライバシー」タブで切り替えられます。";
 "settings.showGuide" = "ウェルカムガイドを表示";
 
 /* Pro */
@@ -324,6 +328,8 @@
 
 /* Privacy */
 "settings.privacy" = "プライバシー";
+"settings.privacy.offlineMode" = "オフラインモード";
+"settings.privacy.offlineMode.hint" = "オンにすると、アップデート確認以外は一切ネットワーク通信を行いません。リンクプレビュー、画像読み込み、匿名統計はすべて停止します。";
 "settings.privacy.sensitive" = "機密コンテンツ";
 "settings.privacy.sensitiveDetection" = "機密コンテンツを自動検出";
 "settings.privacy.sensitiveHint" = "クリップボードにコピーされたパスワード、APIキー、トークンなどの機密データを自動的にマスクします。";

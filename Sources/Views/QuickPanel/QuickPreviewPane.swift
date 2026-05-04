@@ -421,13 +421,15 @@ struct QuickPreviewPane: View {
 
     @AppStorage("webPreviewEnabled") private var webPreviewEnabled = true
     @AppStorage("imageLinkPreviewEnabled") private var imageLinkPreviewEnabled = true
+    @AppStorage("showLinkURL") private var showLinkURL = false
+    @AppStorage("offlineModeEnabled") private var offlineModeEnabled = false
 
     @ViewBuilder
     private var linkPreview: some View {
         if shouldRenderBase64DataImagePreview {
             dataURIImagePreview
         } else if let url = URL(string: item.content.trimmingCharacters(in: .whitespacesAndNewlines)) {
-            let webviewActive = ((imageLinkPreviewEnabled && LinkMetadataFetcher.isImageURL(item.content)) || webPreviewEnabled) && allowHeavyPreview
+            let webviewActive = ((imageLinkPreviewEnabled && LinkMetadataFetcher.isImageURL(item.content)) || webPreviewEnabled) && allowHeavyPreview && !offlineModeEnabled
             if webviewActive {
                 ZStack {
                     // WebView 始终驻留，加载完成前透明
@@ -699,6 +701,11 @@ struct QuickPreviewPane: View {
               let context = item.modelContext,
               let _ = URL(string: item.content.trimmingCharacters(in: .whitespacesAndNewlines))
         else { return }
+        // Mirror the gate in `ClipboardManager.refreshLinkMetadataIfNeeded` —
+        // offline mode (master), web preview, or raw URL preference must all
+        // keep the retry path quiet (issue #46).
+        if UserDefaults.standard.bool(forKey: "offlineModeEnabled") { return }
+        guard webPreviewEnabled, !showLinkURL else { return }
         let targetItem = item
         Task {
             let metadata = await LinkMetadataFetcher.shared.fetchMetadata(urlString: targetItem.content)

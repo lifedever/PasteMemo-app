@@ -152,6 +152,8 @@ struct GeneralTab: View {
                 }
             }
 
+            HistorySettingsSection()
+
             Section {
                 Button(L10n.tr("settings.showGuide")) {
                     showOnboardingWindow()
@@ -350,27 +352,20 @@ struct ShortcutsTab: View {
 // MARK: - Preferences Tab
 
 struct PreferencesTab: View {
-    @Environment(\.modelContext) private var modelContext
-    @AppStorage("retentionDays") private var retentionDays = 90
-    @State private var pendingRetentionOldDays = 0
-    @State private var pendingExpiredCount = 0
-    @State private var showRetentionCleanConfirm = false
     @AppStorage("quickPanelAutoPaste") private var quickPanelAutoPaste = true
     @AppStorage("addNewLineAfterPaste") private var addNewLineAfterPaste = false
     @AppStorage("clipboardMonitoringEnabled") private var clipboardMonitoringEnabled = true
     @AppStorage("showLinkURL") private var showLinkURL = false
     @AppStorage("webPreviewEnabled") private var webPreviewEnabled = true
     @AppStorage("imageLinkPreviewEnabled") private var imageLinkPreviewEnabled = true
+    @AppStorage("previewExecutesJavaScript") private var previewExecutesJavaScript = true
+    @AppStorage("offlineModeEnabled") private var offlineModeEnabled = false
     @AppStorage(QuickPanelSettings.launchAnimationEnabledKey) private var quickPanelLaunchAnimationEnabled = true
     @AppStorage(QuickPanelSettings.secondaryRowKey) private var quickPanelSecondaryRow = QuickPanelSecondaryRow.types.rawValue
     @AppStorage(QuickPanelPositionSettings.modeKey) private var quickPanelPositionMode = QuickPanelPositionMode.screenCenter.rawValue
     @AppStorage(QuickPanelPositionSettings.screenTargetKey) private var quickPanelScreenTarget = QuickPanelScreenTarget.active.rawValue
     @AppStorage(QuickPanelPositionSettings.specifiedScreenIDKey) private var quickPanelSpecifiedScreenID = ""
-    private let allRetentionOptions = [1, 3, 7, 14, 30, 60, 90, 180, 365]
 
-    private var availableOptions: [Int] { allRetentionOptions }
-
-    private var showForever: Bool { true }
     private var screenOptions: [ScreenOption] { ScreenLocator.options() }
     private var currentPositionMode: QuickPanelPositionMode {
         QuickPanelPositionMode(rawValue: quickPanelPositionMode) ?? .remembered
@@ -452,45 +447,26 @@ struct PreferencesTab: View {
                 Toggle(L10n.tr("settings.autoPaste"), isOn: $quickPanelAutoPaste)
                 Toggle(L10n.tr("settings.addNewLine"), isOn: $addNewLineAfterPaste)
                 Toggle(L10n.tr("settings.quickPanelLaunchAnimation"), isOn: $quickPanelLaunchAnimationEnabled)
+            }
+
+            Section {
                 Toggle(L10n.tr("settings.showLinkURL"), isOn: $showLinkURL)
                 Toggle(L10n.tr("settings.webPreview"), isOn: $webPreviewEnabled)
                 Toggle(L10n.tr("settings.imageLinkPreview"), isOn: $imageLinkPreviewEnabled)
+                Toggle(L10n.tr("settings.previewExecutesJavaScript"), isOn: $previewExecutesJavaScript)
+                    .disabled(!webPreviewEnabled || offlineModeEnabled)
+            } header: {
+                Text(L10n.tr("settings.linkPreview"))
+            } footer: {
+                Text(L10n.tr(offlineModeEnabled ? "settings.linkPreview.footer.offline" : "settings.linkPreview.footer"))
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
             }
+            .disabled(offlineModeEnabled)
 
             OCRSettingsSection()
-
-            Section(L10n.tr("settings.history")) {
-                Picker(L10n.tr("settings.retentionDays"), selection: $retentionDays) {
-                    if showForever {
-                        Text(L10n.tr("settings.retentionDays.forever")).tag(0)
-                    }
-                    ForEach(availableOptions, id: \.self) { days in
-                        Text(L10n.tr("settings.retentionDays.days", days)).tag(days)
-                    }
-                }
-                .onChange(of: retentionDays) { oldValue, newValue in
-                    prepareRetentionCleanup(oldDays: oldValue, newDays: newValue)
-                }
-            }
         }
         .formStyle(.grouped)
-        .alert(
-            L10n.tr("settings.retentionDays.cleanConfirm", pendingExpiredCount),
-            isPresented: $showRetentionCleanConfirm
-        ) {
-            Button(L10n.tr("action.delete"), role: .destructive) {
-                // Defer deletion to next run loop iteration — the alert sheet close
-                // animation triggers a layout pass that would access zombie SwiftData objects
-                DispatchQueue.main.async {
-                    executeRetentionCleanup()
-                }
-            }
-            Button(L10n.tr("action.cancel"), role: .cancel) {
-                retentionDays = pendingRetentionOldDays
-            }
-        } message: {
-            Text(L10n.tr("settings.retentionDays.cleanWarning"))
-        }
         .onAppear {
             ensureSpecifiedScreenSelection()
         }
@@ -500,45 +476,6 @@ struct PreferencesTab: View {
         .onChange(of: quickPanelScreenTarget) {
             ensureSpecifiedScreenSelection()
         }
-    }
-
-    private func prepareRetentionCleanup(oldDays: Int, newDays: Int) {
-        guard newDays > 0, (oldDays == 0 || newDays < oldDays) else { return }
-
-        let cutoff = Calendar.current.date(byAdding: .day, value: -newDays, to: Date())!
-        let descriptor = FetchDescriptor<ClipItem>()
-        guard let allItems = try? modelContext.fetch(descriptor) else { return }
-        let preservedGroupNames = SmartGroupRetention.preservedGroupNames(in: modelContext)
-        let count = allItems.filter {
-            $0.createdAt < cutoff
-                && !$0.isPinned
-                && !SmartGroupRetention.shouldPreserve(item: $0, preservedGroupNames: preservedGroupNames)
-        }.count
-        guard count > 0 else { return }
-
-        pendingRetentionOldDays = oldDays
-        pendingExpiredCount = count
-        showRetentionCleanConfirm = true
-    }
-
-    private func executeRetentionCleanup() {
-        let cutoff = Calendar.current.date(byAdding: .day, value: -retentionDays, to: Date())!
-        let descriptor = FetchDescriptor<ClipItem>()
-        guard let allItems = try? modelContext.fetch(descriptor) else { return }
-        let preservedGroupNames = SmartGroupRetention.preservedGroupNames(in: modelContext)
-        let expiredItems = allItems.filter {
-            $0.createdAt < cutoff
-                && !$0.isPinned
-                && !SmartGroupRetention.shouldPreserve(item: $0, preservedGroupNames: preservedGroupNames)
-        }
-        guard !expiredItems.isEmpty else { return }
-
-        for item in expiredItems {
-            if let groupName = item.groupName, !groupName.isEmpty {
-                ClipboardManager.shared.decrementSmartGroup(name: groupName, context: modelContext)
-            }
-        }
-        ClipItemStore.deleteAndNotify(expiredItems, from: modelContext)
     }
 
     private func ensureSpecifiedScreenSelection() {
@@ -593,6 +530,86 @@ struct PreferencesTab: View {
                 quickPanelSpecifiedScreenID = screenID ?? screenOptions.first?.id ?? ""
             }
         }
+    }
+}
+
+struct HistorySettingsSection: View {
+    @Environment(\.modelContext) private var modelContext
+    @AppStorage("retentionDays") private var retentionDays = 90
+    @State private var pendingRetentionOldDays = 0
+    @State private var pendingExpiredCount = 0
+    @State private var showRetentionCleanConfirm = false
+
+    private let allRetentionOptions = [1, 3, 7, 14, 30, 60, 90, 180, 365]
+
+    var body: some View {
+        Section(L10n.tr("settings.history")) {
+            Picker(L10n.tr("settings.retentionDays"), selection: $retentionDays) {
+                Text(L10n.tr("settings.retentionDays.forever")).tag(0)
+                ForEach(allRetentionOptions, id: \.self) { days in
+                    Text(L10n.tr("settings.retentionDays.days", days)).tag(days)
+                }
+            }
+            .onChange(of: retentionDays) { oldValue, newValue in
+                prepareRetentionCleanup(oldDays: oldValue, newDays: newValue)
+            }
+        }
+        .alert(
+            L10n.tr("settings.retentionDays.cleanConfirm", pendingExpiredCount),
+            isPresented: $showRetentionCleanConfirm
+        ) {
+            Button(L10n.tr("action.delete"), role: .destructive) {
+                // Defer deletion to next run loop iteration — the alert sheet close
+                // animation triggers a layout pass that would access zombie SwiftData objects
+                DispatchQueue.main.async {
+                    executeRetentionCleanup()
+                }
+            }
+            Button(L10n.tr("action.cancel"), role: .cancel) {
+                retentionDays = pendingRetentionOldDays
+            }
+        } message: {
+            Text(L10n.tr("settings.retentionDays.cleanWarning"))
+        }
+    }
+
+    private func prepareRetentionCleanup(oldDays: Int, newDays: Int) {
+        guard newDays > 0, (oldDays == 0 || newDays < oldDays) else { return }
+
+        let cutoff = Calendar.current.date(byAdding: .day, value: -newDays, to: Date())!
+        let descriptor = FetchDescriptor<ClipItem>()
+        guard let allItems = try? modelContext.fetch(descriptor) else { return }
+        let preservedGroupNames = SmartGroupRetention.preservedGroupNames(in: modelContext)
+        let count = allItems.filter {
+            $0.createdAt < cutoff
+                && !$0.isPinned
+                && !SmartGroupRetention.shouldPreserve(item: $0, preservedGroupNames: preservedGroupNames)
+        }.count
+        guard count > 0 else { return }
+
+        pendingRetentionOldDays = oldDays
+        pendingExpiredCount = count
+        showRetentionCleanConfirm = true
+    }
+
+    private func executeRetentionCleanup() {
+        let cutoff = Calendar.current.date(byAdding: .day, value: -retentionDays, to: Date())!
+        let descriptor = FetchDescriptor<ClipItem>()
+        guard let allItems = try? modelContext.fetch(descriptor) else { return }
+        let preservedGroupNames = SmartGroupRetention.preservedGroupNames(in: modelContext)
+        let expiredItems = allItems.filter {
+            $0.createdAt < cutoff
+                && !$0.isPinned
+                && !SmartGroupRetention.shouldPreserve(item: $0, preservedGroupNames: preservedGroupNames)
+        }
+        guard !expiredItems.isEmpty else { return }
+
+        for item in expiredItems {
+            if let groupName = item.groupName, !groupName.isEmpty {
+                ClipboardManager.shared.decrementSmartGroup(name: groupName, context: modelContext)
+            }
+        }
+        ClipItemStore.deleteAndNotify(expiredItems, from: modelContext)
     }
 }
 
@@ -692,9 +709,17 @@ struct RelayTab: View {
 struct PrivacyTab: View {
     @AppStorage("sensitiveDetectionEnabled") private var isSensitiveDetectionEnabled = true
     @AppStorage(UsageTracker.ANALYTICS_ENABLED_KEY) private var analyticsEnabled = true
+    @AppStorage("offlineModeEnabled") private var offlineModeEnabled = false
 
     var body: some View {
         Form {
+            Section {
+                Toggle(L10n.tr("settings.privacy.offlineMode"), isOn: $offlineModeEnabled)
+                Text(L10n.tr("settings.privacy.offlineMode.hint"))
+                    .font(.callout)
+                    .foregroundStyle(.tertiary)
+            }
+
             Section(L10n.tr("settings.privacy.sensitive")) {
                 Toggle(L10n.tr("settings.privacy.sensitiveDetection"), isOn: $isSensitiveDetectionEnabled)
                 Text(L10n.tr("settings.privacy.sensitiveHint"))
@@ -706,13 +731,13 @@ struct PrivacyTab: View {
 
             Section(L10n.tr("settings.privacy.analytics")) {
                 Toggle(L10n.tr("settings.privacy.analyticsToggle"), isOn: $analyticsEnabled)
+                    .disabled(offlineModeEnabled)
                 Text(L10n.tr("settings.privacy.analyticsHint"))
                     .font(.callout)
                     .foregroundStyle(.tertiary)
             }
         }
         .formStyle(.grouped)
-        .scrollDisabled(true)
     }
 }
 

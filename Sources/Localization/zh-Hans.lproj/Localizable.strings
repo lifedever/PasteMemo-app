@@ -155,6 +155,10 @@
 "settings.showLinkURL" = "链接显示原始网址而非页面标题";
 "settings.webPreview" = "网页预览";
 "settings.imageLinkPreview" = "图片链接预览";
+"settings.previewExecutesJavaScript" = "预览时执行网页脚本";
+"settings.linkPreview" = "链接与预览";
+"settings.linkPreview.footer" = "以上开关共同决定 PasteMemo 是否为复制的链接发起网络请求。全部关闭后，PasteMemo 仅在检查更新时联网。";
+"settings.linkPreview.footer.offline" = "已开启单机模式：以上开关被覆盖为关闭。前往「隐私」标签可关闭单机模式。";
 "settings.ocr" = "图片 OCR";
 "settings.ocr.enable" = "启用图片 OCR";
 "settings.ocr.auto" = "自动处理新图片";
@@ -440,6 +444,8 @@
 
 /* Privacy */
 "settings.privacy" = "隐私";
+"settings.privacy.offlineMode" = "单机模式";
+"settings.privacy.offlineMode.hint" = "开启后，PasteMemo 除了检查更新外不发起任何网络请求。链接预览、图片加载和匿名统计将全部关闭。";
 "settings.privacy.sensitive" = "敏感内容";
 "settings.privacy.sensitiveDetection" = "自动检测敏感内容";
 "settings.privacy.sensitiveHint" = "自动遮罩复制到剪贴板的密码、API 密钥、Token 等敏感数据。";

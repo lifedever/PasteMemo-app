@@ -145,6 +145,10 @@
 "settings.showLinkURL" = "Tampilkan URL alih-alih judul halaman untuk tautan";
 "settings.webPreview" = "Pratinjau web";
 "settings.imageLinkPreview" = "Pratinjau tautan gambar";
+"settings.previewExecutesJavaScript" = "Jalankan JavaScript di pratinjau";
+"settings.linkPreview" = "Tautan & Pratinjau";
+"settings.linkPreview.footer" = "Sakelar ini mengontrol apakah PasteMemo membuat permintaan jaringan untuk tautan yang disalin. Matikan semuanya dan PasteMemo hanya akan online untuk memeriksa pembaruan.";
+"settings.linkPreview.footer.offline" = "Mode offline aktif: sakelar di atas dinonaktifkan. Matikan di tab «Privasi».";
 
 /* Pro */
 "pro.title" = "Upgrade ke PasteMemo Pro";
@@ -395,6 +399,8 @@
 
 /* Privacy */
 "settings.privacy" = "Privasi";
+"settings.privacy.offlineMode" = "Mode offline";
+"settings.privacy.offlineMode.hint" = "Bila aktif, PasteMemo tidak melakukan permintaan jaringan apa pun kecuali pemeriksaan pembaruan. Pratinjau tautan, pemuatan gambar, dan statistik anonim dimatikan.";
 "settings.privacy.sensitive" = "Konten Sensitif";
 "settings.privacy.sensitiveDetection" = "Deteksi otomatis konten sensitif";
 "settings.privacy.sensitiveHint" = "Secara otomatis menyembunyikan kata sandi, kunci API, token, dan data sensitif lainnya yang disalin ke papan klip.";

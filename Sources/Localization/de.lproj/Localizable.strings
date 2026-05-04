@@ -176,6 +176,10 @@
 "settings.showLinkURL" = "URL statt Seitentitel für Links anzeigen";
 "settings.webPreview" = "Webvorschau";
 "settings.imageLinkPreview" = "Bild-Link-Vorschau";
+"settings.previewExecutesJavaScript" = "JavaScript in Vorschauen ausführen";
+"settings.linkPreview" = "Links & Vorschauen";
+"settings.linkPreview.footer" = "Diese Schalter steuern, ob PasteMemo Netzwerkanfragen für kopierte Links sendet. Sind alle deaktiviert, geht PasteMemo nur für Update-Prüfungen online.";
+"settings.linkPreview.footer.offline" = "Offline-Modus ist aktiv – die obigen Schalter sind deaktiviert. Sie können ihn im Tab „Datenschutz\" abschalten.";
 "settings.showGuide" = "Willkommensführung anzeigen";
 
 /* Pro */
@@ -310,6 +314,8 @@
 
 /* Privacy */
 "settings.privacy" = "Datenschutz";
+"settings.privacy.offlineMode" = "Offline-Modus";
+"settings.privacy.offlineMode.hint" = "Wenn aktiviert, sendet PasteMemo außer Update-Prüfungen keine Netzwerkanfragen. Link-Vorschauen, Bildladen und anonyme Analyse sind deaktiviert.";
 "settings.privacy.sensitive" = "Sensible Inhalte";
 "settings.privacy.sensitiveDetection" = "Sensible Inhalte automatisch erkennen";
 "settings.privacy.sensitiveHint" = "Maskiert automatisch Passwörter, API-Schlüssel, Tokens und andere sensible Daten in der Zwischenablage.";

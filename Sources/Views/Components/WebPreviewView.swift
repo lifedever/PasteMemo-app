@@ -15,6 +15,10 @@ final class WebPreviewPool {
         let config = WKWebViewConfiguration()
         config.mediaTypesRequiringUserActionForPlayback = .all
         let prefs = WKWebpagePreferences()
+        // The per-navigation `decidePolicyFor:preferences:` callback overrides
+        // this on every load by reading the current `previewExecutesJavaScript`
+        // setting, so toggling the user preference takes effect immediately
+        // without rebuilding the shared web view.
         prefs.allowsContentJavaScript = true
         config.defaultWebpagePreferences = prefs
 
@@ -83,6 +87,14 @@ final class WebPreviewPool {
     }
 
     func load(_ url: URL) {
+        // Offline mode is a hard cut — we never reach the network for previews
+        // when the user has flipped the master switch in Privacy.
+        if UserDefaults.standard.bool(forKey: "offlineModeEnabled") {
+            webView.stopLoading()
+            coordinator.loadedURL = nil
+            notifyReady(false)
+            return
+        }
         if coordinator.loadedURL == url { return }
         webView.stopLoading()
         coordinator.loadedURL = url
@@ -122,19 +134,60 @@ final class WebPreviewPool {
         var loadedURL: URL?
         weak var pool: WebPreviewPool?
 
+        // Reject responses that would trigger silent full-file downloads when a
+        // user merely browses clipboard history — copying a dmg/zip/PDF direct
+        // link must never balloon into actually transferring the file. See
+        // issue #46. Caps deliberately leave headroom for fat marketing pages
+        // and reasonable image previews while still capping the worst case.
+        static let htmlResponseCap: Int64 = 5_000_000
+        static let imageResponseCap: Int64 = 10_000_000
+
         func webView(
             _ webView: WKWebView,
             decidePolicyFor action: WKNavigationAction,
-            decisionHandler: @escaping @MainActor @Sendable (WKNavigationActionPolicy) -> Void
+            preferences: WKWebpagePreferences,
+            decisionHandler: @escaping @MainActor @Sendable (WKNavigationActionPolicy, WKWebpagePreferences) -> Void
         ) {
+            // Each navigation honours the current user setting; defaults to ON
+            // to preserve preview fidelity for legacy users.
+            let allowJS = (UserDefaults.standard.object(forKey: "previewExecutesJavaScript") as? Bool) ?? true
+            preferences.allowsContentJavaScript = allowJS
+
             if action.navigationType == .linkActivated {
                 if let url = action.request.url {
                     NSWorkspace.shared.open(url)
                 }
-                decisionHandler(.cancel)
+                decisionHandler(.cancel, preferences)
             } else {
-                decisionHandler(.allow)
+                decisionHandler(.allow, preferences)
             }
+        }
+
+        func webView(
+            _ webView: WKWebView,
+            decidePolicyFor navigationResponse: WKNavigationResponse,
+            decisionHandler: @escaping @MainActor @Sendable (WKNavigationResponsePolicy) -> Void
+        ) {
+            let mimeType = (navigationResponse.response.mimeType ?? "").lowercased()
+            let isHTML = mimeType.contains("html") || mimeType.contains("xml")
+            let isImage = mimeType.hasPrefix("image/")
+
+            guard isHTML || isImage else {
+                // Anything else (application/pdf, octet-stream, video, audio,
+                // …) would have WebKit start downloading the body. Refuse so
+                // the static fallback card stays visible.
+                decisionHandler(.cancel)
+                return
+            }
+
+            let expected = navigationResponse.response.expectedContentLength
+            let cap = isImage ? Coordinator.imageResponseCap : Coordinator.htmlResponseCap
+            if expected > 0 && expected > cap {
+                decisionHandler(.cancel)
+                return
+            }
+
+            decisionHandler(.allow)
         }
 
         func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: any Error) {

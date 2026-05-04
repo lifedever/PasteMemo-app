@@ -145,6 +145,10 @@
 "settings.showLinkURL" = "Показывать URL вместо заголовка для ссылок";
 "settings.webPreview" = "Веб-предпросмотр";
 "settings.imageLinkPreview" = "Предпросмотр ссылок на изображения";
+"settings.previewExecutesJavaScript" = "Выполнять JavaScript в предпросмотре";
+"settings.linkPreview" = "Ссылки и предпросмотр";
+"settings.linkPreview.footer" = "Эти переключатели управляют тем, делает ли PasteMemo сетевые запросы для скопированных ссылок. Отключите все, и PasteMemo будет подключаться только для проверки обновлений.";
+"settings.linkPreview.footer.offline" = "Автономный режим включён: переключатели выше отключены. Выключите его на вкладке «Конфиденциальность».";
 
 /* Pro */
 "pro.title" = "Перейти на PasteMemo Pro";
@@ -398,6 +402,8 @@
 
 /* Privacy */
 "settings.privacy" = "Конфиденциальность";
+"settings.privacy.offlineMode" = "Автономный режим";
+"settings.privacy.offlineMode.hint" = "Когда включён, PasteMemo не отправляет никаких сетевых запросов, кроме проверки обновлений. Предпросмотр ссылок, загрузка изображений и анонимная статистика отключены.";
 "settings.privacy.sensitive" = "Конфиденциальное содержимое";
 "settings.privacy.sensitiveDetection" = "Автоматическое обнаружение конфиденциального содержимого";
 "settings.privacy.sensitiveHint" = "Автоматически маскирует пароли, API-ключи, токены и другие конфиденциальные данные, скопированные в буфер обмена.";
