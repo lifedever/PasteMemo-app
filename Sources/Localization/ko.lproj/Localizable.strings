@@ -35,6 +35,7 @@
 "filter.special" = "특별";
 "filter.favorites" = "즐겨찾기";
 "filter.pinned" = "고정됨";
+"filter.aiAgent" = "AI Agent";
 
 /* Time */
 "time.now" = "방금";

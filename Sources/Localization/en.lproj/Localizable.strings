@@ -65,6 +65,7 @@
 "filter.special" = "Special";
 "filter.favorites" = "Favorites";
 "filter.pinned" = "Pinned";
+"filter.aiAgent" = "AI Agent";
 
 /* Time */
 "time.now" = "now";

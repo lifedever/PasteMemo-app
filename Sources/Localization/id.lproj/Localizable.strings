@@ -57,6 +57,7 @@
 "filter.special" = "Khusus";
 "filter.favorites" = "Favorit";
 "filter.pinned" = "Disematkan";
+"filter.aiAgent" = "AI Agent";
 
 /* Time */
 "time.now" = "baru saja";

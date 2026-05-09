@@ -2,10 +2,11 @@ import SwiftUI
 import SwiftData
 import Quartz
 
-/// tabBar 的主过滤维度：所有模式共用 pinned/all；类型模式下追加 .type，分组模式下追加 .group
+/// tabBar 的主过滤维度：所有模式共用 pinned/aiAgent/all；类型模式下追加 .type，分组模式下追加 .group
 private enum QuickFilter: Equatable {
     case all
     case pinned
+    case aiAgent
     case type(ClipContentType)
     case group(String)
 }
@@ -554,6 +555,7 @@ struct QuickPanelView: View {
     /// 将 selectedFilter + pill 合并写回到 store，两个维度正交共存
     private func applyFiltersToStore() {
         store.pinnedOnly = false
+        store.aiAgentOnly = false
         store.filterType = nil
         store.groupName = nil
         store.sourceApp = nil
@@ -561,6 +563,7 @@ struct QuickPanelView: View {
         switch selectedFilter {
         case .all: break
         case .pinned: store.pinnedOnly = true
+        case .aiAgent: store.aiAgentOnly = true
         case .type(let t): store.filterType = t
         case .group(let name): store.groupName = name
         }
@@ -652,6 +655,12 @@ struct QuickPanelView: View {
                 badge(L10n.tr("filter.pinned"), isActive: selectedFilter == .pinned) {
                     selectedFilter = selectedFilter == .pinned ? .all : .pinned
                     isSearchFocused = true
+                }
+                if store.sidebarCounts.aiAgent > 0 {
+                    badge(L10n.tr("filter.aiAgent"), isActive: selectedFilter == .aiAgent) {
+                        selectedFilter = selectedFilter == .aiAgent ? .all : .aiAgent
+                        isSearchFocused = true
+                    }
                 }
                 badge(L10n.tr("filter.all"), isActive: selectedFilter == .all) {
                     selectedFilter = .all
@@ -1354,7 +1363,10 @@ struct QuickPanelView: View {
 
     private func switchTypeFilter(_ delta: Int) {
         let types = availableContentTypes
-        let allFilters: [QuickFilter] = [.pinned, .all] + types.map { .type($0) }
+        var allFilters: [QuickFilter] = [.pinned]
+        if store.sidebarCounts.aiAgent > 0 { allFilters.append(.aiAgent) }
+        allFilters.append(.all)
+        allFilters.append(contentsOf: types.map { .type($0) })
 
         if let idx = allFilters.firstIndex(of: selectedFilter) {
             let newIdx = (idx + delta + allFilters.count) % allFilters.count
@@ -1366,8 +1378,10 @@ struct QuickPanelView: View {
 
     private func switchGroupFilter(_ delta: Int) {
         let groups = availableGroupsForTab
-        // tabBar 顺序：[.pinned, .all, .group(g1), .group(g2), ...]
-        var all: [QuickFilter] = [.pinned, .all]
+        // tabBar 顺序：[.pinned, .aiAgent?, .all, .group(g1), .group(g2), ...]
+        var all: [QuickFilter] = [.pinned]
+        if store.sidebarCounts.aiAgent > 0 { all.append(.aiAgent) }
+        all.append(.all)
         all.append(contentsOf: groups.map { .group($0.name) })
 
         if let idx = all.firstIndex(of: selectedFilter) {

@@ -58,6 +58,7 @@
 "filter.special" = "特殊";
 "filter.favorites" = "收藏";
 "filter.pinned" = "置頂";
+"filter.aiAgent" = "AI Agent";
 
 /* Time */
 "time.now" = "剛剛";

@@ -6,6 +6,7 @@ enum SidebarFilter: Equatable {
     case all
     case pinned
     case sensitive
+    case aiAgent
     case type(ClipContentType)
     case app(String)
     case group(String)
@@ -16,6 +17,7 @@ enum SidebarFilter: Equatable {
         case .all: return L10n.tr("filter.all")
         case .pinned: return L10n.tr("filter.pinned")
         case .sensitive: return L10n.tr("filter.sensitive")
+        case .aiAgent: return L10n.tr("filter.aiAgent")
         case .type(let t): return t.label
         case .app(let name): return name.isEmpty ? L10n.tr("filter.other") : name
         case .group(let name): return name
@@ -340,6 +342,7 @@ struct MainWindowView: View {
     private func syncStoreFilter() {
         store.pinnedOnly = false
         store.sensitiveOnly = false
+        store.aiAgentOnly = false
         store.filterType = nil
         store.sourceApp = nil
         store.groupName = nil
@@ -347,6 +350,7 @@ struct MainWindowView: View {
         case .all: break
         case .pinned: store.pinnedOnly = true
         case .sensitive: store.sensitiveOnly = true
+        case .aiAgent: store.aiAgentOnly = true
         case .type(let t): store.filterType = t
         case .app(let name):
             store.sourceApp = name.isEmpty ? .unknown : .named(name)
@@ -367,6 +371,13 @@ struct MainWindowView: View {
                 if pinCount > 0 {
                     sidebarRow(L10n.tr("filter.pinned"), icon: "pin", badge: pinCount, isActive: selectedFilter == .pinned) {
                         selectedFilter = .pinned
+                    }
+                }
+
+                let aiAgentCount = store.sidebarCounts.aiAgent
+                if aiAgentCount > 0 {
+                    sidebarRow(L10n.tr("filter.aiAgent"), icon: "sparkles", badge: aiAgentCount, isActive: selectedFilter == .aiAgent) {
+                        selectedFilter = .aiAgent
                     }
                 }
 
@@ -1218,7 +1229,7 @@ struct MainWindowView: View {
                     predicate: #Predicate { !$0.isPinned && $0.sourceApp == appName }
                 )
             }
-        case .all, .pinned, .sensitive:
+        case .all, .pinned, .sensitive, .aiAgent:
             return
         }
 

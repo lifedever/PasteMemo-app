@@ -162,6 +162,9 @@ final class ClipItem {
     var ocrUpdatedAt: Date?
     var ocrErrorMessage: String?
     var ocrVersion: Int = 1
+    /// Identifier of the AI Agent (MCP client) that wrote this item, e.g. "claude-code", "cursor".
+    /// Set when the clip originates from a `clipboard_set` MCP call. nil for normal user copies.
+    var agentSource: String?
 
     @MainActor
     init(
@@ -178,7 +181,8 @@ final class ClipItem {
         richTextData: Data? = nil,
         richTextType: String? = nil,
         filePaths: String? = nil,
-        pasteboardSnapshot: Data? = nil
+        pasteboardSnapshot: Data? = nil,
+        agentSource: String? = nil
     ) {
         self.content = content
         self.contentTypeRaw = contentType.rawValue
@@ -194,6 +198,7 @@ final class ClipItem {
         self.richTextType = richTextType
         self.filePaths = filePaths
         self.pasteboardSnapshot = pasteboardSnapshot
+        self.agentSource = agentSource
         self.displayTitle = Self.buildTitle(content: content, contentType: contentType, imageData: imageData, filePaths: filePaths)
         if (contentType == .image || contentType == .mixed), imageData != nil {
             self.ocrStatus = OCRStatus.pending.rawValue

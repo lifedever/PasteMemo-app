@@ -35,6 +35,7 @@
 "filter.special" = "特別";
 "filter.favorites" = "お気に入り";
 "filter.pinned" = "ピン留め";
+"filter.aiAgent" = "AI Agent";
 
 /* Time */
 "time.now" = "たった今";

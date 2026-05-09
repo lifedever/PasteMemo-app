@@ -57,6 +57,7 @@
 "filter.special" = "Особые";
 "filter.favorites" = "Избранное";
 "filter.pinned" = "Закреплённые";
+"filter.aiAgent" = "AI Agent";
 
 /* Time */
 "time.now" = "сейчас";
