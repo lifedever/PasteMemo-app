@@ -14,42 +14,23 @@ description: |
     "PasteMemo 里那个..." / "search PasteMemo for..." / "look in my PasteMemo
     history" / "check PasteMemo" / "PasteMemo の履歴から" / "PasteMemo에서 찾아줘"
 
+  - Slash command: user typed `/{{SERVER_KEY}} ...` — treat the rest of the message
+    as the clipboard-related need, then operate via the MCP tools below.
+
   - Writing to clipboard: "put this on my clipboard" / "复制这个" / "帮我复制"
 
   - Asking what's currently copied: "what's on my clipboard" / "我现在剪贴板里有啥"
-
-  Provides 5 MCP tools backed by PasteMemo: clipboard_get_current,
-  clipboard_search, clipboard_get, clipboard_list_recent_apps, clipboard_set.
 ---
 
-# PasteMemo Clipboard Bridge
+# PasteMemo 剪贴板桥
 
-You have access to the user's clipboard history through the PasteMemo MCP server.
+无论用户是隐式引用剪贴板（"我刚才复制的那段..."）、显式调用（"从 PasteMemo 里
+找..."），还是用 `/{{SERVER_KEY}} <需求>` 强制触发，统一使用 PasteMemo MCP server
+提供的工具完成需求。
 
-## When to use
+工具的完整列表、参数、返回结构、翻页策略、隐私规则、反模式等细节，由 PasteMemo
+MCP server 在会话启动时通过 `initialize` 响应的 `instructions` 字段自动下发到
+system prompt（你的上下文里会出现 `## {{SERVER_KEY}}` 段落）——**以那份内容为准**。
 
-Trigger on **implicit references** to recently copied content, not just explicit
-"search my clipboard":
-- "fix the error I just copied" → `clipboard_get_current` first
-- "find the JSON I copied earlier from Postman" → `clipboard_search(content_type=code, source_app_bundle_id=...)`
-- "what link did I copy 10 minutes ago" → `clipboard_search(content_type=link, since=...)`
-- "put this on my clipboard" → `clipboard_set`
-
-## Workflow
-
-1. **Vague reference** → start with `clipboard_search` (returns previews + IDs)
-2. **Need full content** → call `clipboard_get(id)`. Don't dump preview into context if user wants the whole thing
-3. **Filtering by app** → if user mentions an app ("from Slack", "from Xcode"), call `clipboard_list_recent_apps` first to find the bundle ID, then narrow `clipboard_search`
-4. **Image with text** → `clipboard_get` returns `ocr_text` for image clips. Use that before requesting `include_image_data` (image bytes are expensive)
-
-## Privacy
-
-- The server already filters sensitive items (passwords, tokens) and blacklisted source apps. You don't need to re-filter.
-- When echoing clipboard content back to the user, **don't quote large blocks unnecessarily** — summarize unless user asks for verbatim.
-- Before `clipboard_set`: if writing anything that looks like a credential, confirm with user first.
-
-## Anti-patterns
-
-- Don't `clipboard_search` on every message "just in case" — only when user references past content
-- Don't request `include_image_data: true` unless user explicitly wants the image processed (OCR text is usually enough)
-- Don't loop `clipboard_get` over many IDs from a search — pick the most relevant one or two
+如果会话里看不到那段 server instructions，多半是 PasteMemo 没在运行 / MCP socket
+没连上：如实告诉用户，不要凭印象瞎编工具用法。

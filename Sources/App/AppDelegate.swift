@@ -83,6 +83,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         MCPSocketServer.shared.start(container: PasteMemoApp.sharedModelContainer)
 
+        // 已主动安装过 Claude Skill 的用户,App 升级后静默把 SKILL.md 同步到最新模板
+        // (仅当本地未被用户改过时)。从未安装 / 改过 / 删过的用户都不会被打扰。
+        MCPAgentRegistry.syncSkillsIfNeeded()
+
         // Pre-warm quick panel as soon as launch setup settles so the first open is faster.
         DispatchQueue.main.async {
             QuickPanelWindowController.shared.warmUp(

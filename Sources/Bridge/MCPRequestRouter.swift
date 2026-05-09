@@ -53,7 +53,8 @@ final class MCPRequestRouter {
                 "serverInfo": .object([
                     "name": .string(MCPProtocol.serverName),
                     "version": .string(MCPProtocol.serverVersion)
-                ])
+                ]),
+                "instructions": .string(MCPInstructions.text)
             ]))
         case "tools/list":
             let arr: [JSONValue] = toolDescriptors.map { d in
