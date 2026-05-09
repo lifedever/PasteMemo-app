@@ -96,6 +96,10 @@
 
 把 PasteMemo 变成 AI Agent 的剪贴板上下文层（支持 Claude Code、Cursor、Codex、Cline，以及任何兼容 MCP 协议的客户端）。
 
+<p align="center">
+  <img src="docs/agent-demo.gif" width="720" alt="Claude Code 通过 pastememo MCP 把 Swift 函数写到剪贴板">
+</p>
+
 - **5 个 MCP 工具** -- 读当前剪贴板、按关键词/类型/源 App/时间搜索历史、取条目完整内容、列最近源 App、写文本到剪贴板。
 - **一键集成** -- 设置 → AI Agents 一键安装到 Claude Code / Cursor；Codex / Cline 提供可复制的配置片段。
 - **隐私优先** -- 标记为敏感的条目默认不暴露给 Agent；可按源 App 设黑名单。

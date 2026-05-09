@@ -96,6 +96,10 @@
 
 Make PasteMemo a clipboard context layer for AI Agents (Claude Code, Cursor, Codex, Cline, and any MCP-compatible client).
 
+<p align="center">
+  <img src="docs/agent-demo.gif" width="720" alt="Claude Code calling pastememo MCP to write a Swift function to clipboard">
+</p>
+
 - **5 MCP tools** -- Get current clipboard, search history (by keyword / type / source app / time), get full content of an item, list recent source apps, write text back to clipboard.
 - **One-click install** -- Settings → AI Agents installs into Claude Code or Cursor instantly; Codex / Cline get a copy-paste config snippet.
 - **Privacy-first** -- Items marked sensitive are filtered out by default; per-source-app blocklist for total control.
