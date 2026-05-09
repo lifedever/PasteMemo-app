@@ -847,3 +847,30 @@
 
 /* Edit */
 "detail.richText.editWarning" = "편집하면 서식이 제거되고 일반 텍스트로 변환됩니다.";
+
+/* AI Agents */
+"settings.tab.aiAgents" = "AI 에이전트";
+"settings.aiAgents.service" = "서비스";
+"settings.aiAgents.serverRunning" = "MCP 서버 실행 중";
+"settings.aiAgents.agents" = "에이전트";
+"settings.aiAgents.detected" = "감지됨";
+"settings.aiAgents.notInstalled" = "설치되지 않음";
+"settings.aiAgents.install" = "설치";
+"settings.aiAgents.uninstall" = "제거";
+"settings.aiAgents.manualConfig" = "수동 설정";
+"settings.aiAgents.installed" = "%@에 설치되었습니다. 변경 사항을 적용하려면 %@을(를) 재시작하세요.";
+"settings.aiAgents.uninstalled" = "%@에서 제거되었습니다.";
+"settings.aiAgents.installFailed" = "%@에 설치 실패: %@";
+"settings.aiAgents.uninstallFailed" = "%@에서 제거 실패: %@";
+"settings.aiAgents.privacy" = "개인정보";
+"settings.aiAgents.allowSensitive" = "에이전트가 민감 항목을 읽도록 허용";
+"settings.aiAgents.sourceBlocklist" = "출처 앱 차단 목록";
+"settings.aiAgents.binaryMissing" = "pastememo-mcp 바이너리 없음";
+"settings.aiAgents.binaryMissingDetail" = "MCP 지원 이전 버전에서 인앱 업데이트한 후에 흔히 발생합니다. lifedever.com에서 DMG를 다시 다운로드하여 해결해 주세요.";
+"settings.aiAgents.openDownload" = "다운로드 페이지 열기";
+"settings.aiAgents.blocklist.empty" = "차단된 앱 없음";
+"settings.aiAgents.blocklist.add" = "앱 추가";
+"settings.aiAgents.manualConfig.title" = "%@ 수동 설정";
+"settings.aiAgents.manualConfig.subtitle" = "아래 스니펫을 복사하여 해당 설정 파일에 병합하세요.";
+"settings.aiAgents.manualConfig.copy" = "클립보드에 복사";
+"settings.aiAgents.manualConfig.done" = "완료";

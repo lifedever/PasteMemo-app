@@ -849,3 +849,30 @@ Utilisez %@ pour coller un par un.";
 
 /* Edit */
 "detail.richText.editWarning" = "La modification supprime la mise en forme et convertit le texte en texte brut.";
+
+/* AI Agents */
+"settings.tab.aiAgents" = "Agents IA";
+"settings.aiAgents.service" = "Service";
+"settings.aiAgents.serverRunning" = "Serveur MCP en cours d'exécution";
+"settings.aiAgents.agents" = "Agents";
+"settings.aiAgents.detected" = "Détecté";
+"settings.aiAgents.notInstalled" = "Non installé";
+"settings.aiAgents.install" = "Installer";
+"settings.aiAgents.uninstall" = "Désinstaller";
+"settings.aiAgents.manualConfig" = "Configuration manuelle";
+"settings.aiAgents.installed" = "Installé sur %@. Redémarrez %@ pour appliquer les changements.";
+"settings.aiAgents.uninstalled" = "Désinstallé de %@.";
+"settings.aiAgents.installFailed" = "Échec de l'installation sur %@ : %@";
+"settings.aiAgents.uninstallFailed" = "Échec de la désinstallation de %@ : %@";
+"settings.aiAgents.privacy" = "Confidentialité";
+"settings.aiAgents.allowSensitive" = "Autoriser l'agent à lire les éléments sensibles";
+"settings.aiAgents.sourceBlocklist" = "Liste de blocage des apps source";
+"settings.aiAgents.binaryMissing" = "Binaire pastememo-mcp manquant";
+"settings.aiAgents.binaryMissingDetail" = "Cela se produit généralement après une mise à jour intégrée à partir d'une version antérieure à la prise en charge MCP. Veuillez retélécharger le DMG depuis lifedever.com pour résoudre ce problème.";
+"settings.aiAgents.openDownload" = "Ouvrir la page de téléchargement";
+"settings.aiAgents.blocklist.empty" = "Aucune app bloquée";
+"settings.aiAgents.blocklist.add" = "Ajouter une app";
+"settings.aiAgents.manualConfig.title" = "Configuration manuelle pour %@";
+"settings.aiAgents.manualConfig.subtitle" = "Copiez l'extrait ci-dessous et fusionnez-le dans le fichier de configuration approprié.";
+"settings.aiAgents.manualConfig.copy" = "Copier dans le presse-papiers";
+"settings.aiAgents.manualConfig.done" = "Terminé";

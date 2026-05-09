@@ -14,11 +14,11 @@ struct AIAgentIntegrationView: View {
                 Section {
                     Label {
                         VStack(alignment: .leading, spacing: 4) {
-                            Text("pastememo-mcp binary missing")
+                            Text(L10n.tr("settings.aiAgents.binaryMissing"))
                                 .font(.headline)
-                            Text("This usually happens after an in-app update from a version before MCP support. Please re-download the DMG from lifedever.com to fix this.")
+                            Text(L10n.tr("settings.aiAgents.binaryMissingDetail"))
                                 .font(.caption).foregroundStyle(.secondary)
-                            Button("Open Download Page") {
+                            Button(L10n.tr("settings.aiAgents.openDownload")) {
                                 if let url = URL(string: "https://www.lifedever.com/PasteMemo/") {
                                     NSWorkspace.shared.open(url)
                                 }
@@ -30,17 +30,17 @@ struct AIAgentIntegrationView: View {
                 }
             }
 
-            Section("Service") {
+            Section(L10n.tr("settings.aiAgents.service")) {
                 HStack {
                     Circle().fill(.green).frame(width: 8, height: 8)
-                    Text("MCP server running")
+                    Text(L10n.tr("settings.aiAgents.serverRunning"))
                         .font(.callout)
                     Spacer()
                     Text(socketPath).font(.caption).foregroundStyle(.secondary)
                 }
             }
 
-            Section("Agents") {
+            Section(L10n.tr("settings.aiAgents.agents")) {
                 ForEach(MCPAgentRegistry.all, id: \.id) { agent in
                     AgentRow(agent: agent,
                              installed: agentStates[agent.id] ?? false,
@@ -50,9 +50,9 @@ struct AIAgentIntegrationView: View {
                 }
             }
 
-            Section("Privacy") {
-                Toggle("Allow Agent to read sensitive items", isOn: $allowSensitive)
-                NavigationLink("Source App Blocklist") {
+            Section(L10n.tr("settings.aiAgents.privacy")) {
+                Toggle(L10n.tr("settings.aiAgents.allowSensitive"), isOn: $allowSensitive)
+                NavigationLink(L10n.tr("settings.aiAgents.sourceBlocklist")) {
                     MCPSourceAppBlocklistView()
                 }
             }
@@ -85,9 +85,9 @@ struct AIAgentIntegrationView: View {
         do {
             try agent.install()
             agentStates[agent.id] = true
-            statusMessage = "Installed to \(agent.displayName). Restart \(agent.displayName) for changes to take effect."
+            statusMessage = String(format: L10n.tr("settings.aiAgents.installed"), agent.displayName, agent.displayName)
         } catch {
-            statusMessage = "Failed to install to \(agent.displayName): \(error.localizedDescription)"
+            statusMessage = String(format: L10n.tr("settings.aiAgents.installFailed"), agent.displayName, error.localizedDescription)
         }
     }
 
@@ -95,9 +95,9 @@ struct AIAgentIntegrationView: View {
         do {
             try agent.uninstall()
             agentStates[agent.id] = false
-            statusMessage = "Uninstalled from \(agent.displayName)."
+            statusMessage = String(format: L10n.tr("settings.aiAgents.uninstalled"), agent.displayName)
         } catch {
-            statusMessage = "Failed to uninstall from \(agent.displayName): \(error.localizedDescription)"
+            statusMessage = String(format: L10n.tr("settings.aiAgents.uninstallFailed"), agent.displayName, error.localizedDescription)
         }
     }
 }
@@ -117,18 +117,18 @@ private struct AgentRow: View {
                 .foregroundStyle(agent.detect() ? .green : .secondary)
             VStack(alignment: .leading) {
                 Text(agent.displayName)
-                Text(agent.detect() ? "Detected" : "Not installed").font(.caption).foregroundStyle(.secondary)
+                Text(L10n.tr(agent.detect() ? "settings.aiAgents.detected" : "settings.aiAgents.notInstalled")).font(.caption).foregroundStyle(.secondary)
             }
             Spacer()
             // Codex CLI 在 v1 是 manual config 模式;Claude Code/Cursor 一键
             if agent.id == "codex" {
-                Button("Manual Config") { showSnippet = true }
+                Button(L10n.tr("settings.aiAgents.manualConfig")) { showSnippet = true }
                     .buttonStyle(.borderless)
             } else if installed {
-                Button("Uninstall", role: .destructive, action: onUninstall)
+                Button(L10n.tr("settings.aiAgents.uninstall"), role: .destructive, action: onUninstall)
                     .buttonStyle(.borderless)
             } else {
-                Button("Install", action: onInstall)
+                Button(L10n.tr("settings.aiAgents.install"), action: onInstall)
                     .buttonStyle(.borderedProminent)
                     .disabled(!binaryExists)
             }
@@ -171,9 +171,9 @@ private struct ManualConfigSheet: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Manual Configuration for \(agent.displayName)")
+            Text(String(format: L10n.tr("settings.aiAgents.manualConfig.title"), agent.displayName))
                 .font(.headline)
-            Text("Copy the snippet below and merge it into the relevant config file.")
+            Text(L10n.tr("settings.aiAgents.manualConfig.subtitle"))
                 .font(.caption).foregroundStyle(.secondary)
             ScrollView {
                 Text(snippet)
@@ -185,13 +185,13 @@ private struct ManualConfigSheet: View {
             }
             .frame(maxHeight: 200)
             HStack {
-                Button("Copy to Clipboard") {
+                Button(L10n.tr("settings.aiAgents.manualConfig.copy")) {
                     let pb = NSPasteboard.general
                     pb.clearContents()
                     pb.setString(snippet, forType: .string)
                 }
                 Spacer()
-                Button("Done") { dismiss() }
+                Button(L10n.tr("settings.aiAgents.manualConfig.done")) { dismiss() }
                     .keyboardShortcut(.defaultAction)
             }
         }
@@ -220,11 +220,11 @@ struct MCPSourceAppBlocklistView: View {
                 }
             }
             if blocklist.blockedApps.isEmpty {
-                Text("No blocked apps").foregroundStyle(.secondary)
+                Text(L10n.tr("settings.aiAgents.blocklist.empty")).foregroundStyle(.secondary)
             }
         }
         .toolbar {
-            Button("Add App") {
+            Button(L10n.tr("settings.aiAgents.blocklist.add")) {
                 let panel = NSOpenPanel()
                 panel.allowedContentTypes = [.applicationBundle]
                 panel.allowsMultipleSelection = false

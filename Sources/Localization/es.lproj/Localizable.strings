@@ -849,3 +849,30 @@ Usa %@ para pegar uno por uno.";
 
 /* Edit */
 "detail.richText.editWarning" = "Al editar, el texto enriquecido se convertirá en texto sin formato.";
+
+/* AI Agents */
+"settings.tab.aiAgents" = "Agentes de IA";
+"settings.aiAgents.service" = "Servicio";
+"settings.aiAgents.serverRunning" = "Servidor MCP en ejecución";
+"settings.aiAgents.agents" = "Agentes";
+"settings.aiAgents.detected" = "Detectado";
+"settings.aiAgents.notInstalled" = "No instalado";
+"settings.aiAgents.install" = "Instalar";
+"settings.aiAgents.uninstall" = "Desinstalar";
+"settings.aiAgents.manualConfig" = "Configuración manual";
+"settings.aiAgents.installed" = "Instalado en %@. Reinicia %@ para que los cambios surtan efecto.";
+"settings.aiAgents.uninstalled" = "Desinstalado de %@.";
+"settings.aiAgents.installFailed" = "Error al instalar en %@: %@";
+"settings.aiAgents.uninstallFailed" = "Error al desinstalar de %@: %@";
+"settings.aiAgents.privacy" = "Privacidad";
+"settings.aiAgents.allowSensitive" = "Permitir que el agente lea elementos sensibles";
+"settings.aiAgents.sourceBlocklist" = "Lista de bloqueo de apps de origen";
+"settings.aiAgents.binaryMissing" = "Falta el binario pastememo-mcp";
+"settings.aiAgents.binaryMissingDetail" = "Esto suele ocurrir tras una actualización dentro de la app desde una versión anterior al soporte MCP. Vuelve a descargar el DMG desde lifedever.com para solucionarlo.";
+"settings.aiAgents.openDownload" = "Abrir página de descarga";
+"settings.aiAgents.blocklist.empty" = "No hay apps bloqueadas";
+"settings.aiAgents.blocklist.add" = "Añadir app";
+"settings.aiAgents.manualConfig.title" = "Configuración manual para %@";
+"settings.aiAgents.manualConfig.subtitle" = "Copia el fragmento de abajo y combínalo con el archivo de configuración correspondiente.";
+"settings.aiAgents.manualConfig.copy" = "Copiar al portapapeles";
+"settings.aiAgents.manualConfig.done" = "Hecho";

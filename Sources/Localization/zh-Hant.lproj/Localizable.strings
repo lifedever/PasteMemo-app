@@ -807,3 +807,30 @@
 
 /* Edit */
 "detail.richText.editWarning" = "編輯將移除富文本格式並轉為純文字。";
+
+/* AI Agents */
+"settings.tab.aiAgents" = "AI Agents";
+"settings.aiAgents.service" = "服務";
+"settings.aiAgents.serverRunning" = "MCP 伺服器執行中";
+"settings.aiAgents.agents" = "Agent";
+"settings.aiAgents.detected" = "已偵測到";
+"settings.aiAgents.notInstalled" = "未安裝";
+"settings.aiAgents.install" = "安裝";
+"settings.aiAgents.uninstall" = "解除安裝";
+"settings.aiAgents.manualConfig" = "手動設定";
+"settings.aiAgents.installed" = "已安裝到 %@，請重新啟動 %@ 後生效。";
+"settings.aiAgents.uninstalled" = "已從 %@ 解除安裝。";
+"settings.aiAgents.installFailed" = "安裝到 %@ 失敗：%@";
+"settings.aiAgents.uninstallFailed" = "從 %@ 解除安裝失敗：%@";
+"settings.aiAgents.privacy" = "隱私";
+"settings.aiAgents.allowSensitive" = "允許 Agent 讀取標記為敏感的剪貼項目";
+"settings.aiAgents.sourceBlocklist" = "來源 App 黑名單";
+"settings.aiAgents.binaryMissing" = "pastememo-mcp 執行檔遺失";
+"settings.aiAgents.binaryMissingDetail" = "通常在從 MCP 之前的版本透過應用內更新後發生。請從 lifedever.com 重新下載 DMG 修復。";
+"settings.aiAgents.openDownload" = "開啟下載頁";
+"settings.aiAgents.blocklist.empty" = "無已封鎖 App";
+"settings.aiAgents.blocklist.add" = "新增 App";
+"settings.aiAgents.manualConfig.title" = "%@ 的手動設定";
+"settings.aiAgents.manualConfig.subtitle" = "複製下方片段，並貼到對應的設定檔中。";
+"settings.aiAgents.manualConfig.copy" = "複製到剪貼簿";
+"settings.aiAgents.manualConfig.done" = "完成";

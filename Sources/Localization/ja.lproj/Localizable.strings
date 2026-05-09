@@ -845,3 +845,30 @@
 
 /* Edit */
 "detail.richText.editWarning" = "編集するとリッチテキストはプレーンテキストに変換されます。";
+
+/* AI Agents */
+"settings.tab.aiAgents" = "AIエージェント";
+"settings.aiAgents.service" = "サービス";
+"settings.aiAgents.serverRunning" = "MCP サーバー実行中";
+"settings.aiAgents.agents" = "エージェント";
+"settings.aiAgents.detected" = "検出済み";
+"settings.aiAgents.notInstalled" = "未インストール";
+"settings.aiAgents.install" = "インストール";
+"settings.aiAgents.uninstall" = "アンインストール";
+"settings.aiAgents.manualConfig" = "手動設定";
+"settings.aiAgents.installed" = "%@ にインストールしました。変更を反映するには %@ を再起動してください。";
+"settings.aiAgents.uninstalled" = "%@ からアンインストールしました。";
+"settings.aiAgents.installFailed" = "%@ へのインストールに失敗しました：%@";
+"settings.aiAgents.uninstallFailed" = "%@ からのアンインストールに失敗しました：%@";
+"settings.aiAgents.privacy" = "プライバシー";
+"settings.aiAgents.allowSensitive" = "エージェントが機密としてマークされた項目を読み取ることを許可";
+"settings.aiAgents.sourceBlocklist" = "ソース App ブロックリスト";
+"settings.aiAgents.binaryMissing" = "pastememo-mcp バイナリが見つかりません";
+"settings.aiAgents.binaryMissingDetail" = "MCP 対応前のバージョンからアプリ内アップデートを行った場合に発生することがあります。lifedever.com から DMG を再ダウンロードして修復してください。";
+"settings.aiAgents.openDownload" = "ダウンロードページを開く";
+"settings.aiAgents.blocklist.empty" = "ブロック中の App はありません";
+"settings.aiAgents.blocklist.add" = "App を追加";
+"settings.aiAgents.manualConfig.title" = "%@ の手動設定";
+"settings.aiAgents.manualConfig.subtitle" = "下のスニペットをコピーして、対応する設定ファイルに統合してください。";
+"settings.aiAgents.manualConfig.copy" = "クリップボードにコピー";
+"settings.aiAgents.manualConfig.done" = "完了";

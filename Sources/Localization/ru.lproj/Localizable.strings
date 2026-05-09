@@ -819,3 +819,30 @@
 
 /* Edit */
 "detail.richText.editWarning" = "При редактировании форматирование будет удалено и текст станет простым.";
+
+/* AI Agents */
+"settings.tab.aiAgents" = "ИИ-агенты";
+"settings.aiAgents.service" = "Сервис";
+"settings.aiAgents.serverRunning" = "MCP-сервер работает";
+"settings.aiAgents.agents" = "Агенты";
+"settings.aiAgents.detected" = "Обнаружено";
+"settings.aiAgents.notInstalled" = "Не установлено";
+"settings.aiAgents.install" = "Установить";
+"settings.aiAgents.uninstall" = "Удалить";
+"settings.aiAgents.manualConfig" = "Ручная настройка";
+"settings.aiAgents.installed" = "Установлено в %@. Перезапустите %@, чтобы изменения вступили в силу.";
+"settings.aiAgents.uninstalled" = "Удалено из %@.";
+"settings.aiAgents.installFailed" = "Не удалось установить в %@: %@";
+"settings.aiAgents.uninstallFailed" = "Не удалось удалить из %@: %@";
+"settings.aiAgents.privacy" = "Конфиденциальность";
+"settings.aiAgents.allowSensitive" = "Разрешить агенту читать конфиденциальные элементы";
+"settings.aiAgents.sourceBlocklist" = "Чёрный список приложений-источников";
+"settings.aiAgents.binaryMissing" = "Отсутствует бинарный файл pastememo-mcp";
+"settings.aiAgents.binaryMissingDetail" = "Обычно это происходит после обновления внутри приложения с версии без поддержки MCP. Пожалуйста, повторно скачайте DMG с lifedever.com, чтобы устранить проблему.";
+"settings.aiAgents.openDownload" = "Открыть страницу загрузки";
+"settings.aiAgents.blocklist.empty" = "Нет заблокированных приложений";
+"settings.aiAgents.blocklist.add" = "Добавить приложение";
+"settings.aiAgents.manualConfig.title" = "Ручная настройка для %@";
+"settings.aiAgents.manualConfig.subtitle" = "Скопируйте фрагмент ниже и вставьте его в соответствующий файл конфигурации.";
+"settings.aiAgents.manualConfig.copy" = "Копировать в буфер обмена";
+"settings.aiAgents.manualConfig.done" = "Готово";

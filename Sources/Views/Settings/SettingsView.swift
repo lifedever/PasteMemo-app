@@ -17,7 +17,7 @@ struct SettingsView: View {
             PrivacyTab()
                 .tabItem { Label(L10n.tr("settings.privacy"), systemImage: "lock.shield") }
             AIAgentIntegrationView()
-                .tabItem { Label("AI Agents", systemImage: "sparkles.rectangle.stack") }
+                .tabItem { Label(L10n.tr("settings.tab.aiAgents"), systemImage: "sparkles.rectangle.stack") }
             if ProManager.AUTOMATION_ENABLED {
                 AutomationTab()
                     .tabItem { Label(L10n.tr("settings.automation"), systemImage: "gearshape.2") }

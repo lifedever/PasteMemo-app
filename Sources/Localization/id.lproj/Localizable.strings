@@ -816,3 +816,30 @@ Gunakan %@ untuk menempel satu per satu.";
 
 /* Edit */
 "detail.richText.editWarning" = "Mengedit akan menghapus format rich text dan mengubahnya menjadi teks biasa.";
+
+/* AI Agents */
+"settings.tab.aiAgents" = "Agen AI";
+"settings.aiAgents.service" = "Layanan";
+"settings.aiAgents.serverRunning" = "Server MCP sedang berjalan";
+"settings.aiAgents.agents" = "Agen";
+"settings.aiAgents.detected" = "Terdeteksi";
+"settings.aiAgents.notInstalled" = "Belum terpasang";
+"settings.aiAgents.install" = "Pasang";
+"settings.aiAgents.uninstall" = "Hapus pasang";
+"settings.aiAgents.manualConfig" = "Konfigurasi manual";
+"settings.aiAgents.installed" = "Terpasang ke %@. Mulai ulang %@ agar perubahan diterapkan.";
+"settings.aiAgents.uninstalled" = "Dihapus dari %@.";
+"settings.aiAgents.installFailed" = "Gagal memasang ke %@: %@";
+"settings.aiAgents.uninstallFailed" = "Gagal menghapus dari %@: %@";
+"settings.aiAgents.privacy" = "Privasi";
+"settings.aiAgents.allowSensitive" = "Izinkan Agen membaca item sensitif";
+"settings.aiAgents.sourceBlocklist" = "Daftar Blokir App Sumber";
+"settings.aiAgents.binaryMissing" = "Berkas biner pastememo-mcp tidak ada";
+"settings.aiAgents.binaryMissingDetail" = "Hal ini biasanya terjadi setelah pembaruan dalam aplikasi dari versi sebelum dukungan MCP. Silakan unduh ulang DMG dari lifedever.com untuk memperbaiki masalah ini.";
+"settings.aiAgents.openDownload" = "Buka halaman unduh";
+"settings.aiAgents.blocklist.empty" = "Tidak ada app yang diblokir";
+"settings.aiAgents.blocklist.add" = "Tambah App";
+"settings.aiAgents.manualConfig.title" = "Konfigurasi manual untuk %@";
+"settings.aiAgents.manualConfig.subtitle" = "Salin cuplikan di bawah ini dan gabungkan ke dalam berkas konfigurasi yang sesuai.";
+"settings.aiAgents.manualConfig.copy" = "Salin ke papan klip";
+"settings.aiAgents.manualConfig.done" = "Selesai";
