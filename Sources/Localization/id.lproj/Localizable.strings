@@ -330,6 +330,8 @@
 
 /* Update */
 "update.available.title" = "Versi baru PasteMemo tersedia!";
+"update.available.beta.title" = "Beta baru PasteMemo tersedia";
+"update.beta.warning" = "Versi beta mungkin tidak stabil. Cadangkan data penting sebelum memasang.";
 "update.available.message" = "PasteMemo %@ tersedia — Anda memiliki %@. Ingin mengunduhnya sekarang?";
 "update.skip" = "Lewati Versi Ini";
 "update.remind_later" = "Ingatkan Nanti";
@@ -809,6 +811,8 @@ Gunakan %@ untuk menempel satu per satu.";
 "settings.updateCheckInterval.12h" = "Setiap 12 jam";
 "settings.updateCheckInterval.24h" = "Setiap 24 jam";
 "settings.updateCheckInterval.72h" = "Setiap 3 hari";
+"settings.includeBetaChannel" = "Ikut Saluran Beta";
+"settings.includeBetaChannel.hint" = "Coba fitur baru lebih awal. Mungkin tidak stabil. Otomatis diperbarui ke versi stabil.";
 "detail.ocr" = "Teks terdeteksi";
 "detail.ocr.copy" = "Salin teks";
 "detail.ocr.retry" = "Coba lagi OCR";

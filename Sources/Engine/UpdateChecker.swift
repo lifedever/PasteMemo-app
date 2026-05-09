@@ -10,6 +10,9 @@ final class UpdateChecker: ObservableObject {
     @Published var releaseNotes: String?
     @Published var downloadURL: URL?
     @Published var isChecking = false
+    /// True iff `latestVersion` was selected from the beta channel.
+    /// Drives the BETA badge in the update dialog.
+    @Published var isBetaUpdate = false
 
     @Published var isDownloading = false
     @Published var downloadProgress: Double = 0
@@ -36,6 +39,23 @@ final class UpdateChecker: ObservableObject {
 
     private var isDev: Bool { DevDataImporter.isDevBuild }
 
+    /// Production builds always hit the canonical CDN feed. Dev builds may
+    /// override the URL via UserDefaults so we can point at a locally-hosted
+    /// mock `latest.json` and test channel switching, beta dialog rendering,
+    /// edge cases, etc. without polluting production:
+    ///
+    ///     defaults write com.lifedever.pastememo.dev \
+    ///         devLatestJsonOverride "http://localhost:8000/latest-mock.json"
+    ///     defaults delete com.lifedever.pastememo.dev devLatestJsonOverride
+    private var resolvedLatestJsonURL: String {
+        if isDev,
+           let override = UserDefaults.standard.string(forKey: "devLatestJsonOverride"),
+           !override.isEmpty {
+            return override
+        }
+        return latestJsonURL
+    }
+
     private init() {}
 
     // MARK: - Check
@@ -53,17 +73,28 @@ final class UpdateChecker: ObservableObject {
         var remoteVersion: String?
         var notes: String?
         var archDownloadURL: URL?
+        // Reset before each check so a stale beta flag from a previous run
+        // doesn't bleed into a stable-channel result.
+        isBetaUpdate = false
 
         if let info = await fetchLatestJSON() {
-            remoteVersion = info.version
-            let zhNotes = info.notesZh ?? ""
-            let enNotes = info.notesEn ?? ""
+            // Pick stable or beta channel. Beta wins only when the user has
+            // opted in AND beta is strictly newer than the stable release —
+            // so once a beta is promoted to stable, beta-channel users
+            // automatically fall back to the stable entry and get the upgrade.
+            let useBeta = UserDefaults.standard.bool(forKey: "includeBetaChannel")
+            let channel = pickChannel(info: info, useBeta: useBeta)
+            isBetaUpdate = channel.isBeta
+
+            remoteVersion = channel.version
+            let zhNotes = channel.notesZh ?? ""
+            let enNotes = channel.notesEn ?? ""
             let lang = LanguageManager.shared.current
             let isChinese = lang.hasPrefix("zh")
             notes = isChinese ? (zhNotes.isEmpty ? enNotes : zhNotes) : (enNotes.isEmpty ? zhNotes : enNotes)
             let arch = currentArch()
             // Prefer checksums (has size/sha256), fall back to downloads
-            let entry = info.checksums?[arch] ?? info.downloads[arch]
+            let entry = channel.checksums?[arch] ?? channel.downloads[arch]
             archDownloadURL = entry.flatMap { URL(string: $0.url) }
             if let fileSize = entry?.size {
                 totalBytes = Int64(fileSize)
@@ -266,7 +297,7 @@ final class UpdateChecker: ObservableObject {
     }
 
     private func fetchLatestJSON() async -> LatestInfo? {
-        guard let url = URL(string: latestJsonURL) else { return nil }
+        guard let url = URL(string: resolvedLatestJsonURL) else { return nil }
         do {
             var request = URLRequest(url: url)
             request.cachePolicy = .reloadIgnoringLocalCacheData
@@ -286,8 +317,15 @@ final class UpdateChecker: ObservableObject {
             guard let httpResponse = response as? HTTPURLResponse,
                   httpResponse.statusCode == 200 else { return nil }
             let releases = try JSONDecoder().decode([ReleaseInfo].self, from: data)
+            // Defense in depth: never let the fallback path nominate a
+            // pre-release. Beta builds aren't supposed to ship via GitHub /
+            // Gitee public releases at all, but if one ever leaks through
+            // we don't want the older clients (whose `isNewer` predates the
+            // SemVer fix) to interpret a `1.7.0-beta.1` tag as a stable
+            // upgrade target.
+            let stable = releases.filter { $0.prerelease != true }
             // Gitee returns oldest first, GitHub returns newest first — pick highest version
-            return releases.max { lhs, rhs in
+            return stable.max { lhs, rhs in
                 let l = lhs.tag_name.trimmingCharacters(in: CharacterSet(charactersIn: "vV"))
                 let r = rhs.tag_name.trimmingCharacters(in: CharacterSet(charactersIn: "vV"))
                 return isNewer(remote: r, current: l)
@@ -306,15 +344,7 @@ final class UpdateChecker: ObservableObject {
     }
 
     private func isNewer(remote: String, current: String) -> Bool {
-        let remoteParts = remote.split(separator: ".").compactMap { Int($0) }
-        let currentParts = current.split(separator: ".").compactMap { Int($0) }
-        for i in 0..<max(remoteParts.count, currentParts.count) {
-            let r = i < remoteParts.count ? remoteParts[i] : 0
-            let c = i < currentParts.count ? currentParts[i] : 0
-            if r > c { return true }
-            if r < c { return false }
-        }
-        return false
+        SemanticVersion.isNewer(remote: remote, current: current)
     }
 
     private func mountDMG(at path: String) -> String? {
@@ -399,13 +429,16 @@ final class UpdateChecker: ObservableObject {
 
 // MARK: - Models
 
-private struct LatestInfo: Codable {
+// Exposed at module scope (rather than file-private) so unit tests can verify
+// JSON decoding and channel-selection behavior end to end.
+struct LatestInfo: Codable {
     let version: String
     let notesZh: String?
     let notesEn: String?
     let downloads: [String: DownloadEntry]
     let checksums: [String: DownloadEntry]?
     let pro: String?
+    let beta: BetaChannel?
 
     enum CodingKeys: String, CodingKey {
         case version
@@ -414,6 +447,7 @@ private struct LatestInfo: Codable {
         case downloads
         case checksums
         case pro
+        case beta
     }
 
     struct DownloadEntry: Codable {
@@ -439,6 +473,67 @@ private struct LatestInfo: Codable {
             case url, size, sha256
         }
     }
+
+    struct BetaChannel: Codable {
+        let version: String
+        let notesZh: String?
+        let notesEn: String?
+        let downloads: [String: DownloadEntry]
+        let checksums: [String: DownloadEntry]?
+
+        enum CodingKeys: String, CodingKey {
+            case version, downloads, checksums
+            case notesZh = "notes_zh"
+            case notesEn = "notes_en"
+        }
+    }
+}
+
+/// A channel-agnostic projection of either the stable entry or the beta entry
+/// inside `LatestInfo`. Lets `checkForUpdates` consume the same shape regardless
+/// of which channel won.
+struct ChannelView: Equatable {
+    let version: String
+    let notesZh: String?
+    let notesEn: String?
+    let downloads: [String: LatestInfo.DownloadEntry]
+    let checksums: [String: LatestInfo.DownloadEntry]?
+    let isBeta: Bool
+
+    static func == (lhs: ChannelView, rhs: ChannelView) -> Bool {
+        // Equatable on the version + isBeta is enough for tests; full struct
+        // equality would require DownloadEntry to be Equatable too.
+        lhs.version == rhs.version && lhs.isBeta == rhs.isBeta
+    }
+}
+
+func pickChannel(info: LatestInfo, useBeta: Bool) -> ChannelView {
+    let stable = ChannelView(
+        version: info.version,
+        notesZh: info.notesZh,
+        notesEn: info.notesEn,
+        downloads: info.downloads,
+        checksums: info.checksums,
+        isBeta: false
+    )
+    // Beta wins only when strictly newer than stable. Once beta has been
+    // promoted to stable (publish-release.sh clears the field, but defend
+    // against stale CDN copies too), beta-channel users automatically
+    // fall back to stable and pick up the upgrade prompt.
+    guard useBeta,
+          let beta = info.beta,
+          SemanticVersion.compare(beta.version, info.version) > 0
+    else {
+        return stable
+    }
+    return ChannelView(
+        version: beta.version,
+        notesZh: beta.notesZh,
+        notesEn: beta.notesEn,
+        downloads: beta.downloads,
+        checksums: beta.checksums,
+        isBeta: true
+    )
 }
 
 private struct ReleaseInfo: Codable {
@@ -446,6 +541,7 @@ private struct ReleaseInfo: Codable {
     let name: String?
     let body: String?
     let html_url: String?
+    let prerelease: Bool?
     let assets: [Asset]?
 
     struct Asset: Codable {

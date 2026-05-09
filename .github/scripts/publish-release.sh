@@ -1,12 +1,21 @@
 #!/bin/bash
-# Publish one staged draft release: turn it public on GitHub, push DMGs +
-# latest.json to the site repo (mirrored to Gitee), create a Gitee release,
-# and bump the Homebrew cask.
+# Publish one staged draft release. Behavior depends on the staged channel:
+#
+#   stable (default): turn the draft public on GitHub, push DMGs + latest.json
+#       to the site repo (mirrored to Gitee), create a Gitee release, and
+#       bump the Homebrew cask. Any prior `latest.json.beta` entry that has
+#       been promoted (its version ≤ new stable) is cleared.
+#
+#   beta: drop DMGs into site/beta/downloads/ on the site repo only, merge
+#       a `beta` block into latest.json (top-level stable info untouched),
+#       skip Gitee + Homebrew + GitHub-public, and DELETE the GitHub draft
+#       (so the next 23:30 cron does not re-scan and re-publish it). Beta
+#       DMGs are advertised via the website's /beta/ landing page only.
 #
 # Called by the auto-release workflow. Expects these env vars:
 #   GH_TOKEN         — set by the workflow for ops on this repo
 #   CROSS_REPO_PAT   — PAT that can push to lifedever/PasteMemo and lifedever/homebrew-tap
-#   GITEE_TOKEN      — Gitee PAT for API + HTTPS git push
+#   GITEE_TOKEN      — Gitee PAT for API + HTTPS git push (stable only)
 #   REPO             — owner/repo of this repo (the draft lives here)
 set -euo pipefail
 
@@ -19,7 +28,6 @@ TAP_REPO="lifedever/homebrew-tap"
 APP_NAME="PasteMemo"
 
 : "${CROSS_REPO_PAT:?CROSS_REPO_PAT secret not set}"
-: "${GITEE_TOKEN:?GITEE_TOKEN secret not set}"
 
 WORK=$(mktemp -d)
 trap 'rm -rf "$WORK"' EXIT
@@ -35,12 +43,23 @@ for f in "$META" "$ARM_DMG" "$X86_DMG"; do
     [ -f "$f" ] || { echo "Error: missing asset $f" >&2; exit 1; }
 done
 
+CHANNEL=$(jq -r '.channel // "stable"' "$META")
 NOTES_ZH=$(jq -r .notes_zh "$META")
 NOTES_EN=$(jq -r .notes_en "$META")
 ARM_SHA=$(jq -r .checksums.arm64.sha256 "$META")
 X86_SHA=$(jq -r .checksums.x86_64.sha256 "$META")
 ARM_SIZE=$(jq -r .checksums.arm64.size "$META")
 X86_SIZE=$(jq -r .checksums.x86_64.size "$META")
+
+if [ "$CHANNEL" != "stable" ] && [ "$CHANNEL" != "beta" ]; then
+    echo "Error: unknown channel '$CHANNEL' in release-meta.json" >&2
+    exit 1
+fi
+if [ "$CHANNEL" = "stable" ]; then
+    : "${GITEE_TOKEN:?GITEE_TOKEN secret not set}"
+fi
+
+echo "🚦 Channel: $CHANNEL"
 
 echo "🌐 Updating site repo ($SITE_REPO)..."
 SITE_DIR="$WORK/site"
@@ -49,15 +68,99 @@ cd "$SITE_DIR"
 git config user.name "lifedever-bot"
 git config user.email "bot@lifedever.com"
 
-rm -f downloads/PasteMemo-*.dmg
-cp "$ARM_DMG" "downloads/"
-cp "$X86_DMG" "downloads/"
+if [ "$CHANNEL" = "beta" ]; then
+    # Drop the DMGs into beta/downloads/ (separate from the stable downloads/)
+    # and merge a `beta` block into latest.json. Top-level stable fields are
+    # preserved untouched; clients on the stable channel never see this entry.
+    mkdir -p beta/downloads
+    rm -f beta/downloads/PasteMemo-*.dmg
+    cp "$ARM_DMG" beta/downloads/
+    cp "$X86_DMG" beta/downloads/
 
-python3 - "$VERSION" "$NOTES_ZH" "$NOTES_EN" "$ARM_SHA" "$X86_SHA" "$ARM_SIZE" "$X86_SIZE" > latest.json << 'PY'
+    python3 - "$VERSION" "$NOTES_ZH" "$NOTES_EN" "$ARM_SHA" "$X86_SHA" "$ARM_SIZE" "$X86_SIZE" "latest.json" <<'PY'
 import json, sys
-version, notes_zh, notes_en, arm_sha, x86_sha, arm_size, x86_size = sys.argv[1:]
+from pathlib import Path
+version, notes_zh, notes_en, arm_sha, x86_sha, arm_size, x86_size, path = sys.argv[1:]
+arm_url = f"https://www.lifedever.com/PasteMemo/beta/downloads/PasteMemo-{version}-arm64.dmg"
+x86_url = f"https://www.lifedever.com/PasteMemo/beta/downloads/PasteMemo-{version}-x86_64.dmg"
+p = Path(path)
+data = json.loads(p.read_text()) if p.exists() else {}
+data["beta"] = {
+    "version": version,
+    "notes_zh": notes_zh,
+    "notes_en": notes_en,
+    "downloads": {"arm64": arm_url, "x86_64": x86_url},
+    "checksums": {
+        "arm64": {"url": arm_url, "size": int(arm_size), "sha256": arm_sha},
+        "x86_64": {"url": x86_url, "size": int(x86_size), "sha256": x86_sha},
+    },
+}
+p.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n")
+PY
+
+    git add latest.json beta/downloads/
+    if git diff --cached --quiet; then
+        echo "   site repo: no changes to commit"
+    else
+        git commit -m "release: v$VERSION (beta)"
+        git push origin main
+        # Beta is not mirrored to Gitee or tagged on either remote.
+    fi
+    cd -
+else
+    rm -f downloads/PasteMemo-*.dmg
+    cp "$ARM_DMG" "downloads/"
+    cp "$X86_DMG" "downloads/"
+
+    # Build a fresh latest.json. Carry the existing `beta` field forward only
+    # if it is STILL strictly newer than the new stable version — i.e. the
+    # rare case where a beta of the *next* version is staged while the
+    # current minor is going stable. Otherwise the beta is considered
+    # promoted/superseded and dropped, so beta-channel clients fall back
+    # to stable and pick up the upgrade prompt.
+    python3 - "$VERSION" "$NOTES_ZH" "$NOTES_EN" "$ARM_SHA" "$X86_SHA" "$ARM_SIZE" "$X86_SIZE" "latest.json" <<'PY'
+import json, sys
+from pathlib import Path
+version, notes_zh, notes_en, arm_sha, x86_sha, arm_size, x86_size, path = sys.argv[1:]
+
+
+def newer(a: str, b: str) -> bool:
+    """Return True iff a > b under SemVer 2.0.0 §11 precedence."""
+    def split(s):
+        i = s.find("-")
+        return (s, "") if i < 0 else (s[:i], s[i + 1:])
+
+    ac, ap = split(a)
+    bc, bp = split(b)
+
+    def parts(core):
+        out = []
+        for x in core.split("."):
+            try:
+                out.append(int(x))
+            except ValueError:
+                out.append(0)
+        return out
+
+    ax, bx = parts(ac), parts(bc)
+    n = max(len(ax), len(bx))
+    ax += [0] * (n - len(ax))
+    bx += [0] * (n - len(bx))
+    if ax != bx:
+        return ax > bx
+    if not ap and not bp:
+        return False
+    if not ap:
+        return True   # a is release, b is pre-release
+    if not bp:
+        return False  # a is pre-release, b is release
+    return ap > bp    # both pre-release: lexical is good enough here
+
+
 arm_url = f"https://www.lifedever.com/PasteMemo/downloads/PasteMemo-{version}-arm64.dmg"
 x86_url = f"https://www.lifedever.com/PasteMemo/downloads/PasteMemo-{version}-x86_64.dmg"
+p = Path(path)
+existing = json.loads(p.read_text()) if p.exists() else {}
 obj = {
     "version": version,
     "notes_zh": notes_zh,
@@ -68,31 +171,42 @@ obj = {
         "x86_64": {"url": x86_url, "size": int(x86_size), "sha256": x86_sha},
     },
 }
-print(json.dumps(obj, ensure_ascii=False, indent=2))
+prev_beta = existing.get("beta")
+if prev_beta and newer(prev_beta.get("version", ""), version):
+    obj["beta"] = prev_beta
+p.write_text(json.dumps(obj, ensure_ascii=False, indent=2) + "\n")
 PY
 
-git add latest.json downloads/
-# If nothing changed (e.g. retry after partial success), skip commit gracefully
-if git diff --cached --quiet; then
-    echo "   site repo: no changes to commit"
-else
-    git commit -m "release: v$VERSION"
+    git add latest.json downloads/
+    if git diff --cached --quiet; then
+        echo "   site repo: no changes to commit"
+    else
+        git commit -m "release: v$VERSION"
+    fi
+
+    if ! git rev-parse "v$VERSION" >/dev/null 2>&1; then
+        git tag "v$VERSION"
+    fi
+
+    git push origin main
+    git push origin "v$VERSION"
+
+    git remote add gitee "https://oauth2:${GITEE_TOKEN}@gitee.com/${SITE_REPO_GITEE}.git"
+    git push gitee main
+    git push gitee "v$VERSION"
+
+    cd -
 fi
 
-# Create tag if it doesn't exist yet
-if ! git rev-parse "v$VERSION" >/dev/null 2>&1; then
-    git tag "v$VERSION"
+# Stable-only: Gitee release, Homebrew cask, GitHub publish.
+# Beta-only: delete the entire draft so the next 23:30 cron does not re-pick it.
+if [ "$CHANNEL" = "beta" ]; then
+    echo "🟡 Beta channel: skipping Gitee release, Homebrew cask, and GitHub publish."
+    echo "🗑  Removing GitHub draft (beta artifacts already published to website)..."
+    gh release delete "$TAG" --repo "$REPO" --yes
+    echo "✅ $TAG published to https://www.lifedever.com/PasteMemo/beta/"
+    exit 0
 fi
-
-git push origin main
-git push origin "v$VERSION"
-
-# Mirror to Gitee; append as a separate remote so credentials stay scoped
-git remote add gitee "https://oauth2:${GITEE_TOKEN}@gitee.com/${SITE_REPO_GITEE}.git"
-git push gitee main
-git push gitee "v$VERSION"
-
-cd -
 
 echo "🔁 Creating Gitee release..."
 GITEE_BODY=$(printf '## 更新内容\n\n%s\n\n## What'"'"'s New\n\n%s' "$NOTES_ZH" "$NOTES_EN")

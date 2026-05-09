@@ -847,6 +847,7 @@ struct AboutTab: View {
     @ObservedObject private var updateChecker = UpdateChecker.shared
     @AppStorage("autoCheckUpdates") private var autoCheckUpdates = true
     @AppStorage("updateCheckInterval") private var updateCheckInterval = 24
+    @AppStorage("includeBetaChannel") private var includeBetaChannel = false
 
     var body: some View {
         Form {
@@ -896,6 +897,19 @@ struct AboutTab: View {
                     .onChange(of: updateCheckInterval) {
                         updateChecker.startPeriodicChecks()
                     }
+                }
+                VStack(alignment: .leading, spacing: 4) {
+                    Toggle(L10n.tr("settings.includeBetaChannel"), isOn: $includeBetaChannel)
+                        .onChange(of: includeBetaChannel) {
+                            // Switching channels should give immediate feedback —
+                            // wait-for-next-poll feels broken. Treat as a user-
+                            // initiated check so dev builds also run it.
+                            Task { await updateChecker.checkForUpdates(userInitiated: true) }
+                        }
+                    Text(L10n.tr("settings.includeBetaChannel.hint"))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
             }
 

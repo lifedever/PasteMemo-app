@@ -255,6 +255,8 @@
 
 /* Update */
 "update.available.title" = "PasteMemoの新しいバージョンが利用可能です！";
+"update.available.beta.title" = "PasteMemoの新しいベータ版が利用可能です";
+"update.beta.warning" = "ベータ版は不安定な場合があります。インストール前に重要なデータをバックアップしてください。";
 "update.available.message" = "PasteMemo %@ が利用可能です — 現在のバージョンは %@ です。今すぐダウンロードしますか？";
 "update.skip" = "このバージョンをスキップ";
 "update.remind_later" = "後で通知";
@@ -840,6 +842,8 @@
 "settings.updateCheckInterval.12h" = "12時間ごと";
 "settings.updateCheckInterval.24h" = "24時間ごと";
 "settings.updateCheckInterval.72h" = "3日ごと";
+"settings.includeBetaChannel" = "Beta チャンネルに参加";
+"settings.includeBetaChannel.hint" = "新機能をいち早く試せます。不安定な場合があります。安定版が出ると自動的に更新されます。";
 "analytics.consent.title" = "使用統計";
 "analytics.consent.message" = "PasteMemo の改善のため匿名使用統計を送信しますか？アプリバージョン、システム言語、macOS バージョンが含まれます。個人情報は収集されません。設定 → プライバシーでいつでも変更できます。";
 "analytics.consent.allow" = "許可";

@@ -379,6 +379,8 @@
 
 /* Update */
 "update.available.title" = "A new version of PasteMemo is available!";
+"update.available.beta.title" = "A new PasteMemo Beta is available";
+"update.beta.warning" = "Beta builds may be unstable. Back up important data before installing.";
 "update.available.message" = "PasteMemo %@ is available — you have %@. Would you like to download it now?";
 "update.skip" = "Skip This Version";
 "update.remind_later" = "Remind Me Later";
@@ -788,6 +790,8 @@
 "settings.updateCheckInterval.12h" = "Every 12 hours";
 "settings.updateCheckInterval.24h" = "Every 24 hours";
 "settings.updateCheckInterval.72h" = "Every 3 days";
+"settings.includeBetaChannel" = "Join Beta Channel";
+"settings.includeBetaChannel.hint" = "Try new features early. May be unstable. Auto-upgrades to stable when ready.";
 "analytics.consent.title" = "Usage Statistics";
 "analytics.consent.message" = "Would you like to send anonymous usage statistics to help improve PasteMemo? This includes app version, system language, and macOS version. No personal data is collected. You can change this anytime in Settings → Privacy.";
 "analytics.consent.allow" = "Allow";

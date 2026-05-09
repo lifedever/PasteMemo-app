@@ -20,15 +20,24 @@ struct UpdateDialogView: View {
     private var availableView: some View {
         VStack(spacing: 0) {
             headerSection(
-                title: L10n.tr("update.available.title"),
-                subtitle: L10n.tr("update.available.message", updater.latestVersion ?? "", updater.currentVersion)
+                title: updater.isBetaUpdate
+                    ? L10n.tr("update.available.beta.title")
+                    : L10n.tr("update.available.title"),
+                subtitle: L10n.tr("update.available.message", updater.latestVersion ?? "", updater.currentVersion),
+                isBeta: updater.isBetaUpdate
             )
+
+            if updater.isBetaUpdate {
+                betaWarningBanner
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 12)
+            }
 
             if let notes = updater.releaseNotes, !notes.isEmpty {
                 MarkdownWebView(markdown: notes)
                     .frame(height: 260)
                     .clipShape(RoundedRectangle(cornerRadius: 8))
-                    .overlay(RoundedRectangle(cornerRadius: 8).stroke(.separator, lineWidth: 0.5))
+                    .overlay(RoundedRectangle(cornerRadius: 8).stroke(updater.isBetaUpdate ? Color.orange.opacity(0.4) : Color(NSColor.separatorColor), lineWidth: 0.5))
                     .padding(.horizontal, 20)
             }
 
@@ -116,12 +125,23 @@ struct UpdateDialogView: View {
 
     // MARK: - Shared
 
-    private func headerSection(title: String, subtitle: String) -> some View {
+    private func headerSection(title: String, subtitle: String, isBeta: Bool = false) -> some View {
         HStack(spacing: 14) {
             appIcon
 
             VStack(alignment: .leading, spacing: 4) {
-                Text(title).font(.headline)
+                HStack(spacing: 8) {
+                    Text(title).font(.headline)
+                    if isBeta {
+                        Text("BETA")
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(Color.orange)
+                            .clipShape(RoundedRectangle(cornerRadius: 4))
+                    }
+                }
                 Text(subtitle)
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
@@ -129,6 +149,23 @@ struct UpdateDialogView: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(20)
+    }
+
+    private var betaWarningBanner: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .foregroundStyle(.orange)
+                .font(.system(size: 13))
+            Text(L10n.tr("update.beta.warning"))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .background(Color.orange.opacity(0.12))
+        .clipShape(RoundedRectangle(cornerRadius: 6))
     }
 
     @ViewBuilder

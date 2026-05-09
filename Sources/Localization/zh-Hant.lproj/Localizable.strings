@@ -335,6 +335,8 @@
 
 /* Update */
 "update.available.title" = "新版本的 PasteMemo 已經發佈";
+"update.available.beta.title" = "PasteMemo Beta 版本可用";
+"update.beta.warning" = "Beta 版本可能不穩定，安裝前建議先備份重要資料。";
 "update.available.message" = "PasteMemo %@ 可供下載，您目前的版本是 %@。要現在下載嗎？";
 "update.skip" = "跳過這個版本";
 "update.remind_later" = "稍後提醒我";
@@ -800,6 +802,8 @@
 "settings.updateCheckInterval.12h" = "每 12 小時";
 "settings.updateCheckInterval.24h" = "每 24 小時";
 "settings.updateCheckInterval.72h" = "每 3 天";
+"settings.includeBetaChannel" = "參與 Beta 測試";
+"settings.includeBetaChannel.hint" = "提前體驗新功能，可能不穩定。Beta 版穩定後會自動升級到正式版。";
 "detail.ocr" = "辨識文字";
 "detail.ocr.copy" = "複製文字";
 "detail.ocr.retry" = "重新辨識";

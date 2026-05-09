@@ -380,6 +380,8 @@
 
 /* Update */
 "update.available.title" = "新版本的 PasteMemo 已经发布";
+"update.available.beta.title" = "PasteMemo Beta 版本可用";
+"update.beta.warning" = "Beta 版本可能不稳定，安装前建议先备份重要数据。";
 "update.available.message" = "PasteMemo %@ 可供下载，您现在的版本是 %@。要现在下载吗？";
 "update.skip" = "跳过这个版本";
 "update.remind_later" = "稍后提醒我";
@@ -788,6 +790,8 @@
 "settings.updateCheckInterval.12h" = "每 12 小时";
 "settings.updateCheckInterval.24h" = "每 24 小时";
 "settings.updateCheckInterval.72h" = "每 3 天";
+"settings.includeBetaChannel" = "参与 Beta 测试";
+"settings.includeBetaChannel.hint" = "提前体验新功能，可能不稳定。Beta 版稳定后会自动升级到正式版。";
 "analytics.consent.title" = "使用统计";
 "analytics.consent.message" = "是否发送匿名使用统计以帮助改进 PasteMemo？包括应用版本、系统语言和 macOS 版本，不采集任何个人信息。你可以随时在 设置 → 隐私 中更改。";
 "analytics.consent.allow" = "允许";

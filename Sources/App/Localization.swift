@@ -31,6 +31,10 @@ enum L10n {
     static func tr(_ key: String, _ args: CVarArg...) -> String {
         String(format: tr(key), arguments: args)
     }
+
+    /// The SPM-generated resource bundle that holds our `.lproj` directories.
+    /// Exposed for tests; production code keeps using `Bundle.module` directly.
+    static var resourceBundle: Bundle { .module }
 }
 
 @MainActor

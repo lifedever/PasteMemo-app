@@ -241,6 +241,8 @@
 
 /* Update */
 "update.available.title" = "Eine neue Version von PasteMemo ist verfügbar!";
+"update.available.beta.title" = "Eine neue Beta von PasteMemo ist verfügbar";
+"update.beta.warning" = "Beta-Versionen können instabil sein. Wichtige Daten vor der Installation sichern.";
 "update.available.message" = "PasteMemo %@ ist verfügbar — du hast %@. Jetzt herunterladen?";
 "update.skip" = "Diese Version überspringen";
 "update.remind_later" = "Später erinnern";
@@ -824,6 +826,8 @@ Verwenden Sie %@ zum Einfügen.";
 "settings.updateCheckInterval.12h" = "Alle 12 Stunden";
 "settings.updateCheckInterval.24h" = "Alle 24 Stunden";
 "settings.updateCheckInterval.72h" = "Alle 3 Tage";
+"settings.includeBetaChannel" = "Am Beta-Kanal teilnehmen";
+"settings.includeBetaChannel.hint" = "Neue Funktionen vorab testen. Kann instabil sein. Aktualisiert automatisch auf die stabile Version.";
 "detail.ocr" = "Erkannter Text";
 "detail.ocr.copy" = "Text kopieren";
 "detail.ocr.retry" = "OCR erneut ausführen";

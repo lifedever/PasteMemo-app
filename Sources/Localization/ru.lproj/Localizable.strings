@@ -333,6 +333,8 @@
 
 /* Update */
 "update.available.title" = "Доступна новая версия PasteMemo!";
+"update.available.beta.title" = "Доступна новая бета-версия PasteMemo";
+"update.beta.warning" = "Бета-версии могут быть нестабильными. Сделайте резервную копию важных данных перед установкой.";
 "update.available.message" = "Доступна PasteMemo %@ — у вас %@. Хотите загрузить сейчас?";
 "update.skip" = "Пропустить эту версию";
 "update.remind_later" = "Напомнить позже";
@@ -812,6 +814,8 @@
 "settings.updateCheckInterval.12h" = "Каждые 12 часов";
 "settings.updateCheckInterval.24h" = "Каждые 24 часа";
 "settings.updateCheckInterval.72h" = "Каждые 3 дня";
+"settings.includeBetaChannel" = "Участвовать в бета-тестировании";
+"settings.includeBetaChannel.hint" = "Раннее тестирование новых функций. Может быть нестабильным. Автоматическое обновление до стабильной версии.";
 "detail.ocr" = "Распознанный текст";
 "detail.ocr.copy" = "Копировать текст";
 "detail.ocr.retry" = "Повторить OCR";
