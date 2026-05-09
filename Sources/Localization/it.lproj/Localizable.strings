@@ -182,6 +182,7 @@
 "detail.info" = "Informazioni";
 "detail.type" = "Tipo";
 "detail.source" = "App di origine";
+"detail.aiAgent" = "AI Agent";
 "detail.created" = "Creato";
 "detail.group" = "Gruppo";
 "detail.lastUsed" = "Ultimo utilizzo";

@@ -183,6 +183,7 @@
 "detail.info" = "詳細資訊";
 "detail.type" = "類型";
 "detail.source" = "來源應用";
+"detail.aiAgent" = "AI Agent";
 "detail.created" = "建立時間";
 "detail.group" = "分組";
 "detail.lastUsed" = "最近使用";

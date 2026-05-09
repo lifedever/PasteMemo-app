@@ -101,6 +101,7 @@
 "detail.info" = "情報";
 "detail.type" = "種類";
 "detail.source" = "コピー元アプリ";
+"detail.aiAgent" = "AI Agent";
 "detail.created" = "作成日時";
 "detail.group" = "グループ";
 "detail.lastUsed" = "最終使用";

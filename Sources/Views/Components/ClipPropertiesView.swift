@@ -71,6 +71,10 @@ struct ClipPropertiesView: View {
             if let app = item.sourceApp {
                 appSourceRow(app)
             }
+            if let agent = item.agentSource, !agent.isEmpty {
+                propDivider
+                aiAgentRow(agent)
+            }
             if let groupName = item.groupName, !groupName.isEmpty {
                 propDivider
                 propRow(L10n.tr("detail.group"), groupName)
@@ -340,6 +344,47 @@ struct ClipPropertiesView: View {
             }
         }
         .padding(.vertical, fontSize <= 11 ? 3 : 4)
+    }
+
+    private func aiAgentRow(_ agentSource: String) -> some View {
+        HStack {
+            Text(L10n.tr("detail.aiAgent"))
+                .font(.system(size: fontSize))
+                .foregroundStyle(.tertiary)
+                .lineLimit(1)
+            Spacer()
+            HStack(spacing: 5) {
+                Circle()
+                    .fill(Self.agentColor(for: agentSource))
+                    .frame(width: fontSize - 2, height: fontSize - 2)
+                Text(Self.agentDisplayName(for: agentSource))
+                    .font(.system(size: fontSize))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            }
+        }
+        .padding(.vertical, fontSize <= 11 ? 3 : 4)
+    }
+
+    /// 已知 agent 的稳定颜色;未知 agent 用灰色兜底,文本就显示原始 clientName。
+    static func agentColor(for source: String) -> Color {
+        switch source.lowercased() {
+        case "claude-code", "claude":           return .orange
+        case "cursor", "cursor-vscode":         return .blue
+        case "codex", "codex-cli":              return .green
+        case "cline":                           return .purple
+        default:                                return .gray
+        }
+    }
+
+    static func agentDisplayName(for source: String) -> String {
+        switch source.lowercased() {
+        case "claude-code", "claude":           return "Claude Code"
+        case "cursor", "cursor-vscode":         return "Cursor"
+        case "codex", "codex-cli":              return "Codex"
+        case "cline":                           return "Cline"
+        default:                                return source
+        }
     }
 
     private func locationRow(_ path: String) -> some View {

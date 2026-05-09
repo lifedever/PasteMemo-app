@@ -198,6 +198,7 @@
 "detail.info" = "Information";
 "detail.type" = "Type";
 "detail.source" = "Source App";
+"detail.aiAgent" = "AI Agent";
 "detail.created" = "Created";
 "detail.group" = "Group";
 "detail.lastUsed" = "Last Used";

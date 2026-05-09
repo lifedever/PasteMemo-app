@@ -182,6 +182,7 @@
 "detail.info" = "Информация";
 "detail.type" = "Тип";
 "detail.source" = "Приложение-источник";
+"detail.aiAgent" = "AI Agent";
 "detail.created" = "Создано";
 "detail.group" = "Группа";
 "detail.lastUsed" = "Последнее использование";

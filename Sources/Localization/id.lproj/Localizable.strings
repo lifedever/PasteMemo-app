@@ -182,6 +182,7 @@
 "detail.info" = "Informasi";
 "detail.type" = "Tipe";
 "detail.source" = "Aplikasi Sumber";
+"detail.aiAgent" = "AI Agent";
 "detail.created" = "Dibuat";
 "detail.group" = "Grup";
 "detail.lastUsed" = "Terakhir Digunakan";

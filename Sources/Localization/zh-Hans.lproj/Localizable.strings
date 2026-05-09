@@ -198,6 +198,7 @@
 "detail.info" = "详细信息";
 "detail.type" = "类型";
 "detail.source" = "来源应用";
+"detail.aiAgent" = "AI Agent";
 "detail.created" = "创建时间";
 "detail.group" = "分组";
 "detail.lastUsed" = "最近使用";

@@ -101,6 +101,7 @@
 "detail.info" = "정보";
 "detail.type" = "유형";
 "detail.source" = "원본 앱";
+"detail.aiAgent" = "AI Agent";
 "detail.created" = "생성일";
 "detail.group" = "그룹";
 "detail.lastUsed" = "마지막 사용";
