@@ -1,4 +1,5 @@
 import XCTest
+import AppKit
 import SwiftData
 @testable import PasteMemo
 
@@ -147,5 +148,25 @@ final class MCPToolsTests: XCTestCase {
                                              from: text.data(using: .utf8)!)
         // 5 样本去掉 1 敏感(1Password) = 4 items 来自 4 不同源 App
         XCTAssertEqual(apps.count, 4)
+    }
+
+    func testSetClipboardWritesText() async throws {
+        let container = SampleClips.makeContainer()
+        _ = SampleClips.seed(in: container.mainContext)
+
+        let tool = SetClipboardTool()
+        let result = try await tool.call(
+            params: .object([
+                "content": .string("hello agent"),
+                "content_type": .string("text")
+            ]),
+            container: container,
+            guardLayer: PrivacyGuard(allowSensitive: false, sourceAppBlocklist: [])
+        )
+        // 验证 NSPasteboard 收到了
+        let pasteboard = NSPasteboard.general
+        XCTAssertEqual(pasteboard.string(forType: .string), "hello agent")
+        // 验证响应 shape
+        guard case .object = result else { XCTFail("Bad shape"); return }
     }
 }
