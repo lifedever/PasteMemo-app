@@ -22,8 +22,8 @@ enum MCPAgentRegistry {
 
     static var claudeCode: MCPAgentTarget {
         let home = FileManager.default.homeDirectoryForCurrentUser
-        let claudeDir = home.appendingPathComponent(".claude")
-        let settings = claudeDir.appendingPathComponent("settings.json")
+        let claudeJSON = home.appendingPathComponent(".claude.json")    // Claude Code 实际读取的 MCP 配置文件
+        let claudeDir = home.appendingPathComponent(".claude")          // 仍用于 skills 目录检测 + skill 文件
         let skillDir = claudeDir.appendingPathComponent("skills/pastememo")
         let skillFile = skillDir.appendingPathComponent("SKILL.md")
 
@@ -33,19 +33,25 @@ enum MCPAgentRegistry {
             detect: { FileManager.default.fileExists(atPath: claudeDir.path) },
             install: {
                 let cmd = mcpProxyBinaryPath()
+                let serverConfig: [String: Any] = [
+                    "type": "stdio",
+                    "command": cmd,
+                    "args": [],
+                    "env": [:]
+                ]
                 try MCPInstaller.installToJSONSettings(
-                    file: settings,
+                    file: claudeJSON,
                     mcpServerKey: "pastememo",
-                    command: cmd
+                    serverConfig: serverConfig
                 )
                 try installSkillFile(to: skillFile)
             },
             uninstall: {
-                try MCPInstaller.uninstallFromJSONSettings(file: settings, mcpServerKey: "pastememo")
+                try MCPInstaller.uninstallFromJSONSettings(file: claudeJSON, mcpServerKey: "pastememo")
                 try? FileManager.default.removeItem(at: skillDir)
             },
             isInstalled: {
-                guard let data = try? Data(contentsOf: settings),
+                guard let data = try? Data(contentsOf: claudeJSON),
                       let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
                       let mcpServers = json["mcpServers"] as? [String: Any]
                 else { return false }
@@ -88,7 +94,17 @@ enum MCPAgentRegistry {
             install: {
                 try FileManager.default.createDirectory(at: cursorDir, withIntermediateDirectories: true)
                 let cmd = mcpProxyBinaryPath()
-                try MCPInstaller.installToJSONSettings(file: settings, mcpServerKey: "pastememo", command: cmd)
+                let serverConfig: [String: Any] = [
+                    "type": "stdio",
+                    "command": cmd,
+                    "args": [],
+                    "env": [:]
+                ]
+                try MCPInstaller.installToJSONSettings(
+                    file: settings,
+                    mcpServerKey: "pastememo",
+                    serverConfig: serverConfig
+                )
             },
             uninstall: {
                 try MCPInstaller.uninstallFromJSONSettings(file: settings, mcpServerKey: "pastememo")

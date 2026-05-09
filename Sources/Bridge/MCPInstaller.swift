@@ -14,23 +14,28 @@ enum MCPInstallerError: Error, LocalizedError {
 
 enum MCPInstaller {
 
-    /// 通用 JSON settings 安装(用于 Claude Code 的 ~/.claude/settings.json
-    /// 和 Cursor 的 ~/.cursor/mcp.json 等结构相同的文件)
-    static func installToJSONSettings(file: URL, mcpServerKey: String, command: String) throws {
+    /// 通用 JSON settings 安装。serverConfig 是完整的 server entry (`{ type, command, args, env, ... }`)。
+    /// 用于 Claude Code 的 ~/.claude.json 和 Cursor 的 ~/.cursor/mcp.json 等。
+    static func installToJSONSettings(file: URL, mcpServerKey: String, serverConfig: [String: Any]) throws {
         // 1. 备份(文件不存在则跳过)
         try makeBackup(of: file)
 
         // 2. 读 + 解析: 不存在或为空 → 起始空对象;格式坏 → 拒绝写入
         let json = try readSettings(file: file)
 
-        // 3. 修改: mcpServers.<key> = { command: <path> }
+        // 3. 修改: mcpServers.<key> = serverConfig
         var mutable = json
         var mcpServers = (mutable["mcpServers"] as? [String: Any]) ?? [:]
-        mcpServers[mcpServerKey] = ["command": command]
+        mcpServers[mcpServerKey] = serverConfig
         mutable["mcpServers"] = mcpServers
 
         // 4. atomic write
         try atomicWriteJSON(mutable, to: file)
+    }
+
+    /// 便利重载:只设 command,保持向后兼容
+    static func installToJSONSettings(file: URL, mcpServerKey: String, command: String) throws {
+        try installToJSONSettings(file: file, mcpServerKey: mcpServerKey, serverConfig: ["command": command])
     }
 
     /// 同上但移除 key
