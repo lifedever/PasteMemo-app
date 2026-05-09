@@ -577,12 +577,14 @@ struct OnboardingView: View {
         HotkeyManager.shared.register()
         WindowManager.shared.close(id: "onboarding")
 
-        // Open main window, show help only on first completion
+        // Open main window. First-time completion: open the product homepage
+        // (was /help/ previously — homepage gives a friendlier overview /
+        // download CTA / What's New, which is what new users actually want).
         AppAction.shared.openMainWindow?()
         if !UserDefaults.standard.bool(forKey: "hasShownFirstHelp") {
             UserDefaults.standard.set(true, forKey: "hasShownFirstHelp")
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                showHelpWindow()
+                showHomePage()
             }
         }
 

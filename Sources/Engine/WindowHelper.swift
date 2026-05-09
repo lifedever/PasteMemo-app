@@ -21,6 +21,13 @@ func showHelpWindow() {
 }
 
 @MainActor
+func showHomePage() {
+    if let url = URL(string: "https://www.lifedever.com/PasteMemo/") {
+        NSWorkspace.shared.open(url)
+    }
+}
+
+@MainActor
 func showAccessibilityPrompt() {
     let alert = NSAlert()
     alert.messageText = L10n.tr("accessibility.lost.title")

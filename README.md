@@ -92,6 +92,15 @@
 - **Ignored Apps** -- Exclude specific apps (e.g., password managers) from clipboard monitoring.
 - **Open Source** -- Full source code available. You know exactly what runs on your Mac.
 
+### AI Agent Bridge
+
+Make PasteMemo a clipboard context layer for AI Agents (Claude Code, Cursor, Codex, Cline, and any MCP-compatible client).
+
+- **5 MCP tools** -- Get current clipboard, search history (by keyword / type / source app / time), get full content of an item, list recent source apps, write text back to clipboard.
+- **One-click install** -- Settings → AI Agents installs into Claude Code or Cursor instantly; Codex / Cline get a copy-paste config snippet.
+- **Privacy-first** -- Items marked sensitive are filtered out by default; per-source-app blocklist for total control.
+- **AI Agent category** -- Items written by AI Agents auto-tag into a dedicated sidebar category for easy retrieval.
+
 ### Customization
 
 - **Themes** -- System, Light, or Dark mode.
