@@ -129,12 +129,14 @@ private struct AgentRow: View {
                 Button(L10n.tr("settings.aiAgents.manualConfig")) { showSnippet = true }
                     .buttonStyle(.borderless)
                     .foregroundStyle(.secondary)
+                    .pointerCursor()
             } else if installed {
                 InstalledBadge(onUninstall: onUninstall)
             } else {
                 Button(L10n.tr("settings.aiAgents.install"), action: onInstall)
                     .buttonStyle(.borderedProminent)
                     .disabled(!binaryExists)
+                    .pointerCursor()
             }
         }
         .sheet(isPresented: $showSnippet) {
@@ -155,6 +157,7 @@ private struct InstalledBadge: View {
                        role: .destructive,
                        action: onUninstall)
                     .buttonStyle(.borderless)
+                    .pointerCursor()
             } else {
                 HStack(spacing: 4) {
                     Image(systemName: "checkmark.circle.fill")
@@ -164,6 +167,7 @@ private struct InstalledBadge: View {
                         .foregroundStyle(.secondary)
                         .font(.callout)
                 }
+                .pointerCursor()
             }
         }
         .onHover { hovering = $0 }
