@@ -81,6 +81,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         BackupScheduler.shared.start(container: PasteMemoApp.sharedModelContainer)
 
+        MCPSocketServer.shared.start(container: PasteMemoApp.sharedModelContainer)
+
         // Pre-warm quick panel as soon as launch setup settles so the first open is faster.
         DispatchQueue.main.async {
             QuickPanelWindowController.shared.warmUp(
@@ -92,6 +94,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationWillTerminate(_ notification: Notification) {
         BackupScheduler.shared.stop()
+        MCPSocketServer.shared.stop()
         // Persist relay queue synchronously before termination — otherwise in-memory
         // items never reach disk when the user quits while a relay session is active.
         if RelayManager.shared.isActive {
