@@ -7,6 +7,7 @@ struct AIAgentIntegrationView: View {
     @AppStorage("mcpAllowSensitive") private var allowSensitive = false
     @State private var agentStates: [String: Bool] = [:]   // id -> installed?
     @State private var statusMessage: String?
+    @State private var showBlocklistSheet = false
 
     var body: some View {
         Form {
@@ -52,9 +53,19 @@ struct AIAgentIntegrationView: View {
 
             Section(L10n.tr("settings.aiAgents.privacy")) {
                 Toggle(L10n.tr("settings.aiAgents.allowSensitive"), isOn: $allowSensitive)
-                NavigationLink(L10n.tr("settings.aiAgents.sourceBlocklist")) {
-                    MCPSourceAppBlocklistView()
+                Button {
+                    showBlocklistSheet = true
+                } label: {
+                    HStack {
+                        Text(L10n.tr("settings.aiAgents.sourceBlocklist"))
+                            .foregroundStyle(.primary)
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                            .font(.caption)
+                            .foregroundStyle(.tertiary)
+                    }
                 }
+                .buttonStyle(.plain)
             }
 
             if let msg = statusMessage {
@@ -63,6 +74,10 @@ struct AIAgentIntegrationView: View {
         }
         .formStyle(.grouped)
         .onAppear { refreshStates() }
+        .sheet(isPresented: $showBlocklistSheet) {
+            MCPSourceAppBlocklistView()
+                .frame(minWidth: 480, minHeight: 360)
+        }
     }
 
     private var socketPath: String {
@@ -120,8 +135,8 @@ private struct AgentRow: View {
                 Text(L10n.tr(agent.detect() ? "settings.aiAgents.detected" : "settings.aiAgents.notInstalled")).font(.caption).foregroundStyle(.secondary)
             }
             Spacer()
-            // Codex CLI 在 v1 是 manual config 模式;Claude Code/Cursor 一键
-            if agent.id == "codex" {
+            // Codex CLI 在 v1 是 manual config 模式;其他 Agent 未检测到时也走手动
+            if agent.id == "codex" || !agent.detect() {
                 Button(L10n.tr("settings.aiAgents.manualConfig")) { showSnippet = true }
                     .buttonStyle(.borderless)
             } else if installed {
@@ -202,40 +217,63 @@ private struct ManualConfigSheet: View {
 
 @MainActor
 struct MCPSourceAppBlocklistView: View {
-    // @Observable singleton: 直接 let,SwiftUI 会自动追踪属性访问
     private let blocklist = MCPSourceAppBlocklist.shared
+    @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        List {
-            ForEach(blocklist.blockedApps, id: \.bundleID) { app in
-                HStack {
-                    Text(app.name)
-                    Spacer()
-                    Text(app.bundleID).font(.caption).foregroundStyle(.secondary)
-                    Button(role: .destructive) {
-                        blocklist.remove(bundleID: app.bundleID)
-                    } label: {
-                        Image(systemName: "trash")
-                    }.buttonStyle(.borderless)
+        VStack(spacing: 0) {
+            HStack {
+                Text(L10n.tr("settings.aiAgents.sourceBlocklist"))
+                    .font(.headline)
+                Spacer()
+                Button(L10n.tr("settings.aiAgents.blocklist.add")) {
+                    addAppViaPanel()
                 }
             }
-            if blocklist.blockedApps.isEmpty {
-                Text(L10n.tr("settings.aiAgents.blocklist.empty")).foregroundStyle(.secondary)
+            .padding()
+            .background(.bar)
+
+            Divider()
+
+            List {
+                ForEach(blocklist.blockedApps, id: \.bundleID) { app in
+                    HStack {
+                        Text(app.name)
+                        Spacer()
+                        Text(app.bundleID).font(.caption).foregroundStyle(.secondary)
+                        Button(role: .destructive) {
+                            blocklist.remove(bundleID: app.bundleID)
+                        } label: {
+                            Image(systemName: "trash")
+                        }.buttonStyle(.borderless)
+                    }
+                }
+                if blocklist.blockedApps.isEmpty {
+                    Text(L10n.tr("settings.aiAgents.blocklist.empty")).foregroundStyle(.secondary)
+                }
             }
+
+            Divider()
+
+            HStack {
+                Spacer()
+                Button(L10n.tr("settings.aiAgents.manualConfig.done")) { dismiss() }
+                    .keyboardShortcut(.defaultAction)
+            }
+            .padding()
         }
-        .toolbar {
-            Button(L10n.tr("settings.aiAgents.blocklist.add")) {
-                let panel = NSOpenPanel()
-                panel.allowedContentTypes = [.applicationBundle]
-                panel.allowsMultipleSelection = false
-                if panel.runModal() == .OK, let url = panel.url,
-                   let bundle = Bundle(url: url),
-                   let bid = bundle.bundleIdentifier {
-                    let name = bundle.object(forInfoDictionaryKey: "CFBundleName") as? String
-                            ?? url.deletingPathExtension().lastPathComponent
-                    blocklist.add(bundleID: bid, name: name)
-                }
-            }
+    }
+
+    private func addAppViaPanel() {
+        let panel = NSOpenPanel()
+        panel.allowedContentTypes = [.applicationBundle]
+        panel.allowsMultipleSelection = false
+        if panel.runModal() == .OK, let url = panel.url,
+           let bundle = Bundle(url: url),
+           let bid = bundle.bundleIdentifier {
+            let name = bundle.object(forInfoDictionaryKey: "CFBundleName") as? String
+                    ?? url.deletingPathExtension().lastPathComponent
+            blocklist.add(bundleID: bid, name: name)
         }
     }
 }
