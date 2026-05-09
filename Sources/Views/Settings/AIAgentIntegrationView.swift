@@ -157,7 +157,6 @@ private struct InstalledBadge: View {
                        role: .destructive,
                        action: onUninstall)
                     .buttonStyle(.borderless)
-                    .pointerCursor()
             } else {
                 HStack(spacing: 4) {
                     Image(systemName: "checkmark.circle.fill")
@@ -167,9 +166,12 @@ private struct InstalledBadge: View {
                         .foregroundStyle(.secondary)
                         .font(.callout)
                 }
-                .pointerCursor()
             }
         }
+        // pointerCursor 用 .onHover push/pop;放外层 Group(常驻视图)上,
+        // 否则内部 Button 是 hovering=true 之后才创建的,光标已停在区域里
+        // .onHover 不会再次触发,变不成小手。
+        .pointerCursor()
         .onHover { hovering = $0 }
         .animation(.easeInOut(duration: 0.12), value: hovering)
     }
