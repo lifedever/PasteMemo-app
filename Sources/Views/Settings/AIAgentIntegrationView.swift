@@ -10,6 +10,26 @@ struct AIAgentIntegrationView: View {
 
     var body: some View {
         Form {
+            if !mcpProxyBinaryExists {
+                Section {
+                    Label {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("pastememo-mcp binary missing")
+                                .font(.headline)
+                            Text("This usually happens after an in-app update from a version before MCP support. Please re-download the DMG from lifedever.com to fix this.")
+                                .font(.caption).foregroundStyle(.secondary)
+                            Button("Open Download Page") {
+                                if let url = URL(string: "https://www.lifedever.com/PasteMemo/") {
+                                    NSWorkspace.shared.open(url)
+                                }
+                            }.buttonStyle(.link)
+                        }
+                    } icon: {
+                        Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange)
+                    }
+                }
+            }
+
             Section("Service") {
                 HStack {
                     Circle().fill(.green).frame(width: 8, height: 8)
@@ -24,6 +44,7 @@ struct AIAgentIntegrationView: View {
                 ForEach(MCPAgentRegistry.all, id: \.id) { agent in
                     AgentRow(agent: agent,
                              installed: agentStates[agent.id] ?? false,
+                             binaryExists: mcpProxyBinaryExists,
                              onInstall: { install(agent) },
                              onUninstall: { uninstall(agent) })
                 }
@@ -47,6 +68,11 @@ struct AIAgentIntegrationView: View {
     private var socketPath: String {
         let bundleID = Bundle.main.bundleIdentifier ?? "com.lifedever.pastememo"
         return "~/Library/Application Support/\(bundleID)/mcp.sock"
+    }
+
+    private var mcpProxyBinaryExists: Bool {
+        let path = Bundle.main.bundleURL.appendingPathComponent("Contents/MacOS/pastememo-mcp").path
+        return FileManager.default.fileExists(atPath: path)
     }
 
     private func refreshStates() {
@@ -80,6 +106,7 @@ struct AIAgentIntegrationView: View {
 private struct AgentRow: View {
     let agent: MCPAgentTarget
     let installed: Bool
+    let binaryExists: Bool
     let onInstall: () -> Void
     let onUninstall: () -> Void
     @State private var showSnippet = false
@@ -103,6 +130,7 @@ private struct AgentRow: View {
             } else {
                 Button("Install", action: onInstall)
                     .buttonStyle(.borderedProminent)
+                    .disabled(!binaryExists)
             }
         }
         .sheet(isPresented: $showSnippet) {
