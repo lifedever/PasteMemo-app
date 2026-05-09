@@ -88,4 +88,43 @@ final class MCPToolsTests: XCTestCase {
         XCTAssertEqual(items.count, 1)
         XCTAssertEqual(items[0].content_preview.count, 200)
     }
+
+    func testGetItemByIDReturnsFullContent() async throws {
+        let container = SampleClips.makeContainer()
+        let items = SampleClips.seed(in: container.mainContext)
+        let target = items[0] // "Hello world"
+
+        let tool = GetItemTool()
+        let result = try await tool.call(
+            params: .object(["id": .string(target.itemID)]),
+            container: container,
+            guardLayer: PrivacyGuard(allowSensitive: false, sourceAppBlocklist: [])
+        )
+        guard case .object(let outer) = result,
+              case .array(let arr) = outer["content"]!,
+              case .object(let first) = arr.first!,
+              case .string(let text) = first["text"]!
+        else { XCTFail("Bad shape"); return }
+        let inner = try JSONDecoder().decode(GetItemTool.Output.self,
+                                             from: text.data(using: .utf8)!)
+        XCTAssertEqual(inner.content, "Hello world")
+    }
+
+    func testGetItemBlockedByPrivacyReturnsError() async throws {
+        let container = SampleClips.makeContainer()
+        let items = SampleClips.seed(in: container.mainContext)
+        let sensitive = items[1] // 敏感项
+
+        let tool = GetItemTool()
+        do {
+            _ = try await tool.call(
+                params: .object(["id": .string(sensitive.itemID)]),
+                container: container,
+                guardLayer: PrivacyGuard(allowSensitive: false, sourceAppBlocklist: [])
+            )
+            XCTFail("Should have thrown")
+        } catch {
+            // 期望抛错(item 被 PrivacyGuard 滤掉,从 Agent 角度等同 "not found")
+        }
+    }
 }
