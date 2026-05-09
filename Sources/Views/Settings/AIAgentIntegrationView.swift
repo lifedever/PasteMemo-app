@@ -6,7 +6,7 @@ import UniformTypeIdentifiers
 struct AIAgentIntegrationView: View {
     @AppStorage("mcpAllowSensitive") private var allowSensitive = false
     @State private var agentStates: [String: Bool] = [:]   // id -> installed?
-    @State private var statusMessage: String?
+    @State private var agentStatusMessages: [String: String] = [:]
     @State private var showBlocklistSheet = false
 
     var body: some View {
@@ -46,6 +46,7 @@ struct AIAgentIntegrationView: View {
                     AgentRow(agent: agent,
                              installed: agentStates[agent.id] ?? false,
                              binaryExists: mcpProxyBinaryExists,
+                             statusMessage: agentStatusMessages[agent.id],
                              onInstall: { install(agent) },
                              onUninstall: { uninstall(agent) })
                 }
@@ -68,9 +69,6 @@ struct AIAgentIntegrationView: View {
                 .buttonStyle(.plain)
             }
 
-            if let msg = statusMessage {
-                Section { Text(msg).font(.caption).foregroundStyle(.secondary) }
-            }
         }
         .formStyle(.grouped)
         .onAppear { refreshStates() }
@@ -100,9 +98,9 @@ struct AIAgentIntegrationView: View {
         do {
             try agent.install()
             agentStates[agent.id] = true
-            statusMessage = String(format: L10n.tr("settings.aiAgents.installed"), agent.displayName, agent.displayName)
+            agentStatusMessages[agent.id] = String(format: L10n.tr("settings.aiAgents.installed"), agent.displayName, agent.displayName)
         } catch {
-            statusMessage = String(format: L10n.tr("settings.aiAgents.installFailed"), agent.displayName, error.localizedDescription)
+            agentStatusMessages[agent.id] = String(format: L10n.tr("settings.aiAgents.installFailed"), agent.displayName, error.localizedDescription)
         }
     }
 
@@ -110,9 +108,9 @@ struct AIAgentIntegrationView: View {
         do {
             try agent.uninstall()
             agentStates[agent.id] = false
-            statusMessage = String(format: L10n.tr("settings.aiAgents.uninstalled"), agent.displayName)
+            agentStatusMessages[agent.id] = String(format: L10n.tr("settings.aiAgents.uninstalled"), agent.displayName)
         } catch {
-            statusMessage = String(format: L10n.tr("settings.aiAgents.uninstallFailed"), agent.displayName, error.localizedDescription)
+            agentStatusMessages[agent.id] = String(format: L10n.tr("settings.aiAgents.uninstallFailed"), agent.displayName, error.localizedDescription)
         }
     }
 }
@@ -122,17 +120,26 @@ private struct AgentRow: View {
     let agent: MCPAgentTarget
     let installed: Bool
     let binaryExists: Bool
+    let statusMessage: String?
     let onInstall: () -> Void
     let onUninstall: () -> Void
     @State private var showSnippet = false
+
+    private var captionText: String {
+        if let msg = statusMessage { return msg }
+        return L10n.tr(agent.detect() ? "settings.aiAgents.detected" : "settings.aiAgents.notInstalled")
+    }
 
     var body: some View {
         HStack {
             Image(systemName: agent.detect() ? "checkmark.circle.fill" : "circle")
                 .foregroundStyle(agent.detect() ? .green : .secondary)
-            VStack(alignment: .leading) {
+            VStack(alignment: .leading, spacing: 2) {
                 Text(agent.displayName)
-                Text(L10n.tr(agent.detect() ? "settings.aiAgents.detected" : "settings.aiAgents.notInstalled")).font(.caption).foregroundStyle(.secondary)
+                Text(captionText)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
             Spacer()
             // Codex CLI 在 v1 是 manual config 模式;其他 Agent 未检测到时也走手动
