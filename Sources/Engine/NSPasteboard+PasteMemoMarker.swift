@@ -8,6 +8,12 @@ extension NSPasteboard.PasteboardType {
     /// fast path; this marker is the defensive fallback for the race where another
     /// clipboard manager writes between our setData and our baseline update.
     static let fromPasteMemo = NSPasteboard.PasteboardType(rawValue: "com.lifedever.pastememo")
+
+    /// AI Agent source marker. Attached when a `clipboard_set` MCP tool call writes the
+    /// pasteboard — value is the MCP client's `clientInfo.name` (e.g. "claude-code", "cursor").
+    /// `ClipboardManager.captureAndSave` reads this and stores it onto `ClipItem.agentSource`,
+    /// so the side panel / quick panel can offer the "AI Agent" filter category.
+    static let agentSource = NSPasteboard.PasteboardType(rawValue: "com.lifedever.pastememo.agent-source")
 }
 
 extension NSPasteboard {

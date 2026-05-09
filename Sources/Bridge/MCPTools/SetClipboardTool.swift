@@ -28,7 +28,8 @@ struct SetClipboardTool: MCPTool {
     func call(
         params: JSONValue?,
         container: ModelContainer,
-        guardLayer: PrivacyGuard
+        guardLayer: PrivacyGuard,
+        clientName: String? = nil
     ) async throws -> JSONValue {
         guard let content = params?.objectValue?["content"]?.stringValue, !content.isEmpty else {
             throw MCPToolError.invalidParams("missing or empty 'content'")
@@ -44,6 +45,13 @@ struct SetClipboardTool: MCPTool {
         let pasteboard = NSPasteboard.general
         pasteboard.clearContents()
         pasteboard.setString(content, forType: .string)
+
+        // 把 MCP 客户端名(`initialize.params.clientInfo.name`)写到自定义 UTI 上,
+        // ClipboardManager 的 monitor loop 抓到后会读这个 marker 并填到 ClipItem.agentSource。
+        // setString 不会 bump changeCount,跟 PasteMemoMarker 一样不影响 baseline。
+        if let name = clientName, !name.isEmpty {
+            pasteboard.setString(name, forType: .agentSource)
+        }
 
         // ClipboardManager 的 monitor loop 会自动捕获新剪贴板 → 形成新 ClipItem
         // 这里不直接 insert,避免与 monitor loop 双写冲突

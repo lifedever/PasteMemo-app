@@ -27,7 +27,8 @@ struct GetCurrentTool: MCPTool {
     func call(
         params: JSONValue?,
         container: ModelContainer,
-        guardLayer: PrivacyGuard
+        guardLayer: PrivacyGuard,
+        clientName: String? = nil
     ) async throws -> JSONValue {
         let context = container.mainContext
         var descriptor = FetchDescriptor<ClipItem>(

@@ -128,7 +128,10 @@ final class MCPSocketServer {
     }
 
     /// nonisolated —— 阻塞 recv/send 必须在后台线程跑,绝不能在 MainActor 上。
+    /// 每个连接维护一份 MCPClientContext,生命周期跟 readLoop 绑死;
+    /// initialize 阶段会把 clientInfo.name 写进去,后续 tools/call 给 SetClipboardTool 用。
     nonisolated private static func readLoop(fd: Int32) async {
+        let context = MCPClientContext()
         var buffer = Data()
         var buf = [UInt8](repeating: 0, count: 65536)
         while !Task.isCancelled {
@@ -145,14 +148,14 @@ final class MCPSocketServer {
                 let line = buffer.subdata(in: 0..<nl)
                 buffer.removeSubrange(0...nl)
                 guard !line.isEmpty else { continue }
-                await processLine(line, fd: fd)
+                await processLine(line, fd: fd, context: context)
             }
         }
         Darwin.close(fd)
     }
 
     /// nonisolated —— 解析 JSON 在后台,只在 router.handle 那一步 hop 到 MainActor。
-    nonisolated private static func processLine(_ line: Data, fd: Int32) async {
+    nonisolated private static func processLine(_ line: Data, fd: Int32, context: MCPClientContext) async {
         let req: JSONRPCRequest
         do {
             req = try JSONDecoder().decode(JSONRPCRequest.self, from: line)
@@ -163,7 +166,7 @@ final class MCPSocketServer {
         // hop 到 MainActor 拿 router 并执行 handle;Router 是 @MainActor。
         let response: JSONRPCResponse? = await { @MainActor in
             guard let router = MCPSocketServer.shared.router else { return nil }
-            return await router.handle(req)
+            return await router.handle(req, context: context)
         }()
         guard let response else { return }
         do {

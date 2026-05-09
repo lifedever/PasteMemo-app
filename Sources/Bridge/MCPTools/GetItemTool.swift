@@ -36,7 +36,8 @@ struct GetItemTool: MCPTool {
     func call(
         params: JSONValue?,
         container: ModelContainer,
-        guardLayer: PrivacyGuard
+        guardLayer: PrivacyGuard,
+        clientName: String? = nil
     ) async throws -> JSONValue {
         guard let id = params?.objectValue?["id"]?.stringValue else {
             throw MCPToolError.invalidParams("missing 'id'")

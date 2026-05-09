@@ -27,7 +27,8 @@ struct ListRecentAppsTool: MCPTool {
     func call(
         params: JSONValue?,
         container: ModelContainer,
-        guardLayer: PrivacyGuard
+        guardLayer: PrivacyGuard,
+        clientName: String? = nil
     ) async throws -> JSONValue {
         let limit = min(params?.objectValue?["limit"]?.intValue ?? 10, 30)
         let context = container.mainContext

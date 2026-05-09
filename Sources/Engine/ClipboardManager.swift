@@ -168,6 +168,13 @@ final class ClipboardManager: ObservableObject {
             content: newItem.content, sourceAppBundleID: appInfo.bundleID, contentType: newItem.contentType
         )
 
+        // 来自 MCP `clipboard_set` 写入时,SetClipboardTool 会把 clientInfo.name 当作 marker
+        // 附加到 pasteboard(同 PasteMemoMarker 那种自定义 UTI 模式)。这里捞一下,把 AI Agent
+        // 来源名持久化到 ClipItem.agentSource,后续侧栏 / 详情面板就能识别。
+        if let agent = NSPasteboard.general.string(forType: .agentSource), !agent.isEmpty {
+            newItem.agentSource = agent
+        }
+
         let context = container.mainContext
 
         // Apply automation rules (text-based content only)

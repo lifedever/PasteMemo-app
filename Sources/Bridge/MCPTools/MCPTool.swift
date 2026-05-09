@@ -8,12 +8,16 @@ protocol MCPTool {
     static var descriptor: MCPToolDescriptor { get }
 
     /// 执行工具。container 是 PasteMemo 的 ModelContainer，guard 是过滤层。
+    /// `clientName` 是 `initialize` 阶段对端汇报的 `clientInfo.name`(如 "claude-code"、"cursor"、
+    /// "codex"),用于把 MCP 写入的剪贴板项标记成"AI Agent 来源"。绝大多数工具用不上,
+    /// 默认实现忽略这个参数。
     /// 返回值是 MCP `tools/call` 的 result.content（按 MCP 2024-11-05 规范是
     /// `[{ type: "text", text: "..." }]` 形态）。
     func call(
         params: JSONValue?,
         container: ModelContainer,
-        guardLayer: PrivacyGuard
+        guardLayer: PrivacyGuard,
+        clientName: String?
     ) async throws -> JSONValue
 }
 

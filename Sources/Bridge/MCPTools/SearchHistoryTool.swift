@@ -36,7 +36,8 @@ struct SearchHistoryTool: MCPTool {
     func call(
         params: JSONValue?,
         container: ModelContainer,
-        guardLayer: PrivacyGuard
+        guardLayer: PrivacyGuard,
+        clientName: String? = nil
     ) async throws -> JSONValue {
         let p = params?.objectValue ?? [:]
         let query = p["query"]?.stringValue?.trimmingCharacters(in: .whitespaces)
