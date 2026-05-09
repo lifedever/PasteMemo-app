@@ -26,4 +26,66 @@ final class MCPToolsTests: XCTestCase {
         XCTAssertEqual(inner.content, "Hello world") // 最新非敏感
         XCTAssertEqual(inner.content_type, "text")
     }
+
+    func testSearchByQueryReturnsMatchingPreviews() async throws {
+        let container = SampleClips.makeContainer()
+        _ = SampleClips.seed(in: container.mainContext)
+
+        let tool = SearchHistoryTool()
+        let params: JSONValue = .object([
+            "query": .string("Hello"),
+            "limit": .number(10)
+        ])
+        let guardLayer = PrivacyGuard(allowSensitive: false, sourceAppBlocklist: [])
+        let result = try await tool.call(params: params, container: container, guardLayer: guardLayer)
+
+        guard case .object(let outer) = result,
+              case .array(let arr) = outer["content"]!,
+              case .object(let first) = arr.first!,
+              case .string(let text) = first["text"]!
+        else { XCTFail("Bad shape"); return }
+        let items = try JSONDecoder().decode([SearchHistoryTool.OutputItem].self,
+                                              from: text.data(using: .utf8)!)
+        XCTAssertEqual(items.count, 1)
+        XCTAssertEqual(items[0].title, "Hello world")
+    }
+
+    func testSearchEmptyQueryReturnsRecent() async throws {
+        let container = SampleClips.makeContainer()
+        _ = SampleClips.seed(in: container.mainContext)
+
+        let tool = SearchHistoryTool()
+        let result = try await tool.call(params: nil, container: container,
+                                          guardLayer: PrivacyGuard(allowSensitive: false, sourceAppBlocklist: []))
+        guard case .object(let outer) = result,
+              case .array(let arr) = outer["content"]!,
+              case .object(let first) = arr.first!,
+              case .string(let text) = first["text"]!
+        else { XCTFail("Bad shape"); return }
+        let items = try JSONDecoder().decode([SearchHistoryTool.OutputItem].self,
+                                              from: text.data(using: .utf8)!)
+        // 5 条样本 - 1 敏感（默认过滤）= 4
+        XCTAssertEqual(items.count, 4)
+    }
+
+    func testSearchPreviewTruncatedAt200() async throws {
+        let container = SampleClips.makeContainer()
+        _ = SampleClips.seed(in: container.mainContext)
+
+        let tool = SearchHistoryTool()
+        let result = try await tool.call(
+            params: .object(["query": .string("AAAA")]),
+            container: container,
+            guardLayer: PrivacyGuard(allowSensitive: false, sourceAppBlocklist: [])
+        )
+        guard case .object(let outer) = result,
+              case .array(let arr) = outer["content"]!,
+              case .object(let first) = arr.first!,
+              case .string(let text) = first["text"]!
+        else { XCTFail("Bad shape"); return }
+        let items = try JSONDecoder().decode([SearchHistoryTool.OutputItem].self,
+                                              from: text.data(using: .utf8)!)
+        XCTAssertEqual(items.count, 1)
+        XCTAssertEqual(items[0].content_preview.count, 200)
+    }
 }
