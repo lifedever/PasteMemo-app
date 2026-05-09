@@ -7,7 +7,6 @@ struct AIAgentIntegrationView: View {
     @AppStorage("mcpAllowSensitive") private var allowSensitive = false
     @State private var agentStates: [String: Bool] = [:]   // id -> installed?
     @State private var agentStatusMessages: [String: String] = [:]
-    @State private var showBlocklistSheet = false
 
     var body: some View {
         Form {
@@ -54,28 +53,13 @@ struct AIAgentIntegrationView: View {
 
             Section(L10n.tr("settings.aiAgents.privacy")) {
                 Toggle(L10n.tr("settings.aiAgents.allowSensitive"), isOn: $allowSensitive)
-                Button {
-                    showBlocklistSheet = true
-                } label: {
-                    HStack {
-                        Text(L10n.tr("settings.aiAgents.sourceBlocklist"))
-                            .foregroundStyle(.primary)
-                        Spacer()
-                        Image(systemName: "chevron.right")
-                            .font(.caption)
-                            .foregroundStyle(.tertiary)
-                    }
-                }
-                .buttonStyle(.plain)
             }
+
+            MCPSourceAppBlocklistSection()
 
         }
         .formStyle(.grouped)
         .onAppear { refreshStates() }
-        .sheet(isPresented: $showBlocklistSheet) {
-            MCPSourceAppBlocklistView()
-                .frame(minWidth: 480, minHeight: 360)
-        }
     }
 
     private var socketPath: String {
@@ -222,65 +206,199 @@ private struct ManualConfigSheet: View {
     }
 }
 
+// MARK: - MCP Source App Blocklist Section
+
 @MainActor
-struct MCPSourceAppBlocklistView: View {
-    private let blocklist = MCPSourceAppBlocklist.shared
-    @Environment(\.dismiss) private var dismiss
+struct MCPSourceAppBlocklistSection: View {
+    @State private var blocklist = MCPSourceAppBlocklist.shared
+    @State private var isShowingAppPicker = false
 
     var body: some View {
-        VStack(spacing: 0) {
-            HStack {
-                Text(L10n.tr("settings.aiAgents.sourceBlocklist"))
-                    .font(.headline)
-                Spacer()
-                Button(L10n.tr("settings.aiAgents.blocklist.add")) {
-                    addAppViaPanel()
-                }
-            }
-            .padding()
-            .background(.bar)
-
-            Divider()
-
-            List {
-                ForEach(blocklist.blockedApps, id: \.bundleID) { app in
-                    HStack {
-                        Text(app.name)
-                        Spacer()
-                        Text(app.bundleID).font(.caption).foregroundStyle(.secondary)
-                        Button(role: .destructive) {
-                            blocklist.remove(bundleID: app.bundleID)
-                        } label: {
-                            Image(systemName: "trash")
-                        }.buttonStyle(.borderless)
-                    }
-                }
-                if blocklist.blockedApps.isEmpty {
-                    Text(L10n.tr("settings.aiAgents.blocklist.empty")).foregroundStyle(.secondary)
-                }
-            }
-
-            Divider()
-
-            HStack {
-                Spacer()
-                Button(L10n.tr("settings.aiAgents.manualConfig.done")) { dismiss() }
-                    .keyboardShortcut(.defaultAction)
-            }
-            .padding()
+        Section {
+            sectionContent
+        } header: {
+            Text(L10n.tr("settings.aiAgents.sourceBlocklist"))
         }
     }
 
-    private func addAppViaPanel() {
-        let panel = NSOpenPanel()
-        panel.allowedContentTypes = [.applicationBundle]
-        panel.allowsMultipleSelection = false
-        if panel.runModal() == .OK, let url = panel.url,
-           let bundle = Bundle(url: url),
-           let bid = bundle.bundleIdentifier {
-            let name = bundle.object(forInfoDictionaryKey: "CFBundleName") as? String
-                    ?? url.deletingPathExtension().lastPathComponent
-            blocklist.add(bundleID: bid, name: name)
+    @ViewBuilder
+    private var sectionContent: some View {
+        if blocklist.blockedApps.isEmpty {
+            Text(L10n.tr("settings.aiAgents.blocklist.empty"))
+                .foregroundStyle(.tertiary)
+                .font(.callout)
+        } else {
+            ForEach(blocklist.blockedApps, id: \.bundleID) { app in
+                MCPBlockedAppRow(bundleID: app.bundleID, name: app.name) {
+                    blocklist.remove(bundleID: app.bundleID)
+                }
+            }
         }
+
+        Button(L10n.tr("settings.aiAgents.blocklist.add")) {
+            isShowingAppPicker = true
+        }
+        .pointerCursor()
+        .sheet(isPresented: $isShowingAppPicker) {
+            MCPAppPickerSheet(blocklist: blocklist, isPresented: $isShowingAppPicker)
+        }
+    }
+}
+
+// MARK: - Row
+
+private struct MCPBlockedAppRow: View {
+    let bundleID: String
+    let name: String
+    let onRemove: () -> Void
+
+    var body: some View {
+        HStack {
+            appIcon
+            Text(name)
+            Spacer()
+            Button { onRemove() } label: {
+                Image(systemName: "trash")
+                    .foregroundStyle(.secondary)
+            }
+            .buttonStyle(.plain)
+            .pointerCursor()
+        }
+    }
+
+    private var appIcon: some View {
+        let icon = resolveIcon(bundleID: bundleID)
+        return Image(nsImage: icon)
+            .resizable()
+            .frame(width: 20, height: 20)
+    }
+
+    private func resolveIcon(bundleID: String) -> NSImage {
+        if let path = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleID)?.path {
+            return NSWorkspace.shared.icon(forFile: path)
+        }
+        return NSImage(systemSymbolName: "app", accessibilityDescription: nil)
+            ?? NSImage()
+    }
+}
+
+// MARK: - App Picker Sheet
+
+private struct MCPAppPickerSheet: View {
+    var blocklist: MCPSourceAppBlocklist
+    @Binding var isPresented: Bool
+    @State private var runningApps: [(bundleID: String, name: String, icon: NSImage)] = []
+    @State private var selectedBundleIDs: Set<String> = []
+
+    var body: some View {
+        VStack(spacing: 0) {
+            sheetHeader
+            Divider()
+            runningAppsList
+            Divider()
+            sheetFooter
+        }
+        .frame(width: 340, height: 400)
+        .onAppear { loadRunningApps() }
+    }
+
+    private var sheetHeader: some View {
+        Text(L10n.tr("settings.ignoredApps.selectApp"))
+            .font(.headline)
+            .padding()
+    }
+
+    private var runningAppsList: some View {
+        List {
+            Section(L10n.tr("settings.ignoredApps.running")) {
+                ForEach(Array(runningApps.enumerated()), id: \.element.bundleID) { _, app in
+                    let bid = app.bundleID
+                    let isSelected = selectedBundleIDs.contains(bid)
+                    Button {
+                        if isSelected {
+                            selectedBundleIDs.remove(bid)
+                        } else {
+                            selectedBundleIDs.insert(bid)
+                        }
+                    } label: {
+                        HStack {
+                            Image(nsImage: app.icon)
+                                .resizable()
+                                .frame(width: 20, height: 20)
+                            Text(app.name)
+                            Spacer()
+                            if isSelected {
+                                Image(systemName: "checkmark")
+                                    .foregroundStyle(Color.accentColor)
+                            }
+                        }
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .pointerCursor()
+                }
+            }
+        }
+    }
+
+    private var sheetFooter: some View {
+        HStack {
+            Button(L10n.tr("settings.ignoredApps.browse")) {
+                browseForApp()
+            }
+            .pointerCursor()
+            Spacer()
+            Button(L10n.tr("action.cancel")) {
+                isPresented = false
+            }
+            .pointerCursor()
+            if !selectedBundleIDs.isEmpty {
+                Button(L10n.tr("settings.aiAgents.blocklist.add")) {
+                    addSelectedApps()
+                }
+                .pointerCursor()
+                .keyboardShortcut(.defaultAction)
+            }
+        }
+        .padding()
+    }
+
+    private func addSelectedApps() {
+        for bundleID in selectedBundleIDs {
+            guard let app = runningApps.first(where: { $0.bundleID == bundleID }) else { continue }
+            blocklist.add(bundleID: app.bundleID, name: app.name)
+        }
+        isPresented = false
+    }
+
+    private func loadRunningApps() {
+        let apps = NSWorkspace.shared.runningApplications
+            .filter { $0.activationPolicy == .regular }
+            .compactMap { app -> (bundleID: String, name: String, icon: NSImage)? in
+                guard let bundleID = app.bundleIdentifier,
+                      let name = app.localizedName,
+                      !bundleID.contains("pastememo"),
+                      !blocklist.isBlocked(bundleID) else { return nil }
+                return (bundleID: bundleID, name: name, icon: app.icon ?? NSImage())
+            }
+            .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+        runningApps = apps
+    }
+
+    private func browseForApp() {
+        let panel = NSOpenPanel()
+        panel.allowedContentTypes = [.application]
+        panel.directoryURL = URL(fileURLWithPath: "/Applications")
+        panel.allowsMultipleSelection = true
+
+        guard panel.runModal() == .OK else { return }
+        for url in panel.urls {
+            guard let bundle = Bundle(url: url),
+                  let bundleID = bundle.bundleIdentifier else { continue }
+            let name = bundle.infoDictionary?["CFBundleName"] as? String
+                ?? url.deletingPathExtension().lastPathComponent
+            blocklist.add(bundleID: bundleID, name: name)
+        }
+        isPresented = false
     }
 }
