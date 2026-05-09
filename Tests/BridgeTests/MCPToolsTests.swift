@@ -127,4 +127,25 @@ final class MCPToolsTests: XCTestCase {
             // 期望抛错(item 被 PrivacyGuard 滤掉,从 Agent 角度等同 "not found")
         }
     }
+
+    func testListRecentAppsAggregatesBySourceApp() async throws {
+        let container = SampleClips.makeContainer()
+        _ = SampleClips.seed(in: container.mainContext)
+
+        let tool = ListRecentAppsTool()
+        let result = try await tool.call(
+            params: nil,
+            container: container,
+            guardLayer: PrivacyGuard(allowSensitive: false, sourceAppBlocklist: [])
+        )
+        guard case .object(let outer) = result,
+              case .array(let arr) = outer["content"]!,
+              case .object(let first) = arr.first!,
+              case .string(let text) = first["text"]!
+        else { XCTFail("Bad shape"); return }
+        let apps = try JSONDecoder().decode([ListRecentAppsTool.OutputItem].self,
+                                             from: text.data(using: .utf8)!)
+        // 5 样本去掉 1 敏感(1Password) = 4 items 来自 4 不同源 App
+        XCTAssertEqual(apps.count, 4)
+    }
 }
