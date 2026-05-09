@@ -853,8 +853,9 @@
 "settings.aiAgents.service" = "서비스";
 "settings.aiAgents.serverRunning" = "MCP 서버 실행 중";
 "settings.aiAgents.agents" = "에이전트";
-"settings.aiAgents.detected" = "감지됨";
-"settings.aiAgents.notInstalled" = "설치되지 않음";
+"settings.aiAgents.detected" = "사용 가능";
+"settings.aiAgents.notInstalled" = "이 Mac에 설치되지 않음";
+"settings.aiAgents.installed.label" = "설치됨";
 "settings.aiAgents.install" = "설치";
 "settings.aiAgents.uninstall" = "제거";
 "settings.aiAgents.manualConfig" = "수동 설정";

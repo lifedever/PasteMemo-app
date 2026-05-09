@@ -851,8 +851,9 @@
 "settings.aiAgents.service" = "サービス";
 "settings.aiAgents.serverRunning" = "MCP サーバー実行中";
 "settings.aiAgents.agents" = "エージェント";
-"settings.aiAgents.detected" = "検出済み";
-"settings.aiAgents.notInstalled" = "未インストール";
+"settings.aiAgents.detected" = "利用可能";
+"settings.aiAgents.notInstalled" = "このMacにインストールされていません";
+"settings.aiAgents.installed.label" = "インストール済み";
 "settings.aiAgents.install" = "インストール";
 "settings.aiAgents.uninstall" = "アンインストール";
 "settings.aiAgents.manualConfig" = "手動設定";

@@ -813,8 +813,9 @@
 "settings.aiAgents.service" = "服務";
 "settings.aiAgents.serverRunning" = "MCP 伺服器執行中";
 "settings.aiAgents.agents" = "Agent";
-"settings.aiAgents.detected" = "已偵測到";
-"settings.aiAgents.notInstalled" = "未安裝";
+"settings.aiAgents.detected" = "本機可用";
+"settings.aiAgents.notInstalled" = "本機未安裝";
+"settings.aiAgents.installed.label" = "已安裝";
 "settings.aiAgents.install" = "安裝";
 "settings.aiAgents.uninstall" = "解除安裝";
 "settings.aiAgents.manualConfig" = "手動設定";

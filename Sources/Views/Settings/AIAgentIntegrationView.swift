@@ -116,8 +116,6 @@ private struct AgentRow: View {
 
     var body: some View {
         HStack {
-            Image(systemName: agent.detect() ? "checkmark.circle.fill" : "circle")
-                .foregroundStyle(agent.detect() ? .green : .secondary)
             VStack(alignment: .leading, spacing: 2) {
                 Text(agent.displayName)
                 Text(captionText)
@@ -130,9 +128,9 @@ private struct AgentRow: View {
             if agent.id == "codex" || !agent.detect() {
                 Button(L10n.tr("settings.aiAgents.manualConfig")) { showSnippet = true }
                     .buttonStyle(.borderless)
+                    .foregroundStyle(.secondary)
             } else if installed {
-                Button(L10n.tr("settings.aiAgents.uninstall"), role: .destructive, action: onUninstall)
-                    .buttonStyle(.borderless)
+                InstalledBadge(onUninstall: onUninstall)
             } else {
                 Button(L10n.tr("settings.aiAgents.install"), action: onInstall)
                     .buttonStyle(.borderedProminent)
@@ -142,6 +140,34 @@ private struct AgentRow: View {
         .sheet(isPresented: $showSnippet) {
             ManualConfigSheet(agent: agent)
         }
+    }
+}
+
+@MainActor
+private struct InstalledBadge: View {
+    let onUninstall: () -> Void
+    @State private var hovering = false
+
+    var body: some View {
+        Group {
+            if hovering {
+                Button(L10n.tr("settings.aiAgents.uninstall"),
+                       role: .destructive,
+                       action: onUninstall)
+                    .buttonStyle(.borderless)
+            } else {
+                HStack(spacing: 4) {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundStyle(.green)
+                        .font(.callout)
+                    Text(L10n.tr("settings.aiAgents.installed.label"))
+                        .foregroundStyle(.secondary)
+                        .font(.callout)
+                }
+            }
+        }
+        .onHover { hovering = $0 }
+        .animation(.easeInOut(duration: 0.12), value: hovering)
     }
 }
 

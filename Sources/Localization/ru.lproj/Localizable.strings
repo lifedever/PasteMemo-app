@@ -825,8 +825,9 @@
 "settings.aiAgents.service" = "Сервис";
 "settings.aiAgents.serverRunning" = "MCP-сервер работает";
 "settings.aiAgents.agents" = "Агенты";
-"settings.aiAgents.detected" = "Обнаружено";
-"settings.aiAgents.notInstalled" = "Не установлено";
+"settings.aiAgents.detected" = "Доступно";
+"settings.aiAgents.notInstalled" = "Не установлено на этом Mac";
+"settings.aiAgents.installed.label" = "Установлено";
 "settings.aiAgents.install" = "Установить";
 "settings.aiAgents.uninstall" = "Удалить";
 "settings.aiAgents.manualConfig" = "Ручная настройка";

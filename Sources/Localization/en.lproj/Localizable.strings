@@ -799,8 +799,9 @@
 "settings.aiAgents.service" = "Service";
 "settings.aiAgents.serverRunning" = "MCP server running";
 "settings.aiAgents.agents" = "Agents";
-"settings.aiAgents.detected" = "Detected";
-"settings.aiAgents.notInstalled" = "Not installed";
+"settings.aiAgents.detected" = "Available";
+"settings.aiAgents.notInstalled" = "Not installed on this Mac";
+"settings.aiAgents.installed.label" = "Installed";
 "settings.aiAgents.install" = "Install";
 "settings.aiAgents.uninstall" = "Uninstall";
 "settings.aiAgents.manualConfig" = "Manual Config";
