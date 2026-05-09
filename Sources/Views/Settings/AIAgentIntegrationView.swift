@@ -168,10 +168,10 @@ private struct InstalledBadge: View {
                 }
             }
         }
-        // pointerCursor 用 .onHover push/pop;放外层 Group(常驻视图)上,
-        // 否则内部 Button 是 hovering=true 之后才创建的,光标已停在区域里
-        // .onHover 不会再次触发,变不成小手。
-        .pointerCursor()
+        // 故意不挂 .pointerCursor():pointerCursor 也是 .onHover 实现,
+        // 跟下面这个 .onHover 一起作用在同一个会 swap content 的 Group 上时,
+        // 内部视图切换会反复触发 onHover(false)/onHover(true),
+        // 导致光标在小手 / 默认指针之间闪烁、并干扰 hover swap 状态。
         .onHover { hovering = $0 }
         .animation(.easeInOut(duration: 0.12), value: hovering)
     }
