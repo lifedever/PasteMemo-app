@@ -185,12 +185,13 @@ private struct ManualConfigSheet: View {
     /// Codex 用 TOML 格式
     private var snippet: String {
         let cmd = Bundle.main.bundleURL.appendingPathComponent("Contents/MacOS/pastememo-mcp").path
+        let key = MCPAgentRegistry.pastememoServerKey  // dev/prod 自动用不同 key
         switch agent.id {
         case "codex":
             return """
             # Add this to ~/.config/codex/config.toml under [mcp_servers]:
 
-            [mcp_servers.pastememo]
+            [mcp_servers.\(key)]
             command = "\(cmd)"
             """
         default:
@@ -198,7 +199,7 @@ private struct ManualConfigSheet: View {
             return """
             {
               "mcpServers": {
-                "pastememo": {
+                "\(key)": {
                   "command": "\(cmd)"
                 }
               }

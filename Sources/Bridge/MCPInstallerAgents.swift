@@ -18,13 +18,24 @@ enum MCPAgentRegistry {
         [claudeCode, codex, cursor]
     }
 
+    // MARK: - 环境隔离的 server key
+
+    /// 当前 build 在 Claude Code / Cursor / Codex 配置文件里使用的 mcpServer key。
+    /// dev build (bundleID 以 `.dev` 结尾) 自动用 `pastememo-dev`,prod 用 `pastememo`。
+    /// 让用户可以同时安装 dev + prod 两个版本,各自独立注册,互不覆盖。
+    static var pastememoServerKey: String {
+        let bid = Bundle.main.bundleIdentifier ?? ""
+        return bid.hasSuffix(".dev") ? "pastememo-dev" : "pastememo"
+    }
+
     // MARK: - Claude Code
 
     static var claudeCode: MCPAgentTarget {
         let home = FileManager.default.homeDirectoryForCurrentUser
         let claudeJSON = home.appendingPathComponent(".claude.json")    // Claude Code 实际读取的 MCP 配置文件
         let claudeDir = home.appendingPathComponent(".claude")          // 仍用于 skills 目录检测 + skill 文件
-        let skillDir = claudeDir.appendingPathComponent("skills/pastememo")
+        let key = pastememoServerKey
+        let skillDir = claudeDir.appendingPathComponent("skills/\(key)")
         let skillFile = skillDir.appendingPathComponent("SKILL.md")
 
         return MCPAgentTarget(
@@ -41,13 +52,13 @@ enum MCPAgentRegistry {
                 ]
                 try MCPInstaller.installToJSONSettings(
                     file: claudeJSON,
-                    mcpServerKey: "pastememo",
+                    mcpServerKey: key,
                     serverConfig: serverConfig
                 )
-                try installSkillFile(to: skillFile)
+                try installSkillFile(to: skillFile, serverKey: key)
             },
             uninstall: {
-                try MCPInstaller.uninstallFromJSONSettings(file: claudeJSON, mcpServerKey: "pastememo")
+                try MCPInstaller.uninstallFromJSONSettings(file: claudeJSON, mcpServerKey: key)
                 try? FileManager.default.removeItem(at: skillDir)
             },
             isInstalled: {
@@ -55,7 +66,7 @@ enum MCPAgentRegistry {
                       let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
                       let mcpServers = json["mcpServers"] as? [String: Any]
                 else { return false }
-                return mcpServers["pastememo"] != nil
+                return mcpServers[key] != nil
             }
         )
     }
@@ -83,6 +94,7 @@ enum MCPAgentRegistry {
         let home = FileManager.default.homeDirectoryForCurrentUser
         let cursorDir = home.appendingPathComponent(".cursor")
         let settings = cursorDir.appendingPathComponent("mcp.json")
+        let key = pastememoServerKey
 
         return MCPAgentTarget(
             id: "cursor",
@@ -102,19 +114,19 @@ enum MCPAgentRegistry {
                 ]
                 try MCPInstaller.installToJSONSettings(
                     file: settings,
-                    mcpServerKey: "pastememo",
+                    mcpServerKey: key,
                     serverConfig: serverConfig
                 )
             },
             uninstall: {
-                try MCPInstaller.uninstallFromJSONSettings(file: settings, mcpServerKey: "pastememo")
+                try MCPInstaller.uninstallFromJSONSettings(file: settings, mcpServerKey: key)
             },
             isInstalled: {
                 guard let data = try? Data(contentsOf: settings),
                       let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
                       let mcpServers = json["mcpServers"] as? [String: Any]
                 else { return false }
-                return mcpServers["pastememo"] != nil
+                return mcpServers[key] != nil
             }
         )
     }
@@ -122,38 +134,40 @@ enum MCPAgentRegistry {
     // MARK: - Helpers
 
     /// 当前 .app 内的 pastememo-mcp 二进制路径
-    private static func mcpProxyBinaryPath() -> String {
+    static func mcpProxyBinaryPath() -> String {
         let bundleURL = Bundle.main.bundleURL
         return bundleURL.appendingPathComponent("Contents/MacOS/pastememo-mcp").path
     }
 
-    /// 把出厂 SKILL.md 拷到目标位置。
+    /// 把出厂 SKILL.md 拷到目标位置,同时把 frontmatter 里的 `{{SERVER_KEY}}` 替换成实际 key。
     /// 出厂 SKILL.md 通过 .copy("Resources") 放在 PasteMemo_PasteMemo.bundle 内,
-    /// 路径: skills/pastememo/SKILL.md (相对于 bundle 根)
-    private static func installSkillFile(to target: URL) throws {
-        guard let source = Bundle.main.url(forResource: "SKILL",
-                                           withExtension: "md",
-                                           subdirectory: "skills/pastememo") else {
-            // Bundle.main 找不到时,尝试 Bundle.module (test 环境或不同打包方式)
-            #if SWIFT_PACKAGE
-            if let source = Bundle.module.url(forResource: "SKILL",
-                                              withExtension: "md",
-                                              subdirectory: "skills/pastememo") {
-                try copySkillFile(from: source, to: target)
-                return
-            }
-            #endif
-            throw MCPInstallerError.writeFailed("SKILL.md not found in bundle")
-        }
-        try copySkillFile(from: source, to: target)
-    }
+    /// 路径: skills/pastememo/SKILL.md (相对于 bundle 根,源文件名固定不随 build 变)。
+    private static func installSkillFile(to target: URL, serverKey: String) throws {
+        let source = try locateSkillTemplate()
+        let template = try String(contentsOf: source, encoding: .utf8)
+        let rendered = template.replacingOccurrences(of: "{{SERVER_KEY}}", with: serverKey)
 
-    private static func copySkillFile(from source: URL, to target: URL) throws {
         let dir = target.deletingLastPathComponent()
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         if FileManager.default.fileExists(atPath: target.path) {
             try FileManager.default.removeItem(at: target)
         }
-        try FileManager.default.copyItem(at: source, to: target)
+        try rendered.write(to: target, atomically: true, encoding: .utf8)
+    }
+
+    private static func locateSkillTemplate() throws -> URL {
+        if let url = Bundle.main.url(forResource: "SKILL",
+                                     withExtension: "md",
+                                     subdirectory: "skills/pastememo") {
+            return url
+        }
+        #if SWIFT_PACKAGE
+        if let url = Bundle.module.url(forResource: "SKILL",
+                                       withExtension: "md",
+                                       subdirectory: "skills/pastememo") {
+            return url
+        }
+        #endif
+        throw MCPInstallerError.writeFailed("SKILL.md not found in bundle")
     }
 }

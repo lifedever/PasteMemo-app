@@ -1,5 +1,5 @@
 ---
-name: pastememo
+name: {{SERVER_KEY}}
 description: |
   Use when user references something they recently copied, pasted, or had on their
   clipboard — explicitly OR implicitly. Trigger on:
