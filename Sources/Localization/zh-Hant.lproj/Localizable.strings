@@ -620,6 +620,11 @@
 "onboarding.relay.feature1" = "多選條目或連續複製，自動構建貼上佇列";
 "onboarding.relay.feature2" = "按分隔符拆分文字，快速建立佇列";
 "onboarding.relay.feature3" = "按 Ctrl+V 逐條貼上（可在設定中自訂）";
+"onboarding.aiAgent.title" = "AI Agent 整合";
+"onboarding.aiAgent.desc" = "把你的剪貼簿提供給 Claude Code、Cursor、Codex 等任何 MCP 相容的 AI Agent。";
+"onboarding.aiAgent.feature1" = "5 個 MCP 工具——讀取、搜尋、寫入剪貼簿";
+"onboarding.aiAgent.feature2" = "設定 → AI Agents 一鍵安裝";
+"onboarding.aiAgent.feature3" = "敏感項目預設自動過濾";
 "help.relay" = "接力模式";
 "help.relay.open" = "透過工具列按鈕或選單列開啟";
 "help.relay.paste" = "Ctrl+V 貼上下一條（可在設定中自訂）";

@@ -546,6 +546,11 @@
 "onboarding.relay.feature1" = "複数選択または連続コピーでペーストキューを構築";
 "onboarding.relay.feature2" = "区切り文字でテキストを分割してキューを素早く作成";
 "onboarding.relay.feature3" = "Ctrl+V で1つずつペースト（設定でカスタマイズ可能）";
+"onboarding.aiAgent.title" = "AI Agent 連携";
+"onboarding.aiAgent.desc" = "Claude Code、Cursor、Codex など、MCP 互換の AI Agent にクリップボードを提供します。";
+"onboarding.aiAgent.feature1" = "5 つの MCP ツール — クリップボードの読み取り、検索、書き込み";
+"onboarding.aiAgent.feature2" = "設定 → AI Agents からワンクリックでインストール";
+"onboarding.aiAgent.feature3" = "機密項目はデフォルトでフィルタリング";
 "help.relay" = "リレーモード";
 "help.relay.open" = "ツールバーボタンまたはメニューバーから開く";
 "help.relay.paste" = "Ctrl+V で次のアイテムをペースト（設定でカスタマイズ可能）";

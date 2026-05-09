@@ -530,6 +530,11 @@
 "onboarding.relay.feature1" = "여러 항목 선택 또는 연속 복사로 붙여넣기 대기열 구성";
 "onboarding.relay.feature2" = "구분자로 텍스트를 분할하여 빠르게 대기열 생성";
 "onboarding.relay.feature3" = "Ctrl+V로 하나씩 붙여넣기 (설정에서 사용자 지정 가능)";
+"onboarding.aiAgent.title" = "AI Agent 연동";
+"onboarding.aiAgent.desc" = "Claude Code, Cursor, Codex 등 모든 MCP 호환 AI Agent에 클립보드를 제공합니다.";
+"onboarding.aiAgent.feature1" = "5개 MCP 도구 — 클립보드 읽기, 검색, 쓰기";
+"onboarding.aiAgent.feature2" = "설정 → AI Agents 에서 원클릭 설치";
+"onboarding.aiAgent.feature3" = "민감 항목은 기본적으로 필터링";
 "help.relay" = "릴레이 모드";
 "help.relay.open" = "도구 모음 버튼 또는 메뉴 바에서 열기";
 "help.relay.paste" = "Ctrl+V로 다음 항목 붙여넣기 (설정에서 사용자 정의 가능)";

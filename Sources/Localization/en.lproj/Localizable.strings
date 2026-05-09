@@ -323,6 +323,11 @@
 "onboarding.relay.feature1" = "Select multiple items or copy continuously to build a queue";
 "onboarding.relay.feature2" = "Split text by delimiter to quickly create a queue";
 "onboarding.relay.feature3" = "Press Ctrl+V to paste items one by one (customizable)";
+"onboarding.aiAgent.title" = "AI Agent Bridge";
+"onboarding.aiAgent.desc" = "Make your clipboard available to Claude Code, Cursor, Codex, and any MCP-compatible AI Agent.";
+"onboarding.aiAgent.feature1" = "5 MCP tools — read, search, write clipboard";
+"onboarding.aiAgent.feature2" = "One-click install in Settings → AI Agents";
+"onboarding.aiAgent.feature3" = "Sensitive items filtered by default";
 "onboarding.shortcut.title" = "Quick Paste Shortcut";
 "onboarding.shortcut.desc" = "Press the shortcut anywhere to open the Quick Paste panel. Search your clipboard history and paste with one click.";
 "onboarding.shortcut.current" = "Click to change shortcut";

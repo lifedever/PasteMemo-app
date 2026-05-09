@@ -599,6 +599,11 @@
 "onboarding.relay.feature1" = "Выберите несколько элементов или копируйте последовательно";
 "onboarding.relay.feature2" = "Разделите текст по разделителю для быстрого создания очереди";
 "onboarding.relay.feature3" = "Нажмите Ctrl+V для вставки по одному (настраивается)";
+"onboarding.aiAgent.title" = "Мост к ИИ-агентам";
+"onboarding.aiAgent.desc" = "Сделайте буфер обмена доступным для Claude Code, Cursor, Codex и любого MCP-совместимого ИИ-агента.";
+"onboarding.aiAgent.feature1" = "5 инструментов MCP — чтение, поиск, запись буфера обмена";
+"onboarding.aiAgent.feature2" = "Установка в один клик в Настройки → AI Agents";
+"onboarding.aiAgent.feature3" = "Конфиденциальные элементы фильтруются по умолчанию";
 
 /* Missing Keys - Empty State */
 "empty.noResults" = "Совпадений не найдено";

@@ -324,6 +324,11 @@
 "onboarding.relay.feature1" = "多选条目或连续复制，自动构建粘贴队列";
 "onboarding.relay.feature2" = "按分隔符拆分文本，快速创建队列";
 "onboarding.relay.feature3" = "按 Ctrl+V 逐条粘贴（可在设置中自定义）";
+"onboarding.aiAgent.title" = "AI Agent 集成";
+"onboarding.aiAgent.desc" = "把你的剪贴板暴露给 Claude Code、Cursor、Codex 等任何 MCP 兼容的 AI Agent。";
+"onboarding.aiAgent.feature1" = "5 个 MCP 工具——读取、搜索、写入剪贴板";
+"onboarding.aiAgent.feature2" = "设置 → AI Agents 一键安装";
+"onboarding.aiAgent.feature3" = "敏感项默认自动过滤";
 "onboarding.shortcut.title" = "快捷粘贴";
 "onboarding.shortcut.desc" = "在任意应用中按下快捷键，打开快速粘贴面板。搜索剪贴板历史，一键粘贴。";
 "onboarding.shortcut.current" = "点击修改快捷键";

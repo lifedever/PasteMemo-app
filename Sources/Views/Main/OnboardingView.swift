@@ -16,7 +16,7 @@ struct OnboardingView: View {
     @State private var detectedManagers: [(bundleID: String, name: String, icon: NSImage)] = []
     @State private var selectedManagerIDs: Set<String> = []
 
-    private let totalSteps = 7
+    private let totalSteps = 8
     private let allRetentionOptions = [1, 3, 7, 14, 30, 60, 90, 180, 365]
 
     private var availableOptions: [Int] { allRetentionOptions }
@@ -33,8 +33,9 @@ struct OnboardingView: View {
                 case 2: privacyAppsStep
                 case 3: preferencesStep
                 case 4: relayIntroStep
-                case 5: shortcutStep
-                case 6: analyticsStep
+                case 5: aiAgentIntroStep
+                case 6: shortcutStep
+                case 7: analyticsStep
                 default: EmptyView()
                 }
             }
@@ -441,6 +442,34 @@ struct OnboardingView: View {
                 .font(.callout)
                 .foregroundStyle(.secondary)
         }
+    }
+
+    private var aiAgentIntroStep: some View {
+        VStack(spacing: 16) {
+            Image(systemName: "sparkles.rectangle.stack")
+                .font(.system(size: 28, weight: .semibold))
+                .foregroundStyle(.white)
+                .frame(width: 60, height: 60)
+                .background(Color.orange, in: Circle())
+
+            Text(L10n.tr("onboarding.aiAgent.title"))
+                .font(.title2)
+                .fontWeight(.bold)
+
+            Text(L10n.tr("onboarding.aiAgent.desc"))
+                .font(.body)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: 360)
+
+            VStack(alignment: .leading, spacing: 8) {
+                relayFeatureRow(icon: "magnifyingglass", text: L10n.tr("onboarding.aiAgent.feature1"))
+                relayFeatureRow(icon: "bolt", text: L10n.tr("onboarding.aiAgent.feature2"))
+                relayFeatureRow(icon: "lock.shield", text: L10n.tr("onboarding.aiAgent.feature3"))
+            }
+            .padding(.top, 4)
+        }
+        .padding(28)
     }
 
     private var shortcutStep: some View {

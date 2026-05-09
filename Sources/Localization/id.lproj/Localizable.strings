@@ -596,6 +596,11 @@ Gunakan %@ untuk menempel satu per satu.";
 "onboarding.relay.feature1" = "Pilih beberapa item atau salin terus-menerus untuk membuat antrian";
 "onboarding.relay.feature2" = "Bagi teks berdasarkan pemisah untuk membuat antrian dengan cepat";
 "onboarding.relay.feature3" = "Tekan Ctrl+V untuk menempel satu per satu (dapat disesuaikan)";
+"onboarding.aiAgent.title" = "Jembatan AI Agent";
+"onboarding.aiAgent.desc" = "Jadikan clipboard Anda tersedia untuk Claude Code, Cursor, Codex, dan agen AI yang kompatibel dengan MCP.";
+"onboarding.aiAgent.feature1" = "5 alat MCP — baca, cari, tulis clipboard";
+"onboarding.aiAgent.feature2" = "Instal sekali klik di Pengaturan → AI Agents";
+"onboarding.aiAgent.feature3" = "Item sensitif difilter secara default";
 
 /* Missing Keys - Empty State */
 "empty.noResults" = "Tidak ada item yang cocok";
