@@ -4,8 +4,13 @@ import XCTest
 @MainActor
 final class MCPSourceAppBlocklistTests: XCTestCase {
     override func setUp() {
-        // 用唯一 key 隔离，避免污染真实 UserDefaults
         UserDefaults.standard.removeObject(forKey: "mcpSourceAppBlocklist")
+        UserDefaults.standard.removeObject(forKey: "mcpSourceAppBlocklistNames")
+    }
+
+    override func tearDown() {
+        UserDefaults.standard.removeObject(forKey: "mcpSourceAppBlocklist")
+        UserDefaults.standard.removeObject(forKey: "mcpSourceAppBlocklistNames")
     }
 
     func testAddAndCheck() {
@@ -20,5 +25,14 @@ final class MCPSourceAppBlocklistTests: XCTestCase {
         bl.add(bundleID: "com.evil.app", name: "Evil App")
         bl.remove(bundleID: "com.evil.app")
         XCTAssertFalse(bl.isBlocked("com.evil.app"))
+    }
+
+    func testPersistenceAcrossInstances() {
+        let bl1 = MCPSourceAppBlocklist()
+        bl1.add(bundleID: "com.evil.app", name: "Evil App")
+
+        let bl2 = MCPSourceAppBlocklist()
+        XCTAssertTrue(bl2.isBlocked("com.evil.app"))
+        XCTAssertEqual(bl2.appNames["com.evil.app"], "Evil App")
     }
 }
