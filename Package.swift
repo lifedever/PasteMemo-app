@@ -19,10 +19,15 @@ let package = Package(
                 .product(name: "PermissionFlow", package: "PermissionFlow"),
             ],
             path: "Sources",
+            exclude: ["MCPProxy"],
             resources: [
                 .process("Localization"),
                 .copy("Resources"),
             ]
+        ),
+        .executableTarget(
+            name: "pastememo-mcp",
+            path: "Sources/MCPProxy"
         ),
         .testTarget(
             name: "PasteMemoTests",
