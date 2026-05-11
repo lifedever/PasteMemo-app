@@ -1487,10 +1487,30 @@ final class ClipboardManager: ObservableObject {
     /// "save to Finder folder" smart paste for file-backed clips so the user
     /// gets the original file (correct dimensions, format, EXIF), not a
     /// re-encoded copy of the stored thumbnail.
+    ///
+    /// `FileManager.copyItem(at:to:)` does NOT follow symbolic links — it
+    /// duplicates the link node itself, which is a tiny file containing the
+    /// link's target path string (showing up as ~174 bytes via `ls`).
+    /// Telegram's group container places the pasteboard file URL on a `.jpg`
+    /// symlink that points to an extension-less real file, so naive copyItem
+    /// silently produces a "174-byte image" that won't preview anywhere.
+    /// Detect symlinks and use `Data(contentsOf:)` (which follows links via
+    /// the kernel) so the destination holds the actual image bytes while
+    /// preserving the original filename users see in their copy.
     func copyImageFileToFolder(sourceURL: URL, folder: URL) -> URL? {
-        let destURL = Self.uniqueDestination(folder.appendingPathComponent(sourceURL.lastPathComponent))
+        return Self.copyImageFileToFolder(sourceURL: sourceURL, folder: folder)
+    }
+
+    nonisolated static func copyImageFileToFolder(sourceURL: URL, folder: URL) -> URL? {
+        let destURL = uniqueDestination(folder.appendingPathComponent(sourceURL.lastPathComponent))
         do {
-            try FileManager.default.copyItem(at: sourceURL, to: destURL)
+            let attrs = try FileManager.default.attributesOfItem(atPath: sourceURL.path)
+            if (attrs[.type] as? FileAttributeType) == .typeSymbolicLink {
+                let bytes = try Data(contentsOf: sourceURL)
+                try bytes.write(to: destURL)
+            } else {
+                try FileManager.default.copyItem(at: sourceURL, to: destURL)
+            }
             return destURL
         } catch {
             return nil
@@ -1521,7 +1541,7 @@ final class ClipboardManager: ObservableObject {
 
     /// Return a destination URL that doesn't collide with an existing file —
     /// `foo.jpg` → `foo 1.jpg` / `foo 2.jpg` etc.
-    private static func uniqueDestination(_ url: URL) -> URL {
+    nonisolated private static func uniqueDestination(_ url: URL) -> URL {
         let fm = FileManager.default
         guard fm.fileExists(atPath: url.path) else { return url }
         let base = url.deletingPathExtension().lastPathComponent
