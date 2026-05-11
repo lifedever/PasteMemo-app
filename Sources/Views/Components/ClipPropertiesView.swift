@@ -174,7 +174,13 @@ struct ClipPropertiesView: View {
         // thumbnail we keep in `imageData` for in-app preview.
         if let sourceURL = item.sourceImageFileURL {
             let dimensions = ImageCache.shared.imageDimensions(at: sourceURL)
-            let fileSize = (try? sourceURL.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0
+            // Resolve symlinks before reading the file size — some sources
+            // (Telegram's group container places the pasteboard image on a
+            // *.jpg symlink to an extension-less real file) would otherwise
+            // report the link node's size (~174 bytes, just the target path
+            // string) instead of the actual image's size.
+            let resolvedURL = sourceURL.resolvingSymlinksInPath()
+            let fileSize = (try? resolvedURL.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0
             if let dimensions {
                 propDivider
                 propRow(L10n.tr("detail.dimensions"), "\(Int(dimensions.width))×\(Int(dimensions.height))")
