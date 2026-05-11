@@ -656,12 +656,6 @@ struct QuickPanelView: View {
                     selectedFilter = selectedFilter == .pinned ? .all : .pinned
                     isSearchFocused = true
                 }
-                if store.sidebarCounts.aiAgent > 0 {
-                    badge(L10n.tr("filter.aiAgent"), isActive: selectedFilter == .aiAgent) {
-                        selectedFilter = selectedFilter == .aiAgent ? .all : .aiAgent
-                        isSearchFocused = true
-                    }
-                }
                 badge(L10n.tr("filter.all"), isActive: selectedFilter == .all) {
                     selectedFilter = .all
                     isSearchFocused = true
@@ -679,6 +673,12 @@ struct QuickPanelView: View {
                             selectedFilter = selectedFilter == .group(group.name) ? .all : .group(group.name)
                             isSearchFocused = true
                         }
+                    }
+                }
+                if store.sidebarCounts.aiAgent > 0 {
+                    badge(L10n.tr("filter.aiAgent"), isActive: selectedFilter == .aiAgent) {
+                        selectedFilter = selectedFilter == .aiAgent ? .all : .aiAgent
+                        isSearchFocused = true
                     }
                 }
             }
@@ -1363,10 +1363,9 @@ struct QuickPanelView: View {
 
     private func switchTypeFilter(_ delta: Int) {
         let types = availableContentTypes
-        var allFilters: [QuickFilter] = [.pinned]
-        if store.sidebarCounts.aiAgent > 0 { allFilters.append(.aiAgent) }
-        allFilters.append(.all)
+        var allFilters: [QuickFilter] = [.pinned, .all]
         allFilters.append(contentsOf: types.map { .type($0) })
+        if store.sidebarCounts.aiAgent > 0 { allFilters.append(.aiAgent) }
 
         if let idx = allFilters.firstIndex(of: selectedFilter) {
             let newIdx = (idx + delta + allFilters.count) % allFilters.count
@@ -1378,11 +1377,10 @@ struct QuickPanelView: View {
 
     private func switchGroupFilter(_ delta: Int) {
         let groups = availableGroupsForTab
-        // tabBar 顺序：[.pinned, .aiAgent?, .all, .group(g1), .group(g2), ...]
-        var all: [QuickFilter] = [.pinned]
-        if store.sidebarCounts.aiAgent > 0 { all.append(.aiAgent) }
-        all.append(.all)
+        // tabBar 顺序：[.pinned, .all, .group(g1), .group(g2), ..., .aiAgent?]
+        var all: [QuickFilter] = [.pinned, .all]
         all.append(contentsOf: groups.map { .group($0.name) })
+        if store.sidebarCounts.aiAgent > 0 { all.append(.aiAgent) }
 
         if let idx = all.firstIndex(of: selectedFilter) {
             let newIdx = (idx + delta + all.count) % all.count
