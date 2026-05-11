@@ -1517,10 +1517,32 @@ final class ClipboardManager: ObservableObject {
         }
     }
 
-    /// Sniff the real image format from magic bytes (PNG / JPEG / GIF / WebP /
-    /// HEIC) so saved files match their actual content — avoids shipping a
-    /// JPEG payload under a `.png` extension.
-    private static func sniffImageExtension(from data: Data) -> String {
+    /// Detect the saved file's extension from its actual bytes. Two layers:
+    ///
+    /// 1. **ImageIO** (`CGImageSourceGetType` → UTI → `preferredFilenameExtension`)
+    ///    is the source of truth: it knows every image format the system can
+    ///    decode (PNG, JPEG, HEIC, TIFF, BMP, GIF, WebP, AVIF, RAW, ICO, …)
+    ///    and stays in sync with future OS additions. Use it first.
+    ///
+    /// 2. **Magic-byte fallback** runs only when ImageIO can't recognise the
+    ///    bytes. Lets a corrupt/partial buffer still land with *something*
+    ///    sensible. The final `"png"` default is for genuinely unknown bytes.
+    ///
+    /// Do NOT extend the fallback table when a new format shows up — if
+    /// ImageIO decodes it, layer 1 already handles it. See CLAUDE.md
+    /// "Swift 开发禁忌 #3 + 踩坑列表" for the regression history of hardcoded
+    /// format whitelists (HEIC → JPEG → TIFF, issue #48).
+    nonisolated static func sniffImageExtension(from data: Data) -> String {
+        if let source = CGImageSourceCreateWithData(data as CFData, nil),
+           let uti = CGImageSourceGetType(source) as String?,
+           let ext = UTType(uti)?.preferredFilenameExtension {
+            // UTType returns "jpeg" for JPEG bytes; users see "jpg" everywhere
+            // else (Finder, screenshots, downloads). Normalise so we don't
+            // start producing PasteMemo_<ts>.jpeg files where PasteMemo_<ts>.jpg
+            // used to land.
+            return ext == "jpeg" ? "jpg" : ext
+        }
+
         let bytes = [UInt8](data.prefix(12))
         guard bytes.count >= 3 else { return "png" }
         if bytes.count >= 4, bytes[0] == 0x89, bytes[1] == 0x50,
@@ -1528,6 +1550,11 @@ final class ClipboardManager: ObservableObject {
         if bytes[0] == 0xFF, bytes[1] == 0xD8, bytes[2] == 0xFF { return "jpg" }
         if bytes.count >= 4, bytes[0] == 0x47, bytes[1] == 0x49,
            bytes[2] == 0x46, bytes[3] == 0x38 { return "gif" }
+        if bytes.count >= 4,
+           (bytes[0] == 0x4D && bytes[1] == 0x4D && bytes[2] == 0x00 && bytes[3] == 0x2A)
+           || (bytes[0] == 0x49 && bytes[1] == 0x49 && bytes[2] == 0x2A && bytes[3] == 0x00) {
+            return "tiff"
+        }
         if bytes.count >= 12,
            Array(bytes[0..<4]) == [0x52, 0x49, 0x46, 0x46],
            Array(bytes[8..<12]) == [0x57, 0x45, 0x42, 0x50] { return "webp" }
