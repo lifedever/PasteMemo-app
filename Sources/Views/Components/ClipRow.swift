@@ -22,6 +22,19 @@ struct ClipRow: View {
                 if showThumbnail {
                     ZStack(alignment: .topLeading) {
                         thumbnail
+                            .overlay(alignment: .bottomTrailing) {
+                                if item.agentSource != nil {
+                                    Text("AI")
+                                        .font(.system(size: 8, weight: .semibold, design: .rounded))
+                                        .foregroundStyle(.white)
+                                        .padding(.horizontal, 4)
+                                        .padding(.vertical, 1)
+                                        .background(
+                                            Color(red: 0.55, green: 0.30, blue: 0.90),
+                                            in: Capsule()
+                                        )
+                                }
+                            }
                         if item.isPinned {
                             Image(systemName: "pin.fill")
                                 .font(.system(size: 9))
@@ -214,10 +227,10 @@ struct ClipRow: View {
     private var imageFormatBadge: some View {
         if let label = resolvedImageFormatLabel {
             Text(label)
-                .font(.system(size: 7, weight: .bold, design: .rounded))
+                .font(.system(size: 8, weight: .semibold, design: .rounded))
                 .foregroundStyle(.white)
-                .padding(.horizontal, 3)
-                .padding(.vertical, 0.5)
+                .padding(.horizontal, 4)
+                .padding(.vertical, 1)
                 .background(.black.opacity(0.55), in: Capsule())
         }
     }
