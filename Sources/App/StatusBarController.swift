@@ -244,7 +244,10 @@ final class StatusBarController: NSObject {
         trackRelayState()
 
         // 图标样式偏好（@AppStorage）变化时也要刷新。
-        UserDefaults.standard.publisher(for: \.menuBarIconStyleRaw)
+        // KVO over UserDefaults 的语义：触发的 key 名 = setObject(_:forKey:) 写入的 key，
+        // 与 getter 内部读哪个 key 无关。所以这个 @objc dynamic 属性名必须等于 @AppStorage
+        // 写入的 key（"menuBarIconStyle"），否则 publisher 永远收不到通知。
+        UserDefaults.standard.publisher(for: \.menuBarIconStyle)
             .removeDuplicates()
             .sink { [weak self] _ in
                 Task { @MainActor in self?.refreshIcon() }
@@ -265,9 +268,10 @@ final class StatusBarController: NSObject {
     }
 }
 
-// 辅助 KVO key path：UserDefaults 读 menuBarIconStyle 字符串。
+// 辅助 KVO key path：属性名必须 = @AppStorage 写入的 UserDefaults key，
+// 否则 publisher(for:) 收不到通知（见上面 observeStateChanges 的注释）。
 private extension UserDefaults {
-    @objc dynamic var menuBarIconStyleRaw: String? {
+    @objc dynamic var menuBarIconStyle: String? {
         string(forKey: "menuBarIconStyle")
     }
 }
