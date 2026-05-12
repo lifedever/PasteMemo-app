@@ -383,6 +383,12 @@
 "dataPorter.exportSuccess" = "Esportazione riuscita";
 "dataPorter.importSuccess" = "Importazione riuscita";
 "dataPorter.wrongPassword" = "Password errata";
+"dataPorter.decrypting" = "Decrittazione in corso...";
+"dataPorter.refreshing" = "Aggiornamento dell'interfaccia principale...";
+"dataPorter.summary.imported" = "%d elementi importati";
+"dataPorter.summary.skipped" = "%d elementi ignorati";
+"dataPorter.summary.newGroups" = "%d nuovi gruppi aggiunti";
+"dataPorter.summary.newRules" = "%d nuove regole aggiunte";
 
 /* Dev Tools */
 "devTools.importFromRelease" = "Import Data from Release";

@@ -385,6 +385,12 @@
 "dataPorter.exportSuccess" = "匯出成功";
 "dataPorter.importSuccess" = "匯入成功";
 "dataPorter.wrongPassword" = "密碼錯誤";
+"dataPorter.decrypting" = "正在解密...";
+"dataPorter.refreshing" = "正在重新整理主介面...";
+"dataPorter.summary.imported" = "已匯入 %d 筆";
+"dataPorter.summary.skipped" = "略過 %d 筆";
+"dataPorter.summary.newGroups" = "新增群組 %d 個";
+"dataPorter.summary.newRules" = "新增規則 %d 條";
 
 /* Dev Tools */
 "devTools.importFromRelease" = "Import Data from Release";

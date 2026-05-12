@@ -380,6 +380,12 @@
 "dataPorter.exportSuccess" = "Ekspor berhasil";
 "dataPorter.importSuccess" = "Impor berhasil";
 "dataPorter.wrongPassword" = "Kata sandi salah";
+"dataPorter.decrypting" = "Sedang mendekripsi...";
+"dataPorter.refreshing" = "Memperbarui jendela utama...";
+"dataPorter.summary.imported" = "%d item diimpor";
+"dataPorter.summary.skipped" = "%d item dilewati";
+"dataPorter.summary.newGroups" = "%d grup baru ditambahkan";
+"dataPorter.summary.newRules" = "%d aturan baru ditambahkan";
 
 /* Dev Tools */
 "devTools.importFromRelease" = "Import Data from Release";

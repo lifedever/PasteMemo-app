@@ -430,6 +430,12 @@
 "dataPorter.exportSuccess" = "导出成功";
 "dataPorter.importSuccess" = "导入成功";
 "dataPorter.wrongPassword" = "密码错误";
+"dataPorter.decrypting" = "正在解密...";
+"dataPorter.refreshing" = "正在刷新主界面...";
+"dataPorter.summary.imported" = "已导入 %d 条";
+"dataPorter.summary.skipped" = "跳过 %d 条";
+"dataPorter.summary.newGroups" = "新增分组 %d 个";
+"dataPorter.summary.newRules" = "新增规则 %d 个";
 
 /* Dev Tools */
 "devTools.importFromRelease" = "从正式版导入数据";

@@ -178,11 +178,15 @@ enum DataPorter {
     }
 
     /// Decompress zlib data if needed, otherwise return as-is (backward compatible with uncompressed exports)
-    private static func decompressIfNeeded(_ data: Data) -> Data {
+    nonisolated static func decompressIfNeeded(_ data: Data) -> Data {
         (try? (data as NSData).decompressed(using: .zlib) as Data) ?? data
     }
 
-    private static func decodePayload(_ data: Data) throws -> ExportPayload {
+    /// Decompress + JSON-decode. Exposed (and `nonisolated`) so callers can run
+    /// it off the main actor — for large exports the decode alone can block
+    /// the main thread for several seconds and freeze any progress sheet that's
+    /// supposed to be animating.
+    nonisolated static func decodePayload(_ data: Data) throws -> ExportPayload {
         let jsonData = decompressIfNeeded(data)
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
@@ -190,6 +194,8 @@ enum DataPorter {
     }
 
     /// Batch import with progress callback. Runs in batches to keep UI responsive.
+    /// Decodes on the main actor — prefer `importItems(payload:into:progress:)`
+    /// when the caller can afford to decode off-actor.
     @MainActor
     static func importItems(
         from data: Data,
@@ -197,32 +203,61 @@ enum DataPorter {
         progress: @escaping (Int, Int) -> Void
     ) async throws -> ImportResult {
         let payload = try decodePayload(data)
+        return try await importItems(payload: payload, into: context, progress: progress)
+    }
 
+    /// Batch import from an already-decoded payload. Caller is responsible
+    /// for running the (expensive) `decodePayload` off the main actor.
+    @MainActor
+    static func importItems(
+        payload: ExportPayload,
+        into context: ModelContext,
+        progress: @escaping (Int, Int) -> Void
+    ) async throws -> ImportResult {
         let groupResult = importGroups(payload.groups ?? [], into: context)
         let ruleResult = importRules(payload.rules ?? [], into: context)
 
         let total = payload.items.count
+        // Emit a 0/total tick so the progress sheet shows a definite bar
+        // immediately — otherwise the bar stays at 0 for the duration of
+        // the first batch's inserts, which on large imports reads as a hang.
+        progress(0, total)
+        await Task.yield()
+
         var imported = 0
         var skipped = 0
-        let batchSize = 100
+        // Each batch is one transaction (one context.save). Yield within the
+        // batch too so heavy items (e.g. base64 image decode) don't hold the
+        // main actor long enough for macOS to draw the spinning-beachball
+        // cursor on large imports.
+        let batchSize = 25
+        let yieldEvery = 5
 
         for batchStart in stride(from: 0, to: total, by: batchSize) {
             let batchEnd = min(batchStart + batchSize, total)
             let batch = payload.items[batchStart..<batchEnd]
 
-            for exportItem in batch {
+            for (offset, exportItem) in batch.enumerated() {
                 if isDuplicate(exportItem, in: context) {
                     skipped += 1
                 } else {
                     insertClipItem(from: exportItem, into: context)
                     imported += 1
                 }
+                let globalIndex = batchStart + offset
+                if globalIndex % yieldEvery == yieldEvery - 1 {
+                    // Mid-batch progress update — gives the determinate bar
+                    // something to move on while the bigger batches run.
+                    progress(globalIndex + 1, total)
+                    await Task.yield()
+                }
             }
 
             try context.save()
             progress(batchStart + batch.count, total)
 
-            // Yield to main thread between batches so UI stays responsive
+            // Yield between batches as well — the save itself can be slow when
+            // SwiftData flushes a batch of inserts to disk.
             await Task.yield()
         }
 

@@ -309,6 +309,12 @@
 "dataPorter.exportSuccess" = "エクスポート成功";
 "dataPorter.importSuccess" = "インポート成功";
 "dataPorter.wrongPassword" = "パスワードが正しくありません";
+"dataPorter.decrypting" = "復号化中...";
+"dataPorter.refreshing" = "メイン画面を更新中...";
+"dataPorter.summary.imported" = "%d 件をインポートしました";
+"dataPorter.summary.skipped" = "%d 件をスキップしました";
+"dataPorter.summary.newGroups" = "新規グループ %d 個を追加";
+"dataPorter.summary.newRules" = "新規ルール %d 個を追加";
 
 /* Dev Tools */
 "devTools.importFromRelease" = "Import Data from Release";

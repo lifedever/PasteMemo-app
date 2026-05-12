@@ -310,7 +310,17 @@ final class ClipItemStore {
     private func addRetentionCondition(_ conditions: inout [String], _ params: inout [Any]) {
         guard let cutoff = ProManager.shared.retentionCutoffDate else { return }
         let cutoffVal = cutoff.timeIntervalSince(Date(timeIntervalSinceReferenceDate: 0))
-        conditions.append("(ZISPINNED = 1 OR ZCREATEDAT >= ?)")
+        // Must mirror ClipboardManager.cleanExpiredItems' preservation logic:
+        // items in `preservesItems = true` groups survive deletion, so they
+        // must also survive the query filter. Without this, those items become
+        // invisible "dark matter" — still matched by findExistingDuplicate
+        // (which doesn't apply retention), so a fresh copy of the same content
+        // gets merged into the hidden row and the user sees no UI feedback.
+        conditions.append("""
+            (ZISPINNED = 1
+             OR ZCREATEDAT >= ?
+             OR ZGROUPNAME IN (SELECT ZNAME FROM ZSMARTGROUP WHERE ZPRESERVESITEMS = 1))
+        """)
         params.append(cutoffVal)
     }
 
@@ -594,6 +604,21 @@ final class ClipItemStore {
         NotificationCenter.default.post(name: itemDidUpdateNotification, object: nil)
     }
 
+    /// Synchronously refresh every live store. Use after bulk writes (import,
+    /// restore) where the caller needs the UI to reflect the new state *before*
+    /// dismissing a progress sheet or showing a success alert — the regular
+    /// `saveAndNotify` path dispatches the observer on `.receive(on: RunLoop.main)`
+    /// which lands asynchronously and leaves a visible empty-state flash.
+    static func refreshAllStoresNow() {
+        for case let store as ClipItemStore in activeStores.allObjects {
+            if store.isActive {
+                store.performRefresh()
+            } else {
+                store.needsRefresh = true
+            }
+        }
+    }
+
     static func saveAndNotifyContent(_ context: ModelContext) {
         try? context.save()
         NotificationCenter.default.post(name: itemContentDidUpdateNotification, object: nil)
@@ -672,7 +697,7 @@ final class ClipItemStore {
             }
     }
 
-    private func performRefresh() {
+    func performRefresh() {
         isRefreshing = true
         invalidateDB()
         refreshAvailableTypes()

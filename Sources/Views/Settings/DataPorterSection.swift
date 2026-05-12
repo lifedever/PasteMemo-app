@@ -52,8 +52,16 @@ struct DataPorterSection: View {
             VStack(spacing: 16) {
                 Text(progressTitle)
                     .font(.headline)
-                ProgressView(value: progressValue, total: 1.0)
-                    .progressViewStyle(.linear)
+                // Switch between indeterminate and determinate so stages with no
+                // measurable progress (decrypt / parse / refresh) still animate
+                // instead of sitting at 0% and looking frozen.
+                if progressValue > 0 && progressValue < 1.0 {
+                    ProgressView(value: progressValue, total: 1.0)
+                        .progressViewStyle(.linear)
+                } else {
+                    ProgressView()
+                        .progressViewStyle(.linear)
+                }
                 Text(importProgress)
                     .font(.system(size: 12, design: .monospaced))
                     .foregroundStyle(.secondary)
@@ -191,7 +199,7 @@ struct DataPorterSection: View {
     private func performImport(with fileData: Data, password: String?) {
         progressTitle = L10n.tr("dataPorter.import")
         isProcessing = true
-        importProgress = ""
+        importProgress = L10n.tr("dataPorter.decrypting")
         progressValue = 0
         Task { @MainActor in
             defer {
@@ -200,21 +208,47 @@ struct DataPorterSection: View {
                 progressValue = 0
             }
             do {
-                let jsonData: Data
-                if let password {
-                    jsonData = try DataPorterCrypto.decrypt(fileData: fileData, password: password)
-                } else {
-                    jsonData = try DataPorterCrypto.decrypt(fileData: fileData, password: "")
-                }
+                // SwiftUI may not have committed the `isProcessing = true` state
+                // change yet — without this fence the main actor gets grabbed
+                // by the heavy work below before the sheet renders, so the user
+                // sees a frozen window with a spinning cursor instead of the
+                // progress sheet they're meant to see.
+                try? await Task.sleep(for: .milliseconds(32))
+
+                // PBKDF2 (600k iter) + AES.GCM + zlib + JSON decode on a multi-MB
+                // payload easily eats several seconds. Doing it inline on the
+                // main actor freezes the progress sheet and spins the cursor —
+                // the symptoms the user reported. Run off-actor, then resume.
+                let pwd = password ?? ""
+                let payload: ExportPayload = try await Task.detached(priority: .userInitiated) {
+                    let jsonData = try DataPorterCrypto.decrypt(fileData: fileData, password: pwd)
+                    return try DataPorter.decodePayload(jsonData)
+                }.value
+
+                importProgress = "0 / \(payload.items.count)"
+                progressValue = 0
+
                 ClipItemStore.isBulkOperation = true
                 let result = try await DataPorter.importItems(
-                    from: jsonData,
+                    payload: payload,
                     into: modelContext
                 ) { current, total in
                     importProgress = "\(current) / \(total)"
                     progressValue = Double(current) / Double(max(total, 1))
                 }
                 ClipItemStore.isBulkOperation = false
+
+                // Keep the progress sheet on screen with a "refreshing" stage
+                // and synchronously rebuild every live store BEFORE we let the
+                // sheet close. Without this, the immediate save observer fires
+                // on `.receive(on: RunLoop.main)` (async), so the sheet closes
+                // first and the user sees an empty main window flash for a few
+                // seconds before items materialise.
+                importProgress = L10n.tr("dataPorter.refreshing")
+                progressValue = 1.0
+                await Task.yield()
+                ClipItemStore.refreshAllStoresNow()
+
                 var extras: [String] = []
                 if result.importedGroups > 0 { extras.append("+\(result.importedGroups) groups") }
                 if result.importedRules > 0 { extras.append("+\(result.importedRules) rules") }

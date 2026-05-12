@@ -383,6 +383,12 @@
 "dataPorter.exportSuccess" = "Экспорт выполнен";
 "dataPorter.importSuccess" = "Импорт выполнен";
 "dataPorter.wrongPassword" = "Неверный пароль";
+"dataPorter.decrypting" = "Расшифровка...";
+"dataPorter.refreshing" = "Обновление главного окна...";
+"dataPorter.summary.imported" = "Импортировано: %d";
+"dataPorter.summary.skipped" = "Пропущено: %d";
+"dataPorter.summary.newGroups" = "Новых групп: %d";
+"dataPorter.summary.newRules" = "Новых правил: %d";
 
 /* Dev Tools */
 "devTools.importFromRelease" = "Import Data from Release";

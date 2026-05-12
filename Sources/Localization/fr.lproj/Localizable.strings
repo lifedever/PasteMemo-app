@@ -295,6 +295,12 @@
 "dataPorter.exportSuccess" = "Export réussi";
 "dataPorter.importSuccess" = "Import réussi";
 "dataPorter.wrongPassword" = "Mot de passe incorrect";
+"dataPorter.decrypting" = "Déchiffrement en cours…";
+"dataPorter.refreshing" = "Actualisation de la fenêtre principale…";
+"dataPorter.summary.imported" = "%d éléments importés";
+"dataPorter.summary.skipped" = "%d éléments ignorés";
+"dataPorter.summary.newGroups" = "%d nouveaux groupes";
+"dataPorter.summary.newRules" = "%d nouvelles règles";
 
 /* Dev Tools */
 "devTools.importFromRelease" = "Import Data from Release";

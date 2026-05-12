@@ -295,6 +295,12 @@
 "dataPorter.exportSuccess" = "내보내기 완료";
 "dataPorter.importSuccess" = "가져오기 완료";
 "dataPorter.wrongPassword" = "비밀번호가 올바르지 않습니다";
+"dataPorter.decrypting" = "복호화 중...";
+"dataPorter.refreshing" = "메인 화면을 새로 고치는 중...";
+"dataPorter.summary.imported" = "%d개 항목을 가져왔습니다";
+"dataPorter.summary.skipped" = "%d개 항목을 건너뛰었습니다";
+"dataPorter.summary.newGroups" = "그룹 %d개를 새로 추가했습니다";
+"dataPorter.summary.newRules" = "규칙 %d개를 새로 추가했습니다";
 
 /* Dev Tools */
 "devTools.importFromRelease" = "Import Data from Release";

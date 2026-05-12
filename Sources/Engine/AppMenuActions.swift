@@ -73,17 +73,56 @@ enum AppMenuActions {
     }
 
     private static func performImport(fileData: Data, password: String?, context: ModelContext) {
+        // Show the progress panel up front so the user has visible feedback
+        // before we touch the heavy work below. Settings panel has its own
+        // integrated sheet — this is the menu-action equivalent.
+        let coordinator = ImportProgressCoordinator.shared
+        coordinator.start(
+            title: L10n.tr("dataPorter.import"),
+            initialStatus: L10n.tr("dataPorter.decrypting")
+        )
+
         Task { @MainActor in
             do {
-                let jsonData = try DataPorterCrypto.decrypt(fileData: fileData, password: password ?? "")
-                let result = try DataPorter.importItems(from: jsonData, into: context)
-                var extras: [String] = []
-                if result.importedGroups > 0 { extras.append("+\(result.importedGroups) groups") }
-                if result.importedRules > 0 { extras.append("+\(result.importedRules) rules") }
-                let extrasText = extras.isEmpty ? "" : ", " + extras.joined(separator: ", ")
-                showAlert(L10n.tr("dataPorter.importSuccess") + " (\(result.imported) imported, \(result.skipped) skipped\(extrasText))")
+                // Let SwiftUI commit the panel's initial render before we hold
+                // the main actor with crypto / decode work.
+                try? await Task.sleep(for: .milliseconds(32))
+
+                // PBKDF2 (600k iter) + AES.GCM + zlib + JSON decode of a
+                // multi-MB payload would freeze the panel and spin the cursor
+                // if done on the main actor. Run off-actor, then resume.
+                let pwd = password ?? ""
+                let payload: ExportPayload = try await Task.detached(priority: .userInitiated) {
+                    let jsonData = try DataPorterCrypto.decrypt(fileData: fileData, password: pwd)
+                    return try DataPorter.decodePayload(jsonData)
+                }.value
+
+                coordinator.updateProgress(current: 0, total: payload.items.count)
+
+                ClipItemStore.isBulkOperation = true
+                let result = try await DataPorter.importItems(
+                    payload: payload,
+                    into: context
+                ) { current, total in
+                    coordinator.updateProgress(current: current, total: total)
+                }
+                ClipItemStore.isBulkOperation = false
+
+                // Same reasoning as DataPorterSection.performImport: the
+                // throttled save observer is async (`.receive(on: RunLoop.main)`),
+                // so a synchronous refresh here keeps the main window in sync
+                // before the result phase reveals it behind the panel.
+                coordinator.setIndeterminateStage(L10n.tr("dataPorter.refreshing"))
+                await Task.yield()
+                ClipItemStore.refreshAllStoresNow()
+
+                // Folds the would-be follow-up "import success" alert into the
+                // same panel so the user gets one place to ack the result.
+                coordinator.showSuccess(result: result)
+            } catch let error as CryptoError where error == .wrongPassword {
+                coordinator.showFailure(message: L10n.tr("dataPorter.wrongPassword"))
             } catch {
-                showAlert(L10n.tr("dataPorter.wrongPassword"))
+                coordinator.showFailure(message: error.localizedDescription)
             }
         }
     }
