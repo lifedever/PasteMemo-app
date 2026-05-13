@@ -842,6 +842,9 @@
 "settings.aiAgents.uninstallFailed" = "從 %@ 解除安裝失敗：%@";
 "settings.aiAgents.privacy" = "隱私";
 "settings.aiAgents.allowSensitive" = "允許 Agent 讀取標記為敏感的剪貼項目";
+"settings.aiAgents.master.toggle" = "啟用 AI Agent 整合";
+"settings.aiAgents.master.detail" = "允許 Claude、Codex 等 AI 工具透過 MCP 協定讀取你的剪貼簿歷史";
+"settings.aiAgents.master.disabledHint" = "已關閉。開啟後可讓 AI Agent 透過 MCP 協定存取你的剪貼簿歷史。";
 "settings.aiAgents.sourceBlocklist" = "來源 App 黑名單";
 "settings.aiAgents.binaryMissing" = "pastememo-mcp 執行檔遺失";
 "settings.aiAgents.binaryMissingDetail" = "通常在從 MCP 之前的版本透過應用內更新後發生。請從 lifedever.com 重新下載 DMG 修復。";

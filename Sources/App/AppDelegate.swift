@@ -81,7 +81,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         BackupScheduler.shared.start(container: PasteMemoApp.sharedModelContainer)
 
-        MCPSocketServer.shared.start(container: PasteMemoApp.sharedModelContainer)
+        // 总开关:默认值由 PasteMemoApp.migrateMCPEnabledIfNeeded() 决定 ——
+        // 1.7.x 升级用户 = true (保持原行为),全新安装 = false (隐私优先)。issue #50
+        if UserDefaults.standard.bool(forKey: "mcpEnabled") {
+            MCPSocketServer.shared.start(container: PasteMemoApp.sharedModelContainer)
+        }
 
         // 已主动安装过 Claude Skill 的用户,App 升级后静默把 SKILL.md 同步到最新模板
         // (仅当本地未被用户改过时)。从未安装 / 改过 / 删过的用户都不会被打扰。

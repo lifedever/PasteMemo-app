@@ -882,6 +882,9 @@
 "settings.aiAgents.uninstallFailed" = "%@에서 제거 실패: %@";
 "settings.aiAgents.privacy" = "개인정보";
 "settings.aiAgents.allowSensitive" = "에이전트가 민감 항목을 읽도록 허용";
+"settings.aiAgents.master.toggle" = "AI 에이전트 통합 사용";
+"settings.aiAgents.master.detail" = "Claude, Codex 등 AI 도구가 MCP를 통해 클립보드 기록을 읽도록 허용합니다";
+"settings.aiAgents.master.disabledHint" = "사용 안 함. 켜면 AI 에이전트가 MCP를 통해 클립보드에 접근할 수 있습니다.";
 "settings.aiAgents.sourceBlocklist" = "출처 앱 차단 목록";
 "settings.aiAgents.binaryMissing" = "pastememo-mcp 바이너리 없음";
 "settings.aiAgents.binaryMissingDetail" = "MCP 지원 이전 버전에서 인앱 업데이트한 후에 흔히 발생합니다. lifedever.com에서 DMG를 다시 다운로드하여 해결해 주세요.";

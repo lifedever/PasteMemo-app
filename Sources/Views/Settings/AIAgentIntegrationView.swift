@@ -4,6 +4,7 @@ import UniformTypeIdentifiers
 
 @MainActor
 struct AIAgentIntegrationView: View {
+    @AppStorage("mcpEnabled") private var mcpEnabled = false
     @AppStorage("mcpAllowSensitive") private var allowSensitive = false
     @State private var agentStates: [String: Bool] = [:]   // id -> installed?
     @State private var agentStatusMessages: [String: String] = [:]
@@ -30,32 +31,60 @@ struct AIAgentIntegrationView: View {
                 }
             }
 
-            Section(L10n.tr("settings.aiAgents.service")) {
-                HStack {
-                    Circle().fill(.green).frame(width: 8, height: 8)
-                    Text(L10n.tr("settings.aiAgents.serverRunning"))
+            // 总开关。issue #50
+            Section {
+                Toggle(isOn: $mcpEnabled) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(L10n.tr("settings.aiAgents.master.toggle"))
+                        Text(L10n.tr("settings.aiAgents.master.detail"))
+                            .font(.caption).foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+                .onChange(of: mcpEnabled) { _, enabled in
+                    if enabled {
+                        MCPSocketServer.shared.start(container: PasteMemoApp.sharedModelContainer)
+                    } else {
+                        MCPSocketServer.shared.stop()
+                    }
+                }
+            }
+
+            if mcpEnabled {
+                Section(L10n.tr("settings.aiAgents.service")) {
+                    HStack {
+                        Circle().fill(.green).frame(width: 8, height: 8)
+                        Text(L10n.tr("settings.aiAgents.serverRunning"))
+                            .font(.callout)
+                        Spacer()
+                        Text(socketPath).font(.caption).foregroundStyle(.secondary)
+                    }
+                }
+
+                Section(L10n.tr("settings.aiAgents.agents")) {
+                    ForEach(MCPAgentRegistry.all, id: \.id) { agent in
+                        AgentRow(agent: agent,
+                                 installed: agentStates[agent.id] ?? false,
+                                 binaryExists: mcpProxyBinaryExists,
+                                 statusMessage: agentStatusMessages[agent.id],
+                                 onInstall: { install(agent) },
+                                 onUninstall: { uninstall(agent) })
+                    }
+                }
+
+                Section(L10n.tr("settings.aiAgents.privacy")) {
+                    Toggle(L10n.tr("settings.aiAgents.allowSensitive"), isOn: $allowSensitive)
+                }
+
+                MCPSourceAppBlocklistSection()
+            } else {
+                Section {
+                    Text(L10n.tr("settings.aiAgents.master.disabledHint"))
+                        .foregroundStyle(.secondary)
                         .font(.callout)
-                    Spacer()
-                    Text(socketPath).font(.caption).foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
             }
-
-            Section(L10n.tr("settings.aiAgents.agents")) {
-                ForEach(MCPAgentRegistry.all, id: \.id) { agent in
-                    AgentRow(agent: agent,
-                             installed: agentStates[agent.id] ?? false,
-                             binaryExists: mcpProxyBinaryExists,
-                             statusMessage: agentStatusMessages[agent.id],
-                             onInstall: { install(agent) },
-                             onUninstall: { uninstall(agent) })
-                }
-            }
-
-            Section(L10n.tr("settings.aiAgents.privacy")) {
-                Toggle(L10n.tr("settings.aiAgents.allowSensitive"), isOn: $allowSensitive)
-            }
-
-            MCPSourceAppBlocklistSection()
 
         }
         .formStyle(.grouped)

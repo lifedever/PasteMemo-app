@@ -828,6 +828,9 @@
 "settings.aiAgents.uninstallFailed" = "从 %@ 卸载失败：%@";
 "settings.aiAgents.privacy" = "隐私";
 "settings.aiAgents.allowSensitive" = "允许 Agent 读取标记为敏感的剪贴项";
+"settings.aiAgents.master.toggle" = "启用 AI Agent 集成";
+"settings.aiAgents.master.detail" = "允许 Claude、Codex 等 AI 工具通过 MCP 协议读取你的剪贴板历史";
+"settings.aiAgents.master.disabledHint" = "已关闭。开启后可让 AI Agent 通过 MCP 协议访问你的剪贴板历史。";
 "settings.aiAgents.sourceBlocklist" = "源 App 黑名单";
 "settings.aiAgents.binaryMissing" = "pastememo-mcp 二进制缺失";
 "settings.aiAgents.binaryMissingDetail" = "通常在从 MCP 之前的版本通过应用内更新后发生。请从 lifedever.com 重新下载 DMG 修复。";

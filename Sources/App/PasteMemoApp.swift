@@ -8,6 +8,30 @@ struct PasteMemoApp: App {
     @AppStorage("appearanceMode") private var appearanceMode: String = "system"
     @AppStorage("alwaysOnTop") private var alwaysOnTop = false
 
+    init() {
+        // 必须在 sharedModelContainer 首次访问前跑 —— container init 会创建 App
+        // Support 目录,目录一旦存在,迁移判定就会把全新安装错判成"老用户"。
+        Self.migrateMCPEnabledIfNeeded()
+    }
+
+    /// One-time migration: 决定 `mcpEnabled` 的默认值。
+    /// - 老用户(从 1.7.x 升级):App Support 目录已存在 → 默认开启,保持原行为
+    /// - 新装用户:目录还没创建 → 默认关闭,按需开启(隐私优先)
+    /// issue #50
+    private static func migrateMCPEnabledIfNeeded() {
+        let migrationKey = "mcpEnabled.migrationApplied"
+        let ud = UserDefaults.standard
+        guard !ud.bool(forKey: migrationKey) else { return }
+
+        let bundleID = Bundle.main.bundleIdentifier ?? "com.lifedever.pastememo"
+        let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
+        let storeDir = appSupport.appendingPathComponent(bundleID)
+        let isExistingUser = FileManager.default.fileExists(atPath: storeDir.path)
+
+        ud.set(isExistingUser, forKey: "mcpEnabled")
+        ud.set(true, forKey: migrationKey)
+    }
+
     var body: some Scene {
         Window(L10n.tr("app.name"), id: "main") {
             MainWindowView()

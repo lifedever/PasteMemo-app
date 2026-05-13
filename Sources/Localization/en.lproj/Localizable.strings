@@ -828,6 +828,9 @@
 "settings.aiAgents.uninstallFailed" = "Failed to uninstall from %@: %@";
 "settings.aiAgents.privacy" = "Privacy";
 "settings.aiAgents.allowSensitive" = "Allow Agent to read sensitive items";
+"settings.aiAgents.master.toggle" = "Enable AI Agent integration";
+"settings.aiAgents.master.detail" = "Allow AI tools like Claude and Codex to read your clipboard history via MCP";
+"settings.aiAgents.master.disabledHint" = "Disabled. Turn on to let AI agents access your clipboard via MCP.";
 "settings.aiAgents.sourceBlocklist" = "Source App Blocklist";
 "settings.aiAgents.binaryMissing" = "pastememo-mcp binary missing";
 "settings.aiAgents.binaryMissingDetail" = "This usually happens after an in-app update from a version before MCP support. Please re-download the DMG from lifedever.com to fix this.";

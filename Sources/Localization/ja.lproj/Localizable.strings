@@ -880,6 +880,9 @@
 "settings.aiAgents.uninstallFailed" = "%@ からのアンインストールに失敗しました：%@";
 "settings.aiAgents.privacy" = "プライバシー";
 "settings.aiAgents.allowSensitive" = "エージェントが機密としてマークされた項目を読み取ることを許可";
+"settings.aiAgents.master.toggle" = "AI エージェント連携を有効にする";
+"settings.aiAgents.master.detail" = "Claude や Codex などの AI ツールが MCP 経由でクリップボード履歴を読み取ることを許可します";
+"settings.aiAgents.master.disabledHint" = "無効になっています。オンにすると AI エージェントが MCP 経由でクリップボードにアクセスできます。";
 "settings.aiAgents.sourceBlocklist" = "ソース App ブロックリスト";
 "settings.aiAgents.binaryMissing" = "pastememo-mcp バイナリが見つかりません";
 "settings.aiAgents.binaryMissingDetail" = "MCP 対応前のバージョンからアプリ内アップデートを行った場合に発生することがあります。lifedever.com から DMG を再ダウンロードして修復してください。";

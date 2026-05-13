@@ -854,6 +854,9 @@
 "settings.aiAgents.uninstallFailed" = "Не удалось удалить из %@: %@";
 "settings.aiAgents.privacy" = "Конфиденциальность";
 "settings.aiAgents.allowSensitive" = "Разрешить агенту читать конфиденциальные элементы";
+"settings.aiAgents.master.toggle" = "Включить интеграцию AI-агента";
+"settings.aiAgents.master.detail" = "Разрешить AI-инструментам, таким как Claude и Codex, читать историю буфера обмена через MCP";
+"settings.aiAgents.master.disabledHint" = "Отключено. Включите, чтобы AI-агенты могли получать доступ к буферу обмена через MCP.";
 "settings.aiAgents.sourceBlocklist" = "Чёрный список приложений-источников";
 "settings.aiAgents.binaryMissing" = "Отсутствует бинарный файл pastememo-mcp";
 "settings.aiAgents.binaryMissingDetail" = "Обычно это происходит после обновления внутри приложения с версии без поддержки MCP. Пожалуйста, повторно скачайте DMG с lifedever.com, чтобы устранить проблему.";
