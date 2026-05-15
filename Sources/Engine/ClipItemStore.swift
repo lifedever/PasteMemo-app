@@ -472,6 +472,11 @@ final class ClipItemStore {
     }
 
     private(set) var sourceApps: [String] = []
+    /// Stable sourceApp → bundleID map across the entire DB. Sidebar icon resolution
+    /// reads from here instead of `items` (paginated) — otherwise apps whose records
+    /// fall outside the current page can't resolve their bundleID and hit the buggy
+    /// name-based fallback in FileIconHelper. See issue #52.
+    private(set) var sourceAppBundleIDs: [String: String] = [:]
 
     private func refreshSourceApps() {
         guard let db = openDB() else { return }
@@ -482,6 +487,22 @@ final class ClipItemStore {
             apps.append("")
         }
         sourceApps = apps
+
+        // Pick the most-recent non-empty bundleID per sourceApp. Bundle IDs are stable
+        // for a given app, so taking the latest is just a tiebreak when historical
+        // records mix valid IDs with empty ones.
+        let pairs = db.queryStringStringIntTuples(
+            """
+            SELECT ZSOURCEAPP, ZSOURCEAPPBUNDLEID, 0
+            FROM ZCLIPITEM
+            WHERE ZSOURCEAPP IS NOT NULL
+              AND ZSOURCEAPPBUNDLEID IS NOT NULL
+              AND ZSOURCEAPPBUNDLEID != ''
+            GROUP BY ZSOURCEAPP
+            HAVING MAX(ZCREATEDAT)
+            """
+        )
+        sourceAppBundleIDs = Dictionary(uniqueKeysWithValues: pairs.map { ($0.0, $0.1) })
     }
 
     // MARK: - Helpers

@@ -63,7 +63,7 @@ struct MainWindowView: View {
     private var sourceApps: [String] { store.sourceApps }
 
     private func bundleIDForApp(_ appName: String) -> String? {
-        store.items.first { $0.sourceApp == appName }?.sourceAppBundleID
+        store.sourceAppBundleIDs[appName]
     }
 
     private var filteredItems: [ClipItem] { store.items.filter { !$0.isDeleted } }

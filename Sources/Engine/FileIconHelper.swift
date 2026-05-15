@@ -261,8 +261,13 @@ private func resolveAppIcon(bundleID: String?, name: String?) -> NSImage? {
     }
     if let name, !name.isEmpty {
         let fallbackBundleID = bundleId(for: name)
-        if let url = workspace.urlForApplication(withBundleIdentifier: fallbackBundleID)
-            ?? findAppByName(name) {
+        // Never feed "" to Launch Services — on some macOS versions it returns a
+        // cached/unrelated app URL, which short-circuits findAppByName and makes
+        // every fallback row in the sidebar show the same wrong icon (issue #52).
+        let lsURL = fallbackBundleID.isEmpty
+            ? nil
+            : workspace.urlForApplication(withBundleIdentifier: fallbackBundleID)
+        if let url = lsURL ?? findAppByName(name) {
             return workspace.icon(forFile: url.path)
         }
     }
