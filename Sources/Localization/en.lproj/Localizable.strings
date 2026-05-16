@@ -25,6 +25,14 @@
 "action.unfavorite" = "Unfavorite";
 "action.pin" = "Pin";
 "cmd.showInFinder" = "Show in Finder";
+"cmd.saveAsFile" = "Save As…";
+"saveAs.save" = "Save";
+"saveAs.chooseFolderPrompt" = "Export";
+"saveAs.chooseFolderMessage" = "Choose a folder to copy %d items into.";
+"saveAs.saved" = "Saved to %@";
+"saveAs.failed" = "Could not save the file.";
+"saveAs.exportedCount" = "Exported %d files.";
+"saveAs.exportedPartial" = "Exported %d of %d files.";
 "cmd.copyAs" = "Copy as %@";
 "relay.reverse" = "Reverse Order";
 "relay.clearAll" = "Clear All";

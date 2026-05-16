@@ -687,6 +687,14 @@ Utilisez %@ pour coller un par un.";
 /* Command Palette */
 "cmd.copyAs" = "Copier en tant que %@";
 "cmd.showInFinder" = "Afficher dans le Finder";
+"cmd.saveAsFile" = "Enregistrer sous…";
+"saveAs.save" = "Enregistrer";
+"saveAs.chooseFolderPrompt" = "Exporter";
+"saveAs.chooseFolderMessage" = "Choisissez un dossier pour copier %d éléments.";
+"saveAs.saved" = "Enregistré dans %@";
+"saveAs.failed" = "Impossible d’enregistrer le fichier.";
+"saveAs.exportedCount" = "%d fichiers exportés.";
+"saveAs.exportedPartial" = "%d fichiers sur %d exportés.";
 
 /* Accessibility */
 "accessibility.lost.later" = "Plus tard";

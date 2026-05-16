@@ -646,6 +646,14 @@ Usa %@ per incollare uno per uno.";
 
 /* Missing Keys - Actions */
 "cmd.showInFinder" = "Mostra nel Finder";
+"cmd.saveAsFile" = "Salva con nome…";
+"saveAs.save" = "Salva";
+"saveAs.chooseFolderPrompt" = "Esporta";
+"saveAs.chooseFolderMessage" = "Scegli una cartella in cui copiare %d elementi.";
+"saveAs.saved" = "Salvato in %@";
+"saveAs.failed" = "Impossibile salvare il file.";
+"saveAs.exportedCount" = "Esportati %d file.";
+"saveAs.exportedPartial" = "Esportati %d di %d file.";
 "cmd.copyAs" = "Copia come %@";
 "relay.reverse" = "Inverti ordine";
 "relay.clearAll" = "Cancella tutto";

@@ -13,6 +13,7 @@ enum CommandAction: Hashable {
     case retryOCR
     case openInPreview
     case showInFinder
+    case saveAsFile
     case copy
     case transform(RuleAction)
     case addToRelay
@@ -34,6 +35,7 @@ enum CommandAction: Hashable {
         case .retryOCR: "text.viewfinder"
         case .openInPreview: "photo.on.rectangle.angled"
         case .showInFinder: "folder"
+        case .saveAsFile: "square.and.arrow.down.on.square"
         case .copy: "doc.on.doc"
         case .transform: "wand.and.stars"
         case .addToRelay: "arrow.right.arrow.left"
@@ -54,6 +56,7 @@ enum CommandAction: Hashable {
         case .retryOCR: L10n.tr("cmd.retryOCR")
         case .openInPreview: L10n.tr("cmd.openInPreview")
         case .showInFinder: L10n.tr("cmd.showInFinder")
+        case .saveAsFile: L10n.tr("cmd.saveAsFile")
         case .copy: L10n.tr("cmd.copy")
         case .transform(let action): action.displayLabel
         case .addToRelay: L10n.tr("relay.addToQueue")
@@ -74,6 +77,7 @@ enum CommandAction: Hashable {
         case .retryOCR: "Y"
         case .openInPreview: "L"
         case .showInFinder: "O"
+        case .saveAsFile: "U"
         case .copy: "C"
         case .transform: nil
         case .addToRelay: "R"
@@ -94,6 +98,7 @@ enum CommandAction: Hashable {
         case .retryOCR: 16   // Y
         case .openInPreview: 37 // L
         case .showInFinder: 31 // O
+        case .saveAsFile: 32 // U
         case .copy: 8        // C
         case .transform: nil
         case .addToRelay: 15 // R
@@ -176,6 +181,9 @@ struct CommandPaletteContent: View {
         }
         if let item, item.contentType.isFileBased {
             list.append(.showInFinder)
+        }
+        if !isMultiSelected, let item, ClipItemSaveToFilePresenter.canSaveAsFile(item) {
+            list.append(.saveAsFile)
         }
         list.append(.copy)
         list.append(.addToRelay)

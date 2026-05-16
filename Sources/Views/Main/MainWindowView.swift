@@ -682,6 +682,11 @@ struct MainWindowView: View {
                     copyToClipboard(item)
                 }
             }
+            if selectedItems.count <= 1, ClipItemSaveToFilePresenter.canSaveAsFile(item) {
+                Button(L10n.tr("cmd.saveAsFile")) {
+                    ClipItemSaveToFilePresenter.beginSave(item)
+                }
+            }
             Button(item.isPinned ? L10n.tr("action.unpin") : L10n.tr("action.pin")) {
                 if selectedItems.contains(item.persistentModelID), selectedItems.count > 1 {
                     let items = selectedClipItems
@@ -974,6 +979,8 @@ struct MainWindowView: View {
             if let first = paths.first {
                 NSWorkspace.shared.selectFile(first, inFileViewerRootedAtPath: "")
             }
+        case .saveAsFile:
+            ClipItemSaveToFilePresenter.beginSave(item)
         case .transform(let ruleAction):
             let processed = AutomationEngine.shared.applyAction(ruleAction, to: item.content)
             let contentChanged = processed != item.content

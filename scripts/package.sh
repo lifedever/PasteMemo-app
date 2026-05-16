@@ -67,7 +67,14 @@ mkdir -p "$APP_DIR/Contents/MacOS" "$APP_DIR/Contents/Resources" "$DIST_DIR"
 cp "$PRODUCT_BINARY" "$APP_DIR/Contents/MacOS/$EXECUTABLE_NAME"
 chmod +x "$APP_DIR/Contents/MacOS/$EXECUTABLE_NAME"
 cp "$ICON_FILE" "$APP_DIR/Contents/Resources/AppIcon.icns"
-cp -R "$RESOURCE_BUNDLE" "$APP_DIR/"
+# SPM places each target's resource bundle next to the executable (e.g.
+# PermissionFlow_PermissionFlow.bundle). Copy every *.bundle — omitting a
+# dependency bundle breaks at runtime (AccessibilityMonitor reinstall alert).
+shopt -s nullglob
+for bundle in "$BUILD_DIR"/*.bundle; do
+  cp -R "$bundle" "$APP_DIR/"
+done
+shopt -u nullglob
 
 CURRENT_YEAR="$(date +%Y)"
 
