@@ -10,6 +10,7 @@ struct ClipDetailView: View {
     @State private var isEditing = false
     @State private var editingContent = ""
     @State private var isOCRExpanded = false
+    @State private var decodedLinkImageData: Data?
     @AppStorage(OCRTaskCoordinator.enableOCRKey) private var ocrEnabled = true
 
     private var isEditableType: Bool {
@@ -263,8 +264,14 @@ struct ClipDetailView: View {
 
     @ViewBuilder
     private var contentPreview: some View {
-        if item.contentType == .image, item.content != "[Image]", item.imageData == nil {
-            filePreview
+        if item.contentType == .image {
+            if ClipImagePreviewSource.resolve(from: item) != nil {
+                zoomableImagePreview
+            } else if item.content != "[Image]", item.imageData == nil {
+                filePreview
+            } else {
+                zoomableImagePreview
+            }
         } else {
             contentPreviewByType
         }
@@ -273,8 +280,6 @@ struct ClipDetailView: View {
     @ViewBuilder
     private var contentPreviewByType: some View {
         switch item.contentType {
-        case .image:
-            imagePreview
         case .link:
             linkPreview
         case .video:
@@ -441,10 +446,10 @@ struct ClipDetailView: View {
     }
 
     @ViewBuilder
-    private var imagePreview: some View {
-        AsyncPreviewImageView(
-            data: item.imageData,
-            cacheKey: item.itemID,
+    private var zoomableImagePreview: some View {
+        ZoomableClipImagePreview(
+            item: item,
+            supplementalData: decodedLinkImageData,
             maxPixelSize: 1400,
             cornerRadius: 8
         )
@@ -457,7 +462,21 @@ struct ClipDetailView: View {
 
     @ViewBuilder
     private var linkPreview: some View {
-        if let url = URL(string: item.content.trimmingCharacters(in: .whitespacesAndNewlines)) {
+        if item.prefersZoomableLinkImagePreview,
+           ClipImagePreviewSource.resolve(from: item, supplementalData: decodedLinkImageData) != nil {
+            zoomableImagePreview
+                .task(id: item.persistentModelID) {
+                    decodedLinkImageData = nil
+                    guard item.imageData == nil,
+                          DataImageURI.isBase64DataImageURI(item.content) else { return }
+                    let content = item.content
+                    let decoded = await Task.detached(priority: .userInitiated) {
+                        DataImageURI.decodedImageData(from: content)
+                    }.value
+                    guard !Task.isCancelled else { return }
+                    decodedLinkImageData = decoded
+                }
+        } else if let url = URL(string: item.content.trimmingCharacters(in: .whitespacesAndNewlines)) {
             if !offlineModeEnabled,
                (imageLinkPreviewEnabled && LinkMetadataFetcher.isImageURL(item.content)) || webPreviewEnabled {
                 linkWebPreview(url: url)

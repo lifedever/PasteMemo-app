@@ -792,6 +792,10 @@ Verwenden Sie %@ zum Einfügen.";
 /* Backup (additional) */
 "backup.nextBackup" = "Nächstes Backup";
 "detail.openInFinder" = "Im Finder anzeigen";
+"preview.image.zoomFit" = "An Breite anpassen";
+"preview.image.zoomActual" = "100%";
+"preview.image.openInPreview" = "In Vorschau öffnen";
+"preview.image.zoomHint" = "⌘+Scrollen oder Zoomen mit zwei Fingern";
 
 /* Sponsor Tab */
 "settings.sponsor" = "Unterstützen";

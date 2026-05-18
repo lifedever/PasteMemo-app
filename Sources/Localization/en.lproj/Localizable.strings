@@ -59,6 +59,10 @@
 "mixed.section.text" = "Text";
 "mixed.section.files" = "Files (%d)";
 "detail.openInFinder" = "Show in Finder";
+"preview.image.zoomFit" = "Fit Width";
+"preview.image.zoomActual" = "100%";
+"preview.image.openInPreview" = "Open in Preview";
+"preview.image.zoomHint" = "⌘+scroll or pinch to zoom";
 
 /* Filter */
 "filter.all" = "All";

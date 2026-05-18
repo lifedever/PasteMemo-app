@@ -14,7 +14,6 @@ BUNDLE_ID="${BUNDLE_ID:-$DEFAULT_BUNDLE_ID}"
 DIST_DIR="${DIST_DIR:-$ROOT_DIR/dist}"
 BUILD_DIR="$ROOT_DIR/.build/${ARCH}-apple-macosx/${CONFIGURATION}"
 PRODUCT_BINARY="$BUILD_DIR/$EXECUTABLE_NAME"
-RESOURCE_BUNDLE="$BUILD_DIR/${APP_NAME}_${APP_NAME}.bundle"
 ICON_FILE="$ROOT_DIR/Sources/Resources/AppIcon.icns"
 
 resolve_version() {
@@ -51,8 +50,11 @@ if [[ ! -x "$PRODUCT_BINARY" ]]; then
   exit 1
 fi
 
-if [[ ! -d "$RESOURCE_BUNDLE" ]]; then
-  echo "Resource bundle not found: $RESOURCE_BUNDLE" >&2
+# Glob every *.bundle produced by SwiftPM resource targets. Hard-coding names
+# silently misses new SPM dependencies and crashes Bundle.module at runtime.
+RESOURCE_BUNDLES=("$BUILD_DIR"/*.bundle)
+if [[ ! -d "${RESOURCE_BUNDLES[0]}" ]]; then
+  echo "No SwiftPM resource bundles found in $BUILD_DIR" >&2
   exit 1
 fi
 
@@ -67,7 +69,9 @@ mkdir -p "$APP_DIR/Contents/MacOS" "$APP_DIR/Contents/Resources" "$DIST_DIR"
 cp "$PRODUCT_BINARY" "$APP_DIR/Contents/MacOS/$EXECUTABLE_NAME"
 chmod +x "$APP_DIR/Contents/MacOS/$EXECUTABLE_NAME"
 cp "$ICON_FILE" "$APP_DIR/Contents/Resources/AppIcon.icns"
-cp -R "$RESOURCE_BUNDLE" "$APP_DIR/"
+for bundle in "${RESOURCE_BUNDLES[@]}"; do
+  cp -R "$bundle" "$APP_DIR/"
+done
 
 CURRENT_YEAR="$(date +%Y)"
 

@@ -66,6 +66,35 @@ final class ImageCache: @unchecked Sendable {
         return task
     }
 
+    func preview(forFileAt url: URL, key: String, maxDimension: CGFloat) -> NSImage? {
+        let cacheKey = previewCacheKey(for: key, maxDimension: maxDimension)
+        if let cached = cache.object(forKey: cacheKey) { return cached }
+
+        guard let data = ClipboardManager.loadOriginalImageData(at: url.path) else {
+            return nil
+        }
+        return preview(for: data, key: key, maxDimension: maxDimension)
+    }
+
+    func previewTask(forFileAt url: URL, key: String, maxDimension: CGFloat) -> Task<Void, Never> {
+        let cacheKey = previewCacheKey(for: key, maxDimension: maxDimension)
+        let taskKey = "filepreview_\(cacheKey)" as String
+        if cache.object(forKey: cacheKey) != nil { return Task {} }
+
+        if let existing = existingTask(for: taskKey, in: \.previewTasks) {
+            return existing
+        }
+
+        let task = Task<Void, Never> { @Sendable [weak self] in
+            guard let self else { return }
+            _ = self.preview(forFileAt: url, key: key, maxDimension: maxDimension)
+            self.removeTask(for: taskKey, from: \.previewTasks)
+        }
+
+        storeTask(task, for: taskKey, in: \.previewTasks)
+        return task
+    }
+
     func thumbnailTask(for data: Data, key: String, size: CGFloat) -> Task<Void, Never> {
         let cacheKey = thumbnailCacheKey(for: key, size: size)
         let taskKey = cacheKey as String

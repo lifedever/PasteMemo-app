@@ -825,6 +825,10 @@
 /* Backup - Additional */
 "backup.nextBackup" = "次回のバックアップ";
 "detail.openInFinder" = "Finderで表示";
+"preview.image.zoomFit" = "幅に合わせる";
+"preview.image.zoomActual" = "100%";
+"preview.image.openInPreview" = "プレビューで開く";
+"preview.image.zoomHint" = "⌘+スクロールまたはピンチで拡大";
 
 /* Sponsor Tab */
 "settings.sponsor" = "サポート";

@@ -810,6 +810,10 @@ Usa %@ para pegar uno por uno.";
 /* Backup - Additional */
 "backup.nextBackup" = "Próxima copia";
 "detail.openInFinder" = "Mostrar en Finder";
+"preview.image.zoomFit" = "Ajustar ancho";
+"preview.image.zoomActual" = "100%";
+"preview.image.openInPreview" = "Abrir en Vista Previa";
+"preview.image.zoomHint" = "⌘+desplazar o pellizcar para zoom";
 
 /* Sponsor Tab */
 "settings.sponsor" = "Apoyar";

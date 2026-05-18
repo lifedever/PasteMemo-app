@@ -51,6 +51,10 @@
 "mixed.section.text" = "Teks";
 "mixed.section.files" = "Berkas (%d)";
 "detail.openInFinder" = "Tampilkan di Finder";
+"preview.image.zoomFit" = "Sesuaikan lebar";
+"preview.image.zoomActual" = "100%";
+"preview.image.openInPreview" = "Buka di Pratinjau";
+"preview.image.zoomHint" = "⌘+gulir atau cubit untuk zoom";
 
 /* Filter */
 "filter.all" = "Semua";
