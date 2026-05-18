@@ -25,6 +25,14 @@
 "action.unfavorite" = "取消收藏";
 "action.pin" = "置顶";
 "cmd.showInFinder" = "在 Finder 中显示";
+"cmd.saveAsFile" = "另存为";
+"saveAs.save" = "存储";
+"saveAs.chooseFolderPrompt" = "导出";
+"saveAs.chooseFolderMessage" = "选取要将 %d 个项目副本保存到的文件夹。";
+"saveAs.saved" = "已保存到 %@";
+"saveAs.failed" = "无法保存文件。";
+"saveAs.exportedCount" = "已导出 %d 个文件。";
+"saveAs.exportedPartial" = "已导出 %d / %d 个文件。";
 "cmd.copyAs" = "复制为 %@";
 "relay.reverse" = "反转顺序";
 "relay.clearAll" = "清空所有";

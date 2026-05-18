@@ -704,6 +704,14 @@
 /* Command - Additional */
 "cmd.copyAs" = "%@ としてコピー";
 "cmd.showInFinder" = "Finderで表示";
+"cmd.saveAsFile" = "名前を付けて保存…";
+"saveAs.save" = "保存";
+"saveAs.chooseFolderPrompt" = "書き出す";
+"saveAs.chooseFolderMessage" = "%d 個の項目をコピーするフォルダを選択してください。";
+"saveAs.saved" = "%@ に保存しました";
+"saveAs.failed" = "ファイルを保存できませんでした。";
+"saveAs.exportedCount" = "%d 個のファイルを書き出しました。";
+"saveAs.exportedPartial" = "%d / %d 個のファイルを書き出しました。";
 
 /* Accessibility - Lost Permission */
 "accessibility.lost.later" = "後で";

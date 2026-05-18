@@ -596,6 +596,20 @@ struct QuickPanelView: View {
                 .font(.system(size: 16))
                 .focused($isSearchFocused)
 
+            if let item = currentItem, ClipItemSaveToFilePresenter.canSaveAsFile(item) {
+                Button {
+                    ClipItemSaveToFilePresenter.beginSave(item)
+                } label: {
+                    Image(systemName: "square.and.arrow.down.on.square")
+                        .font(.system(size: 12))
+                        .foregroundStyle(HierarchicalShapeStyle.tertiary)
+                        .frame(width: 28, height: 24)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .help(L10n.tr("cmd.saveAsFile"))
+            }
+
             if !searchText.isEmpty || pill != nil {
                 Button {
                     searchText = ""
@@ -1062,6 +1076,12 @@ struct QuickPanelView: View {
                 copyItemsToClipboard([item])
                 selectItem(itemID)
             }
+            if ClipItemSaveToFilePresenter.canSaveAsFile(item) {
+                Button(L10n.tr("cmd.saveAsFile")) {
+                    ClipItemSaveToFilePresenter.beginSave(item)
+                    selectItem(itemID)
+                }
+            }
             if ProManager.AUTOMATION_ENABLED {
                 let manualRules = fetchEnabledRules()
                     .filter { $0.triggerMode == .manual && $0.matches(item: item) }
@@ -1465,6 +1485,10 @@ struct QuickPanelView: View {
                 if let first = paths.first {
                     NSWorkspace.shared.selectFile(first, inFileViewerRootedAtPath: "")
                 }
+            }
+        case .saveAsFile:
+            if let item = currentItem {
+                ClipItemSaveToFilePresenter.beginSave(item)
             }
         case .transform(let ruleAction):
             if let item = currentItem {

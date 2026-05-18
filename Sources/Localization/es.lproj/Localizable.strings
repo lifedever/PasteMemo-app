@@ -687,6 +687,14 @@ Usa %@ para pegar uno por uno.";
 /* Commands - Additional */
 "cmd.copyAs" = "Copiar como %@";
 "cmd.showInFinder" = "Mostrar en Finder";
+"cmd.saveAsFile" = "Guardar como…";
+"saveAs.save" = "Guardar";
+"saveAs.chooseFolderPrompt" = "Exportar";
+"saveAs.chooseFolderMessage" = "Elige una carpeta para copiar %d elementos.";
+"saveAs.saved" = "Guardado en %@";
+"saveAs.failed" = "No se pudo guardar el archivo.";
+"saveAs.exportedCount" = "Se exportaron %d archivos.";
+"saveAs.exportedPartial" = "Se exportaron %d de %d archivos.";
 
 /* Accessibility - Permission Lost */
 "accessibility.lost.later" = "Más tarde";
