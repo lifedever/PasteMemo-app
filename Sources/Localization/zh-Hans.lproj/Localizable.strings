@@ -59,6 +59,10 @@
 "mixed.section.text" = "文本";
 "mixed.section.files" = "文件 (%d)";
 "detail.openInFinder" = "在访达中显示";
+"preview.image.zoomFit" = "适应宽度";
+"preview.image.zoomActual" = "100%";
+"preview.image.openInPreview" = "在预览中打开";
+"preview.image.zoomHint" = "⌘+滚轮或双指捏合缩放";
 
 /* Filter */
 "filter.all" = "全部";

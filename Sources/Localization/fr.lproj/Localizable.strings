@@ -810,6 +810,10 @@ Utilisez %@ pour coller un par un.";
 /* Backup */
 "backup.nextBackup" = "Prochaine sauvegarde";
 "detail.openInFinder" = "Afficher dans le Finder";
+"preview.image.zoomFit" = "Ajuster à la largeur";
+"preview.image.zoomActual" = "100%";
+"preview.image.openInPreview" = "Ouvrir dans Aperçu";
+"preview.image.zoomHint" = "⌘+défilement ou pincement pour zoomer";
 
 /* Sponsor Tab */
 "settings.sponsor" = "Soutenir";

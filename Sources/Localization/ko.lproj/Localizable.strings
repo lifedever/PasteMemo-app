@@ -808,6 +808,10 @@
 /* Backup - Additional */
 "backup.nextBackup" = "다음 백업";
 "detail.openInFinder" = "Finder에서 보기";
+"preview.image.zoomFit" = "너비 맞춤";
+"preview.image.zoomActual" = "100%";
+"preview.image.openInPreview" = "미리보기에서 열기";
+"preview.image.zoomHint" = "⌘+스크롤 또는 핀치로 확대";
 
 /* Sponsor Tab */
 "settings.sponsor" = "후원";

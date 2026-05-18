@@ -52,8 +52,10 @@
 "mixed.section.text" = "文字";
 "mixed.section.files" = "檔案 (%d)";
 "detail.openInFinder" = "在 Finder 中顯示";
-
-/* Filter */
+"preview.image.zoomFit" = "適應寬度";
+"preview.image.zoomActual" = "100%";
+"preview.image.openInPreview" = "在預覽中打開";
+"preview.image.zoomHint" = "⌘+滾輪或雙指捏合縮放";
 "filter.all" = "全部";
 "filter.special" = "特殊";
 "filter.favorites" = "收藏";

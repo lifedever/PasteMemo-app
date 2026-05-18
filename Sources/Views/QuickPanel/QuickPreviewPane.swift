@@ -176,6 +176,9 @@ struct QuickPreviewPane: View {
         } else if item.contentType == .phone {
             phonePreview
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
+        } else if item.contentType == .image, item.isSingleFileBackedImage,
+                  ClipImagePreviewSource.resolve(from: item) != nil {
+            imagePreviewWithOCR
         } else if isSingleFile {
             SingleFilePreview(
                 path: item.content.trimmingCharacters(in: .whitespacesAndNewlines),
@@ -197,13 +200,16 @@ struct QuickPreviewPane: View {
 
     @ViewBuilder
     private var previewContent: some View {
-        if item.contentType == .image, item.content != "[Image]", item.imageData == nil {
-            // Multi image files from Finder (no imageData)
-            filePreview
+        if item.contentType == .image {
+            if ClipImagePreviewSource.resolve(from: item) != nil {
+                imagePreview
+            } else if item.content != "[Image]", item.imageData == nil {
+                filePreview
+            } else {
+                imagePreview
+            }
         } else {
             switch item.contentType {
-            case .image:
-                imagePreview
             case .video:
                 if isSingleVideo { videoPreview } else { filePreview }
             case .audio:
@@ -279,12 +285,11 @@ struct QuickPreviewPane: View {
 
     @ViewBuilder
     private var imagePreview: some View {
-        AsyncPreviewImageView(
-            data: item.imageData,
-            cacheKey: item.itemID,
+        ZoomableClipImagePreview(
+            item: item,
             maxPixelSize: 1100,
-            cornerRadius: 6,
             thumbnailSize: 180,
+            cornerRadius: 6,
             onDoubleClick: {
                 QuickLookHelper.shared.openInPreviewApp(item: item)
             }
@@ -402,7 +407,11 @@ struct QuickPreviewPane: View {
     @ViewBuilder
     private var filePreview: some View {
         let paths = item.content.components(separatedBy: "\n").filter { !$0.isEmpty }
-        if paths.count == 1, let path = paths.first {
+        if paths.count == 1,
+           item.contentType == .image,
+           ClipImagePreviewSource.resolve(from: item) != nil {
+            imagePreviewWithOCR
+        } else if paths.count == 1, let path = paths.first {
             SingleFilePreview(
                 path: path,
                 iconSize: 48,
@@ -486,15 +495,19 @@ struct QuickPreviewPane: View {
     }
 
     private var dataURIImagePreview: some View {
-        AsyncPreviewImageView(
-            data: item.imageData ?? dataURIImageData,
-            cacheKey: "data-uri-\(item.itemID)",
+        ZoomableClipImagePreview(
+            item: item,
+            supplementalData: dataURIImageData,
             maxPixelSize: 1100,
+            thumbnailSize: 180,
             cornerRadius: 6,
-            thumbnailSize: 180
+            onDoubleClick: {
+                QuickLookHelper.shared.openInPreviewApp(item: item)
+            }
         )
         .padding(10)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .pointerCursor()
     }
 
     // MARK: - Link Static Preview

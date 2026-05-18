@@ -51,6 +51,10 @@
 "mixed.section.text" = "Текст";
 "mixed.section.files" = "Файлы (%d)";
 "detail.openInFinder" = "Показать в Finder";
+"preview.image.zoomFit" = "По ширине";
+"preview.image.zoomActual" = "100%";
+"preview.image.openInPreview" = "Открыть в Просмотре";
+"preview.image.zoomHint" = "⌘+прокрутка или жест для масштаба";
 
 /* Filter */
 "filter.all" = "Все";

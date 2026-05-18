@@ -38,25 +38,20 @@ final class QuickLookHelper: NSObject, QLPreviewPanelDataSource, QLPreviewPanelD
     }
 
     func canOpenInPreview(item: ClipItem) -> Bool {
-        if item.contentType == .image {
-            return item.imageData != nil || item.content != "[Image]"
-        }
-
-        switch item.contentType {
-        case .file, .document, .video, .audio:
-            return !item.content.contains("\n")
-        default:
-            return false
-        }
+        prepareURL(for: item) != nil
     }
 
     func openInPreviewApp(item: ClipItem) {
-        guard canOpenInPreview(item: item), let url = prepareURL(for: item) else { return }
+        guard let url = prepareURL(for: item) else { return }
         previewURL = url
 
         if let previewAppURL = NSWorkspace.shared.urlForApplication(withBundleIdentifier: "com.apple.Preview") {
             let configuration = NSWorkspace.OpenConfiguration()
-            NSWorkspace.shared.open([url], withApplicationAt: previewAppURL, configuration: configuration) { _, _ in }
+            NSWorkspace.shared.open([url], withApplicationAt: previewAppURL, configuration: configuration) { _, error in
+                if error != nil {
+                    NSWorkspace.shared.open(url)
+                }
+            }
         } else {
             NSWorkspace.shared.open(url)
         }
@@ -72,18 +67,34 @@ final class QuickLookHelper: NSObject, QLPreviewPanelDataSource, QLPreviewPanelD
         case .image:
             if item.content != "[Image]" {
                 let path = item.content.components(separatedBy: "\n").first ?? ""
-                return FileManager.default.fileExists(atPath: path) ? URL(fileURLWithPath: path) : nil
+                if FileManager.default.fileExists(atPath: path) {
+                    return URL(fileURLWithPath: path)
+                }
             }
-            guard let data = item.imageData else { return nil }
-            return writeTempFile(data: data, name: "preview.png")
+            guard let data = item.imageBytesForExport() ?? item.imageData else { return nil }
+            return writeTempImageFile(data: data, itemID: item.itemID)
 
         case .link:
-            return URL(string: item.content.trimmingCharacters(in: .whitespacesAndNewlines))
+            if let data = item.imageData, !data.isEmpty {
+                return writeTempImageFile(data: data, itemID: item.itemID)
+            }
+            if DataImageURI.isBase64DataImageURI(item.content),
+               let data = DataImageURI.decodedImageData(from: item.content) {
+                return writeTempImageFile(data: data, itemID: item.itemID)
+            }
+            return nil
 
         default:
             let data = item.content.data(using: .utf8) ?? Data()
-            return writeTempFile(data: data, name: "preview.txt")
+            return writeTempFile(data: data, name: "preview-\(item.itemID).txt")
         }
+    }
+
+    /// Writes clipboard image bytes using the correct extension (TIFF/HEIC/JPEG/…).
+    /// Hard-coding `.png` breaks macOS screenshots, which are often TIFF on the pasteboard.
+    private func writeTempImageFile(data: Data, itemID: String) -> URL? {
+        let ext = ClipboardManager.sniffImageExtension(from: data)
+        return writeTempFile(data: data, name: "preview-\(itemID).\(ext)")
     }
 
     private func writeTempFile(data: Data, name: String) -> URL? {
@@ -91,8 +102,13 @@ final class QuickLookHelper: NSObject, QLPreviewPanelDataSource, QLPreviewPanelD
         try? FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
         let url = tempDir.appendingPathComponent(name)
         do {
+            if FileManager.default.fileExists(atPath: url.path) {
+                try FileManager.default.removeItem(at: url)
+            }
             try data.write(to: url)
-            tempFiles.append(url)
+            if !tempFiles.contains(url) {
+                tempFiles.append(url)
+            }
             return url
         } catch {
             return nil

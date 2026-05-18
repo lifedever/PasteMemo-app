@@ -14,7 +14,8 @@ BUNDLE_ID="${BUNDLE_ID:-$DEFAULT_BUNDLE_ID}"
 DIST_DIR="${DIST_DIR:-$ROOT_DIR/dist}"
 BUILD_DIR="$ROOT_DIR/.build/${ARCH}-apple-macosx/${CONFIGURATION}"
 PRODUCT_BINARY="$BUILD_DIR/$EXECUTABLE_NAME"
-RESOURCE_BUNDLE="$BUILD_DIR/${APP_NAME}_${APP_NAME}.bundle"
+MAIN_RESOURCE_BUNDLE="$BUILD_DIR/${APP_NAME}_${APP_NAME}.bundle"
+PERMISSION_FLOW_BUNDLE="$BUILD_DIR/PermissionFlow_PermissionFlow.bundle"
 ICON_FILE="$ROOT_DIR/Sources/Resources/AppIcon.icns"
 
 resolve_version() {
@@ -51,8 +52,13 @@ if [[ ! -x "$PRODUCT_BINARY" ]]; then
   exit 1
 fi
 
-if [[ ! -d "$RESOURCE_BUNDLE" ]]; then
-  echo "Resource bundle not found: $RESOURCE_BUNDLE" >&2
+if [[ ! -d "$MAIN_RESOURCE_BUNDLE" ]]; then
+  echo "Main resource bundle not found: $MAIN_RESOURCE_BUNDLE" >&2
+  exit 1
+fi
+
+if [[ ! -d "$PERMISSION_FLOW_BUNDLE" ]]; then
+  echo "PermissionFlow resource bundle not found: $PERMISSION_FLOW_BUNDLE" >&2
   exit 1
 fi
 
@@ -67,7 +73,8 @@ mkdir -p "$APP_DIR/Contents/MacOS" "$APP_DIR/Contents/Resources" "$DIST_DIR"
 cp "$PRODUCT_BINARY" "$APP_DIR/Contents/MacOS/$EXECUTABLE_NAME"
 chmod +x "$APP_DIR/Contents/MacOS/$EXECUTABLE_NAME"
 cp "$ICON_FILE" "$APP_DIR/Contents/Resources/AppIcon.icns"
-cp -R "$RESOURCE_BUNDLE" "$APP_DIR/"
+cp -R "$MAIN_RESOURCE_BUNDLE" "$APP_DIR/"
+cp -R "$PERMISSION_FLOW_BUNDLE" "$APP_DIR/"
 
 CURRENT_YEAR="$(date +%Y)"
 
