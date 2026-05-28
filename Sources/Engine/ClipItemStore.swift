@@ -56,6 +56,7 @@ final class ClipItemStore {
         items = hydrateItems(ids: ids)
         hasMore = ids.count >= pageSize
         currentOffset = ids.count
+        totalCount = queryTotalCount()
     }
 
     var filterType: ClipContentType? = nil
