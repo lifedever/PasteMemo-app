@@ -14,8 +14,17 @@ struct NativeTextView: NSViewRepresentable {
     var itemID: String? = nil
     var isEditable: Bool = false
     var autoFocus: Bool = false
+    /// Optional search query for highlighting in the plain-text render path.
+    /// Empty string disables highlighting. Tokenization matches the search bar's
+    /// behavior (whitespace → AND tokens). Rich-text branch ignores this.
+    var searchText: String = ""
     var onTextChange: ((String) -> Void)?
     var onEscape: (() -> Void)?
+
+    /// Skip the highlight scan for very large content to keep typing responsive.
+    /// 200K chars ≈ a 200 KB plain-text clip; above this the per-keystroke scan
+    /// starts being perceptible.
+    static let highlightSizeLimit = 200_000
 
     func makeCoordinator() -> Coordinator {
         Coordinator(onTextChange: onTextChange, onEscape: onEscape)
@@ -62,6 +71,7 @@ struct NativeTextView: NSViewRepresentable {
             let wasRich = context.coordinator.lastRichTextData != nil
             context.coordinator.lastRichTextData = nil
             context.coordinator.lastLayoutWidth = 0
+            var textWasReplaced = false
             if wasRich {
                 // Switching from rich → plain on the same view: setting
                 // `.string` only replaces the characters and keeps the prior
@@ -74,8 +84,20 @@ struct NativeTextView: NSViewRepresentable {
                     .foregroundColor: NSColor.labelColor,
                 ])
                 textView.textStorage?.setAttributedString(plain)
+                textWasReplaced = true
             } else if textView.string != text {
                 textView.string = text
+                textWasReplaced = true
+            }
+            let searchChanged = context.coordinator.lastSearchText != searchText
+            context.coordinator.lastSearchText = searchText
+            // 切换条目(textWasReplaced)→ 立即高亮，方向键扫不滞后
+            // 仅搜索词变化(searchChanged)→ 80ms 微防抖,连打字时不重复扫
+            if textWasReplaced {
+                context.coordinator.cancelPendingHighlight()
+                Self.applyHighlights(textView: textView, searchText: searchText)
+            } else if searchChanged {
+                context.coordinator.scheduleDebouncedHighlight(textView: textView, searchText: searchText)
             }
             return
         }
@@ -214,6 +236,46 @@ struct NativeTextView: NSViewRepresentable {
         return result
     }
 
+    // MARK: - Search highlight (plain-text branch only)
+
+    /// Applies search-term highlights to the text view's backing storage.
+    /// Clears any previous `.backgroundColor` runs first so removed tokens disappear.
+    /// Bails on empty input or oversized content so the per-keystroke cost stays cheap.
+    @MainActor
+    private static func applyHighlights(textView: NSTextView, searchText: String) {
+        guard let storage = textView.textStorage else { return }
+        let fullRange = NSRange(location: 0, length: storage.length)
+        storage.beginEditing()
+        defer { storage.endEditing() }
+        storage.removeAttribute(.backgroundColor, range: fullRange)
+
+        let tokens = ClipItemStore.tokenizeSearchInput(searchText)
+        guard !tokens.isEmpty else { return }
+        guard storage.length <= highlightSizeLimit else { return }
+
+        let color = NSColor.systemYellow.withAlphaComponent(0.35)
+        for range in highlightRanges(in: storage.string, tokens: tokens) {
+            storage.addAttribute(.backgroundColor, value: color, range: range)
+        }
+    }
+
+    /// Pure function: every case-insensitive match for each token in `content`,
+    /// returned as NSRanges suitable for NSTextStorage attribute application.
+    /// Empty / overlapping tokens are tolerated; overlaps may produce overlapping
+    /// ranges, but NSTextStorage merges them on the same `.backgroundColor` value.
+    static func highlightRanges(in content: String, tokens: [String]) -> [NSRange] {
+        var ranges: [NSRange] = []
+        for token in tokens where !token.isEmpty {
+            var cursor = content.startIndex
+            while cursor < content.endIndex,
+                  let match = content.range(of: token, options: .caseInsensitive, range: cursor..<content.endIndex) {
+                ranges.append(NSRange(match, in: content))
+                cursor = match.upperBound
+            }
+        }
+        return ranges
+    }
+
     nonisolated private static func shouldAdaptForegroundColor(_ color: NSColor, isDark: Bool) -> Bool {
         guard let rgb = color.usingColorSpace(.sRGB) else { return false }
         let brightness = rgb.redComponent * 0.299 + rgb.greenComponent * 0.587 + rgb.blueComponent * 0.114
@@ -230,7 +292,26 @@ struct NativeTextView: NSViewRepresentable {
         var onEscape: (() -> Void)?
         var lastRichTextData: Data?
         var lastLayoutWidth: CGFloat = 0
+        var lastSearchText: String = ""
         private var decodeToken: Int = 0
+        private var highlightTask: Task<Void, Never>?
+
+        @MainActor
+        func cancelPendingHighlight() {
+            highlightTask?.cancel()
+            highlightTask = nil
+        }
+
+        @MainActor
+        func scheduleDebouncedHighlight(textView: NSTextView, searchText: String) {
+            cancelPendingHighlight()
+            highlightTask = Task { @MainActor [weak self] in
+                try? await Task.sleep(for: .milliseconds(80))
+                guard let self, !Task.isCancelled else { return }
+                NativeTextView.applyHighlights(textView: textView, searchText: searchText)
+                self.highlightTask = nil
+            }
+        }
 
         init(onTextChange: ((String) -> Void)?, onEscape: (() -> Void)? = nil) {
             self.onTextChange = onTextChange
