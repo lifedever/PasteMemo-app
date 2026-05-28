@@ -33,7 +33,7 @@ final class ClipItemStore {
                 return
             }
             searchDebounceTask = Task { @MainActor [weak self] in
-                try? await Task.sleep(for: .milliseconds(200))
+                try? await Task.sleep(for: .milliseconds(80))
                 guard !Task.isCancelled else { return }
                 self?.executeSearch()
                 self?.searchDebounceTask = nil
@@ -370,17 +370,30 @@ final class ClipItemStore {
     }
 
     private func addSearchCondition(_ conditions: inout [String], _ params: inout [Any]) {
-        guard !searchText.isEmpty else { return }
-        let trimmed = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return }
-        let pattern = "%\(trimmed)%"
-        conditions.append(
-            "ZITEMID IN (SELECT itemID FROM clip_fts WHERE content LIKE ? OR displayTitle LIKE ? OR linkTitle LIKE ? OR ocrText LIKE ?)"
-        )
-        params.append(pattern)
-        params.append(pattern)
-        params.append(pattern)
-        params.append(pattern)
+        let tokens = Self.tokenizeSearchInput(searchText)
+        guard !tokens.isEmpty else { return }
+        for token in tokens {
+            let pattern = "%\(token)%"
+            conditions.append(
+                "ZITEMID IN (SELECT itemID FROM clip_fts WHERE content LIKE ? OR displayTitle LIKE ? OR linkTitle LIKE ? OR ocrText LIKE ?)"
+            )
+            params.append(pattern)
+            params.append(pattern)
+            params.append(pattern)
+            params.append(pattern)
+        }
+    }
+
+    /// Splits the search box input into AND-joined tokens.
+    /// Whitespace (spaces, tabs, full-width spaces, newlines) is the separator;
+    /// empty pieces from consecutive whitespace are dropped.
+    /// Extracted as `static` so the tokenization rule can be unit-tested without
+    /// the SQLite/FTS stack.
+    static func tokenizeSearchInput(_ raw: String) -> [String] {
+        raw
+            .split(whereSeparator: { $0.isWhitespace })
+            .map(String.init)
+            .filter { !$0.isEmpty }
     }
 
     // MARK: - Metadata Queries
