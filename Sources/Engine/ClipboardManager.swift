@@ -789,15 +789,11 @@ final class ClipboardManager: ObservableObject {
     private func cleanExpiredItems(in context: ModelContext) {
         guard let cutoff = ProManager.shared.retentionCutoffDate else { return }
 
-        let descriptor = FetchDescriptor<ClipItem>()
-        guard let allItems = try? context.fetch(descriptor) else { return }
-        let preservedGroupNames = SmartGroupRetention.preservedGroupNames(in: context)
+        let candidates = Self.fetchExpiredCandidates(in: context, cutoff: cutoff)
+        guard !candidates.isEmpty else { return }
 
-        let expiredItems = allItems.filter {
-            $0.createdAt < cutoff
-                && !$0.isPinned
-                && !SmartGroupRetention.shouldPreserve(item: $0, preservedGroupNames: preservedGroupNames)
-        }
+        let preservedGroupNames = SmartGroupRetention.preservedGroupNames(in: context)
+        let expiredItems = SmartGroupRetention.filterDeletableItems(candidates, preservedGroupNames: preservedGroupNames)
         guard !expiredItems.isEmpty else { return }
 
         let hasGroupedItems = expiredItems.contains { $0.groupName != nil }
@@ -805,6 +801,16 @@ final class ClipboardManager: ObservableObject {
         if hasGroupedItems {
             recalculateAllGroupCounts(context: context)
         }
+    }
+
+    /// SQL-pushed pre-filter: only items already past retention cutoff and not pinned.
+    /// Preserved-group filtering happens in memory afterwards (in-set lookup, cheap).
+    /// Extracted to make the SwiftData `#Predicate` directly unit-testable.
+    static func fetchExpiredCandidates(in context: ModelContext, cutoff: Date) -> [ClipItem] {
+        let descriptor = FetchDescriptor<ClipItem>(
+            predicate: #Predicate { $0.createdAt < cutoff && !$0.isPinned }
+        )
+        return (try? context.fetch(descriptor)) ?? []
     }
 
     // MARK: - Content Detection
