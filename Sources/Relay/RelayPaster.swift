@@ -90,23 +90,29 @@ enum RelayPaster {
     }
 
     private static func simulateCommandV() {
-        // Use privateState source so the event doesn't inherit currently-held
-        // physical modifiers (e.g. user holding Ctrl during Ctrl+V relay paste).
-        // Without this, the synthesized ⌘V would carry the Ctrl bit and target
-        // apps would see Ctrl+⌘V — which opens "Paste Special" in Word and is
-        // unbound (silent no-op) in many editors. Same strategy as
-        // `simulatePostPasteKey` below.
+        // privateState：合成事件的修饰位完全由我们指定，不会并入用户此刻按住的物理键
+        // （典型：Ctrl 触发接力粘贴时 Ctrl 还压着）。否则合成的 ⌘V 会带上 Ctrl 位，
+        // 目标 App 看到 Ctrl+⌘V —— Word 里是「选择性粘贴」、多数编辑器无绑定（静默失败）。
         let source = CGEventSource(stateID: .privateState)
-        // Resolve the V keycode for the current keyboard layout so pure Dvorak /
-        // Colemak / AZERTY users also get ⌘V instead of whatever character sits
-        // at the ANSI V slot in their layout.
+        // V 按当前键盘布局取键码（Dvorak / Colemak / AZERTY 也得到 ⌘V）。
         let vKeyCode = KeyboardLayout.virtualKeyForV()
-        guard let keyDown = CGEvent(keyboardEventSource: source, virtualKey: vKeyCode, keyDown: true),
-              let keyUp = CGEvent(keyboardEventSource: source, virtualKey: vKeyCode, keyDown: false) else { return }
-        keyDown.flags = .maskCommand
-        keyUp.flags = .maskCommand
-        keyDown.post(tap: .cgAnnotatedSessionEventTap)
-        keyUp.post(tap: .cgAnnotatedSessionEventTap)
+        // ⌘ 是修饰键，键码与布局无关（kVK_Command = 0x37）。
+        let cmdKeyCode: CGKeyCode = 0x37
+        // 发「真实的 ⌘ 按下 → V 按下 → V 抬起 → ⌘ 抬起」四连事件，而不是只在 V 上挂 flag。
+        // 远程桌面 / 流式客户端（MS Remote Desktop、UU远程，issue #60）靠按键事件流转发
+        // 修饰键，只挂 flag 时它们只收到裸 v；本地 App / 虚拟机读 flags，两条路都喂到。
+        guard let cmdDown = CGEvent(keyboardEventSource: source, virtualKey: cmdKeyCode, keyDown: true),
+              let vDown = CGEvent(keyboardEventSource: source, virtualKey: vKeyCode, keyDown: true),
+              let vUp = CGEvent(keyboardEventSource: source, virtualKey: vKeyCode, keyDown: false),
+              let cmdUp = CGEvent(keyboardEventSource: source, virtualKey: cmdKeyCode, keyDown: false) else { return }
+        cmdDown.flags = .maskCommand
+        vDown.flags = .maskCommand
+        vUp.flags = .maskCommand
+        cmdUp.flags = []   // ⌘ 已抬起
+        cmdDown.post(tap: .cgAnnotatedSessionEventTap)
+        vDown.post(tap: .cgAnnotatedSessionEventTap)
+        vUp.post(tap: .cgAnnotatedSessionEventTap)
+        cmdUp.post(tap: .cgAnnotatedSessionEventTap)
     }
 
     private static func simulatePostPasteKey() {

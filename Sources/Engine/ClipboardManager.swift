@@ -1391,20 +1391,29 @@ final class ClipboardManager: ObservableObject {
     }
 
     private func simulateCommandV() {
-        // privateState: event carries no inherited physical modifier state, so
-        // ⌘V stays exactly ⌘V even if the user is still holding other keys
-        // (global hotkey release timing, Ctrl-based relay triggers, etc.).
+        // privateState: 合成事件的修饰位完全由我们指定，不会并入用户此刻按住的物理键
+        // （全局热键释放时机、⌘1–9 置顶快粘、Ctrl 触发接力都可能还压着键）。
         let source = CGEventSource(stateID: .privateState)
-        // Resolve the V keycode for the current keyboard layout so pure Dvorak /
-        // Colemak / AZERTY users also get ⌘V instead of whatever character sits
-        // at the ANSI V slot in their layout.
+        // V 按当前键盘布局取键码（Dvorak / Colemak / AZERTY 也得到 ⌘V，而非 ANSI V 槽的字符）。
         let vKeyCode = KeyboardLayout.virtualKeyForV()
-        let keyDown = CGEvent(keyboardEventSource: source, virtualKey: vKeyCode, keyDown: true)
-        let keyUp = CGEvent(keyboardEventSource: source, virtualKey: vKeyCode, keyDown: false)
-        keyDown?.flags = .maskCommand
-        keyUp?.flags = .maskCommand
-        keyDown?.post(tap: .cgAnnotatedSessionEventTap)
-        keyUp?.post(tap: .cgAnnotatedSessionEventTap)
+        // ⌘ 是修饰键，键码与布局无关（kVK_Command = 0x37）。
+        let cmdKeyCode: CGKeyCode = 0x37
+        // 发「真实的 ⌘ 按下 → V 按下 → V 抬起 → ⌘ 抬起」四连事件，而不是只在 V 上挂一个
+        // .maskCommand 标志位。远程桌面 / 流式客户端（MS Remote Desktop、UU远程，issue #60）
+        // 靠「按键事件流」转发修饰键，只认真实的 ⌘ 键事件——只挂 flag 时它们只收到裸 v；
+        // 本地 App / 虚拟机（Parallels）读事件 flags，两条路都喂到。
+        guard let cmdDown = CGEvent(keyboardEventSource: source, virtualKey: cmdKeyCode, keyDown: true),
+              let vDown = CGEvent(keyboardEventSource: source, virtualKey: vKeyCode, keyDown: true),
+              let vUp = CGEvent(keyboardEventSource: source, virtualKey: vKeyCode, keyDown: false),
+              let cmdUp = CGEvent(keyboardEventSource: source, virtualKey: cmdKeyCode, keyDown: false) else { return }
+        cmdDown.flags = .maskCommand
+        vDown.flags = .maskCommand
+        vUp.flags = .maskCommand
+        cmdUp.flags = []   // ⌘ 已抬起
+        cmdDown.post(tap: .cgAnnotatedSessionEventTap)
+        vDown.post(tap: .cgAnnotatedSessionEventTap)
+        vUp.post(tap: .cgAnnotatedSessionEventTap)
+        cmdUp.post(tap: .cgAnnotatedSessionEventTap)
     }
 
     private func simulateReturn() {
