@@ -9,6 +9,10 @@ struct ClipRow: View {
     var groupIcon: String?
     var showGroupLabel: Bool = true
     var searchText: String = ""
+    /// Dense single-line layout for the no-preview (narrow) quick panel list:
+    /// smaller thumbnail, title-only (the date section headers carry time),
+    /// text badges suppressed. Defaults off so MainWindow stays untouched.
+    var compact: Bool = false
     @AppStorage(OCRTaskCoordinator.enableOCRKey) private var ocrEnabled = true
     @AppStorage("imageLinkPreviewEnabled") private var imageLinkPreviewEnabled = true
     @AppStorage("offlineModeEnabled") private var offlineModeEnabled = false
@@ -23,7 +27,7 @@ struct ClipRow: View {
                     ZStack(alignment: .topLeading) {
                         thumbnail
                             .overlay(alignment: .bottomTrailing) {
-                                if item.agentSource != nil {
+                                if item.agentSource != nil, !compact {
                                     Text("AI")
                                         .font(.system(size: 8, weight: .semibold, design: .rounded))
                                         .foregroundStyle(.white)
@@ -44,31 +48,45 @@ struct ClipRow: View {
                     }
                 }
 
-                VStack(alignment: .leading, spacing: 3) {
+                if compact {
                     HStack(spacing: 4) {
                         Text(displayTitle)
-                            .font(.system(size: 13))
+                            .font(.system(size: 14))
                             .lineLimit(1)
 
                         if ocrEnabled, item.matchesOCROnly(searchText: searchText) {
                             ocrBadge
                         }
 
-                        Spacer()
+                        Spacer(minLength: 0)
                     }
+                } else {
+                    VStack(alignment: .leading, spacing: 3) {
+                        HStack(spacing: 4) {
+                            Text(displayTitle)
+                                .font(.system(size: 13))
+                                .lineLimit(1)
 
-                    HStack(spacing: 4) {
-                        Text(formatTimeAgo(item.lastUsedAt))
-                            .font(.system(size: 11))
-                            .foregroundStyle(.tertiary)
-                        if showGroupLabel, let groupName = item.groupName, !groupName.isEmpty {
-                            Spacer().frame(width: 2)
-                            Image(systemName: groupIcon ?? "folder")
-                                .font(.system(size: 9))
-                                .foregroundStyle(.tertiary)
-                            Text(groupName)
+                            if ocrEnabled, item.matchesOCROnly(searchText: searchText) {
+                                ocrBadge
+                            }
+
+                            Spacer()
+                        }
+
+                        HStack(spacing: 4) {
+                            Text(formatTimeAgo(item.lastUsedAt))
                                 .font(.system(size: 11))
                                 .foregroundStyle(.tertiary)
+                            if showGroupLabel, let groupName = item.groupName, !groupName.isEmpty {
+                                Spacer().frame(width: 2)
+                                Image(systemName: groupIcon ?? "folder")
+                                    .font(.system(size: 9))
+                                    .foregroundStyle(.tertiary)
+                                Text(groupName)
+                                    .font(.system(size: 11))
+                                    .foregroundStyle(.tertiary)
+                            }
                         }
                     }
                 }
@@ -77,6 +95,9 @@ struct ClipRow: View {
     }
 
     // MARK: - Thumbnail
+
+    /// Thumbnail edge length — shrinks in compact so rows can pack tighter.
+    private var thumbSize: CGFloat { compact ? 24 : 36 }
 
     @State private var videoThumb: NSImage?
 
@@ -93,7 +114,7 @@ struct ClipRow: View {
             Image(nsImage: img)
                 .resizable()
                 .aspectRatio(contentMode: .fit)
-                .frame(width: 36, height: 36)
+                .frame(width: thumbSize, height: thumbSize)
                 .clipShape(RoundedRectangle(cornerRadius: 6))
                 .overlay(alignment: .bottomTrailing) { imageFormatBadge }
         } else if item.contentType == .link, imageLinkPreviewEnabled,
@@ -105,7 +126,7 @@ struct ClipRow: View {
             Image(nsImage: img)
                 .resizable()
                 .aspectRatio(contentMode: .fill)
-                .frame(width: 36, height: 36)
+                .frame(width: thumbSize, height: thumbSize)
                 .clipShape(RoundedRectangle(cornerRadius: 6))
                 .overlay(alignment: .bottomTrailing) { imageFormatBadge }
         } else if item.contentType == .link, imageLinkPreviewEnabled,
@@ -118,7 +139,7 @@ struct ClipRow: View {
                     Image(nsImage: img)
                         .resizable()
                         .aspectRatio(contentMode: .fill)
-                        .frame(width: 36, height: 36)
+                        .frame(width: thumbSize, height: thumbSize)
                         .clipShape(RoundedRectangle(cornerRadius: 6))
                         .overlay(alignment: .bottomTrailing) { imageFormatBadge }
                 } else {
@@ -149,7 +170,7 @@ struct ClipRow: View {
                         image
                             .resizable()
                             .aspectRatio(contentMode: .fill)
-                            .frame(width: 36, height: 36)
+                            .frame(width: thumbSize, height: thumbSize)
                             .clipShape(RoundedRectangle(cornerRadius: 6))
                             .overlay(alignment: .bottomTrailing) { imageFormatBadge }
                     default:
@@ -164,24 +185,24 @@ struct ClipRow: View {
         } else if item.contentType == .color, let parsed = ColorConverter.parse(item.content) {
             Circle()
                 .fill(Color(nsColor: parsed.nsColor))
-                .frame(width: 28, height: 28)
+                .frame(width: compact ? 18 : 28, height: compact ? 18 : 28)
                 .overlay(
                     Circle().strokeBorder(Color.primary.opacity(0.15), lineWidth: 1)
                 )
                 .shadow(color: Color(nsColor: parsed.nsColor).opacity(0.3), radius: 3, y: 1)
-                .frame(width: 36, height: 36)
+                .frame(width: thumbSize, height: thumbSize)
         } else if item.contentType.isFileBased, item.contentType != .image, !item.content.contains("\n") {
             let path = item.content.components(separatedBy: "\n").first?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
             if isDirectory(path), !path.hasSuffix(".app") {
                 Image(nsImage: NSWorkspace.shared.icon(for: .folder))
                     .resizable()
                     .aspectRatio(contentMode: .fit)
-                    .frame(width: 36, height: 36)
+                    .frame(width: thumbSize, height: thumbSize)
             } else {
                 Image(nsImage: ImageCache.shared.fileIcon(forPath: path))
                     .resizable()
                     .aspectRatio(contentMode: .fit)
-                    .frame(width: 36, height: 36)
+                    .frame(width: thumbSize, height: thumbSize)
             }
         } else if isMultiFile {
             let paths = item.content.components(separatedBy: "\n").filter { !$0.isEmpty }
@@ -190,30 +211,32 @@ struct ClipRow: View {
                 Image(nsImage: ImageCache.shared.fileIcon(forPath: firstPath))
                     .resizable()
                     .aspectRatio(contentMode: .fit)
-                    .frame(width: 36, height: 36)
-                Text("\(paths.count)")
-                    .font(.system(size: 9, weight: .bold, design: .rounded))
-                    .foregroundStyle(.white)
-                    .padding(.horizontal, 3)
-                    .padding(.vertical, 1)
-                    .background(Color.accentColor, in: Capsule())
-                    .offset(x: 2, y: 2)
+                    .frame(width: thumbSize, height: thumbSize)
+                if !compact {
+                    Text("\(paths.count)")
+                        .font(.system(size: 9, weight: .bold, design: .rounded))
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 3)
+                        .padding(.vertical, 1)
+                        .background(Color.accentColor, in: Capsule())
+                        .offset(x: 2, y: 2)
+                }
             }
         } else if let data = item.imageData,
                   let img = ImageCache.shared.thumbnail(for: data, key: item.itemID) {
             Image(nsImage: img)
                 .resizable()
                 .aspectRatio(contentMode: .fit)
-                .frame(width: 36, height: 36)
+                .frame(width: thumbSize, height: thumbSize)
                 .clipShape(RoundedRectangle(cornerRadius: 6))
                 .overlay(alignment: .bottomTrailing) { imageFormatBadge }
         } else if item.contentType == .code {
-            LanguageIcon(language: item.resolvedCodeLanguage ?? .unknown, size: 36)
+            LanguageIcon(language: item.resolvedCodeLanguage ?? .unknown, size: thumbSize)
         } else if item.contentType == .text || item.contentType == .email {
             Text(item.richTextData != nil ? "R" : "T")
-                .font(.system(size: 15, weight: .bold, design: .serif))
+                .font(.system(size: compact ? 13 : 15, weight: .bold, design: .serif))
                 .foregroundStyle(.secondary)
-                .frame(width: 36, height: 36)
+                .frame(width: thumbSize, height: thumbSize)
                 .background(
                     RoundedRectangle(cornerRadius: 7)
                         .fill(Color.primary.opacity(0.06))
@@ -225,7 +248,7 @@ struct ClipRow: View {
 
     @ViewBuilder
     private var imageFormatBadge: some View {
-        if let label = resolvedImageFormatLabel {
+        if !compact, let label = resolvedImageFormatLabel {
             Text(label)
                 .font(.system(size: 8, weight: .semibold, design: .rounded))
                 .foregroundStyle(.white)
@@ -256,14 +279,14 @@ struct ClipRow: View {
     private func fileIconThumb(_ icon: FileIconInfo) -> some View {
         ZStack(alignment: .bottom) {
             Image(systemName: icon.symbol)
-                .font(.system(size: 14))
+                .font(.system(size: compact ? 12 : 14))
                 .foregroundStyle(icon.color)
-                .frame(width: 36, height: 36)
+                .frame(width: thumbSize, height: thumbSize)
                 .background(
                     RoundedRectangle(cornerRadius: 6)
                         .fill(Color.primary.opacity(0.05))
                 )
-            if let badge = icon.badge {
+            if let badge = icon.badge, !compact {
                 Text(badge)
                     .font(.system(size: 7, weight: .bold, design: .rounded))
                     .foregroundStyle(.white)
@@ -283,24 +306,26 @@ struct ClipRow: View {
                 Image(nsImage: img)
                     .resizable()
                     .aspectRatio(contentMode: .fit)
-                    .frame(width: 20, height: 20)
-                    .frame(width: 36, height: 36)
+                    .frame(width: compact ? 15 : 20, height: compact ? 15 : 20)
+                    .frame(width: thumbSize, height: thumbSize)
                     .background(
                         RoundedRectangle(cornerRadius: 6)
                             .fill(Color.primary.opacity(0.05))
                     )
-                Image(systemName: "globe")
-                    .font(.system(size: 10, weight: .semibold))
-                    .foregroundStyle(.white)
-                    .frame(width: 14, height: 14)
-                    .background(Color.blue, in: Circle())
-                    .offset(x: 2, y: 2)
+                if !compact {
+                    Image(systemName: "globe")
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .frame(width: 14, height: 14)
+                        .background(Color.blue, in: Circle())
+                        .offset(x: 2, y: 2)
+                }
             }
         } else {
             Image(systemName: "link")
-                .font(.system(size: 14))
+                .font(.system(size: compact ? 12 : 14))
                 .foregroundStyle(.blue)
-                .frame(width: 36, height: 36)
+                .frame(width: thumbSize, height: thumbSize)
                 .background(
                     RoundedRectangle(cornerRadius: 6)
                         .fill(Color.primary.opacity(0.05))
@@ -314,7 +339,7 @@ struct ClipRow: View {
                 Image(nsImage: thumb)
                     .resizable()
                     .aspectRatio(contentMode: .fill)
-                    .frame(width: 36, height: 36)
+                    .frame(width: thumbSize, height: thumbSize)
                     .clipShape(RoundedRectangle(cornerRadius: 6))
                 Image(systemName: "play.fill")
                     .font(.system(size: 10))
@@ -379,9 +404,9 @@ struct ClipRow: View {
     private var sensitiveThumbnail: some View {
         ZStack(alignment: .bottomTrailing) {
             Image(systemName: "lock.shield.fill")
-                .font(.system(size: 16))
+                .font(.system(size: compact ? 13 : 16))
                 .foregroundStyle(.orange)
-                .frame(width: 36, height: 36)
+                .frame(width: thumbSize, height: thumbSize)
                 .background(
                     RoundedRectangle(cornerRadius: 7)
                         .fill(Color.orange.opacity(0.1))

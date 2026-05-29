@@ -792,6 +792,10 @@ struct QuickPanelView: View {
 
     // MARK: - List
 
+    /// When the preview pane is hidden (narrow window) the list is the whole
+    /// experience, so switch rows to the dense single-line scan layout.
+    private var isCompactList: Bool { !layoutState.shouldShowPreview }
+
     private var clipList: some View {
         NativeClipHistoryList(
             rows: cachedHistoryRows,
@@ -804,7 +808,7 @@ struct QuickPanelView: View {
             showCommandPalette: showCommandPalette,
             allowMultipleSelection: true,
             scrollAlignment: .nearest,
-            itemRowHeight: 48,
+            itemRowHeight: isCompactList ? 40 : 48,
             headerRowHeight: 28,
             onItemTap: { id in
                 handleItemClick(id)
@@ -828,7 +832,8 @@ struct QuickPanelView: View {
                     item: item,
                     isSelected: isSelected,
                     shortcutIndex: shortcutIndex(for: item),
-                    searchText: searchText
+                    searchText: searchText,
+                    compact: isCompactList
                 )
             },
             headerContent: { group in

@@ -139,7 +139,8 @@ struct NativeClipHistoryList<RowContent: View, HeaderContent: View, ContextMenuC
         context.coordinator.applySelection(selectedItemIDs)
         context.coordinator.applyScrollTarget(scrollTargetID)
         // 结构变化时 NSTableView 会通过 viewFor 用最新 rootView 重建 cell；
-        // 只有结构没变但 selection / focus / palette 变化时才需要手动刷新可见行。
+        // 只有结构没变但 selection / focus / palette / 行高变化时才需要手动刷新可见行。
+        context.coordinator.applyRowMetricsIfNeeded(structureChanged: structureChanged)
         if !structureChanged {
             context.coordinator.updateVisibleRowsIfNeeded()
         }
@@ -162,6 +163,9 @@ struct NativeClipHistoryList<RowContent: View, HeaderContent: View, ContextMenuC
         private var lastSelectedItemIDs: Set<PersistentIdentifier> = []
         private var lastFocusedItemID: PersistentIdentifier?
         private var lastShowCommandPalette = false
+        // 行高（紧凑 ↔ 舒适切换）记录，用来检测窗口跨过预览断点时是否需要动画过渡。
+        private var lastItemRowHeight: CGFloat?
+        private var lastHeaderRowHeight: CGFloat?
 
         init(parent: NativeClipHistoryList) {
             self.parent = parent
@@ -306,6 +310,31 @@ struct NativeClipHistoryList<RowContent: View, HeaderContent: View, ContextMenuC
             lastFocusedItemID = parent.focusedItemID
             lastShowCommandPalette = parent.showCommandPalette
             refreshVisibleRows()
+        }
+
+        /// Detects a row-height change (the compact ↔ comfortable flip when the
+        /// quick panel crosses the preview breakpoint). On a pure metrics change
+        /// — no insert/remove/reload — it swaps visible rows to the new layout
+        /// and animates every row to its new height so the transition glides
+        /// instead of snapping. On a structural change the reload already applied
+        /// the new heights, so we only record them.
+        func applyRowMetricsIfNeeded(structureChanged: Bool) {
+            let changed = lastItemRowHeight != parent.itemRowHeight
+                || lastHeaderRowHeight != parent.headerRowHeight
+            lastItemRowHeight = parent.itemRowHeight
+            lastHeaderRowHeight = parent.headerRowHeight
+
+            guard changed, !structureChanged, let tableView else { return }
+            let allRows = IndexSet(integersIn: 0..<parent.rows.count)
+            guard !allRows.isEmpty else { return }
+
+            // 先把可见行换成紧凑/舒适的新布局，再让行高在动画里平滑过渡。
+            refreshVisibleRows()
+            NSAnimationContext.runAnimationGroup { ctx in
+                ctx.duration = 0.18
+                ctx.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+                tableView.noteHeightOfRows(withIndexesChanged: allRows)
+            }
         }
 
         private func refreshVisibleRows() {
