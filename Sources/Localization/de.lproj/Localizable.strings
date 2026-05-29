@@ -153,6 +153,7 @@
 "settings.autoPaste" = "Mit Enter direkt in App einfügen";
 "settings.addNewLine" = "Nach dem Einfügen neue Zeile hinzufügen";
 "settings.quickPanelLaunchAnimation" = "Startanimation des Schnellpanels";
+"settings.quickPanelRememberFilter" = "Letzten Filter merken";
 "settings.quickPanelSecondaryRow" = "Unter der Schnellpanel-Suche anzeigen";
 "settings.quickPanelSecondaryRow.types" = "Typen";
 "settings.quickPanelSecondaryRow.groups" = "Gruppen";

@@ -153,6 +153,7 @@
 "settings.autoPaste" = "Coller dans l'app avec Entrée";
 "settings.addNewLine" = "Ajouter un retour à la ligne après le collage";
 "settings.quickPanelLaunchAnimation" = "Animation de lancement du panneau rapide";
+"settings.quickPanelRememberFilter" = "Mémoriser le dernier filtre";
 "settings.quickPanelSecondaryRow" = "Afficher sous la recherche du panneau rapide";
 "settings.quickPanelSecondaryRow.types" = "Types";
 "settings.quickPanelSecondaryRow.groups" = "Groupes";

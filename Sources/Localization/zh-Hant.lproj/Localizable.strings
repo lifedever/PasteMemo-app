@@ -16,7 +16,7 @@
 "empty.hint" = "使用 ⌘C 複製文字、圖片或檔案";
 "empty.quickHint" = "複製內容即可開始使用";
 "empty.noResults" = "沒有找到匹配內容";
-"guide.shortcut" = "按下 %@ 隨時開啟快捷貼上";
+"guide.shortcut" = "按下 %@ 隨時開啟快捷面板";
 "guide.doubleClick" = "雙擊貼上，單擊選取";
 "guide.pin" = "右鍵可置頂重要條目";
 
@@ -105,14 +105,14 @@
 "settings.menuBar.leftClickAction.help" = "左鍵單擊狀態列圖示時執行的動作；右鍵永遠彈出選單";
 "menuBar.leftClick.menu" = "彈出選單";
 "menuBar.leftClick.openManager" = "開啟管理器";
-"menuBar.leftClick.quickPanel" = "開啟快捷貼上";
+"menuBar.leftClick.quickPanel" = "開啟快捷面板";
 "menuBar.leftClick.toggleRelay" = "切換接力模式";
 "menuBar.leftClick.togglePause" = "暫停 / 繼續剪貼簿監聽";
 "menuBar.leftClick.openSettings" = "開啟設定";
 "settings.currentVersion" = "目前版本";
 "settings.features" = "功能";
 "settings.shortcuts" = "快捷鍵";
-"settings.quickPanelShortcut" = "開啟快捷貼上視窗";
+"settings.quickPanelShortcut" = "開啟快捷面板";
 "settings.managerShortcut" = "開啟管理器";
 "settings.managerShortcut.global" = "全域";
 "settings.managerShortcut.scopeHint" = "關閉全域後，這個快捷鍵只會在快捷面板已開啟時可用。";
@@ -124,6 +124,7 @@
 "settings.autoPaste" = "按 Enter 直接貼上到應用";
 "settings.addNewLine" = "貼上後自動換行";
 "settings.quickPanelLaunchAnimation" = "快捷面板啟動動畫";
+"settings.quickPanelRememberFilter" = "記住上次的分組/分類";
 "settings.quickPanelSecondaryRow" = "快捷面板搜尋框下方顯示";
 "settings.quickPanelSecondaryRow.types" = "類型";
 "settings.quickPanelSecondaryRow.groups" = "分組";
@@ -248,7 +249,7 @@
 
 /* Menu */
 "menu.openMain" = "開啟主視窗";
-"menu.quickPanel" = "快捷貼上";
+"menu.quickPanel" = "快捷面板";
 "menu.pause" = "暫停剪貼板監聽";
 "menu.resume" = "恢復剪貼板監聽";
 "menu.settings" = "設定";
@@ -295,8 +296,8 @@
 "onboarding.accessibility.grant" = "開啟輔助使用設定";
 "onboarding.accessibility.granted" = "已取得權限";
 "onboarding.accessibility.hint" = "授權後此頁面將自動更新。";
-"onboarding.shortcut.title" = "快捷貼上";
-"onboarding.shortcut.desc" = "在任意應用程式中按下快捷鍵，開啟快速貼上面板。搜尋剪貼簿歷史，一鍵貼上。";
+"onboarding.shortcut.title" = "快捷面板";
+"onboarding.shortcut.desc" = "在任意應用程式中按下快捷鍵，開啟快捷面板。搜尋剪貼簿歷史，一鍵貼上。";
 "onboarding.shortcut.current" = "點擊修改快捷鍵";
 
 /* About */
@@ -309,7 +310,7 @@
 "help.subtitle" = "快速瞭解剪貼簿管理器的使用方法。";
 "help.close" = "知道了";
 "help.shortcuts" = "快捷鍵";
-"help.shortcut.quickPaste" = "開啟快捷貼上面板";
+"help.shortcut.quickPaste" = "開啟快捷面板";
 "help.shortcut.paste" = "貼上選取項目";
 "help.shortcut.switchType" = "依內容類型篩選";
 "help.shortcut.navigate" = "上下瀏覽條目";

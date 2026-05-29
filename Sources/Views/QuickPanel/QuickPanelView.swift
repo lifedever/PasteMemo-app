@@ -9,6 +9,41 @@ private enum QuickFilter: Equatable {
     case aiAgent
     case type(ClipContentType)
     case group(String)
+
+    /// 序列化成可写入 @AppStorage 的字符串。`.type`/`.group` 用 `前缀:值` 形式。
+    var storageString: String {
+        switch self {
+        case .all: return "all"
+        case .pinned: return "pinned"
+        case .aiAgent: return "aiAgent"
+        case .type(let t): return "type:\(t.rawValue)"
+        case .group(let name): return "group:\(name)"
+        }
+    }
+
+    /// 从 @AppStorage 字符串解析；无法识别返回 nil（调用方退回 `.all`）。
+    /// 按**第一个**冒号切分，组名本身含冒号也安全。
+    init?(storageString: String) {
+        switch storageString {
+        case "all": self = .all
+        case "pinned": self = .pinned
+        case "aiAgent": self = .aiAgent
+        default:
+            guard let colon = storageString.firstIndex(of: ":") else { return nil }
+            let prefix = String(storageString[..<colon])
+            let value = String(storageString[storageString.index(after: colon)...])
+            switch prefix {
+            case "type":
+                guard let t = ClipContentType(rawValue: value) else { return nil }
+                self = .type(t)
+            case "group":
+                guard !value.isEmpty else { return nil }
+                self = .group(value)
+            default:
+                return nil
+            }
+        }
+    }
 }
 
 /// `/` 下拉选择留下的次级过滤（以 pill 展示于搜索框）
@@ -59,6 +94,8 @@ struct QuickPanelView: View {
     @State private var cachedIDSet: Set<PersistentIdentifier> = []
     @AppStorage("quickPanelAutoPaste") private var quickPanelAutoPaste = true
     @AppStorage(QuickPanelSettings.secondaryRowKey) private var quickPanelSecondaryRowRaw = QuickPanelSecondaryRow.types.rawValue
+    @AppStorage(QuickPanelSettings.rememberLastFilterKey) private var rememberLastFilter = false
+    @AppStorage(QuickPanelSettings.lastFilterKey) private var lastFilterStorage = "all"
 
     private var secondaryRow: QuickPanelSecondaryRow {
         QuickPanelSecondaryRow(rawValue: quickPanelSecondaryRowRaw) ?? .types
@@ -264,11 +301,17 @@ struct QuickPanelView: View {
             // stops dragging key status back to the panel.
             isSearchFocused = false
         }
+        .onReceive(NotificationCenter.default.publisher(for: .quickPanelPasteDigit)) { note in
+            // 置顶时全局 ⌘1–9 命中：粘贴对应项，面板保持打开
+            guard let index = note.userInfo?["index"] as? Int else { return }
+            pasteDigitWhilePinned(index: index)
+        }
         .onReceive(NotificationCenter.default.publisher(for: .quickPanelDidShow)) { _ in
             showCommandPalette = false
             searchText = ""
             pill = nil
-            selectedFilter = .all
+            let restoredFilter = restoredFilterOnShow()
+            selectedFilter = restoredFilter
             isPanelPinned = false
             suggestionsArmed = false
             userTypedSlash = false
@@ -289,10 +332,20 @@ struct QuickPanelView: View {
             let latestItemID = store.queryFirstItemID()
             if latestItemID != lastSeenFirstItemID {
                 store.resetFilters()
-                lastSeenFirstItemID = latestItemID
             } else {
                 store.updateQuery(searchText: .set(""), sourceApp: .set(nil), groupName: .set(nil))
-                lastSeenFirstItemID = latestItemID
+            }
+            lastSeenFirstItemID = latestItemID
+
+            // 恢复上次的主筛选：同步写回 store，保证首帧即为正确列表（不闪“全部”）。
+            // 此刻 pill 恒为 nil。`restoredFilterOnShow()` 已用缓存计数校验过维度/存在性；
+            // 这里再用真实 totalCount 兜底关闭期间被删/清空的组或类型。
+            if restoredFilter != .all {
+                applyFilters(primary: restoredFilter, pill: nil)
+                if store.totalCount == 0 {
+                    selectedFilter = .all
+                    applyFilters(primary: .all, pill: nil)
+                }
             }
 
             rebuildGroupedItems()
@@ -314,7 +367,11 @@ struct QuickPanelView: View {
             // Default-select the first suggestion row when typing `/`
             groupSuggestionIndex = totalSuggestionCount > 0 ? 0 : -1
         }
-        .onChange(of: selectedFilter) { applyFiltersToStore() }
+        .onChange(of: selectedFilter) {
+            // 始终记录最近一次主筛选；恢复与否由 rememberLastFilter 在显示时决定。
+            lastFilterStorage = selectedFilter.storageString
+            applyFiltersToStore()
+        }
         .onChange(of: pill) { applyFiltersToStore() }
         .onChange(of: quickPanelSecondaryRowRaw) {
             // 切换 tabBar 维度时，相关过滤会失配，统一重置成干净状态
@@ -554,13 +611,18 @@ struct QuickPanelView: View {
 
     /// 将 selectedFilter + pill 合并写回到 store，两个维度正交共存
     private func applyFiltersToStore() {
+        applyFilters(primary: selectedFilter, pill: pill)
+    }
+
+    /// 显示时恢复路径用：显式传 filter，避免读刚写入但尚未提交的 @State `selectedFilter`
+    private func applyFilters(primary: QuickFilter, pill: PillSelection?) {
         store.pinnedOnly = false
         store.aiAgentOnly = false
         store.filterType = nil
         store.groupName = nil
         store.sourceApp = nil
 
-        switch selectedFilter {
+        switch primary {
         case .all: break
         case .pinned: store.pinnedOnly = true
         case .aiAgent: store.aiAgentOnly = true
@@ -577,6 +639,24 @@ struct QuickPanelView: View {
 
         store.applyFilters()
         scrollResetToken = UUID()
+    }
+
+    /// 打开面板时计算要恢复的 tab 主筛选：开关关 → `.all`；开关开 → 解码并对当前上下文
+    /// 校验（维度匹配、组/类型仍存在），任何不匹配都退回 `.all`。
+    /// 用缓存的 sidebarCounts 校验（命中常见的"上次开/关之间数据没变"场景）；
+    /// 若数据在关闭期间变了导致缓存过期，由调用方的 `totalCount == 0` 兜底再退回 `.all`。
+    private func restoredFilterOnShow() -> QuickFilter {
+        guard rememberLastFilter, let stored = QuickFilter(storageString: lastFilterStorage) else { return .all }
+        switch stored {
+        case .all, .pinned:
+            return stored
+        case .aiAgent:
+            return store.sidebarCounts.aiAgent > 0 ? .aiAgent : .all
+        case .type(let t):
+            return (secondaryRow == .types && availableContentTypes.contains(t)) ? .type(t) : .all
+        case .group(let name):
+            return (secondaryRow == .groups && availableGroupsForTab.contains { $0.name == name }) ? .group(name) : .all
+        }
     }
 
     private var searchBar: some View {
@@ -626,7 +706,7 @@ struct QuickPanelView: View {
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            .help(isPanelPinned ? L10n.tr("quickPanel.unpin") : L10n.tr("quickPanel.pin"))
+            .help((isPanelPinned ? L10n.tr("quickPanel.unpin") : L10n.tr("quickPanel.pin")) + " (⌘T)")
 
             Text("\(store.totalCount)")
                 .font(.system(size: 12, weight: .medium).monospacedDigit())
@@ -840,6 +920,7 @@ struct QuickPanelView: View {
                     footerKey("←→", L10n.tr("quick.switchType"))
                     footerKey("↑↓", L10n.tr("quick.navigate"))
                     footerKey("⌘O", currentItem?.contentType == .link ? L10n.tr("quick.openLink") : L10n.tr("quick.preview"))
+                    footerKey("⌘T", isPanelPinned ? L10n.tr("quickPanel.unpin") : L10n.tr("quickPanel.pin"))
                     if !HotkeyManager.shared.isManagerCleared {
                         footerKey(
                             shortcutDisplayString(
@@ -1017,6 +1098,10 @@ struct QuickPanelView: View {
 
         if isMultiSelected, selectedItemIDs.contains(itemID) {
             let items = currentItems
+            // 复制置顶，与主窗口右键菜单一致
+            Button(L10n.tr("action.mergeCopy")) {
+                copyItemsToClipboard(items)
+            }
             let hasPinned = items.contains(where: \.isPinned)
             Button(hasPinned ? L10n.tr("action.unpin") : L10n.tr("action.pin")) {
                 let newValue = !hasPinned
@@ -1028,9 +1113,6 @@ struct QuickPanelView: View {
                 let newValue = !hasSensitive
                 for i in items { i.isSensitive = newValue }
                 ClipItemStore.saveAndNotify(modelContext)
-            }
-            Button(L10n.tr("action.mergeCopy")) {
-                copyItemsToClipboard(items)
             }
             Divider()
             quickPanelGroupMenu(items: items)
@@ -1048,6 +1130,11 @@ struct QuickPanelView: View {
                 handleDeleteSelected()
             }
         } else {
+            // 复制置顶，与主窗口右键菜单一致
+            Button(L10n.tr("action.mergeCopy")) {
+                copyItemsToClipboard([item])
+                selectItem(itemID)
+            }
             Button(item.isPinned ? L10n.tr("action.unpin") : L10n.tr("action.pin")) {
                 item.isPinned.toggle()
                 ClipItemStore.saveAndNotify(modelContext)
@@ -1056,10 +1143,6 @@ struct QuickPanelView: View {
             Button(item.isSensitive ? L10n.tr("sensitive.unmarkSensitive") : L10n.tr("sensitive.markSensitive")) {
                 item.isSensitive.toggle()
                 ClipItemStore.saveAndNotify(modelContext)
-                selectItem(itemID)
-            }
-            Button(L10n.tr("action.mergeCopy")) {
-                copyItemsToClipboard([item])
                 selectItem(itemID)
             }
             if ProManager.AUTOMATION_ENABLED {
@@ -1239,6 +1322,13 @@ struct QuickPanelView: View {
                 if hasCmd {
                     showCommandPalette.toggle()
                     if showCommandPalette { isSearchFocused = false }
+                    return nil
+                }
+                return event
+            case 17: // Cmd+T — 切换置顶（置顶后面板让出焦点，取消置顶请用 Esc 或图钉按钮）
+                if hasCmd {
+                    isPanelPinned.toggle()
+                    QuickPanelWindowController.shared.isPinned = isPanelPinned
                     return nil
                 }
                 return event
@@ -1523,6 +1613,16 @@ struct QuickPanelView: View {
         let target = items[index - 1]
         selectItem(target.persistentModelID)
         handlePaste()
+    }
+
+    /// 置顶连续快粘：全局 ⌘N 命中时粘贴第 N 个可见项。走统一的 `dismissAndPaste`——
+    /// 置顶时它会保留面板、激活目标 App 后 ⌘V、且不更新 lastUsedAt（保证 ⌘1–9 编号稳定）。
+    private func pasteDigitWhilePinned(index: Int) {
+        let items = displayOrderItems
+        guard index >= 1, index <= 9, index <= items.count else { return }
+        let item = items[index - 1]
+        guard !item.isDeleted, item.modelContext != nil else { return }
+        QuickPanelWindowController.shared.dismissAndPaste(item, clipboardManager: clipboardManager)
     }
 
     @ViewBuilder
@@ -2144,7 +2244,8 @@ struct QuickPanelView: View {
     private func handlePasteAndDestroy(item: ClipItem) {
         let panelController = QuickPanelWindowController.shared
         let targetApp = panelController.previousApp
-        panelController.dismiss()
+        // 粘贴并销毁是一次性动作，即便置顶也关闭面板
+        panelController.dismiss(force: true)
 
         clipboardManager.writeToPasteboard(item, targetApp: targetApp)
         item.lastUsedAt = Date()

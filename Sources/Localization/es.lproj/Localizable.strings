@@ -153,6 +153,7 @@
 "settings.autoPaste" = "Pegar en la app con Enter";
 "settings.addNewLine" = "Agregar nueva línea después de pegar";
 "settings.quickPanelLaunchAnimation" = "Animación de apertura del panel rápido";
+"settings.quickPanelRememberFilter" = "Recordar el último filtro";
 "settings.quickPanelSecondaryRow" = "Mostrar debajo de la búsqueda del panel rápido";
 "settings.quickPanelSecondaryRow.types" = "Tipos";
 "settings.quickPanelSecondaryRow.groups" = "Grupos";

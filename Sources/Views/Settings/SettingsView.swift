@@ -365,6 +365,7 @@ struct PreferencesTab: View {
     @AppStorage("offlineModeEnabled") private var offlineModeEnabled = false
     @AppStorage(QuickPanelSettings.launchAnimationEnabledKey) private var quickPanelLaunchAnimationEnabled = true
     @AppStorage(QuickPanelSettings.secondaryRowKey) private var quickPanelSecondaryRow = QuickPanelSecondaryRow.types.rawValue
+    @AppStorage(QuickPanelSettings.rememberLastFilterKey) private var quickPanelRememberLastFilter = false
     @AppStorage(QuickPanelPositionSettings.modeKey) private var quickPanelPositionMode = QuickPanelPositionMode.screenCenter.rawValue
     @AppStorage(QuickPanelPositionSettings.screenTargetKey) private var quickPanelScreenTarget = QuickPanelScreenTarget.active.rawValue
     @AppStorage(QuickPanelPositionSettings.specifiedScreenIDKey) private var quickPanelSpecifiedScreenID = ""
@@ -450,6 +451,7 @@ struct PreferencesTab: View {
                 Toggle(L10n.tr("settings.autoPaste"), isOn: $quickPanelAutoPaste)
                 Toggle(L10n.tr("settings.addNewLine"), isOn: $addNewLineAfterPaste)
                 Toggle(L10n.tr("settings.quickPanelLaunchAnimation"), isOn: $quickPanelLaunchAnimationEnabled)
+                Toggle(L10n.tr("settings.quickPanelRememberFilter"), isOn: $quickPanelRememberLastFilter)
             }
 
             Section {

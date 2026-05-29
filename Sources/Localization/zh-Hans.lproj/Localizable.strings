@@ -16,7 +16,7 @@
 "empty.hint" = "使用 ⌘C 复制文本、图片或文件";
 "empty.quickHint" = "复制内容即可开始使用";
 "empty.noResults" = "没有找到匹配内容";
-"guide.shortcut" = "按下 %@ 随时打开快捷粘贴";
+"guide.shortcut" = "按下 %@ 随时打开快捷面板";
 "guide.doubleClick" = "双击粘贴，单击选中";
 "guide.pin" = "右键可置顶重要条目";
 
@@ -114,14 +114,14 @@
 "settings.menuBar.leftClickAction.help" = "左键单击状态栏图标时执行的动作；右键始终弹菜单";
 "menuBar.leftClick.menu" = "弹出菜单";
 "menuBar.leftClick.openManager" = "打开管理器";
-"menuBar.leftClick.quickPanel" = "打开快捷粘贴";
+"menuBar.leftClick.quickPanel" = "打开快捷面板";
 "menuBar.leftClick.toggleRelay" = "切换接力模式";
 "menuBar.leftClick.togglePause" = "暂停 / 继续剪贴板监听";
 "menuBar.leftClick.openSettings" = "打开设置";
 "settings.currentVersion" = "当前版本";
 "settings.features" = "功能";
 "settings.shortcuts" = "快捷键";
-"settings.quickPanelShortcut" = "打开快捷粘贴窗口";
+"settings.quickPanelShortcut" = "打开快捷面板";
 "settings.managerShortcut" = "打开管理器";
 "settings.managerShortcut.global" = "全局";
 "settings.managerShortcut.scopeHint" = "关闭全局后，这个快捷键只在快捷面板已打开时可用。";
@@ -135,6 +135,7 @@
 "settings.autoPaste" = "回车直接粘贴到应用";
 "settings.addNewLine" = "粘贴后自动换行";
 "settings.quickPanelLaunchAnimation" = "快捷面板启动动画";
+"settings.quickPanelRememberFilter" = "记住上次的分组/分类";
 "settings.quickPanelSecondaryRow" = "快捷面板搜索框下方显示";
 "settings.quickPanelSecondaryRow.types" = "类型";
 "settings.quickPanelSecondaryRow.groups" = "分组";
@@ -273,7 +274,7 @@
 
 /* Menu */
 "menu.openMain" = "打开主窗口";
-"menu.quickPanel" = "快捷粘贴";
+"menu.quickPanel" = "快捷面板";
 "menu.pause" = "暂停剪贴板监听";
 "menu.resume" = "恢复剪贴板监听";
 "menu.settings" = "设置";
@@ -333,8 +334,8 @@
 "onboarding.aiAgent.feature1" = "5 个 MCP 工具——读取、搜索、写入剪贴板";
 "onboarding.aiAgent.feature2" = "设置 → AI Agents 一键安装";
 "onboarding.aiAgent.feature3" = "敏感项默认自动过滤";
-"onboarding.shortcut.title" = "快捷粘贴";
-"onboarding.shortcut.desc" = "在任意应用中按下快捷键，打开快速粘贴面板。搜索剪贴板历史，一键粘贴。";
+"onboarding.shortcut.title" = "快捷面板";
+"onboarding.shortcut.desc" = "在任意应用中按下快捷键，打开快捷面板。搜索剪贴板历史，一键粘贴。";
 "onboarding.shortcut.current" = "点击修改快捷键";
 
 /* About */
@@ -347,7 +348,7 @@
 "help.subtitle" = "快速了解剪贴板管理器的使用方法。";
 "help.close" = "知道了";
 "help.shortcuts" = "快捷键";
-"help.shortcut.quickPaste" = "打开快捷粘贴面板";
+"help.shortcut.quickPaste" = "打开快捷面板";
 "help.shortcut.paste" = "粘贴选中项";
 "help.shortcut.switchType" = "按内容类型筛选";
 "help.shortcut.navigate" = "上下浏览条目";

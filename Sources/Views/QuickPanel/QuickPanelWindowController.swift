@@ -6,6 +6,8 @@ extension Notification.Name {
     static let quickPanelDidShow = Notification.Name("quickPanelDidShow")
     static let quickPanelWillDismiss = Notification.Name("quickPanelWillDismiss")
     static let quickPanelPinnedResignKey = Notification.Name("quickPanelPinnedResignKey")
+    /// 置顶时全局 ⌘1–9 命中，userInfo["index"] 为 1–9，由 QuickPanelView 粘贴对应项（不关面板）
+    static let quickPanelPasteDigit = Notification.Name("quickPanelPasteDigit")
 }
 
 private let DEFAULT_WIDTH: CGFloat = 750
@@ -80,6 +82,11 @@ final class QuickPanelWindowController {
                 if panel?.isKeyWindow == true {
                     previousApp?.activate(options: [])
                 }
+                // 面板已让出焦点，local 监听器收不到键了；改用全局 ⌘1–9 支持连续快粘。
+                HotkeyManager.shared.registerQuickPasteDigitHotkeys()
+            } else {
+                // 取消置顶：把 ⌘1–9 还给目标 App。
+                HotkeyManager.shared.unregisterQuickPasteDigitHotkeys()
             }
         }
     }
@@ -144,7 +151,8 @@ final class QuickPanelWindowController {
 
     func show(clipboardManager: ClipboardManager, modelContainer: ModelContainer) {
         if let existing = panel, existing.isVisible {
-            dismiss()
+            // 再次按开关热键 = 用户主动关闭，置顶时也要关
+            dismiss(force: true)
             return
         }
 
@@ -209,7 +217,10 @@ final class QuickPanelWindowController {
         UsageTracker.pingIfNeeded(source: .quick)
     }
 
-    func dismiss() {
+    /// - Parameter force: 置顶时，粘贴/复制完成的收尾调用（`force == false`）不关闭面板，
+    ///   让用户连续操作；只有用户主动关闭（Esc / 再次按开关热键 / 关闭按钮等）才传 `force: true`。
+    func dismiss(force: Bool = false) {
+        if isPinned && !force { return }
         isPinned = false
         removeClickOutsideMonitor()
         removeDeactivationObserver()
@@ -232,14 +243,18 @@ final class QuickPanelWindowController {
     func dismissAndPaste(_ item: ClipItem, clipboardManager: ClipboardManager, addNewLine: Bool = false) {
         let appToRestore = previousApp
         clipboardManager.writeToPasteboard(item, targetApp: appToRestore)
-        item.lastUsedAt = Date()
-        if let context = item.modelContext {
-            ClipItemStore.saveAndNotifyLastUsed(context)
-        }
         SoundManager.playPaste()
 
-        dismiss()
-        previousApp = nil
+        // 置顶连续快粘：保留面板、保留 previousApp、不更新 lastUsedAt（否则列表重排、⌘1–9 编号错位）。
+        // 仍激活目标 App 再 ⌘V——面板有时仍是 key window，不激活会把 ⌘V 投给面板自己。
+        if !isPinned {
+            item.lastUsedAt = Date()
+            if let context = item.modelContext {
+                ClipItemStore.saveAndNotifyLastUsed(context)
+            }
+            dismiss()
+            previousApp = nil
+        }
 
         if let app = appToRestore {
             app.activate()

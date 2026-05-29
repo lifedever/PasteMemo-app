@@ -41,6 +41,10 @@ enum QuickPanelPositionSettings {
 enum QuickPanelSettings {
     static let launchAnimationEnabledKey = "quickPanelLaunchAnimationEnabled"
     static let secondaryRowKey = "quickPanelSecondaryRow"
+    /// 开关：重新打开快捷面板时是否恢复上次的 tab 主筛选（默认关闭）
+    static let rememberLastFilterKey = "quickPanelRememberLastFilter"
+    /// 序列化后的上次 tab 主筛选，供恢复用
+    static let lastFilterKey = "quickPanelLastFilter"
 }
 
 enum QuickPanelSecondaryRow: String, CaseIterable {

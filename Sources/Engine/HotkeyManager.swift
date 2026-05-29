@@ -7,7 +7,15 @@ private let DEFAULT_MODIFIERS = cmdKey | shiftKey
 private let HOTKEY_ID_QUICK_PANEL: UInt32 = 1
 private let HOTKEY_ID_MANAGER: UInt32 = 2
 private let HOTKEY_ID_RELAY: UInt32 = 3
+/// 置顶连续快粘：⌘1–9 的 hotkey ID 从此基址连续分配（10…18）
+private let HOTKEY_ID_QUICK_PASTE_DIGIT_BASE: UInt32 = 10
 private let MANAGER_HOTKEY_GLOBAL_ENABLED_KEY = "managerHotkeyGlobalEnabled"
+
+/// ⌘1–9 的物理键码，与 QuickPanelView.digitKeyMap 一一对应（用 kVK_ANSI_* 而非裸数字）
+private let QUICK_PASTE_DIGIT_KEYCODES: [Int] = [
+    kVK_ANSI_1, kVK_ANSI_2, kVK_ANSI_3, kVK_ANSI_4, kVK_ANSI_5,
+    kVK_ANSI_6, kVK_ANSI_7, kVK_ANSI_8, kVK_ANSI_9,
+]
 
 @MainActor
 final class HotkeyManager: ObservableObject {
@@ -17,6 +25,8 @@ final class HotkeyManager: ObservableObject {
     private var hotKeyRef: EventHotKeyRef?
     private var managerHotKeyRef: EventHotKeyRef?
     private var relayHotKeyRef: EventHotKeyRef?
+    /// 置顶期间临时注册的 ⌘1–9 全局热键；取消置顶/关闭面板时注销
+    private var quickPasteDigitRefs: [EventHotKeyRef?] = []
     private var eventHandler: EventHandlerRef?
 
     // MARK: - Quick Panel Shortcut
@@ -165,6 +175,12 @@ final class HotkeyManager: ObservableObject {
                         AppAction.shared.openMainWindow?()
                     case HOTKEY_ID_RELAY:
                         RelayManager.shared.activate()
+                    case HOTKEY_ID_QUICK_PASTE_DIGIT_BASE...(HOTKEY_ID_QUICK_PASTE_DIGIT_BASE + 8):
+                        // 置顶连续快粘：把 1–9 交给 QuickPanelView 粘贴对应项（不关面板）
+                        let index = Int(hotKeyID.id - HOTKEY_ID_QUICK_PASTE_DIGIT_BASE) + 1
+                        NotificationCenter.default.post(
+                            name: .quickPanelPasteDigit, object: nil, userInfo: ["index": index]
+                        )
                     default:
                         break
                     }
@@ -195,6 +211,7 @@ final class HotkeyManager: ObservableObject {
         unregisterHotKey()
         unregisterManagerHotKey()
         unregisterRelayHotKey()
+        unregisterQuickPasteDigitHotkeys()
         if let handler = eventHandler {
             RemoveEventHandler(handler)
             eventHandler = nil
@@ -262,6 +279,35 @@ final class HotkeyManager: ObservableObject {
         relayHotKeyRef = nil
     }
 
+    /// 面板置顶时调用：全局注册 ⌘1–9，使用户点进目标 App 后仍能连续快捷粘贴。
+    /// 复用启动时已安装的 `eventHandler` 分发；幂等。
+    func registerQuickPasteDigitHotkeys() {
+        guard quickPasteDigitRefs.isEmpty, eventHandler != nil else { return }
+        for (offset, keyCode) in QUICK_PASTE_DIGIT_KEYCODES.enumerated() {
+            var hotKeyID = EventHotKeyID()
+            hotKeyID.signature = HOTKEY_SIGNATURE
+            hotKeyID.id = HOTKEY_ID_QUICK_PASTE_DIGIT_BASE + UInt32(offset)
+            var ref: EventHotKeyRef?
+            RegisterEventHotKey(
+                UInt32(keyCode),
+                UInt32(cmdKey),
+                hotKeyID,
+                GetApplicationEventTarget(),
+                0,
+                &ref
+            )
+            quickPasteDigitRefs.append(ref)
+        }
+    }
+
+    /// 取消置顶 / 关闭面板时调用：把 ⌘1–9 还给系统和目标 App。幂等。
+    func unregisterQuickPasteDigitHotkeys() {
+        for ref in quickPasteDigitRefs where ref != nil {
+            UnregisterEventHotKey(ref!)
+        }
+        quickPasteDigitRefs.removeAll()
+    }
+
     private func startDoubleTapDetector() {
         let detector = DoubleTapDetector.shared
         detector.onDoubleTap = { [weak self] in
@@ -294,7 +340,8 @@ final class HotkeyManager: ObservableObject {
 
     func hideQuickPanel() {
         isQuickPanelVisible = false
-        QuickPanelWindowController.shared.dismiss()
+        // 用户主动关闭（Esc / 关闭按钮 / 切到主窗口等都走这里），置顶也要关
+        QuickPanelWindowController.shared.dismiss(force: true)
     }
 }
 
