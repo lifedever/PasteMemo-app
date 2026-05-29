@@ -306,6 +306,10 @@ struct QuickPanelView: View {
             guard let index = note.userInfo?["index"] as? Int else { return }
             pasteDigitWhilePinned(index: index)
         }
+        .onReceive(NotificationCenter.default.publisher(for: .quickPanelPasteTargetChanged)) { _ in
+            // 置顶期间用户切到别的 App，刷新底部"粘贴到 X"（previousApp 已在控制器侧更新）
+            targetApp = QuickPanelWindowController.shared.previousApp
+        }
         .onReceive(NotificationCenter.default.publisher(for: .quickPanelDidShow)) { _ in
             showCommandPalette = false
             searchText = ""

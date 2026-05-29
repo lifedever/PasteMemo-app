@@ -8,6 +8,8 @@ extension Notification.Name {
     static let quickPanelPinnedResignKey = Notification.Name("quickPanelPinnedResignKey")
     /// 置顶时全局 ⌘1–9 命中，userInfo["index"] 为 1–9，由 QuickPanelView 粘贴对应项（不关面板）
     static let quickPanelPasteDigit = Notification.Name("quickPanelPasteDigit")
+    /// 置顶期间用户切到别的前台 App，粘贴目标已更新，QuickPanelView 据此刷新底部"粘贴到 X"
+    static let quickPanelPasteTargetChanged = Notification.Name("quickPanelPasteTargetChanged")
 }
 
 private let DEFAULT_WIDTH: CGFloat = 750
@@ -68,6 +70,8 @@ final class QuickPanelWindowController {
     private var clickOutsideMonitor: Any?
     private var deactivationObserver: Any?
     private var resignKeyObserver: Any?
+    /// 置顶期间跟踪前台 App 切换，让粘贴目标跟随当前 App
+    private var pinnedActivationObserver: Any?
     private var resizeObserver: Any?
     private(set) var previousApp: NSRunningApplication?
     private var isWarmedUp = false
@@ -579,6 +583,24 @@ final class QuickPanelWindowController {
                 self.dismiss()
             }
         }
+        // 置顶悬浮时用户会在多个 App 间切换。粘贴目标 previousApp 原本只在 show() 时记录一次，
+        // 切到 Word 后还停在打开面板时的 App（如微信）。这里跟踪前台 App 切换，把 previousApp
+        // 实时更新成当前 App（排除 PasteMemo 自己），所有读 previousApp 的粘贴路径自动跟随。
+        pinnedActivationObserver = NSWorkspace.shared.notificationCenter.addObserver(
+            forName: NSWorkspace.didActivateApplicationNotification,
+            object: nil,
+            queue: nil
+        ) { [weak self] _ in
+            Task { @MainActor [weak self] in
+                guard let self, self.isPinned else { return }
+                // 读 frontmostApplication（刚激活的就是它），避免把 Notification 捕获进
+                // 主 actor 闭包触发数据竞争；也更"实时"。
+                guard let app = NSWorkspace.shared.frontmostApplication,
+                      app.bundleIdentifier != Bundle.main.bundleIdentifier else { return }
+                self.previousApp = app
+                NotificationCenter.default.post(name: .quickPanelPasteTargetChanged, object: nil)
+            }
+        }
     }
 
     private func removeDeactivationObserver() {
@@ -589,6 +611,10 @@ final class QuickPanelWindowController {
         if let obs = resignKeyObserver {
             NotificationCenter.default.removeObserver(obs)
             resignKeyObserver = nil
+        }
+        if let obs = pinnedActivationObserver {
+            NSWorkspace.shared.notificationCenter.removeObserver(obs)
+            pinnedActivationObserver = nil
         }
     }
 
