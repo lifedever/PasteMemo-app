@@ -1398,10 +1398,7 @@ final class ClipboardManager: ObservableObject {
         let vKeyCode = KeyboardLayout.virtualKeyForV()
         // ⌘ 是修饰键，键码与布局无关（kVK_Command = 0x37）。
         let cmdKeyCode: CGKeyCode = 0x37
-        // 发「真实的 ⌘ 按下 → V 按下 → V 抬起 → ⌘ 抬起」四连事件，而不是只在 V 上挂一个
-        // .maskCommand 标志位。远程桌面 / 流式客户端（MS Remote Desktop、UU远程，issue #60）
-        // 靠「按键事件流」转发修饰键，只认真实的 ⌘ 键事件——只挂 flag 时它们只收到裸 v；
-        // 本地 App / 虚拟机（Parallels）读事件 flags，两条路都喂到。
+        // 发「真实的 ⌘ 按下 → V 按下 → V 抬起 → ⌘ 抬起」四连事件（而不是只在 V 上挂 flag）。
         guard let cmdDown = CGEvent(keyboardEventSource: source, virtualKey: cmdKeyCode, keyDown: true),
               let vDown = CGEvent(keyboardEventSource: source, virtualKey: vKeyCode, keyDown: true),
               let vUp = CGEvent(keyboardEventSource: source, virtualKey: vKeyCode, keyDown: false),
@@ -1410,10 +1407,15 @@ final class ClipboardManager: ObservableObject {
         vDown.flags = .maskCommand
         vUp.flags = .maskCommand
         cmdUp.flags = []   // ⌘ 已抬起
-        cmdDown.post(tap: .cgAnnotatedSessionEventTap)
-        vDown.post(tap: .cgAnnotatedSessionEventTap)
-        vUp.post(tap: .cgAnnotatedSessionEventTap)
-        cmdUp.post(tap: .cgAnnotatedSessionEventTap)
+        // 投递到 .cghidEventTap（HID 最底层，等同硬件），而非 .cgAnnotatedSessionEventTap（会话层）。
+        // 远程桌面 / 流式客户端（MS Remote Desktop、UU远程，issue #60）在 HID 层装事件 tap 捕获键盘，并把
+        // Mac ⌘ 重映射成 Windows Ctrl——物理 ⌘V 因此在远程里=Ctrl+V，粘贴正常。若合成事件 post 到会话层
+        // （位于这些客户端 HID tap 的下游），客户端的捕获+重映射根本看不到我们的 ⌘ 键，事件直落到普通处理、
+        // ⌘ 被当成 Windows 键 → 远程收到 Win+V（非粘贴）。post 到 HID 层让合成键与物理键走同一条路。
+        cmdDown.post(tap: .cghidEventTap)
+        vDown.post(tap: .cghidEventTap)
+        vUp.post(tap: .cghidEventTap)
+        cmdUp.post(tap: .cghidEventTap)
     }
 
     private func simulateReturn() {
