@@ -99,20 +99,22 @@ enum RelayPaster {
         // ⌘ 是修饰键，键码与布局无关（kVK_Command = 0x37）。
         let cmdKeyCode: CGKeyCode = 0x37
         // 发「真实的 ⌘ 按下 → V 按下 → V 抬起 → ⌘ 抬起」四连事件，而不是只在 V 上挂 flag。
-        // 远程桌面 / 流式客户端（MS Remote Desktop、UU远程，issue #60）靠按键事件流转发
-        // 修饰键，只挂 flag 时它们只收到裸 v；本地 App / 虚拟机读 flags，两条路都喂到。
         guard let cmdDown = CGEvent(keyboardEventSource: source, virtualKey: cmdKeyCode, keyDown: true),
               let vDown = CGEvent(keyboardEventSource: source, virtualKey: vKeyCode, keyDown: true),
               let vUp = CGEvent(keyboardEventSource: source, virtualKey: vKeyCode, keyDown: false),
               let cmdUp = CGEvent(keyboardEventSource: source, virtualKey: cmdKeyCode, keyDown: false) else { return }
-        cmdDown.flags = .maskCommand
-        vDown.flags = .maskCommand
-        vUp.flags = .maskCommand
+        // flags 带「抽象 command 位」+「设备相关左⌘位 0x8」。远程桌面 / 流式客户端（MS Remote
+        // Desktop、UU远程，issue #60）读 device-dependent 位翻译具体物理键，只设抽象位时它们认为
+        // 没按 ⌘、只收到裸 v。与 ClipboardManager.simulateCommandV 同一修复，详见 DEVICE_LCMD_FLAG。
+        let cmdFlags = CGEventFlags(rawValue: CGEventFlags.maskCommand.rawValue | DEVICE_LCMD_FLAG)
+        cmdDown.flags = cmdFlags
+        vDown.flags = cmdFlags
+        vUp.flags = cmdFlags
         cmdUp.flags = []   // ⌘ 已抬起
-        cmdDown.post(tap: .cgAnnotatedSessionEventTap)
-        vDown.post(tap: .cgAnnotatedSessionEventTap)
-        vUp.post(tap: .cgAnnotatedSessionEventTap)
-        cmdUp.post(tap: .cgAnnotatedSessionEventTap)
+        cmdDown.post(tap: .cghidEventTap)
+        vDown.post(tap: .cghidEventTap)
+        vUp.post(tap: .cghidEventTap)
+        cmdUp.post(tap: .cghidEventTap)
     }
 
     private static func simulatePostPasteKey() {
@@ -125,7 +127,8 @@ enum RelayPaster {
         // Explicitly clear any modifier flags so arrow keys don't become Ctrl+Arrow etc.
         keyDown.flags = []
         keyUp.flags = []
-        keyDown.post(tap: .cgAnnotatedSessionEventTap)
-        keyUp.post(tap: .cgAnnotatedSessionEventTap)
+        // 走 HID 层与 simulateCommandV 一致，确保接力后的补发键也能进远程桌面（issue #60）。
+        keyDown.post(tap: .cghidEventTap)
+        keyUp.post(tap: .cghidEventTap)
     }
 }

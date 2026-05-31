@@ -6,6 +6,14 @@ import UniformTypeIdentifiers
 
 private let CLIPBOARD_POLL_INTERVAL: TimeInterval = 0.5
 private let PASTE_SIMULATION_DELAY: Duration = .milliseconds(30)
+/// Device-dependent modifier bit for the LEFT Command key (NX_DEVICELCMDKEYMASK).
+/// `.maskCommand` alone is the abstract Command bit — native macOS apps honor it,
+/// but remote-desktop / streaming clients (MS Remote Desktop, UU远程, issue #60)
+/// translate the *specific physical key* to the remote side and read this
+/// device-dependent bit instead; without it they see a bare `v`. OR this into the
+/// flags on ⌘-bearing synthetic paste events. Real-device verified (also the fix
+/// behind github.com/TermiT/Flycut#18 / Maccy #365). Shared with RelayPaster.
+let DEVICE_LCMD_FLAG: UInt64 = 0x000008
 /// Long edge of the thumbnail we generate for file-based image clips. Stored
 /// in `imageData` for UI preview only; paste writes the original file URL so
 /// target apps read full-resolution from disk. 1024 keeps the detail-view
@@ -1403,15 +1411,17 @@ final class ClipboardManager: ObservableObject {
               let vDown = CGEvent(keyboardEventSource: source, virtualKey: vKeyCode, keyDown: true),
               let vUp = CGEvent(keyboardEventSource: source, virtualKey: vKeyCode, keyDown: false),
               let cmdUp = CGEvent(keyboardEventSource: source, virtualKey: cmdKeyCode, keyDown: false) else { return }
-        cmdDown.flags = .maskCommand
-        vDown.flags = .maskCommand
-        vUp.flags = .maskCommand
+        // flags 同时带「抽象 command 位」+「设备相关左⌘位」。.maskCommand 只是抽象修饰位，
+        // 普通 macOS App 认它就够；但远程桌面 / 流式客户端（MS Remote Desktop、UU远程，issue #60）
+        // 要把「具体哪个物理键被按」翻译到远程，读的是 device-dependent 位（NX_DEVICELCMDKEYMASK=0x8
+        // 左⌘ / 0x10 右⌘）——只设抽象位时它们认为没有任何 ⌘ 被按，于是只收到裸 v（触发 Windows 拼音
+        // V 模式）。加 0x8 后远程登记到左⌘按下 → 收到完整 ⌘V。真机验证有效（github.com/TermiT/Flycut#18,
+        // 同样修好了 Maccy issue #365 的同源问题）。
+        let cmdFlags = CGEventFlags(rawValue: CGEventFlags.maskCommand.rawValue | DEVICE_LCMD_FLAG)
+        cmdDown.flags = cmdFlags
+        vDown.flags = cmdFlags
+        vUp.flags = cmdFlags
         cmdUp.flags = []   // ⌘ 已抬起
-        // 投递到 .cghidEventTap（HID 最底层，等同硬件），而非 .cgAnnotatedSessionEventTap（会话层）。
-        // 远程桌面 / 流式客户端（MS Remote Desktop、UU远程，issue #60）在 HID 层装事件 tap 捕获键盘，并把
-        // Mac ⌘ 重映射成 Windows Ctrl——物理 ⌘V 因此在远程里=Ctrl+V，粘贴正常。若合成事件 post 到会话层
-        // （位于这些客户端 HID tap 的下游），客户端的捕获+重映射根本看不到我们的 ⌘ 键，事件直落到普通处理、
-        // ⌘ 被当成 Windows 键 → 远程收到 Win+V（非粘贴）。post 到 HID 层让合成键与物理键走同一条路。
         cmdDown.post(tap: .cghidEventTap)
         vDown.post(tap: .cghidEventTap)
         vUp.post(tap: .cghidEventTap)
@@ -1424,8 +1434,9 @@ final class ClipboardManager: ObservableObject {
         let returnCode: CGKeyCode = 0x24
         let keyDown = CGEvent(keyboardEventSource: source, virtualKey: returnCode, keyDown: true)
         let keyUp = CGEvent(keyboardEventSource: source, virtualKey: returnCode, keyDown: false)
-        keyDown?.post(tap: .cgAnnotatedSessionEventTap)
-        keyUp?.post(tap: .cgAnnotatedSessionEventTap)
+        // 走 HID 层与 simulateCommandV 一致，确保「粘贴后回车」也能进远程桌面（issue #60）。
+        keyDown?.post(tap: .cghidEventTap)
+        keyUp?.post(tap: .cghidEventTap)
     }
 
     func requestAccessibilityPermission() {
