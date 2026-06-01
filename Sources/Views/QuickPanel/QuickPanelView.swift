@@ -1378,7 +1378,7 @@ struct QuickPanelView: View {
                         return event // let system copy selected text
                     }
                     let items = isMultiSelected ? currentItems : (currentItem.map { [$0] } ?? [])
-                    if !items.isEmpty { copyItemsToClipboard(items, dismissAfterCopy: true, playSound: true) }
+                    if !items.isEmpty { copyItemsFullFidelity(items, dismissAfterCopy: true, playSound: true) }
                     return nil
                 }
                 return event
@@ -1517,7 +1517,7 @@ struct QuickPanelView: View {
             }
         case .copy:
             let items = isMultiSelected ? currentItems : (currentItem.map { [$0] } ?? [])
-            if !items.isEmpty { copyItemsToClipboard(items, dismissAfterCopy: true, playSound: true) }
+            if !items.isEmpty { copyItemsFullFidelity(items, dismissAfterCopy: true, playSound: true) }
         case .retryOCR:
             if let item = currentItem, item.contentType == .image, item.imageData != nil {
                 OCRTaskCoordinator.shared.retry(itemID: item.itemID)
@@ -1679,7 +1679,7 @@ struct QuickPanelView: View {
 
         if respectAutoPaste && !quickPanelAutoPaste {
             guard !forceNewLine else { return }
-            copyItemsToClipboard(items, dismissAfterCopy: true, playSound: true)
+            copyItemsFullFidelity(items, dismissAfterCopy: true, playSound: true)
             return
         }
 
@@ -1791,6 +1791,48 @@ struct QuickPanelView: View {
             return
         }
 
+        ToastCenter.shared.show(ToastDescriptor(message: L10n.tr("action.copied"), icon: .success))
+    }
+
+    /// Copy one or more items to the clipboard at full fidelity — the same
+    /// representations the paste path lays down (file URLs, image bytes, NSImage,
+    /// rich text), minus the simulated ⌘V. This is what makes ⌘C on an image or
+    /// file paste the actual image/file into the target app instead of its path.
+    ///
+    /// - Single item → reuse the single-clip pipeline (`writeToPasteboard`), which
+    ///   knows about snapshots, file-backed images, mixed content, etc.
+    /// - Multiple file-based items → write every file URL so a paste drops all files.
+    /// - Any other multi-selection (text, or mixed types) → fall back to merged text,
+    ///   since one clipboard can't hold several heterogeneous payloads at once.
+    private func copyItemsFullFidelity(_ items: [ClipItem], dismissAfterCopy: Bool = false, playSound: Bool = false) {
+        guard !items.isEmpty else { return }
+
+        if items.count == 1 {
+            clipboardManager.writeToPasteboard(items[0])
+        } else if items.allSatisfy({ isFileBasedItem($0) }) {
+            let paths = items.flatMap { $0.content.components(separatedBy: "\n") }
+                .filter { !$0.isEmpty }
+            let pasteboard = NSPasteboard.general
+            pasteboard.clearContents()
+            clipboardManager.writeFileURLsToPasteboard(pasteboard, paths: paths)
+            pasteboard.markAsPasteMemoWrite()
+            clipboardManager.lastChangeCount = pasteboard.changeCount
+        } else {
+            let pasteboard = NSPasteboard.general
+            pasteboard.clearContents()
+            pasteboard.setString(items.map(\.content).joined(separator: "\n"), forType: .string)
+            pasteboard.markAsPasteMemoWrite()
+            clipboardManager.lastChangeCount = pasteboard.changeCount
+        }
+
+        bumpLastUsedPreservingOrder(items)
+
+        if playSound {
+            SoundManager.playCopy()
+        }
+        if dismissAfterCopy {
+            QuickPanelWindowController.shared.dismiss()
+        }
         ToastCenter.shared.show(ToastDescriptor(message: L10n.tr("action.copied"), icon: .success))
     }
 
@@ -2276,11 +2318,11 @@ struct QuickPanelView: View {
         guard let item = currentItem else { return }
         if respectAutoPaste && !quickPanelAutoPaste {
             guard !forceNewLine else { return }
-            if isFileBasedItem(item) {
-                copyItemToClipboardAndDismiss(item, plainTextOnly: true)
-            } else {
-                copyItemToClipboardAndDismiss(item)
-            }
+            // ⌘C / Enter-to-copy must put full-fidelity content on the clipboard
+            // (file URL + NSImage for file-backed images, etc.) so a later paste
+            // produces the image/file, not its path. Plain-text/path copy lives on
+            // the dedicated ⌘Enter action instead.
+            copyItemToClipboardAndDismiss(item)
             return
         }
         if canPasteToFinderFolder {
