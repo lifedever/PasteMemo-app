@@ -283,6 +283,9 @@
 "accessibility.lost.title" = "Izin Aksesibilitas Diperlukan";
 "accessibility.lost.message" = "Setelah pembaruan aplikasi, macOS memerlukan otorisasi ulang. Setelah mengklik «Buka Aksesibilitas», pilih entri PasteMemo yang ada dan klik − untuk menghapusnya, lalu seret versi baru dari panel mengambang.";
 "accessibility.lost.later" = "Nanti";
+"reinstall.required.title" = "Berkas Aplikasi Tidak Lengkap";
+"reinstall.required.message" = "Beberapa berkas hilang setelah pembaruan. Silakan unduh ulang DMG dan instal ulang. Data dan izin Anda akan tetap tersimpan.";
+"reinstall.required.action" = "Buka Halaman Unduh";
 "onboarding.back" = "Kembali";
 "onboarding.next" = "Lanjut";
 "onboarding.done" = "Mulai";
