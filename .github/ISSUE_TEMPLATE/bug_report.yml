@@ -53,8 +53,10 @@ body:
     attributes:
       label: macOS 版本 / macOS Version
       options:
+        - macOS 26 Tahoe
         - macOS 15 Sequoia
         - macOS 14 Sonoma
+        - 其他 / Other
     validations:
       required: true
 
