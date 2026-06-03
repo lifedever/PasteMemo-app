@@ -310,10 +310,18 @@ struct PasteMemoApp: App {
         let storeDir = appSupport.appendingPathComponent(bundleID)
         try? FileManager.default.createDirectory(at: storeDir, withIntermediateDirectories: true)
         let storeURL = storeDir.appendingPathComponent("PasteMemo.store")
-        ensureIndexes(at: storeURL)
         let config = ModelConfiguration(url: storeURL)
         do {
             let container = try ModelContainer(for: schema, configurations: [config])
+            // Must run AFTER ModelContainer creates the SQLite schema. ensureIndexes
+            // (and ensureFTS inside it) builds indexes, the clip_fts mirror table and
+            // its sync triggers — all of which reference ZCLIPITEM / ZSMARTGROUP, so
+            // those tables have to exist first. Running it BEFORE meant that on a
+            // fresh install's first launch the store file didn't exist yet, the
+            // fileExists guard short-circuited, and clip_fts + triggers were never
+            // created for that session → quick-panel search silently returned empty
+            // until the next relaunch self-healed it (issue #61).
+            ensureIndexes(at: storeURL)
             // Run AFTER ModelContainer creates the ZCONTENTTYPERAW column
             migrateContentTypeColumn(at: storeURL)
             return container
