@@ -187,6 +187,7 @@ final class ClipboardManager: ObservableObject {
 
         // Apply automation rules (text-based content only)
         if newItem.contentType.isMergeable {
+            let originalContent = newItem.content
             let result = AutomationEngine.shared.process(
                 content: newItem.content,
                 contentType: newItem.contentType,
@@ -196,16 +197,22 @@ final class ClipboardManager: ObservableObject {
             switch result {
             case .unchanged:
                 break
-            case .applied(let processed, _, let actions):
+            case .applied(let processed, _, let actions, let writeBack):
                 if actions.contains(.skipCapture) { return }
-                applyAutomationActions(actions, processed: processed, to: newItem, context: context)
-            case .pendingConfirmation(let processed, let ruleName, _, let actions):
+                applyAutomationActions(actions, processed: processed, to: newItem, writeBack: writeBack, context: context)
+                if writeBack {
+                    mirrorTransformedTextToPasteboard(processed, original: originalContent)
+                }
+            case .pendingConfirmation(let processed, let ruleName, _, let actions, let writeBack):
                 let accepted = showAutomationConfirmation(
                     ruleName: ruleName, original: newItem.content, processed: processed
                 )
                 if accepted {
                     if actions.contains(.skipCapture) { return }
-                    applyAutomationActions(actions, processed: processed, to: newItem, context: context)
+                    applyAutomationActions(actions, processed: processed, to: newItem, writeBack: writeBack, context: context)
+                    if writeBack {
+                        mirrorTransformedTextToPasteboard(processed, original: originalContent)
+                    }
                 }
             }
         }
@@ -1656,10 +1663,17 @@ extension ClipboardManager: ClipboardControllable {
         }
     }
 
-    private func applyAutomationActions(_ actions: [RuleAction], processed: String, to item: ClipItem, context: ModelContext) {
+    private func applyAutomationActions(_ actions: [RuleAction], processed: String, to item: ClipItem, writeBack: Bool, context: ModelContext) {
+        let textChanged = processed != item.content
         item.content = processed
         item.displayTitle = ClipItem.buildTitle(content: processed, contentType: item.contentType)
-        if actions.contains(.stripRichText) {
+        // For a write-back rule that changed the text, also drop the captured rich
+        // text: we can't transform RTF, so the stored RTF would still carry the
+        // original (e.g. the newlines the rule just stripped), and a panel paste of
+        // this item would then disagree with the plain text we mirror to the live
+        // pasteboard. Archive-only rules (writeBack off) keep their rich text as
+        // before. (issue #62)
+        if actions.contains(.stripRichText) || (writeBack && textChanged) {
             item.richTextData = nil
             item.richTextType = nil
         }
@@ -1670,6 +1684,23 @@ extension ClipboardManager: ClipboardControllable {
             item.isPinned = true
         }
         applyGroupAction(actions, to: item, context: context)
+    }
+
+    /// When an automatic rule actually changes the text, mirror the processed text
+    /// back onto the system pasteboard so an immediate ⌘V — which reads the live
+    /// pasteboard, not PasteMemo's stored ClipItem — gets the transformed result.
+    /// Without this, a "strip newlines" rule shows as applied yet ⌘V still pastes the
+    /// original (issue #62). Rewrites as plain text, dropping any rich-text layer, so
+    /// RTF-preferring apps (Word, Pages, …) can't paste the stale, untransformed
+    /// version. `markAsPasteMemoWrite` makes the capture pollers skip this write
+    /// instead of re-ingesting it as a fresh copy.
+    private func mirrorTransformedTextToPasteboard(_ processed: String, original: String) {
+        guard processed != original else { return }
+        let pasteboard = NSPasteboard.general
+        pasteboard.clearContents()
+        pasteboard.setString(processed, forType: .string)
+        pasteboard.markAsPasteMemoWrite()
+        lastChangeCount = pasteboard.changeCount
     }
 
     private func applyGroupAction(_ actions: [RuleAction], to item: ClipItem, context: ModelContext) {

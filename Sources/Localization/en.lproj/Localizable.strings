@@ -552,6 +552,8 @@
 "automation.action.runShortcut.failed" = "Shortcut failed";
 "automation.action.runShortcut.loading" = "Loading…";
 "automation.rule.notifyOnTrigger" = "Send notification on trigger";
+"automation.rule.writeBackToPasteboard" = "Write result back to clipboard";
+"automation.rule.writeBackToPasteboard.help" = "When on, the rule's result is written back to the system clipboard, so ⌘V right after copying pastes the transformed text (rich text becomes plain text).";
 "automation.notification.title" = "Automation";
 "automation.applied" = "Automation applied";
 "automation.validation.incomplete" = "Cannot enable rule";

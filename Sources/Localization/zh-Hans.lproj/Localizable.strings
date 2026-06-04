@@ -553,6 +553,8 @@
 "automation.action.runShortcut.failed" = "快捷指令执行失败";
 "automation.action.runShortcut.loading" = "加载中…";
 "automation.rule.notifyOnTrigger" = "触发时发送通知";
+"automation.rule.writeBackToPasteboard" = "处理后写回剪贴板";
+"automation.rule.writeBackToPasteboard.help" = "开启后，规则处理结果会写回系统剪贴板，复制后直接 ⌘V 粘贴即为处理后的内容（富文本会转为纯文本）。";
 "automation.notification.title" = "自动化";
 "automation.applied" = "自动化已执行";
 "automation.validation.incomplete" = "无法启用规则";

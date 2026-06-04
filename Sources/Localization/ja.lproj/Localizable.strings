@@ -796,6 +796,8 @@
 "automation.action.runShortcut.failed" = "ショートカット実行失敗";
 "automation.action.runShortcut.loading" = "読み込み中…";
 "automation.rule.notifyOnTrigger" = "Send notification on trigger";
+"automation.rule.writeBackToPasteboard" = "処理結果をクリップボードに書き戻す";
+"automation.rule.writeBackToPasteboard.help" = "オンにすると、ルールの処理結果がシステムのクリップボードに書き戻され、コピー直後の ⌘V で変換後のテキストが貼り付けられます（リッチテキストはプレーンテキストになります）。";
 "automation.notification.title" = "Automation";
 "automation.applied" = "Automation applied";
 "automation.validation.incomplete" = "Cannot enable rule";

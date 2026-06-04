@@ -140,6 +140,17 @@ struct AutomationRuleEditorView: View {
             .disabled(isBuiltIn)
 
             if rule.triggerMode != .manual {
+                Toggle(isOn: Binding(
+                    get: { rule.writeBackToPasteboard },
+                    set: { rule.writeBackToPasteboard = $0; saveSettings() }
+                )) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(L10n.tr("automation.rule.writeBackToPasteboard"))
+                        Text(L10n.tr("automation.rule.writeBackToPasteboard.help"))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
                 Toggle(L10n.tr("automation.rule.notifyBeforeApply"), isOn: Binding(
                     get: { rule.notifyBeforeApply },
                     set: { rule.notifyBeforeApply = $0; saveSettings() }

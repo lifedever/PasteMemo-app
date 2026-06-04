@@ -742,6 +742,8 @@
 "automation.action.runShortcut.failed" = "捷徑執行失敗";
 "automation.action.runShortcut.loading" = "載入中…";
 "automation.rule.notifyOnTrigger" = "Send notification on trigger";
+"automation.rule.writeBackToPasteboard" = "處理後寫回剪貼簿";
+"automation.rule.writeBackToPasteboard.help" = "開啟後，規則處理結果會寫回系統剪貼簿，複製後直接 ⌘V 貼上即為處理後的內容（富文字會轉為純文字）。";
 "automation.notification.title" = "Automation";
 "automation.applied" = "Automation applied";
 "automation.validation.incomplete" = "Cannot enable rule";

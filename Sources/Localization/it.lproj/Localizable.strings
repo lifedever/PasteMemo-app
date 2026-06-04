@@ -745,6 +745,8 @@ Usa %@ per incollare uno per uno.";
 "automation.action.runShortcut.failed" = "Shortcut failed";
 "automation.action.runShortcut.loading" = "Loading…";
 "automation.rule.notifyOnTrigger" = "Send notification on trigger";
+"automation.rule.writeBackToPasteboard" = "Riscrivi il risultato negli appunti";
+"automation.rule.writeBackToPasteboard.help" = "Se attivo, il risultato della regola viene riscritto negli appunti di sistema, così ⌘V subito dopo la copia incolla il testo trasformato (il testo formattato diventa testo semplice).";
 "automation.notification.title" = "Automation";
 "automation.applied" = "Automation applied";
 "automation.validation.incomplete" = "Cannot enable rule";

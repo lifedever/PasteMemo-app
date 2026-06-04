@@ -781,6 +781,8 @@ Utilisez %@ pour coller un par un.";
 "automation.action.runShortcut.failed" = "Shortcut failed";
 "automation.action.runShortcut.loading" = "Loading…";
 "automation.rule.notifyOnTrigger" = "Send notification on trigger";
+"automation.rule.writeBackToPasteboard" = "Réécrire le résultat dans le presse-papiers";
+"automation.rule.writeBackToPasteboard.help" = "Lorsque cette option est activée, le résultat de la règle est réécrit dans le presse-papiers système : ⌘V juste après la copie colle le texte transformé (le texte enrichi devient du texte brut).";
 "automation.notification.title" = "Automation";
 "automation.applied" = "Automation applied";
 "automation.validation.incomplete" = "Cannot enable rule";

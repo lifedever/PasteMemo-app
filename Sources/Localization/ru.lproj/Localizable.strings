@@ -756,6 +756,8 @@
 "automation.action.runShortcut.failed" = "Shortcut failed";
 "automation.action.runShortcut.loading" = "Loading…";
 "automation.rule.notifyOnTrigger" = "Send notification on trigger";
+"automation.rule.writeBackToPasteboard" = "Записывать результат обратно в буфер обмена";
+"automation.rule.writeBackToPasteboard.help" = "Когда включено, результат правила записывается обратно в системный буфер обмена, поэтому ⌘V сразу после копирования вставляет преобразованный текст (форматированный текст становится обычным).";
 "automation.notification.title" = "Automation";
 "automation.applied" = "Automation applied";
 "automation.validation.incomplete" = "Cannot enable rule";

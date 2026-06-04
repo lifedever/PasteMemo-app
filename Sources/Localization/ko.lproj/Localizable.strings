@@ -779,6 +779,8 @@
 "automation.action.runShortcut.failed" = "단축어 실행 실패";
 "automation.action.runShortcut.loading" = "불러오는 중…";
 "automation.rule.notifyOnTrigger" = "Send notification on trigger";
+"automation.rule.writeBackToPasteboard" = "처리 결과를 클립보드에 다시 쓰기";
+"automation.rule.writeBackToPasteboard.help" = "켜면 규칙 처리 결과가 시스템 클립보드에 다시 기록되어, 복사 직후 ⌘V로 변환된 텍스트가 붙여넣어집니다(서식 있는 텍스트는 일반 텍스트로 변환됩니다).";
 "automation.notification.title" = "Automation";
 "automation.applied" = "Automation applied";
 "automation.validation.incomplete" = "Cannot enable rule";

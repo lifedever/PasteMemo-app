@@ -765,6 +765,8 @@ Verwenden Sie %@ zum Einfügen.";
 "automation.action.runShortcut.failed" = "Shortcut failed";
 "automation.action.runShortcut.loading" = "Loading…";
 "automation.rule.notifyOnTrigger" = "Send notification on trigger";
+"automation.rule.writeBackToPasteboard" = "Ergebnis in die Zwischenablage zurückschreiben";
+"automation.rule.writeBackToPasteboard.help" = "Wenn aktiviert, wird das Regelergebnis in die System-Zwischenablage zurückgeschrieben, sodass ⌘V direkt nach dem Kopieren den transformierten Text einfügt (Rich-Text wird zu reinem Text).";
 "automation.notification.title" = "Automation";
 "automation.applied" = "Automation applied";
 "automation.validation.incomplete" = "Cannot enable rule";

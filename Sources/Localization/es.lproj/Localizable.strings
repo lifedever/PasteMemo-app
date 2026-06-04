@@ -781,6 +781,8 @@ Usa %@ para pegar uno por uno.";
 "automation.action.runShortcut.failed" = "Shortcut failed";
 "automation.action.runShortcut.loading" = "Loading…";
 "automation.rule.notifyOnTrigger" = "Send notification on trigger";
+"automation.rule.writeBackToPasteboard" = "Volver a escribir el resultado en el portapapeles";
+"automation.rule.writeBackToPasteboard.help" = "Cuando está activado, el resultado de la regla se vuelve a escribir en el portapapeles del sistema, de modo que ⌘V justo después de copiar pega el texto transformado (el texto enriquecido se convierte en texto sin formato).";
 "automation.notification.title" = "Automation";
 "automation.applied" = "Automation applied";
 "automation.validation.incomplete" = "Cannot enable rule";

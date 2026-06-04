@@ -756,6 +756,8 @@ Gunakan %@ untuk menempel satu per satu.";
 "automation.action.runShortcut.failed" = "Shortcut failed";
 "automation.action.runShortcut.loading" = "Loading…";
 "automation.rule.notifyOnTrigger" = "Send notification on trigger";
+"automation.rule.writeBackToPasteboard" = "Tulis hasil kembali ke papan klip";
+"automation.rule.writeBackToPasteboard.help" = "Saat aktif, hasil aturan ditulis kembali ke papan klip sistem, sehingga ⌘V tepat setelah menyalin menempelkan teks hasil olahan (teks kaya menjadi teks biasa).";
 "automation.notification.title" = "Automation";
 "automation.applied" = "Automation applied";
 "automation.validation.incomplete" = "Cannot enable rule";

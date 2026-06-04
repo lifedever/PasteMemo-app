@@ -4,8 +4,8 @@ import UserNotifications
 
 enum AutomationResult: Sendable {
     case unchanged
-    case applied(content: String, ruleName: String, actions: [RuleAction])
-    case pendingConfirmation(content: String, ruleName: String, ruleID: String, actions: [RuleAction])
+    case applied(content: String, ruleName: String, actions: [RuleAction], writeBack: Bool)
+    case pendingConfirmation(content: String, ruleName: String, ruleID: String, actions: [RuleAction], writeBack: Bool)
 }
 
 @MainActor
@@ -32,6 +32,7 @@ final class AutomationEngine {
         var currentContent = content
         var allActions: [RuleAction] = []
         var lastRuleName = ""
+        var writeBack = false
         var needsConfirmation: (ruleName: String, ruleID: String)?
 
         for rule in rules {
@@ -49,6 +50,7 @@ final class AutomationEngine {
             currentContent = processed
             allActions.append(contentsOf: actions)
             lastRuleName = rule.name
+            if rule.writeBackToPasteboard { writeBack = true }
 
             if rule.notifyOnTrigger {
                 let displayName = rule.isBuiltIn ? L10n.tr(rule.name) : rule.name
@@ -63,9 +65,9 @@ final class AutomationEngine {
         guard !allActions.isEmpty else { return .unchanged }
 
         if let confirm = needsConfirmation {
-            return .pendingConfirmation(content: currentContent, ruleName: confirm.ruleName, ruleID: confirm.ruleID, actions: allActions)
+            return .pendingConfirmation(content: currentContent, ruleName: confirm.ruleName, ruleID: confirm.ruleID, actions: allActions, writeBack: writeBack)
         }
-        return .applied(content: currentContent, ruleName: lastRuleName, actions: allActions)
+        return .applied(content: currentContent, ruleName: lastRuleName, actions: allActions, writeBack: writeBack)
     }
 
     /// Apply a single action to content. Used by command palette / context menu.
