@@ -363,6 +363,9 @@
 "onboarding.privacy.title" = "プライバシー保護";
 "onboarding.privacy.desc" = "お使いの Mac に以下のパスワードマネージャーやセキュリティアプリが検出されました。機密データを保護するため、クリップボード監視の除外リストに追加することをお勧めします。";
 "onboarding.privacy.none" = "パスワードマネージャーやセキュリティアプリは検出されませんでした";
+"onboarding.privacy.hint" = "チェック = 無視（このアプリのクリップボードは保存されません）。行をクリックで切り替え。";
+"onboarding.privacy.ignored" = "無視";
+"onboarding.privacy.notIgnored" = "無視しない";
 
 /* Onboarding - Preferences */
 "onboarding.preferences.title" = "環境設定";

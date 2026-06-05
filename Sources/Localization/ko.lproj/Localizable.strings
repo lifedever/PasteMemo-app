@@ -349,6 +349,9 @@
 "onboarding.privacy.title" = "개인정보 보호";
 "onboarding.privacy.desc" = "Mac에서 다음 비밀번호 관리자 및 보안 앱이 감지되었습니다. 민감한 데이터를 보호하기 위해 클립보드 무시 목록에 추가하는 것을 권장합니다.";
 "onboarding.privacy.none" = "비밀번호 관리자 또는 보안 앱이 감지되지 않았습니다";
+"onboarding.privacy.hint" = "체크됨 = 무시 — 이 앱의 클립보드는 저장되지 않습니다. 행을 클릭하면 변경됩니다.";
+"onboarding.privacy.ignored" = "무시함";
+"onboarding.privacy.notIgnored" = "무시 안 함";
 
 /* Onboarding - Preferences */
 "onboarding.preferences.title" = "환경설정";

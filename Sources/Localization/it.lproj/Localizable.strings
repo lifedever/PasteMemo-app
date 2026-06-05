@@ -441,6 +441,9 @@
 "onboarding.privacy.title" = "Protezione della privacy";
 "onboarding.privacy.desc" = "PasteMemo ha rilevato i seguenti gestori di password e app di sicurezza sul tuo Mac. Ti consigliamo di ignorare la loro attività negli appunti per proteggere i tuoi dati sensibili.";
 "onboarding.privacy.none" = "Nessun gestore di password o app di sicurezza rilevato";
+"onboarding.privacy.hint" = "Spuntata = ignorata: gli appunti di questa app non vengono salvati. Fai clic su una riga per cambiare.";
+"onboarding.privacy.ignored" = "Ignorata";
+"onboarding.privacy.notIgnored" = "Non ignorata";
 
 /* Onboarding - Preferences */
 "onboarding.preferences.title" = "Preferenze";

@@ -441,6 +441,9 @@
 "onboarding.privacy.title" = "Защита конфиденциальности";
 "onboarding.privacy.desc" = "PasteMemo обнаружил на вашем Mac следующие менеджеры паролей и приложения безопасности. Рекомендуем игнорировать их активность в буфере обмена для защиты ваших данных.";
 "onboarding.privacy.none" = "Менеджеры паролей и приложения безопасности не обнаружены";
+"onboarding.privacy.hint" = "Отмечено = игнорируется — буфер обмена этого приложения не сохраняется. Нажмите на строку, чтобы изменить.";
+"onboarding.privacy.ignored" = "Игнорируется";
+"onboarding.privacy.notIgnored" = "Не игнорируется";
 
 /* Onboarding - Preferences */
 "onboarding.preferences.title" = "Настройки";

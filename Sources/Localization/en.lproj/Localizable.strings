@@ -590,6 +590,9 @@
 "onboarding.privacy.title" = "Privacy Protection";
 "onboarding.privacy.desc" = "PasteMemo detected the following password managers and security apps on your Mac. We recommend ignoring their clipboard activity to protect your sensitive data.";
 "onboarding.privacy.none" = "No password managers or security apps detected";
+"onboarding.privacy.hint" = "Checked = ignored — this app's clipboard won't be saved. Click a row to change.";
+"onboarding.privacy.ignored" = "Ignored";
+"onboarding.privacy.notIgnored" = "Not ignored";
 
 /* Onboarding - Preferences */
 "onboarding.preferences.title" = "Preferences";

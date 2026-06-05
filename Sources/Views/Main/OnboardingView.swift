@@ -278,6 +278,11 @@ struct OnboardingView: View {
                     .font(.callout)
                     .padding(.top, 4)
             } else {
+                Text(L10n.tr("onboarding.privacy.hint"))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                    .frame(maxWidth: 360)
                 privacyAppsList
             }
         }
@@ -311,6 +316,9 @@ struct OnboardingView: View {
                         Text(app.name)
                             .font(.system(size: 13))
                         Spacer()
+                        Text(isSelected ? L10n.tr("onboarding.privacy.ignored") : L10n.tr("onboarding.privacy.notIgnored"))
+                            .font(.caption)
+                            .foregroundStyle(isSelected ? Color.accentColor : .secondary)
                         Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
                             .foregroundStyle(isSelected ? Color.accentColor : .secondary)
                             .font(.system(size: 16))

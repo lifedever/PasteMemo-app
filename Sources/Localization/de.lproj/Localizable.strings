@@ -349,6 +349,9 @@
 "onboarding.privacy.title" = "Datenschutz";
 "onboarding.privacy.desc" = "PasteMemo hat die folgenden Passwort-Manager und Sicherheits-Apps auf Ihrem Mac erkannt. Wir empfehlen, deren Zwischenablage-Aktivität zu ignorieren, um Ihre sensiblen Daten zu schützen.";
 "onboarding.privacy.none" = "Keine Passwort-Manager oder Sicherheits-Apps erkannt";
+"onboarding.privacy.hint" = "Angehakt = ignoriert – die Zwischenablage dieser App wird nicht gespeichert. Zum Ändern auf eine Zeile klicken.";
+"onboarding.privacy.ignored" = "Ignoriert";
+"onboarding.privacy.notIgnored" = "Nicht ignoriert";
 
 /* Onboarding - Preferences */
 "onboarding.preferences.title" = "Einstellungen";

@@ -349,6 +349,9 @@
 "onboarding.privacy.title" = "Protección de privacidad";
 "onboarding.privacy.desc" = "PasteMemo detectó los siguientes gestores de contraseñas y aplicaciones de seguridad en tu Mac. Recomendamos ignorar su actividad del portapapeles para proteger tus datos sensibles.";
 "onboarding.privacy.none" = "No se detectaron gestores de contraseñas ni aplicaciones de seguridad";
+"onboarding.privacy.hint" = "Marcada = ignorada: el portapapeles de esta app no se guarda. Haz clic en una fila para cambiar.";
+"onboarding.privacy.ignored" = "Ignorada";
+"onboarding.privacy.notIgnored" = "No ignorada";
 
 /* Onboarding - Preferences */
 "onboarding.preferences.title" = "Preferencias";

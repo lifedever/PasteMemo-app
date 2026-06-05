@@ -441,6 +441,9 @@
 "onboarding.privacy.title" = "Perlindungan Privasi";
 "onboarding.privacy.desc" = "PasteMemo mendeteksi pengelola kata sandi dan aplikasi keamanan berikut di Mac Anda. Kami menyarankan untuk mengabaikan aktivitas papan klip mereka untuk melindungi data sensitif Anda.";
 "onboarding.privacy.none" = "Tidak ada pengelola kata sandi atau aplikasi keamanan terdeteksi";
+"onboarding.privacy.hint" = "Dicentang = diabaikan — papan klip aplikasi ini tidak disimpan. Klik baris untuk mengubah.";
+"onboarding.privacy.ignored" = "Diabaikan";
+"onboarding.privacy.notIgnored" = "Tidak diabaikan";
 
 /* Onboarding - Preferences */
 "onboarding.preferences.title" = "Preferensi";

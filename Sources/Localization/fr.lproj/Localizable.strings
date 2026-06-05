@@ -349,6 +349,9 @@
 "onboarding.privacy.title" = "Protection de la vie privée";
 "onboarding.privacy.desc" = "PasteMemo a détecté les gestionnaires de mots de passe et applications de sécurité suivants sur votre Mac. Nous recommandons de les ignorer pour protéger vos données sensibles.";
 "onboarding.privacy.none" = "Aucun gestionnaire de mots de passe ou application de sécurité détecté";
+"onboarding.privacy.hint" = "Cochée = ignorée — le presse-papiers de cette app n'est pas enregistré. Cliquez sur une ligne pour changer.";
+"onboarding.privacy.ignored" = "Ignorée";
+"onboarding.privacy.notIgnored" = "Non ignorée";
 
 /* Onboarding - Preferences */
 "onboarding.preferences.title" = "Préférences";

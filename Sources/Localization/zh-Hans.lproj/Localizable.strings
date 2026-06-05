@@ -591,6 +591,9 @@
 "onboarding.privacy.title" = "隐私保护";
 "onboarding.privacy.desc" = "PasteMemo 检测到你的 Mac 上安装了以下密码管理器或安全应用，建议将它们加入忽略列表以保护你的敏感数据。";
 "onboarding.privacy.none" = "未检测到密码管理器或安全应用";
+"onboarding.privacy.hint" = "勾选 = 忽略——该应用的剪贴板内容不会被记录。点按一行可切换。";
+"onboarding.privacy.ignored" = "已忽略";
+"onboarding.privacy.notIgnored" = "未忽略";
 
 /* Onboarding - Preferences */
 "onboarding.preferences.title" = "偏好设置";
