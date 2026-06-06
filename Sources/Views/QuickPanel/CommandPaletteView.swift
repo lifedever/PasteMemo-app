@@ -11,6 +11,10 @@ enum CommandAction: Hashable {
     case cmdEnter(label: String)
     case copyColorFormat(format: String, label: String)
     case retryOCR
+    /// Paste the item's recognized OCR text into the frontmost app (runs OCR on
+    /// demand first when the text isn't cached). Falls back to clipboard when
+    /// there's no target app, e.g. in the main window.
+    case pasteOCR
     case openInPreview
     case showInFinder
     case copy
@@ -32,6 +36,7 @@ enum CommandAction: Hashable {
         case .cmdEnter: "textformat"
         case .copyColorFormat: "paintpalette"
         case .retryOCR: "text.viewfinder"
+        case .pasteOCR: "doc.text"
         case .openInPreview: "photo.on.rectangle.angled"
         case .showInFinder: "folder"
         case .copy: "doc.on.doc"
@@ -52,6 +57,7 @@ enum CommandAction: Hashable {
         case .cmdEnter(let label): label
         case .copyColorFormat(_, let label): label
         case .retryOCR: L10n.tr("cmd.retryOCR")
+        case .pasteOCR: L10n.tr("cmd.pasteOCR")
         case .openInPreview: L10n.tr("cmd.openInPreview")
         case .showInFinder: L10n.tr("cmd.showInFinder")
         case .copy: L10n.tr("cmd.copy")
@@ -72,6 +78,7 @@ enum CommandAction: Hashable {
         case .cmdEnter: "P"
         case .copyColorFormat: "P"
         case .retryOCR: "Y"
+        case .pasteOCR: "G"
         case .openInPreview: "L"
         case .showInFinder: "O"
         case .copy: "C"
@@ -92,6 +99,7 @@ enum CommandAction: Hashable {
         case .cmdEnter: 35   // P
         case .copyColorFormat: 35 // P
         case .retryOCR: 16   // Y
+        case .pasteOCR: 5     // G
         case .openInPreview: 37 // L
         case .showInFinder: 31 // O
         case .copy: 8        // C
@@ -108,6 +116,30 @@ enum CommandAction: Hashable {
     var isDestructive: Bool {
         switch self {
         case .delete, .pasteAndDestroy: true
+        default: false
+        }
+    }
+
+    /// Logical section for visually grouping the palette. A divider is drawn
+    /// wherever two consecutive visible rows belong to different groups.
+    /// 0 粘贴 · 1 识别与查看 · 2 复制与接力 · 3 管理 · 4 自动化
+    var group: Int {
+        switch self {
+        case .paste, .pasteAndDestroy, .cmdEnter, .copyColorFormat: 0
+        case .retryOCR, .pasteOCR, .openInPreview, .showInFinder: 1
+        case .copy, .addToRelay, .splitAndRelay: 2
+        case .pin, .toggleSensitive, .delete: 3
+        case .transform, .runRule: 4
+        }
+    }
+
+    /// Actions whose handler tears down the whole Quick Panel. `handleCommandAction`
+    /// skips the up-front `showCommandPalette = false` for these — otherwise the
+    /// queued popover dismiss gets force-flushed by the panel's own `dismiss()`
+    /// and the close stalls for a beat (the lag vs. a direct Enter paste).
+    var dismissesQuickPanel: Bool {
+        switch self {
+        case .paste, .pasteAndDestroy, .cmdEnter, .copy, .pasteOCR: true
         default: false
         }
     }
@@ -169,6 +201,13 @@ struct CommandPaletteContent: View {
            OCRTaskCoordinator.shared.canRetry(item: item) {
             list.append(.retryOCR)
         }
+        // Shown for any OCR-able image — even with auto-OCR off / no text yet.
+        // Clicking runs OCR on demand (see QuickPanelView/MainWindowView).
+        if !isMultiSelected,
+           let item,
+           (item.contentType == .image && item.imageData != nil) || (item.ocrText?.isEmpty == false) {
+            list.append(.pasteOCR)
+        }
         if !isMultiSelected,
            let item,
            canOpenInPreview(item) {
@@ -226,6 +265,11 @@ struct CommandPaletteContent: View {
     var body: some View {
         VStack(spacing: 1) {
             ForEach(Array(actions.enumerated()), id: \.element) { index, action in
+                if index > 0, actions[index - 1].group != action.group {
+                    Divider()
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 3)
+                }
                 commandRow(action: action, isSelected: selectedIndex == index, index: index)
                     .onTapGesture { execute(action) }
                     .onHover { if $0 { selectedIndex = index } }

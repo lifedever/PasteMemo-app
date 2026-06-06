@@ -476,7 +476,7 @@ struct ClipDetailView: View {
                     guard !Task.isCancelled else { return }
                     decodedLinkImageData = decoded
                 }
-        } else if let url = URL(string: item.content.trimmingCharacters(in: .whitespacesAndNewlines)) {
+        } else if let url = item.resolvedURL {
             if !offlineModeEnabled,
                (imageLinkPreviewEnabled && LinkMetadataFetcher.isImageURL(item.content)) || webPreviewEnabled {
                 linkWebPreview(url: url)
@@ -695,6 +695,7 @@ struct ClipDetailView: View {
                     Button(L10n.tr("detail.ocr.copy")) {
                         NSPasteboard.general.clearContents()
                         NSPasteboard.general.setString(text, forType: .string)
+                        ToastCenter.shared.show(ToastDescriptor(message: L10n.tr("action.copied"), icon: .success))
                     }
                     .buttonStyle(.bordered)
                     .controlSize(.small)

@@ -873,6 +873,7 @@ Usa %@ para pegar uno por uno.";
 "quick.ocrMatch" = "Coincidencia en el texto reconocido";
 "cmd.openInPreview" = "Abrir en Vista Previa";
 "cmd.retryOCR" = "Reintentar OCR";
+"cmd.pasteOCR" = "Pegar texto OCR";
 
 /* Edit */
 "detail.richText.editWarning" = "Al editar, el texto enriquecido se convertirá en texto sin formato.";

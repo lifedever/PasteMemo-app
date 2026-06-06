@@ -282,6 +282,11 @@ final class ClipItem {
         return "txt"
     }
 
+    /// Openable/loadable URL for a `.link` clip — bare domains get an `https://`
+    /// scheme. Scheme-resolution lives in `URL.fromLinkString`; storage keeps the
+    /// raw content untouched (the list still shows `jp.evoxt.lifedever.com`).
+    var resolvedURL: URL? { URL.fromLinkString(content) }
+
     @MainActor
     static func buildTitle(content: String, contentType: ClipContentType, imageData: Data? = nil, filePaths: String? = nil) -> String {
         switch contentType {

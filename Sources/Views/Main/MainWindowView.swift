@@ -921,7 +921,7 @@ struct MainWindowView: View {
             }
         case .cmdEnter:
             if item.contentType == .link,
-               let url = URL(string: item.content.trimmingCharacters(in: .whitespacesAndNewlines)) {
+               let url = item.resolvedURL {
                 NSWorkspace.shared.open(url)
             } else {
                 let pasteboard = NSPasteboard.general
@@ -938,6 +938,28 @@ struct MainWindowView: View {
         case .retryOCR:
             if item.contentType == .image, item.imageData != nil {
                 OCRTaskCoordinator.shared.retry(itemID: item.itemID)
+            }
+        case .pasteOCR:
+            // The main window has no target app to paste into — copy the OCR text
+            // to the clipboard instead (mirrors how `.paste` behaves here).
+            if let ocr = item.ocrText, !ocr.isEmpty {
+                let pasteboard = NSPasteboard.general
+                pasteboard.clearContents()
+                pasteboard.setString(ocr, forType: .string)
+                ToastCenter.shared.show(ToastDescriptor(message: L10n.tr("action.copied"), icon: .success))
+            } else {
+                // Auto-OCR may be off / not run yet: recognize on demand, then copy.
+                let id = item.itemID
+                Task {
+                    if let text = await OCRTaskCoordinator.shared.recognizeOnDemand(itemID: id), !text.isEmpty {
+                        let pasteboard = NSPasteboard.general
+                        pasteboard.clearContents()
+                        pasteboard.setString(text, forType: .string)
+                        ToastCenter.shared.show(ToastDescriptor(message: L10n.tr("action.copied"), icon: .success))
+                    } else {
+                        ToastCenter.shared.show(ToastDescriptor(message: L10n.tr("detail.ocr.empty"), icon: .info))
+                    }
+                }
             }
         case .openInPreview:
             QuickLookHelper.shared.openInPreviewApp(item: item)

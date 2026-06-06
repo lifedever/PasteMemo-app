@@ -873,6 +873,7 @@ Utilisez %@ pour coller un par un.";
 "quick.ocrMatch" = "Correspondance dans le texte reconnu";
 "cmd.openInPreview" = "Ouvrir dans Aperçu";
 "cmd.retryOCR" = "Relancer l'OCR";
+"cmd.pasteOCR" = "Coller le texte OCR";
 
 /* Edit */
 "detail.richText.editWarning" = "La modification supprime la mise en forme et convertit le texte en texte brut.";

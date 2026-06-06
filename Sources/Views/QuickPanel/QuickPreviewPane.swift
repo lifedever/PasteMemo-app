@@ -329,6 +329,7 @@ struct QuickPreviewPane: View {
                 Button(L10n.tr("detail.ocr.copy")) {
                     NSPasteboard.general.clearContents()
                     NSPasteboard.general.setString(text, forType: .string)
+                    ToastCenter.shared.show(ToastDescriptor(message: L10n.tr("action.copied"), icon: .success))
                 }
                 .buttonStyle(.bordered)
                 .controlSize(.small)
@@ -441,7 +442,7 @@ struct QuickPreviewPane: View {
     private var linkPreview: some View {
         if shouldRenderBase64DataImagePreview {
             dataURIImagePreview
-        } else if let url = URL(string: item.content.trimmingCharacters(in: .whitespacesAndNewlines)) {
+        } else if let url = item.resolvedURL {
             let webviewActive = ((imageLinkPreviewEnabled && LinkMetadataFetcher.isImageURL(item.content)) || webPreviewEnabled) && allowHeavyPreview && !offlineModeEnabled
             if webviewActive {
                 ZStack {

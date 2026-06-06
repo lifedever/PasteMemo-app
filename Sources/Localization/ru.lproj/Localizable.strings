@@ -843,6 +843,7 @@
 "quick.ocrMatch" = "Совпадение в распознанном тексте";
 "cmd.openInPreview" = "Открыть в Просмотре";
 "cmd.retryOCR" = "Повторить OCR";
+"cmd.pasteOCR" = "Вставить OCR-текст";
 
 /* Edit */
 "detail.richText.editWarning" = "При редактировании форматирование будет удалено и текст станет простым.";

@@ -1502,8 +1502,17 @@ struct QuickPanelView: View {
             }
             return
         }
-        showCommandPalette = false
-        isSearchFocused = true
+        // Only pre-close the popover for actions that LEAVE the panel open.
+        // Panel-dismissing actions (paste / cmdEnter / copy / pasteOCR) skip it:
+        // setting showCommandPalette=false here queues a SwiftUI popover dismiss
+        // that the handler's panel.dismiss() then force-flushes
+        // (layoutSubtreeIfNeeded), stalling the close for a beat — the lag felt
+        // vs. a direct Enter paste. Those handlers close the panel in one tick;
+        // onDismiss re-asserts showCommandPalette afterward as a safety net.
+        if !action.dismissesQuickPanel {
+            showCommandPalette = false
+            isSearchFocused = true
+        }
         switch action {
         case .paste:
             handlePaste(respectAutoPaste: false)
@@ -1521,6 +1530,10 @@ struct QuickPanelView: View {
         case .retryOCR:
             if let item = currentItem, item.contentType == .image, item.imageData != nil {
                 OCRTaskCoordinator.shared.retry(itemID: item.itemID)
+            }
+        case .pasteOCR:
+            if let item = currentItem {
+                pasteOCRText(for: item)
             }
         case .openInPreview:
             if let item = currentItem {
@@ -2026,7 +2039,7 @@ struct QuickPanelView: View {
     private func handleOpenLink() {
         guard let item = currentItem else { return }
         if item.contentType == .link,
-           let url = URL(string: item.content.trimmingCharacters(in: .whitespacesAndNewlines)) {
+           let url = item.resolvedURL {
             NSWorkspace.shared.open(url)
             handleDismiss()
         } else {
@@ -2064,7 +2077,7 @@ struct QuickPanelView: View {
         guard let item = currentItem else { return }
         // Link → open in browser
         if item.contentType == .link,
-           let url = URL(string: item.content.trimmingCharacters(in: .whitespacesAndNewlines)) {
+           let url = item.resolvedURL {
             QuickPanelWindowController.shared.dismiss()
             NSWorkspace.shared.open(url)
         }
@@ -2125,6 +2138,55 @@ struct QuickPanelView: View {
                 clipboardManager.pasteAsPlainText(item)
             }
         }
+    }
+
+    /// Paste the item's recognized OCR text into the frontmost app.
+    ///
+    /// Cached text → paste synchronously, identical to the normal Enter-paste
+    /// (`dismissAndPaste`): dismiss + activate + ⌘V in one tick.
+    ///
+    /// Uncached (auto-OCR off / not run yet) → dismiss now so the panel goes away
+    /// immediately, then recognize on demand while the target app refocuses
+    /// concurrently, and paste.
+    private func pasteOCRText(for item: ClipItem) {
+        let appToRestore = QuickPanelWindowController.shared.previousApp
+
+        if let cached = item.ocrText, !cached.isEmpty {
+            writeStringToPasteboard(cached)
+            SoundManager.playPaste()
+            QuickPanelWindowController.shared.dismiss()
+            if let app = appToRestore {
+                app.activate()
+                clipboardManager.simulatePaste()
+            } else {
+                ToastCenter.shared.show(ToastDescriptor(message: L10n.tr("action.copied"), icon: .success))
+            }
+            return
+        }
+
+        let id = item.itemID
+        QuickPanelWindowController.shared.dismiss()
+        appToRestore?.activate()   // refocus overlaps the on-demand OCR below
+        Task { @MainActor in
+            guard let text = await OCRTaskCoordinator.shared.recognizeOnDemand(itemID: id), !text.isEmpty else {
+                ToastCenter.shared.show(ToastDescriptor(message: L10n.tr("detail.ocr.empty"), icon: .info))
+                return
+            }
+            guard appToRestore != nil else {
+                writeStringToPasteboard(text)
+                ToastCenter.shared.show(ToastDescriptor(message: L10n.tr("action.copied"), icon: .success))
+                return
+            }
+            clipboardManager.pasteAsPlainText(text)
+        }
+    }
+
+    private func writeStringToPasteboard(_ text: String) {
+        let pasteboard = NSPasteboard.general
+        pasteboard.clearContents()
+        pasteboard.setString(text, forType: .string)
+        pasteboard.markAsPasteMemoWrite()
+        clipboardManager.lastChangeCount = pasteboard.changeCount
     }
 
     private func handlePasteTextToFolder() {

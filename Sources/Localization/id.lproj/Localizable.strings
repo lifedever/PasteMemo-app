@@ -843,6 +843,7 @@ Gunakan %@ untuk menempel satu per satu.";
 "quick.ocrMatch" = "Cocok di teks hasil OCR";
 "cmd.openInPreview" = "Buka di Pratinjau";
 "cmd.retryOCR" = "Coba lagi OCR";
+"cmd.pasteOCR" = "Tempel teks OCR";
 
 /* Edit */
 "detail.richText.editWarning" = "Mengedit akan menghapus format rich text dan mengubahnya menjadi teks biasa.";

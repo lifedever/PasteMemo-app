@@ -89,18 +89,7 @@ final class OCRTaskCoordinator: ObservableObject {
                 return
             }
 
-            // For file-backed image clips, `imageData` only holds a small thumbnail —
-            // OCR'ing it would miss small text. Prefer the original file when it still
-            // exists; Vision's URL handler streams the image without loading it whole.
-            let originalURL: URL? = {
-                let firstPath = item.content
-                    .components(separatedBy: "\n")
-                    .first(where: { !$0.isEmpty })
-                guard let path = firstPath, FileManager.default.fileExists(atPath: path) else {
-                    return nil
-                }
-                return URL(fileURLWithPath: path)
-            }()
+            let originalURL = Self.originalImageURL(for: item)
             let imageData = item.imageData
 
             item.ocrStatus = OCRStatus.processing.rawValue
@@ -134,6 +123,67 @@ final class OCRTaskCoordinator: ObservableObject {
                 }
             }
         }
+    }
+
+    /// On-demand OCR that **bypasses** the `isEnabled` toggle. Backs the
+    /// "Copy OCR Text" command so it works even when auto-OCR is turned off.
+    /// Returns cached text when present; otherwise runs Vision once, persists
+    /// the result, and returns it. Returns nil when the item isn't an OCR-able
+    /// image or no text was found.
+    func recognizeOnDemand(itemID: String) async -> String? {
+        guard let container = modelContainer else { return nil }
+        let context = container.mainContext
+        guard let item = Self.fetchItem(id: itemID, context: context) else { return nil }
+        if let existing = item.ocrText, !existing.isEmpty { return existing }
+        guard item.contentType == .image, item.imageData != nil else { return nil }
+
+        let originalURL = Self.originalImageURL(for: item)
+        let imageData = item.imageData
+
+        item.ocrStatus = OCRStatus.processing.rawValue
+        item.ocrErrorMessage = nil
+        ClipItemStore.saveAndNotifyContent(context)
+
+        do {
+            let result: OCRRecognitionResult
+            if let url = originalURL {
+                result = try await ImageOCRService.shared.recognizeText(fileURL: url)
+            } else if let data = imageData {
+                result = try await ImageOCRService.shared.recognizeText(from: data)
+            } else {
+                return nil
+            }
+            let text = result.text.isEmpty ? nil : result.text
+            if let refreshed = Self.fetchItem(id: itemID, context: context) {
+                refreshed.ocrText = text
+                refreshed.ocrStatus = result.hasText ? OCRStatus.done.rawValue : OCRStatus.skipped.rawValue
+                refreshed.ocrUpdatedAt = Date()
+                refreshed.ocrErrorMessage = nil
+                ClipItemStore.saveAndNotifyContent(context)
+            }
+            return text
+        } catch {
+            if let refreshed = Self.fetchItem(id: itemID, context: context) {
+                refreshed.ocrStatus = OCRStatus.failed.rawValue
+                refreshed.ocrUpdatedAt = Date()
+                refreshed.ocrErrorMessage = error.localizedDescription
+                ClipItemStore.saveAndNotifyContent(context)
+            }
+            return nil
+        }
+    }
+
+    /// File-backed image clips store only a small thumbnail in `imageData`;
+    /// OCR'ing it would miss small text. Prefer the original file when it still
+    /// exists — Vision's URL handler streams it without loading the whole image.
+    private static func originalImageURL(for item: ClipItem) -> URL? {
+        let firstPath = item.content
+            .components(separatedBy: "\n")
+            .first(where: { !$0.isEmpty })
+        guard let path = firstPath, FileManager.default.fileExists(atPath: path) else {
+            return nil
+        }
+        return URL(fileURLWithPath: path)
     }
 
     private static func fetchItem(id: String, context: ModelContext) -> ClipItem? {

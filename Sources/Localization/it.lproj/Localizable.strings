@@ -833,6 +833,7 @@ Usa %@ per incollare uno per uno.";
 "quick.ocrMatch" = "Corrispondenza nel testo riconosciuto";
 "cmd.openInPreview" = "Apri in Anteprima";
 "cmd.retryOCR" = "Riprova OCR";
+"cmd.pasteOCR" = "Incolla testo OCR";
 
 /* Edit */
 "detail.richText.editWarning" = "Modificando, il testo formattato verrà convertito in testo semplice.";

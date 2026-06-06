@@ -235,6 +235,14 @@ final class QuickPanelWindowController {
         removeMoveObserver()
         snapGuide?.orderOut(nil)
         savePosition(panel)
+        // 命令面板是 SwiftUI `.popover`（NSPopover 子窗口）。下面 layoutSubtreeIfNeeded 会同步把
+        // showCommandPalette=false 刷下去、触发 NSPopover.close() 的 ~200ms 关闭动画——粘贴瞬间完成、
+        // 浮层还在淡出，就成了"先粘后关"。teardown 时先把子窗口无动画 orderOut，等会触发 close() 时
+        // 已无可见内容可动画，浮层和面板一起干脆消失。
+        for child in panel.childWindows ?? [] {
+            child.animationBehavior = .none
+            child.orderOut(nil)
+        }
         // 先通知视图清理状态（搜索文本、pill 等），强制 SwiftUI 完成一次重绘后再隐藏 panel；
         // 这样下次打开时首帧是干净状态，不会闪现上次的 `/` 建议浮层
         NotificationCenter.default.post(name: .quickPanelWillDismiss, object: nil)

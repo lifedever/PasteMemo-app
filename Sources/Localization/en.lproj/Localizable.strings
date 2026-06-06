@@ -696,6 +696,7 @@
 "cmd.pastePath" = "Paste Path";
 "cmd.openInPreview" = "Open in Preview";
 "cmd.retryOCR" = "Retry OCR";
+"cmd.pasteOCR" = "Paste OCR Text";
 "cmd.andNewLine" = " + New Line";
 
 "relay.title" = "Relay Mode";

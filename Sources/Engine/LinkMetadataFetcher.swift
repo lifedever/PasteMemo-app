@@ -37,15 +37,20 @@ actor LinkMetadataFetcher {
         if UserDefaults.standard.bool(forKey: "offlineModeEnabled") {
             return LinkMetadata(title: nil, faviconData: nil)
         }
-        let trimmed = urlString.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard let url = URL(string: trimmed),
-              let host = url.host,
-              !inFlightURLs.contains(trimmed) else {
+        // Normalise first: a bare domain (`jp.evoxt.lifedever.com`) parsed by
+        // plain URL(string:) has a nil `host`, so without this it silently
+        // returns no title/favicon. fromLinkString defaults it to https.
+        guard let url = URL.fromLinkString(urlString),
+              let host = url.host else {
+            return LinkMetadata(title: nil, faviconData: nil)
+        }
+        let key = url.absoluteString
+        guard !inFlightURLs.contains(key) else {
             return LinkMetadata(title: nil, faviconData: nil)
         }
 
-        inFlightURLs.insert(trimmed)
-        defer { inFlightURLs.remove(trimmed) }
+        inFlightURLs.insert(key)
+        defer { inFlightURLs.remove(key) }
 
         async let titleResult = fetchTitle(url: url)
         async let faviconResult = fetchFavicon(host: host)

@@ -1374,9 +1374,16 @@ final class ClipboardManager: ObservableObject {
     }
 
     func pasteAsPlainText(_ item: ClipItem) {
+        pasteAsPlainText(item.content)
+    }
+
+    /// Paste an arbitrary plain-text string into the frontmost app. Mirrors the
+    /// `ClipItem` overload — used by "Paste OCR Text", where the pasted text is
+    /// the recognized OCR result rather than the clip's own content.
+    func pasteAsPlainText(_ text: String) {
         let pasteboard = NSPasteboard.general
         pasteboard.clearContents()
-        pasteboard.setString(item.content, forType: .string)
+        pasteboard.setString(text, forType: .string)
         pasteboard.markAsPasteMemoWrite()
         lastChangeCount = pasteboard.changeCount
         skipRelayMonitorIfActive()
