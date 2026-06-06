@@ -4,52 +4,150 @@ import ServiceManagement
 import Carbon
 
 struct SettingsView: View {
+    @State private var selection: SettingsCategory? = .general
+
     var body: some View {
-        TabView {
-            GeneralTab()
-                .tabItem { Label(L10n.tr("settings.general"), systemImage: "gear") }
-            PreferencesTab()
-                .tabItem { Label(L10n.tr("settings.preferences"), systemImage: "slider.horizontal.3") }
-            ShortcutsTab()
-                .tabItem { Label(L10n.tr("settings.shortcuts"), systemImage: "keyboard") }
-            RelayTab()
-                .tabItem { Label(L10n.tr("relay.tab"), systemImage: "arrow.forward") }
-            PrivacyTab()
-                .tabItem { Label(L10n.tr("settings.privacy"), systemImage: "lock.shield") }
-            AIAgentIntegrationView()
-                .tabItem { Label(L10n.tr("settings.tab.aiAgents"), systemImage: "sparkles.rectangle.stack") }
-            if ProManager.AUTOMATION_ENABLED {
-                AutomationTab()
-                    .tabItem { Label(L10n.tr("settings.automation"), systemImage: "gearshape.2") }
+        HStack(spacing: 0) {
+            List(selection: $selection) {
+                Section {
+                    ForEach(SettingsCategory.functionGroup.filter(isVisible)) { sidebarRow($0) }
+                }
+                Section {
+                    ForEach(SettingsCategory.dataPrivacyGroup) { sidebarRow($0) }
+                }
+                Section {
+                    ForEach(SettingsCategory.aboutGroup) { sidebarRow($0) }
+                }
             }
-            DataTab()
-                .tabItem { Label(L10n.tr("dataPorter.section"), systemImage: "externaldrive") }
-            SponsorTab()
-                .tabItem { Label(L10n.tr("settings.sponsor"), systemImage: "heart") }
-            AboutTab()
-                .tabItem { Label(L10n.tr("settings.about"), systemImage: "info.circle") }
+            .listStyle(.sidebar)
+            .scrollContentBackground(.hidden)
+            .scrollDisabled(true)
+            .frame(width: 184)
+            .background(SidebarMaterial().ignoresSafeArea())
+
+            Divider()
+
+            // scrollDisabled：让面板内容把窗口撑高，而不是出现滚动条
+            //（沿用旧版 TabView 的"内容自适应、永不滚动"语义）。
+            detailView(for: selection ?? .general)
+                .scrollDisabled(true)
+                .frame(width: 536, alignment: .top)
         }
-        .frame(width: 620)
+        // 高度跟随当前面板内容；下限保证侧边栏所有条目完整可见、无需滚动。
+        .frame(minHeight: 470)
         .fixedSize(horizontal: false, vertical: true)
-        .scrollDisabled(true)
         .localized()
+    }
+
+    private func sidebarRow(_ category: SettingsCategory) -> some View {
+        Label(L10n.tr(category.titleKey), systemImage: category.icon)
+            .tag(category)
+    }
+
+    /// 自动化条目仅在启用时出现。
+    private func isVisible(_ category: SettingsCategory) -> Bool {
+        category != .automation || ProManager.AUTOMATION_ENABLED
+    }
+
+    @ViewBuilder
+    private func detailView(for category: SettingsCategory) -> some View {
+        switch category {
+        case .general: GeneralPane()
+        case .appearance: AppearancePane()
+        case .preferences: PreferencesPane()
+        case .preview: PreviewPane()
+        case .shortcuts: ShortcutsTab()
+        case .relay: RelayTab()
+        case .privacy: PrivacyTab()
+        case .aiAgents: AIAgentIntegrationView()
+        case .automation: AutomationTab()
+        case .data: DataTab()
+        case .sponsor: SponsorTab()
+        case .about: AboutTab()
+        }
     }
 }
 
-// MARK: - General Tab
+// MARK: - Settings Category
 
-struct GeneralTab: View {
-    @AppStorage("appearanceMode") private var appearanceMode = "system"
-    @AppStorage("menuBarIconStyle") private var menuBarIconStyle = "outline"
-    @AppStorage(MenuBarLeftClickAction.storageKey) private var menuBarLeftClickActionRaw = MenuBarLeftClickAction.menu.rawValue
-    @ObservedObject private var languageManager = LanguageManager.shared
+enum SettingsCategory: String, CaseIterable, Identifiable, Hashable {
+    case general, appearance, preferences, preview
+    case shortcuts, relay, privacy, aiAgents, automation, data
+    case sponsor, about
+
+    var id: String { rawValue }
+
+    /// 功能设置：基础(通用/外观) → 快捷面板(快捷键/偏好/链接预览) → 进阶(接力/AI/自动化)。
+    static let functionGroup: [SettingsCategory] =
+        [.general, .appearance, .shortcuts, .preferences, .preview,
+         .relay, .aiAgents, .automation]
+
+    /// 数据与隐私。
+    static let dataPrivacyGroup: [SettingsCategory] = [.privacy, .data]
+
+    /// 应用信息。
+    static let aboutGroup: [SettingsCategory] = [.sponsor, .about]
+
+    var titleKey: String {
+        switch self {
+        case .general: return "settings.general"
+        case .appearance: return "settings.appearance"
+        case .preferences: return "settings.preferences"
+        case .preview: return "settings.linkPreview"
+        case .shortcuts: return "settings.shortcuts"
+        case .relay: return "relay.tab"
+        case .privacy: return "settings.privacy"
+        case .aiAgents: return "settings.tab.aiAgents"
+        case .automation: return "settings.automation"
+        case .data: return "dataPorter.section"
+        case .sponsor: return "settings.sponsor"
+        case .about: return "settings.about"
+        }
+    }
+
+    var icon: String {
+        switch self {
+        case .general: return "gear"
+        case .appearance: return "paintbrush"
+        case .preferences: return "slider.horizontal.3"
+        case .preview: return "eye"
+        case .shortcuts: return "keyboard"
+        case .relay: return "arrow.forward"
+        case .privacy: return "lock.shield"
+        case .aiAgents: return "sparkles.rectangle.stack"
+        case .automation: return "gearshape.2"
+        case .data: return "externaldrive"
+        case .sponsor: return "heart"
+        case .about: return "info.circle"
+        }
+    }
+}
+
+// MARK: - Sidebar Material
+
+/// 系统设置侧边栏的半透明材质背景（macOS 26 上即 Liquid Glass 质感）。
+/// 手搓的 List 侧边栏拿不到这层质感，需要显式垫一个 NSVisualEffectView。
+private struct SidebarMaterial: NSViewRepresentable {
+    func makeNSView(context: Context) -> NSVisualEffectView {
+        let view = NSVisualEffectView()
+        view.material = .sidebar
+        view.blendingMode = .behindWindow
+        view.state = .active
+        return view
+    }
+
+    func updateNSView(_ nsView: NSVisualEffectView, context: Context) {}
+}
+
+// MARK: - General Pane
+
+struct GeneralPane: View {
     @AppStorage("launchAtLogin") private var launchAtLogin = false
     @AppStorage("hideDockIcon") private var hideDockIcon = false
     @State private var showHideDockConfirm = false
     @AppStorage("soundEnabled") private var soundEnabled = true
     @AppStorage("copySoundName") private var copySoundName = "custom:sound2"
     @AppStorage("pasteSoundName") private var pasteSoundName = "custom:sound1"
-    @State private var previousLanguage = LanguageManager.shared.current
 
     var body: some View {
         Form {
@@ -91,6 +189,60 @@ struct GeneralTab: View {
                     .foregroundStyle(.tertiary)
             }
 
+            Section(L10n.tr("settings.sound")) {
+                Toggle(L10n.tr("settings.sound.enabled"), isOn: $soundEnabled)
+                if soundEnabled {
+                    soundPicker(
+                        label: L10n.tr("settings.sound.copy"),
+                        selection: $copySoundName
+                    )
+                    soundPicker(
+                        label: L10n.tr("settings.sound.paste"),
+                        selection: $pasteSoundName
+                    )
+                }
+            }
+
+            Section {
+                Button(L10n.tr("settings.showGuide")) {
+                    showOnboardingWindow()
+                }
+                .pointerCursor()
+            }
+        }
+        .formStyle(.grouped)
+    }
+
+    private func soundPicker(label: String, selection: Binding<String>) -> some View {
+        Picker(label, selection: selection) {
+            Section(L10n.tr("settings.sound.section.custom")) {
+                ForEach(SoundManager.CUSTOM_SOUNDS, id: \.storageKey) { source in
+                    Text(source.displayName).tag(source.storageKey)
+                }
+            }
+            Section(L10n.tr("settings.sound.section.system")) {
+                ForEach(SoundManager.SYSTEM_SOUNDS, id: \.storageKey) { source in
+                    Text(source.displayName).tag(source.storageKey)
+                }
+            }
+        }
+        .onChange(of: selection.wrappedValue) {
+            SoundManager.preview(.from(storageKey: selection.wrappedValue))
+        }
+    }
+}
+
+// MARK: - Appearance Pane
+
+struct AppearancePane: View {
+    @AppStorage("appearanceMode") private var appearanceMode = "system"
+    @AppStorage("menuBarIconStyle") private var menuBarIconStyle = "outline"
+    @AppStorage(MenuBarLeftClickAction.storageKey) private var menuBarLeftClickActionRaw = MenuBarLeftClickAction.menu.rawValue
+    @ObservedObject private var languageManager = LanguageManager.shared
+    @State private var previousLanguage = LanguageManager.shared.current
+
+    var body: some View {
+        Form {
             Section(L10n.tr("settings.appearance")) {
                 Picker(L10n.tr("settings.theme"), selection: $appearanceMode) {
                     Text(L10n.tr("settings.theme.system")).tag("system")
@@ -137,52 +289,9 @@ struct GeneralTab: View {
                     previousLanguage = languageManager.current
                     showLanguageRestartAlert()
                 }
-
-            }
-
-            Section(L10n.tr("settings.sound")) {
-                Toggle(L10n.tr("settings.sound.enabled"), isOn: $soundEnabled)
-                if soundEnabled {
-                    soundPicker(
-                        label: L10n.tr("settings.sound.copy"),
-                        selection: $copySoundName
-                    )
-                    soundPicker(
-                        label: L10n.tr("settings.sound.paste"),
-                        selection: $pasteSoundName
-                    )
-                }
-            }
-
-            HistorySettingsSection()
-
-            Section {
-                Button(L10n.tr("settings.showGuide")) {
-                    showOnboardingWindow()
-                }
-                .pointerCursor()
             }
         }
         .formStyle(.grouped)
-    }
-
-
-    private func soundPicker(label: String, selection: Binding<String>) -> some View {
-        Picker(label, selection: selection) {
-            Section(L10n.tr("settings.sound.section.custom")) {
-                ForEach(SoundManager.CUSTOM_SOUNDS, id: \.storageKey) { source in
-                    Text(source.displayName).tag(source.storageKey)
-                }
-            }
-            Section(L10n.tr("settings.sound.section.system")) {
-                ForEach(SoundManager.SYSTEM_SOUNDS, id: \.storageKey) { source in
-                    Text(source.displayName).tag(source.storageKey)
-                }
-            }
-        }
-        .onChange(of: selection.wrappedValue) {
-            SoundManager.preview(.from(storageKey: selection.wrappedValue))
-        }
     }
 
     private func showLanguageRestartAlert() {
@@ -212,6 +321,7 @@ struct GeneralTab: View {
 struct DataTab: View {
     var body: some View {
         Form {
+            HistorySettingsSection()
             BackupSettingsSection()
             DataPorterSection()
         }
@@ -219,7 +329,7 @@ struct DataTab: View {
     }
 }
 
-// MARK: - Preferences Tab
+// MARK: - Shortcuts Tab
 
 struct ShortcutsTab: View {
     @ObservedObject private var hotkeyManager = HotkeyManager.shared
@@ -351,18 +461,12 @@ struct ShortcutsTab: View {
     }
 }
 
-// MARK: - Preferences Tab
+// MARK: - Preferences Pane
 
-struct PreferencesTab: View {
+struct PreferencesPane: View {
     @AppStorage("quickPanelAutoPaste") private var quickPanelAutoPaste = true
     @AppStorage("addNewLineAfterPaste") private var addNewLineAfterPaste = false
     @AppStorage("clipboardMonitoringEnabled") private var clipboardMonitoringEnabled = true
-    @AppStorage("showLinkURL") private var showLinkURL = false
-    @AppStorage("webPreviewEnabled") private var webPreviewEnabled = true
-    @AppStorage("imageLinkPreviewEnabled") private var imageLinkPreviewEnabled = true
-    @AppStorage("previewExecutesJavaScript") private var previewExecutesJavaScript = true
-    @AppStorage("richTextPreviewEnabled") private var richTextPreviewEnabled = true
-    @AppStorage("offlineModeEnabled") private var offlineModeEnabled = false
     @AppStorage(QuickPanelSettings.launchAnimationEnabledKey) private var quickPanelLaunchAnimationEnabled = true
     @AppStorage(QuickPanelSettings.secondaryRowKey) private var quickPanelSecondaryRow = QuickPanelSecondaryRow.types.rawValue
     @AppStorage(QuickPanelSettings.rememberLastFilterKey) private var quickPanelRememberLastFilter = false
@@ -453,24 +557,6 @@ struct PreferencesTab: View {
                 Toggle(L10n.tr("settings.quickPanelLaunchAnimation"), isOn: $quickPanelLaunchAnimationEnabled)
                 Toggle(L10n.tr("settings.quickPanelRememberFilter"), isOn: $quickPanelRememberLastFilter)
             }
-
-            Section {
-                Toggle(L10n.tr("settings.showLinkURL"), isOn: $showLinkURL)
-                Toggle(L10n.tr("settings.webPreview"), isOn: $webPreviewEnabled)
-                Toggle(L10n.tr("settings.imageLinkPreview"), isOn: $imageLinkPreviewEnabled)
-                Toggle(L10n.tr("settings.previewExecutesJavaScript"), isOn: $previewExecutesJavaScript)
-                    .disabled(!webPreviewEnabled || offlineModeEnabled)
-                Toggle(L10n.tr("settings.richTextPreview"), isOn: $richTextPreviewEnabled)
-            } header: {
-                Text(L10n.tr("settings.linkPreview"))
-            } footer: {
-                Text(L10n.tr(offlineModeEnabled ? "settings.linkPreview.footer.offline" : "settings.linkPreview.footer"))
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-            }
-            .disabled(offlineModeEnabled)
-
-            OCRSettingsSection()
         }
         .formStyle(.grouped)
         .onAppear {
@@ -536,6 +622,40 @@ struct PreferencesTab: View {
                 quickPanelSpecifiedScreenID = screenID ?? screenOptions.first?.id ?? ""
             }
         }
+    }
+}
+
+// MARK: - Preview Pane
+
+struct PreviewPane: View {
+    @AppStorage("showLinkURL") private var showLinkURL = false
+    @AppStorage("webPreviewEnabled") private var webPreviewEnabled = true
+    @AppStorage("imageLinkPreviewEnabled") private var imageLinkPreviewEnabled = true
+    @AppStorage("previewExecutesJavaScript") private var previewExecutesJavaScript = true
+    @AppStorage("richTextPreviewEnabled") private var richTextPreviewEnabled = true
+    @AppStorage("offlineModeEnabled") private var offlineModeEnabled = false
+
+    var body: some View {
+        Form {
+            Section {
+                Toggle(L10n.tr("settings.showLinkURL"), isOn: $showLinkURL)
+                Toggle(L10n.tr("settings.webPreview"), isOn: $webPreviewEnabled)
+                Toggle(L10n.tr("settings.imageLinkPreview"), isOn: $imageLinkPreviewEnabled)
+                Toggle(L10n.tr("settings.previewExecutesJavaScript"), isOn: $previewExecutesJavaScript)
+                    .disabled(!webPreviewEnabled || offlineModeEnabled)
+                Toggle(L10n.tr("settings.richTextPreview"), isOn: $richTextPreviewEnabled)
+            } header: {
+                Text(L10n.tr("settings.linkPreview"))
+            } footer: {
+                Text(L10n.tr(offlineModeEnabled ? "settings.linkPreview.footer.offline" : "settings.linkPreview.footer"))
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
+            .disabled(offlineModeEnabled)
+
+            OCRSettingsSection()
+        }
+        .formStyle(.grouped)
     }
 }
 
