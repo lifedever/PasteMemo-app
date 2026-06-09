@@ -26,6 +26,22 @@ enum UsageTracker {
     static let ANALYTICS_ENABLED_KEY = "analyticsEnabled"
     static let ANALYTICS_ASKED_KEY = "analyticsAsked"
 
+    // One ping in flight at a time. Set right before firing, cleared in the
+    // completion handler. Stops the launch / quick / main triggers from each
+    // firing their own ping on the same day in the window before the first
+    // response lands and commits LAST_PING_KEY.
+    private static var pingInFlight = false
+
+    // Dedup uses the SAME day boundary the dashboard buckets by — Asia/Shanghai,
+    // matching the dashboard's `timestamp + INTERVAL '8' HOUR`. The local calendar
+    // would drift "once per day" away from how daily-active is counted server-side
+    // for users outside +08:00.
+    private static let pingCalendar: Calendar = {
+        var cal = Calendar(identifier: .gregorian)
+        if let tz = TimeZone(identifier: "Asia/Shanghai") { cal.timeZone = tz }
+        return cal
+    }()
+
     static var isEnabled: Bool {
         get {
             // Offline mode is the master kill switch — when on, no anonymous
@@ -37,7 +53,11 @@ enum UsageTracker {
     }
 
     static var hasAskedConsent: Bool {
+        // `analyticsAsked` is set when the onboarding consent screen is dismissed.
+        // Already-onboarded users (from versions before this flag was wired up)
+        // are treated as having consented, so the installed base doesn't go dark.
         UserDefaults.standard.bool(forKey: ANALYTICS_ASKED_KEY)
+            || UserDefaults.standard.bool(forKey: "hasCompletedOnboarding")
     }
 
     static func markConsentAsked() {
@@ -55,17 +75,21 @@ enum UsageTracker {
 
     static func pingIfNeeded(source: PingSource = .launch) {
         guard isEnabled else { return }
+        // Hold the first ping until the user has seen the analytics-consent screen
+        // in onboarding. Analytics defaults on (opt-out), so without this a brand-new
+        // install would ping before the user ever has a chance to decline.
+        guard hasAskedConsent else { return }
+        guard !pingInFlight else { return }
 
-        let today = Calendar.current.startOfDay(for: Date())
+        let today = pingCalendar.startOfDay(for: Date())
         let lastPing = UserDefaults.standard.object(forKey: LAST_PING_KEY) as? Date ?? .distantPast
-        guard Calendar.current.startOfDay(for: lastPing) < today else { return }
+        guard pingCalendar.startOfDay(for: lastPing) < today else { return }
 
         let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "unknown"
         let lang = Locale.current.language.languageCode?.identifier ?? "unknown"
         let osVersion = ProcessInfo.processInfo.operatingSystemVersion
         let os = "\(osVersion.majorVersion).\(osVersion.minorVersion).\(osVersion.patchVersion)"
         let arch = ProcessInfo.processInfo.machineArchitecture
-        let pro = "1"
 
         var components = URLComponents(string: PING_URL)
         components?.queryItems = [
@@ -74,7 +98,6 @@ enum UsageTracker {
             URLQueryItem(name: "os", value: os),
             URLQueryItem(name: "arch", value: arch),
             URLQueryItem(name: "did", value: deviceId),
-            URLQueryItem(name: "pro", value: pro),
             URLQueryItem(name: "src", value: source.rawValue),
         ]
         guard let url = components?.url else { return }
@@ -83,11 +106,14 @@ enum UsageTracker {
         request.httpMethod = "GET"
         request.timeoutInterval = 10
 
+        pingInFlight = true
         URLSession.shared.dataTask(with: request) { _, response, _ in
-            if let http = response as? HTTPURLResponse, http.statusCode == 200 {
-                DispatchQueue.main.async {
-                    UserDefaults.standard.set(today, forKey: LAST_PING_KEY)
-                }
+            let success = (response as? HTTPURLResponse)?.statusCode == 200
+            Task { @MainActor in
+                // On success LAST_PING_KEY now blocks further pings today; on
+                // failure clearing the flag lets a later trigger retry today.
+                if success { UserDefaults.standard.set(today, forKey: LAST_PING_KEY) }
+                pingInFlight = false
             }
         }.resume()
     }
