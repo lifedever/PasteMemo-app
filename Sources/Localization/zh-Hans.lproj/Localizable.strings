@@ -852,3 +852,6 @@
 "settings.aiAgents.manualConfig.subtitle" = "复制下面的片段，粘贴到对应配置文件中。";
 "settings.aiAgents.manualConfig.copy" = "复制到剪贴板";
 "settings.aiAgents.manualConfig.done" = "完成";
+
+"settings.diagnostics" = "诊断";
+"settings.diagnostics.export" = "导出诊断日志";

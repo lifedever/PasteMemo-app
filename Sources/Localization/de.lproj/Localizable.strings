@@ -890,3 +890,6 @@ Verwenden Sie %@ zum Einfügen.";
 "settings.aiAgents.manualConfig.subtitle" = "Kopiere den folgenden Ausschnitt und füge ihn in die entsprechende Konfigurationsdatei ein.";
 "settings.aiAgents.manualConfig.copy" = "In die Zwischenablage kopieren";
 "settings.aiAgents.manualConfig.done" = "Fertig";
+
+"settings.diagnostics" = "Diagnose";
+"settings.diagnostics.export" = "Diagnoseprotokoll exportieren";

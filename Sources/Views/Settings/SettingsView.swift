@@ -209,6 +209,14 @@ struct GeneralPane: View {
                 }
                 .pointerCursor()
             }
+
+            // 诊断:导出日志(issue #66,查清后移除)
+            Section(L10n.tr("settings.diagnostics")) {
+                Button((DiagnosticLog.isHealthy ? "" : "⚠️ ") + L10n.tr("settings.diagnostics.export")) {
+                    DiagnosticLog.exportLog()
+                }
+                .pointerCursor()
+            }
         }
         .formStyle(.grouped)
     }

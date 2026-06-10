@@ -852,3 +852,6 @@
 "settings.aiAgents.manualConfig.subtitle" = "Copy the snippet below and merge it into the relevant config file.";
 "settings.aiAgents.manualConfig.copy" = "Copy to Clipboard";
 "settings.aiAgents.manualConfig.done" = "Done";
+
+"settings.diagnostics" = "Diagnostics";
+"settings.diagnostics.export" = "Export Diagnostic Log";

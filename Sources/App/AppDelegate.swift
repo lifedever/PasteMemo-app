@@ -32,6 +32,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let mode = UserDefaults.standard.string(forKey: "appearanceMode") ?? "system"
         AppDelegate.applyAppearance(mode)
 
+        // 诊断日志(issue #66 「一段时间后打不开设置」)：先自检,确认日志通道可用。
+        let healthy = DiagnosticLog.runSelfCheck()
+        let osv = ProcessInfo.processInfo.operatingSystemVersion
+        DiagnosticLog.log("LAUNCH dev=\(DevDataImporter.isDevBuild) macOS=\(osv.majorVersion).\(osv.minorVersion).\(osv.patchVersion) selfCheckHealthy=\(healthy)")
+        registerDiagnosticObservers()
+
         ClipboardManager.shared.modelContainer = PasteMemoApp.sharedModelContainer
         OCRTaskCoordinator.shared.configure(modelContainer: PasteMemoApp.sharedModelContainer)
         if ProManager.AUTOMATION_ENABLED {
@@ -135,8 +141,28 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     // MARK: - Helpers
 
     private func hideAllMainWindows(_ sender: NSApplication) {
+        var closed = 0
         for window in sender.windows where window.isVisible && window.canBecomeMain {
             window.close()
+            closed += 1
+        }
+        DiagnosticLog.log("hideAllMainWindows: closed \(closed) window(s); now=[\(DiagnosticLog.windowSnapshot())]")
+    }
+
+    /// 诊断观察者:记录睡眠/唤醒、App 激活状态切换 —— 用来把「打不开设置」
+    /// 与系统事件(长时间睡眠后唤醒、App Nap 等)对上号。issue #66。
+    private func registerDiagnosticObservers() {
+        let ws = NSWorkspace.shared.notificationCenter
+        let wsEvents: [(Notification.Name, String)] = [
+            (NSWorkspace.willSleepNotification, "SYSTEM willSleep"),
+            (NSWorkspace.didWakeNotification, "SYSTEM didWake"),
+            (NSWorkspace.screensDidSleepNotification, "SYSTEM screensDidSleep"),
+            (NSWorkspace.screensDidWakeNotification, "SYSTEM screensDidWake"),
+        ]
+        for (name, label) in wsEvents {
+            ws.addObserver(forName: name, object: nil, queue: .main) { _ in
+                DiagnosticLog.log(label)
+            }
         }
     }
 

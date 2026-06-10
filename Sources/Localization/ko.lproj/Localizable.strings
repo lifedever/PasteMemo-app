@@ -906,3 +906,6 @@
 "settings.aiAgents.manualConfig.subtitle" = "아래 스니펫을 복사하여 해당 설정 파일에 병합하세요.";
 "settings.aiAgents.manualConfig.copy" = "클립보드에 복사";
 "settings.aiAgents.manualConfig.done" = "완료";
+
+"settings.diagnostics" = "진단";
+"settings.diagnostics.export" = "진단 로그 내보내기";

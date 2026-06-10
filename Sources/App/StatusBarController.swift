@@ -185,6 +185,7 @@ final class StatusBarController: NSObject {
     }
 
     @objc private func openManager() {
+        DiagnosticLog.log("CLICK statusbar: openManager")
         AppAction.shared.openMainWindow?()
     }
 
@@ -205,10 +206,12 @@ final class StatusBarController: NSObject {
     }
 
     @objc private func openAutomationManager() {
+        DiagnosticLog.log("CLICK statusbar: openAutomationManager")
         AppAction.shared.openAutomationManager?()
     }
 
     @objc private func handleOpenSettings() {
+        DiagnosticLog.log("CLICK statusbar: openSettings")
         AppAction.shared.openSettings?()
     }
 

@@ -908,3 +908,6 @@ Utilisez %@ pour coller un par un.";
 "settings.aiAgents.manualConfig.subtitle" = "Copiez l'extrait ci-dessous et fusionnez-le dans le fichier de configuration approprié.";
 "settings.aiAgents.manualConfig.copy" = "Copier dans le presse-papiers";
 "settings.aiAgents.manualConfig.done" = "Terminé";
+
+"settings.diagnostics" = "Diagnostic";
+"settings.diagnostics.export" = "Exporter le journal de diagnostic";

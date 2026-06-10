@@ -868,3 +868,6 @@ Usa %@ per incollare uno per uno.";
 "settings.aiAgents.manualConfig.subtitle" = "Copia il frammento qui sotto e uniscilo al file di configurazione pertinente.";
 "settings.aiAgents.manualConfig.copy" = "Copia negli appunti";
 "settings.aiAgents.manualConfig.done" = "Fine";
+
+"settings.diagnostics" = "Diagnostica";
+"settings.diagnostics.export" = "Esporta registro diagnostico";

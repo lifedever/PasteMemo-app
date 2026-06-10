@@ -42,6 +42,9 @@ struct MainWindowView: View {
     }
     @Environment(\.openWindow) private var openWindow
     @Environment(\.openSettings) private var openSettings
+    // 诊断(issue #66):随主窗口场景一起存活/销毁;它一旦 deinit 就证明 SwiftUI
+    // 把主窗口视图拆掉了 —— 用来验证缓存的 openWindow/openSettings 是否会失效。
+    @StateObject private var lifecycleProbe = WindowLifecycleProbe("MainWindow")
     @State private var showDeleteConfirm = false
     @State private var isClearing = false
     @State private var clearTitle = ""
@@ -304,27 +307,34 @@ struct MainWindowView: View {
             Text(L10n.tr("action.clearConfirm"))
         }
         .onAppear {
+            DiagnosticLog.log("MainWindowView.onAppear: (re)register AppAction closures; windows=[\(DiagnosticLog.windowSnapshot())]")
             AppAction.shared.openMainWindow = { [openWindow] in
+                DiagnosticLog.log("INVOKE openMainWindow (cached closure); windows=[\(DiagnosticLog.windowSnapshot())]")
                 openWindow(id: "main")
                 if !UserDefaults.standard.bool(forKey: "hideDockIcon") {
                     NSApp.setActivationPolicy(.regular)
                 }
                 NSApp.activate(ignoringOtherApps: true)
                 UsageTracker.pingIfNeeded(source: .main)
+                DiagnosticLog.logWindowsAfter("AFTER openMainWindow")
             }
             AppAction.shared.openSettings = { [openSettings] in
+                DiagnosticLog.log("INVOKE openSettings (cached closure); windows=[\(DiagnosticLog.windowSnapshot())]")
                 if !UserDefaults.standard.bool(forKey: "hideDockIcon") {
                     NSApp.setActivationPolicy(.regular)
                 }
                 NSApp.activate(ignoringOtherApps: true)
                 openSettings()
+                DiagnosticLog.logWindowsAfter("AFTER openSettings")
             }
             AppAction.shared.openAutomationManager = { [openWindow] in
+                DiagnosticLog.log("INVOKE openAutomationManager (cached closure); windows=[\(DiagnosticLog.windowSnapshot())]")
                 if !UserDefaults.standard.bool(forKey: "hideDockIcon") {
                     NSApp.setActivationPolicy(.regular)
                 }
                 openWindow(id: "automationManager")
                 NSApp.activate(ignoringOtherApps: true)
+                DiagnosticLog.logWindowsAfter("AFTER openAutomationManager")
             }
         }
         .onChange(of: relaySplitText) {

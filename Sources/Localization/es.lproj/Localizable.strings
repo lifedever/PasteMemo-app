@@ -908,3 +908,6 @@ Usa %@ para pegar uno por uno.";
 "settings.aiAgents.manualConfig.subtitle" = "Copia el fragmento de abajo y combínalo con el archivo de configuración correspondiente.";
 "settings.aiAgents.manualConfig.copy" = "Copiar al portapapeles";
 "settings.aiAgents.manualConfig.done" = "Hecho";
+
+"settings.diagnostics" = "Diagnóstico";
+"settings.diagnostics.export" = "Exportar registro de diagnóstico";

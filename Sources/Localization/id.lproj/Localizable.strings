@@ -878,3 +878,6 @@ Gunakan %@ untuk menempel satu per satu.";
 "settings.aiAgents.manualConfig.subtitle" = "Salin cuplikan di bawah ini dan gabungkan ke dalam berkas konfigurasi yang sesuai.";
 "settings.aiAgents.manualConfig.copy" = "Salin ke papan klip";
 "settings.aiAgents.manualConfig.done" = "Selesai";
+
+"settings.diagnostics" = "Diagnostik";
+"settings.diagnostics.export" = "Ekspor Log Diagnostik";

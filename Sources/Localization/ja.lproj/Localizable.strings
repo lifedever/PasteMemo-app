@@ -904,3 +904,6 @@
 "settings.aiAgents.manualConfig.subtitle" = "下のスニペットをコピーして、対応する設定ファイルに統合してください。";
 "settings.aiAgents.manualConfig.copy" = "クリップボードにコピー";
 "settings.aiAgents.manualConfig.done" = "完了";
+
+"settings.diagnostics" = "診断";
+"settings.diagnostics.export" = "診断ログを書き出す";

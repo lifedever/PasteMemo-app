@@ -878,3 +878,6 @@
 "settings.aiAgents.manualConfig.subtitle" = "Скопируйте фрагмент ниже и вставьте его в соответствующий файл конфигурации.";
 "settings.aiAgents.manualConfig.copy" = "Копировать в буфер обмена";
 "settings.aiAgents.manualConfig.done" = "Готово";
+
+"settings.diagnostics" = "Диагностика";
+"settings.diagnostics.export" = "Экспортировать журнал диагностики";
