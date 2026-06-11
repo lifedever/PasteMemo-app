@@ -750,13 +750,26 @@ struct HistorySettingsSection: View {
 struct OCRSettingsSection: View {
     @AppStorage(OCRTaskCoordinator.enableOCRKey) private var ocrEnabled = true
     @AppStorage(OCRTaskCoordinator.autoOCRKey) private var autoProcess = true
+    @AppStorage(OCRTaskCoordinator.markdownKey) private var ocrMarkdown = true
     @ObservedObject private var coordinator = OCRTaskCoordinator.shared
+    @State private var showRescanConfirm = false
+    @State private var rescanCount = 0
 
     var body: some View {
         Section(L10n.tr("settings.ocr")) {
             Toggle(L10n.tr("settings.ocr.enable"), isOn: $ocrEnabled)
             if ocrEnabled {
                 Toggle(L10n.tr("settings.ocr.auto"), isOn: $autoProcess)
+
+                // Layout-aware Markdown OCR relies on RecognizeDocumentsRequest,
+                // which only exists on macOS 26+. Hide the control on older
+                // systems where it has no effect (the engine uses plain text).
+                if #available(macOS 26.0, *) {
+                    Toggle(L10n.tr("settings.ocr.markdown"), isOn: $ocrMarkdown)
+                    Text(L10n.tr("settings.ocr.markdown.hint"))
+                        .font(.callout)
+                        .foregroundStyle(.tertiary)
+                }
 
                 if coordinator.isScanning {
                     VStack(alignment: .leading, spacing: 6) {
@@ -770,12 +783,36 @@ struct OCRSettingsSection: View {
                         OCRTaskCoordinator.shared.scanExistingImages()
                     }
                     .pointerCursor()
+
+                    // One-time upgrade: re-run OCR on every image so already
+                    // recognized plain text is replaced with Markdown. Only
+                    // meaningful on macOS 26+ with Markdown recognition on.
+                    if #available(macOS 26.0, *), ocrMarkdown {
+                        Button(L10n.tr("settings.ocr.rescanMarkdown")) {
+                            rescanCount = OCRTaskCoordinator.shared.imageClipCount()
+                            if rescanCount > 0 {
+                                showRescanConfirm = true
+                            }
+                        }
+                        .pointerCursor()
+                    }
                 }
 
                 Text(L10n.tr("settings.ocr.hint"))
                     .font(.callout)
                     .foregroundStyle(.tertiary)
             }
+        }
+        .alert(
+            L10n.tr("settings.ocr.rescanMarkdown.confirm", rescanCount),
+            isPresented: $showRescanConfirm
+        ) {
+            Button(L10n.tr("settings.ocr.rescanMarkdown.start")) {
+                OCRTaskCoordinator.shared.scanExistingImages(includeCompleted: true)
+            }
+            Button(L10n.tr("action.cancel"), role: .cancel) {}
+        } message: {
+            Text(L10n.tr("settings.ocr.rescanMarkdown.message"))
         }
     }
 }

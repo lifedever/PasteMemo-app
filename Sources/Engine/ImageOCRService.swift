@@ -23,30 +23,51 @@ actor ImageOCRService {
 
     private init() {}
 
-    func recognizeText(from imageData: Data) async throws -> OCRRecognitionResult {
+    /// OCR an in-memory image. When `markdown` is on and the OS supports it
+    /// (macOS 26+), recognition runs through `RecognizeDocumentsRequest` and
+    /// returns layout-aware Markdown; otherwise — and whenever document OCR
+    /// finds no content — it falls back to plain-text `VNRecognizeTextRequest`.
+    func recognizeText(from imageData: Data, markdown: Bool) async throws -> OCRRecognitionResult {
+        let appLanguage = await MainActor.run { LanguageManager.shared.current }
+
+        if markdown, #available(macOS 26.0, *) {
+            if let text = try? await DocumentMarkdownOCRService().recognizeMarkdown(imageData: imageData, appLanguage: appLanguage),
+               !text.isEmpty {
+                return OCRRecognitionResult(text: text, hasText: true)
+            }
+        }
+
         guard let image = NSImage(data: imageData),
               let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil)
         else {
             throw ImageOCRError.invalidImage
         }
-        let handler = VNImageRequestHandler(cgImage: cgImage)
-        return try await runOCR(handler: handler)
+        return try runLegacyOCR(handler: VNImageRequestHandler(cgImage: cgImage), appLanguage: appLanguage)
     }
 
     /// File-URL OCR path. Used for file-backed image clips so OCR runs against
     /// the original file's full resolution rather than the small thumbnail we
-    /// keep in `ClipItem.imageData`. `VNImageRequestHandler(url:)` lets Vision
-    /// stream the image, so this works for multi-GB originals without loading
-    /// them into memory.
-    func recognizeText(fileURL: URL) async throws -> OCRRecognitionResult {
-        let handler = VNImageRequestHandler(url: fileURL)
-        return try await runOCR(handler: handler)
+    /// keep in `ClipItem.imageData`. Both the Markdown and plain-text engines
+    /// stream the image by URL, so this works for multi-GB originals without
+    /// loading them into memory.
+    func recognizeText(fileURL: URL, markdown: Bool) async throws -> OCRRecognitionResult {
+        let appLanguage = await MainActor.run { LanguageManager.shared.current }
+
+        if markdown, #available(macOS 26.0, *) {
+            if let text = try? await DocumentMarkdownOCRService().recognizeMarkdown(fileURL: fileURL, appLanguage: appLanguage),
+               !text.isEmpty {
+                return OCRRecognitionResult(text: text, hasText: true)
+            }
+        }
+
+        return try runLegacyOCR(handler: VNImageRequestHandler(url: fileURL), appLanguage: appLanguage)
     }
 
-    private func runOCR(handler: VNImageRequestHandler) async throws -> OCRRecognitionResult {
+    /// Plain-text OCR via `VNRecognizeTextRequest`. Used directly on macOS < 26
+    /// and as a fallback when document OCR detects no structured content.
+    private func runLegacyOCR(handler: VNImageRequestHandler, appLanguage: String) throws -> OCRRecognitionResult {
         let request = VNRecognizeTextRequest()
         request.recognitionLevel = .accurate
-        let appLanguage = await MainActor.run { LanguageManager.shared.current }
         request.recognitionLanguages = Self.preferredRecognitionLanguages(appLanguage: appLanguage)
         request.automaticallyDetectsLanguage = true
         request.usesLanguageCorrection = !Self.prefersChinese(appLanguage: appLanguage)
