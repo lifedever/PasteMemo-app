@@ -262,7 +262,7 @@ struct MainWindowView: View {
                 Button {
                     AppAction.shared.openSettings?()
                 } label: {
-                    Label(L10n.tr("settings.title"), systemImage: "gearshape")
+                    Label(L10n.tr("menu.settings"), systemImage: "gearshape")
                 }
             }
             ToolbarItem(placement: .destructiveAction) {

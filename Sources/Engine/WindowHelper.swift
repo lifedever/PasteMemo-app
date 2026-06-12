@@ -31,7 +31,7 @@ func showMainManagerWindow() {
 func showSettingsWindowAppKit() {
     WindowManager.shared.show(
         id: "settings",
-        title: L10n.tr("settings.title"),
+        title: L10n.tr("menu.settings"),
         size: NSSize(width: 720, height: 470),
         floating: false,
         styleMask: [.titled, .closable, .miniaturizable],
