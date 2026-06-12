@@ -1,5 +1,63 @@
 import Foundation
 import AppKit
+import SwiftUI
+
+/// 主管理器窗口。不用 SwiftUI `Window` scene:登录自启时 App 在后台启动,SwiftUI
+/// 不创建任何窗口,依赖视图 onAppear 注册的 openWindow 闭包永远不会注册,状态栏
+/// 「管理器/设置」点击全是 nil?() 空操作(issue #66)。改走 AppKit WindowManager,
+/// 跟 onboarding / 更新窗口同一套路径,启动方式不影响可用性。
+@MainActor
+func showMainManagerWindow() {
+    WindowManager.shared.show(
+        id: "main",
+        title: L10n.tr("app.name"),
+        size: NSSize(width: 900, height: 560),
+        floating: UserDefaults.standard.bool(forKey: "alwaysOnTop"),
+        styleMask: [.titled, .closable, .miniaturizable, .resizable],
+        frameAutosaveName: "MainManagerWindow",
+        bridgeToolbar: true
+    ) {
+        MainWindowView()
+            .environmentObject(ClipboardManager.shared)
+            .modelContainer(PasteMemoApp.sharedModelContainer)
+    }
+}
+
+/// 设置窗口。macOS 14+ 对 SwiftUI `Settings` scene 的程序化打开已不可靠:
+/// `sendAction(showSettingsWindow:)` 返回 true 但窗口根本不创建(本机诊断日志实证,
+/// Apple 自 Sonoma 起收紧为只认 SettingsLink)。设置窗口同样改走 AppKit WindowManager;
+/// 系统菜单的「设置…」(Cmd+,)由 CommandGroup(replacing: .appSettings) 指到同一入口。issue #66。
+@MainActor
+func showSettingsWindowAppKit() {
+    WindowManager.shared.show(
+        id: "settings",
+        title: L10n.tr("settings.title"),
+        size: NSSize(width: 720, height: 470),
+        floating: false,
+        styleMask: [.titled, .closable, .miniaturizable],
+        autoResizesToContent: true
+    ) {
+        SettingsView()
+            .environmentObject(ClipboardManager.shared)
+            .modelContainer(PasteMemoApp.sharedModelContainer)
+    }
+}
+
+/// 自动化管理器窗口。同上,走 AppKit 路径(issue #66)。
+@MainActor
+func showAutomationManagerWindow() {
+    WindowManager.shared.show(
+        id: "automationManager",
+        title: L10n.tr("automation.window.title"),
+        size: NSSize(width: 700, height: 500),
+        floating: false,
+        styleMask: [.titled, .closable, .miniaturizable, .resizable],
+        frameAutosaveName: "AutomationManagerWindow"
+    ) {
+        AutomationManagerView()
+            .modelContainer(PasteMemoApp.sharedModelContainer)
+    }
+}
 
 @MainActor
 func showOnboardingWindow() {

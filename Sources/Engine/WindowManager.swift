@@ -12,6 +12,10 @@ final class WindowManager {
         title: String = "",
         size: NSSize,
         floating: Bool = true,
+        styleMask: NSWindow.StyleMask = [.titled, .closable],
+        frameAutosaveName: String? = nil,
+        bridgeToolbar: Bool = false,
+        autoResizesToContent: Bool = false,
         content: @escaping () -> Content,
         onClose: (() -> Void)? = nil
     ) {
@@ -23,14 +27,40 @@ final class WindowManager {
 
         let window = CallbackWindow(
             contentRect: NSRect(origin: .zero, size: size),
-            styleMask: [.titled, .closable],
+            styleMask: styleMask,
             backing: .buffered,
             defer: false
         )
         window.title = title
-        window.contentView = NSHostingView(rootView: content())
+        window.identifier = NSUserInterfaceItemIdentifier(id)
+        if bridgeToolbar || autoResizesToContent {
+            let host = NSHostingController(rootView: content())
+            if bridgeToolbar {
+                // SwiftUI `.toolbar` 内容要桥接成 NSToolbar 才会显示在标题栏
+                // (主管理器窗口用,macOS 14+)。
+                host.sceneBridgingOptions = [.toolbars]
+                window.toolbarStyle = .unified
+            }
+            if autoResizesToContent {
+                // 窗口尺寸跟随 SwiftUI 内容(设置窗口用:高度随当前面板变化,
+                // 对齐原 Settings scene 的自适应语义)。
+                host.sizingOptions = [.preferredContentSize]
+            }
+            window.contentViewController = host
+            // 必须先给初始尺寸再 center():autoResizesToContent 时 SwiftUI 首次布局
+            // 是异步的,若以接近零的尺寸居中,后续内容尺寸到位时 AppKit 以左上角为锚
+            // 向右下展开,窗口会整个偏到屏幕右下象限。
+            window.setContentSize(size)
+        } else {
+            window.contentView = NSHostingView(rootView: content())
+        }
         window.isReleasedWhenClosed = false
-        window.center()
+        if let frameAutosaveName {
+            window.setFrameAutosaveName(frameAutosaveName)
+            if !window.setFrameUsingName(frameAutosaveName) { window.center() }
+        } else {
+            window.center()
+        }
         window.level = floating ? .floating : .normal
 
         window.onCloseCallback = { [weak self] in

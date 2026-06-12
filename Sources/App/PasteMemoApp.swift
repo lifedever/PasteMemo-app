@@ -33,13 +33,24 @@ struct PasteMemoApp: App {
     }
 
     var body: some Scene {
-        Window(L10n.tr("app.name"), id: "main") {
-            MainWindowView()
+        // 主管理器 / 自动化管理器不再用 SwiftUI `Window` scene:登录自启时 App 在
+        // 后台启动,SwiftUI 不创建任何窗口,依赖视图 onAppear 注册的开窗闭包永远
+        // 不会注册,状态栏「管理器/设置」点了没反应(issue #66)。两个窗口改走
+        // AppKit WindowManager(见 WindowHelper.swift),闭包在 AppDelegate 启动时注册。
+        Settings {
+            SettingsView()
                 .environmentObject(ClipboardManager.shared)
                 .modelContainer(Self.sharedModelContainer)
         }
-        .defaultSize(width: 900, height: 560)
         .commands {
+            // 「设置…」(Cmd+,)指到 AppKit 设置窗口 —— Settings scene 的
+            // showSettingsWindow: 在 macOS 14+ 已不可靠,见 WindowHelper.swift。
+            CommandGroup(replacing: .appSettings) {
+                Button(L10n.tr("menu.settings")) {
+                    AppAction.shared.openSettings?()
+                }
+                .keyboardShortcut(",", modifiers: .command)
+            }
             CommandGroup(after: .appInfo) {
                 Button(L10n.tr("menu.checkForUpdates")) {
                     Task { await UpdateChecker.shared.checkForUpdates(userInitiated: true) }
@@ -108,17 +119,6 @@ struct PasteMemoApp: App {
             }
         }
 
-        Window(L10n.tr("automation.window.title"), id: "automationManager") {
-            AutomationManagerView()
-                .modelContainer(Self.sharedModelContainer)
-        }
-        .defaultSize(width: 700, height: 500)
-
-        Settings {
-            SettingsView()
-                .environmentObject(ClipboardManager.shared)
-                .modelContainer(Self.sharedModelContainer)
-        }
         // 状态栏图标改用 AppKit 的 NSStatusItem 实现（StatusBarController），
         // 这样能区分左/右键、支持左键自定义动作。AppDelegate 在启动时安装。
     }

@@ -48,10 +48,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         UsageTracker.pingIfNeeded()
 
-        // SwiftUI auto-creates main window briefly so MainWindowView.onAppear runs
-        // and registers AppAction.shared closures. Then we hide it; user reopens
-        // explicitly via status bar / hotkey.
-        hideAllMainWindows(NSApp)
+        // 三个开窗闭包必须在这里注册(applicationDidFinishLaunching 任何启动方式都
+        // 必跑),不能放在视图 onAppear:登录自启时 App 在后台启动,SwiftUI 不创建
+        // 任何窗口,onAppear 永远不执行,闭包保持 nil → 状态栏「管理器/设置」点击
+        // 静默无效,直到手动重启 App(issue #66,本机日志坐实)。
+        registerAppActions()
         isLaunchComplete = true
 
         // 自定义状态栏图标（支持左/右键不同动作）—— 取代原来的 MenuBarExtra(.menu)。
@@ -136,6 +137,41 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             NSApp.setActivationPolicy(.accessory)
         }
         return false
+    }
+
+    // MARK: - Window actions (issue #66)
+
+    /// 全部走 AppKit 路径,不依赖任何 SwiftUI 场景/视图先出现。
+    private func registerAppActions() {
+        AppAction.shared.openMainWindow = {
+            DiagnosticLog.log("INVOKE openMainWindow (AppKit path); windows=[\(DiagnosticLog.windowSnapshot())]")
+            showMainManagerWindow()
+            if !UserDefaults.standard.bool(forKey: "hideDockIcon") {
+                NSApp.setActivationPolicy(.regular)
+            }
+            NSApp.activate(ignoringOtherApps: true)
+            UsageTracker.pingIfNeeded(source: .main)
+            DiagnosticLog.logWindowsAfter("AFTER openMainWindow")
+        }
+        AppAction.shared.openSettings = {
+            DiagnosticLog.log("INVOKE openSettings (AppKit path); windows=[\(DiagnosticLog.windowSnapshot())]")
+            if !UserDefaults.standard.bool(forKey: "hideDockIcon") {
+                NSApp.setActivationPolicy(.regular)
+            }
+            NSApp.activate(ignoringOtherApps: true)
+            showSettingsWindowAppKit()
+            DiagnosticLog.logWindowsAfter("AFTER openSettings")
+        }
+        AppAction.shared.openAutomationManager = {
+            DiagnosticLog.log("INVOKE openAutomationManager (AppKit path); windows=[\(DiagnosticLog.windowSnapshot())]")
+            if !UserDefaults.standard.bool(forKey: "hideDockIcon") {
+                NSApp.setActivationPolicy(.regular)
+            }
+            showAutomationManagerWindow()
+            NSApp.activate(ignoringOtherApps: true)
+            DiagnosticLog.logWindowsAfter("AFTER openAutomationManager")
+        }
+        DiagnosticLog.log("registerAppActions: closures registered at launch (AppKit paths)")
     }
 
     // MARK: - Helpers
