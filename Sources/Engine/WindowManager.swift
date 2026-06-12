@@ -40,6 +40,10 @@ final class WindowManager {
                 // (主管理器窗口用,macOS 14+)。
                 host.sceneBridgingOptions = [.toolbars]
                 window.toolbarStyle = .unified
+                // SwiftUI WindowGroup 默认带 fullSizeContentView,NavigationSplitView
+                // 的侧边栏靠它延伸到标题栏下实现通顶;手建 NSWindow 不补这个样式位,
+                // 侧边栏会从标题栏下方才开始,顶部断一截。
+                window.styleMask.insert(.fullSizeContentView)
             }
             if autoResizesToContent {
                 // 窗口尺寸跟随 SwiftUI 内容(设置窗口用:高度随当前面板变化,
