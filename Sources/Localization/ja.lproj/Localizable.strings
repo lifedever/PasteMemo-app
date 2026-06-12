@@ -187,6 +187,12 @@
 "settings.ocr" = "画像OCR";
 "settings.ocr.enable" = "画像OCRを有効にする";
 "settings.ocr.auto" = "新しい画像を自動処理する";
+"settings.ocr.markdown" = "レイアウトを Markdown として認識";
+"settings.ocr.markdown.hint" = "段落・リスト・表を認識し、テキストを Markdown として保存します。macOS 26 が必要です。";
+"settings.ocr.rescanMarkdown" = "すべて Markdown として再認識";
+"settings.ocr.rescanMarkdown.confirm" = "%d 枚の画像を Markdown として再認識しますか？";
+"settings.ocr.rescanMarkdown.message" = "すべての画像で OCR を再実行し、保存済みのテキストを Markdown に置き換えます。処理はバックグラウンドで行われ、時間がかかる場合があります。";
+"settings.ocr.rescanMarkdown.start" = "再認識";
 "settings.ocr.scanExisting" = "既存の画像をスキャン";
 "settings.ocr.scanStarted" = "既存の画像に対するOCRをバックグラウンドで開始しました。";
 "settings.ocr.hint" = "OCR はデバイス上で実行され、画像内の文字を検索可能にします。";

@@ -807,6 +807,12 @@
 "settings.ocr" = "圖片 OCR";
 "settings.ocr.enable" = "啟用圖片 OCR";
 "settings.ocr.auto" = "自動處理新圖片";
+"settings.ocr.markdown" = "辨識版面為 Markdown";
+"settings.ocr.markdown.hint" = "辨識段落、清單與表格，並將文字儲存為 Markdown。需要 macOS 26。";
+"settings.ocr.rescanMarkdown" = "全部重新辨識為 Markdown";
+"settings.ocr.rescanMarkdown.confirm" = "將 %d 張圖片重新辨識為 Markdown？";
+"settings.ocr.rescanMarkdown.message" = "將對每張圖片重新進行 OCR，並以 Markdown 取代已儲存的文字。此過程在背景進行，可能需要一些時間。";
+"settings.ocr.rescanMarkdown.start" = "重新辨識";
 "settings.ocr.scanExisting" = "掃描現有圖片";
 "settings.ocr.scanStarted" = "已開始在背景掃描現有圖片。";
 "settings.ocr.hint" = "OCR 會在本機執行，讓圖片中的文字可被搜尋。";

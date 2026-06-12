@@ -169,6 +169,12 @@
 "settings.ocr" = "Image OCR";
 "settings.ocr.enable" = "Enable image OCR";
 "settings.ocr.auto" = "Process new images automatically";
+"settings.ocr.markdown" = "Recognize layout as Markdown";
+"settings.ocr.markdown.hint" = "Detects paragraphs, lists, and tables and saves the text as Markdown. Requires macOS 26.";
+"settings.ocr.rescanMarkdown" = "Re-scan all as Markdown";
+"settings.ocr.rescanMarkdown.confirm" = "Re-scan %d images as Markdown?";
+"settings.ocr.rescanMarkdown.message" = "OCR runs again on every image and replaces the saved text with Markdown. This happens in the background and may take a while.";
+"settings.ocr.rescanMarkdown.start" = "Re-scan";
 "settings.ocr.scanExisting" = "Scan existing images";
 "settings.ocr.scanStarted" = "Background OCR started for existing images.";
 "settings.ocr.hint" = "OCR runs on-device and makes text inside images searchable.";

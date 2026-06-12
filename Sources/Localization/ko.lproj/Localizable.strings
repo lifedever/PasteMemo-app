@@ -849,6 +849,12 @@
 "settings.ocr" = "이미지 OCR";
 "settings.ocr.enable" = "이미지 OCR 활성화";
 "settings.ocr.auto" = "새 이미지를 자동 처리";
+"settings.ocr.markdown" = "레이아웃을 Markdown으로 인식";
+"settings.ocr.markdown.hint" = "단락, 목록, 표를 인식하여 텍스트를 Markdown으로 저장합니다. macOS 26이 필요합니다.";
+"settings.ocr.rescanMarkdown" = "모두 Markdown으로 다시 인식";
+"settings.ocr.rescanMarkdown.confirm" = "이미지 %d개를 Markdown으로 다시 인식할까요?";
+"settings.ocr.rescanMarkdown.message" = "모든 이미지에 대해 OCR을 다시 실행하고 저장된 텍스트를 Markdown으로 바꿉니다. 백그라운드에서 진행되며 시간이 걸릴 수 있습니다.";
+"settings.ocr.rescanMarkdown.start" = "다시 인식";
 "settings.ocr.scanExisting" = "기존 이미지 스캔";
 "settings.ocr.scanStarted" = "기존 이미지에 대한 OCR이 백그라운드에서 시작되었습니다.";
 "settings.ocr.hint" = "OCR은 기기 내에서 실행되며 이미지 속 텍스트를 검색할 수 있게 합니다.";

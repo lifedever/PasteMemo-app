@@ -26,6 +26,13 @@ final class OCRTaskCoordinator: ObservableObject {
         UserDefaults.standard.object(forKey: Self.autoOCRKey) as? Bool ?? true
     }
 
+    /// Whether OCR should emit layout-aware Markdown (paragraphs, lists, tables)
+    /// instead of plain text. Only effective on macOS 26+; the engine falls back
+    /// to plain text automatically below that, so this can stay on everywhere.
+    var markdownEnabled: Bool {
+        UserDefaults.standard.object(forKey: Self.markdownKey) as? Bool ?? true
+    }
+
     func enqueue(itemID: String) {
         guard isEnabled, autoProcessEnabled else { return }
         enqueueForce(itemID: itemID)
@@ -40,12 +47,20 @@ final class OCRTaskCoordinator: ObservableObject {
         isEnabled && item.contentType == .image && item.imageData != nil
     }
 
-    func scanExistingImages() {
+    /// Scan image clips that still need OCR. When `includeCompleted` is true,
+    /// every image clip is reprocessed — including ones already marked `.done` —
+    /// which backs the one-time "re-scan all as Markdown" action so previously
+    /// recognized plain text is regenerated through the current engine.
+    func scanExistingImages(includeCompleted: Bool = false) {
         guard let container = modelContainer, !isScanning else { return }
         let context = container.mainContext
         let descriptor = FetchDescriptor<ClipItem>()
         guard let items = try? context.fetch(descriptor) else { return }
-        let pending = items.filter { $0.contentType == .image && $0.resolvedOCRStatus != OCRStatus.done && $0.imageData != nil }
+        let pending = items.filter {
+            $0.contentType == .image
+                && $0.imageData != nil
+                && (includeCompleted || $0.resolvedOCRStatus != OCRStatus.done)
+        }
         guard !pending.isEmpty else { return }
 
         isScanning = true
@@ -64,6 +79,14 @@ final class OCRTaskCoordinator: ObservableObject {
             }
             self.isScanning = false
         }
+    }
+
+    /// Number of OCR-able image clips, used to size the "re-scan all" confirmation.
+    func imageClipCount() -> Int {
+        guard let container = modelContainer else { return 0 }
+        let descriptor = FetchDescriptor<ClipItem>()
+        guard let items = try? container.mainContext.fetch(descriptor) else { return 0 }
+        return items.filter { $0.contentType == .image && $0.imageData != nil }.count
     }
 
     private func enqueueForce(itemID: String) {
@@ -91,6 +114,7 @@ final class OCRTaskCoordinator: ObservableObject {
 
             let originalURL = Self.originalImageURL(for: item)
             let imageData = item.imageData
+            let useMarkdown = markdownEnabled
 
             item.ocrStatus = OCRStatus.processing.rawValue
             item.ocrErrorMessage = nil
@@ -99,9 +123,9 @@ final class OCRTaskCoordinator: ObservableObject {
             do {
                 let result: OCRRecognitionResult
                 if let url = originalURL {
-                    result = try await ImageOCRService.shared.recognizeText(fileURL: url)
+                    result = try await ImageOCRService.shared.recognizeText(fileURL: url, markdown: useMarkdown)
                 } else if let data = imageData {
-                    result = try await ImageOCRService.shared.recognizeText(from: data)
+                    result = try await ImageOCRService.shared.recognizeText(from: data, markdown: useMarkdown)
                 } else {
                     throw ImageOCRError.invalidImage
                 }
@@ -139,6 +163,7 @@ final class OCRTaskCoordinator: ObservableObject {
 
         let originalURL = Self.originalImageURL(for: item)
         let imageData = item.imageData
+        let useMarkdown = markdownEnabled
 
         item.ocrStatus = OCRStatus.processing.rawValue
         item.ocrErrorMessage = nil
@@ -147,9 +172,9 @@ final class OCRTaskCoordinator: ObservableObject {
         do {
             let result: OCRRecognitionResult
             if let url = originalURL {
-                result = try await ImageOCRService.shared.recognizeText(fileURL: url)
+                result = try await ImageOCRService.shared.recognizeText(fileURL: url, markdown: useMarkdown)
             } else if let data = imageData {
-                result = try await ImageOCRService.shared.recognizeText(from: data)
+                result = try await ImageOCRService.shared.recognizeText(from: data, markdown: useMarkdown)
             } else {
                 return nil
             }
@@ -193,4 +218,5 @@ final class OCRTaskCoordinator: ObservableObject {
 
     static let enableOCRKey = "ocrEnabled"
     static let autoOCRKey = "ocrAutoProcessImages"
+    static let markdownKey = "ocrToMarkdown"
 }
