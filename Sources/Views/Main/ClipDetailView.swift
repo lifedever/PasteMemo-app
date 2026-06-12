@@ -9,8 +9,8 @@ struct ClipDetailView: View {
 
     @State private var isEditing = false
     @State private var editingContent = ""
-    @State private var isOCRExpanded = false
     @State private var decodedLinkImageData: Data?
+    @State private var ocrCardWidth: CGFloat = 0
     @AppStorage(OCRTaskCoordinator.enableOCRKey) private var ocrEnabled = true
 
     private var isEditableType: Bool {
@@ -48,7 +48,6 @@ struct ClipDetailView: View {
         }
         .onChange(of: item.persistentModelID) {
             if isEditing { cancelEdit() }
-            isOCRExpanded = false
         }
         } // isDeleted guard
     }
@@ -713,15 +712,26 @@ struct ClipDetailView: View {
 
             Group {
                 if let text = item.ocrText, !text.isEmpty {
-                    ScrollView {
-                        Text(displayedOCRText)
-                            .font(.system(size: 12))
-                            .textSelection(.enabled)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.horizontal, 10)
-                            .padding(.bottom, 10)
+                    // 与快捷面板 OCR 卡片同一方案：TextKit 惰性排版（长文本不进
+                    // SwiftUI 布局循环），全文显示，高度贴内容、120pt 封顶滚动。
+                    NativeTextView(
+                        text: text,
+                        allowRichRender: false,
+                        itemID: item.itemID,
+                        fontSize: 12,
+                        textColor: .labelColor
+                    )
+                    .id(item.persistentModelID)
+                    .frame(height: ocrCardWidth > 0
+                        ? min(max(NativeTextView.measuredHeight(text: text, width: ocrCardWidth, fontSize: 12), 36), 120)
+                        : 56)
+                    .onGeometryChange(for: CGFloat.self) { proxy in
+                        proxy.size.width
+                    } action: { width in
+                        ocrCardWidth = width
                     }
-                    .frame(minHeight: 56, maxHeight: isOCRExpanded ? 220 : 120)
+                    .padding(.horizontal, 10)
+                    .padding(.bottom, 10)
                 } else {
                     Text(ocrEmptyText)
                         .font(.system(size: 12))
@@ -766,19 +776,6 @@ struct ClipDetailView: View {
         }
     }
 
-    private var displayedOCRText: String {
-        guard let text = item.ocrText else { return "" }
-        guard !isOCRExpanded else { return text }
-        let limit = 1600
-        guard text.count > limit else { return text }
-        let end = text.index(text.startIndex, offsetBy: limit)
-        return String(text[..<end]) + "\n…"
-    }
-
-    private var shouldShowOCRExpandToggle: Bool {
-        guard let text = item.ocrText else { return false }
-        return text.count > 1600
-    }
 }
 
 // MARK: - File Row with Hover

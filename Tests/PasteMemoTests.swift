@@ -485,27 +485,6 @@ struct PasteMemoTests {
         #expect(!item.matchesOCROnly(searchText: ""))
     }
 
-    @Test("Quick preview OCR snippet includes match context")
-    @MainActor func quickPreviewOCRSnippet() {
-        let attributed = QuickPreviewPane.buildOCRSnippet(
-            text: "first line of text\nerror happened on line 42 near the prompt\nlast line",
-            query: "line 42"
-        )
-        let snippet = String(attributed.characters)
-        #expect(snippet.contains("line 42"))
-        #expect(snippet.contains("error happened"))
-    }
-
-    @Test("Quick preview OCR snippet falls back to compact prefix when query is missing")
-    @MainActor func quickPreviewOCRSnippetWithoutMatch() {
-        let text = Array(repeating: "0123456789", count: 30).joined()
-        let attributed = QuickPreviewPane.buildOCRSnippet(text: text, query: "missing")
-        let snippet = String(attributed.characters)
-
-        #expect(snippet.count <= 221)
-        #expect(snippet.hasPrefix("0123456789"))
-    }
-
     @Test("Quick preview code summary captures language, counts and truncation")
     @MainActor func quickPreviewCodeSummary() {
         let code = """

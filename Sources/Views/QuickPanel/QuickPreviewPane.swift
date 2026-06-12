@@ -11,6 +11,7 @@ struct QuickPreviewPane: View {
     @State private var webPreviewReady = false
     @State private var cachedCodeSummary: CodePreviewSummary?
     @State private var dataURIImageData: Data?
+    @State private var ocrCardWidth: CGFloat = 0
 
     struct CodePreviewSummary: Equatable {
         let language: CodeLanguage
@@ -337,60 +338,39 @@ struct QuickPreviewPane: View {
             .padding(.horizontal, 10)
             .padding(.top, 10)
 
-            ScrollView {
-                Text(ocrSnippetText(from: text))
-                    .font(.system(size: 12))
-                    .foregroundStyle(.secondary)
-                    .textSelection(.enabled)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, 10)
-                    .padding(.bottom, 10)
+            // TextKit on purpose (not SwiftUI Text/ScrollView): OCR text runs
+            // thousands of characters, and SwiftUI re-measures the whole string
+            // on every layout pass of the pane — NativeTextView lays out lazily
+            // and keeps that cost out of the SwiftUI layout graph entirely.
+            // Height: sized to the text (measured once per text+width, cached)
+            // so short results don't leave a mostly-blank card; capped at the
+            // card's original 120pt with internal scrolling beyond that, so it
+            // never crowds out the image preview above.
+            NativeTextView(
+                text: text,
+                allowRichRender: false,
+                itemID: item.itemID,
+                searchText: searchText,
+                fontSize: 12,
+                textColor: .secondaryLabelColor
+            )
+            .id(item.persistentModelID)
+            .frame(height: ocrCardWidth > 0
+                ? min(max(NativeTextView.measuredHeight(text: text, width: ocrCardWidth, fontSize: 12), 36), 120)
+                : 56)
+            .onGeometryChange(for: CGFloat.self) { proxy in
+                proxy.size.width
+            } action: { width in
+                ocrCardWidth = width
             }
-            .frame(minHeight: 56, maxHeight: 120)
+            .padding(.horizontal, 10)
+            .padding(.bottom, 10)
         }
         .background(
             RoundedRectangle(cornerRadius: 8)
                 .fill(Color.primary.opacity(0.05))
         )
         .frame(maxWidth: .infinity, alignment: .leading)
-    }
-
-    static func buildOCRSnippet(text: String, query: String) -> AttributedString {
-        let compact = text.replacingOccurrences(of: #"[^\S\n]+"#, with: " ", options: .regularExpression)
-        let trimmedQuery = query.trimmingCharacters(in: .whitespacesAndNewlines)
-
-        let snippet: String = {
-            guard !compact.isEmpty else { return compact }
-            guard !trimmedQuery.isEmpty,
-                  let range = compact.range(of: trimmedQuery, options: [.caseInsensitive, .diacriticInsensitive])
-            else {
-                let prefix = compact.prefix(220)
-                return compact.count > 220 ? String(prefix) + "…" : String(prefix)
-            }
-
-            let contextRadius = 72
-            let lowerDistance = compact.distance(from: compact.startIndex, to: range.lowerBound)
-            let upperDistance = compact.distance(from: compact.startIndex, to: range.upperBound)
-            let start = compact.index(range.lowerBound, offsetBy: -min(contextRadius, lowerDistance))
-            let end = compact.index(range.upperBound, offsetBy: min(contextRadius, compact.count - upperDistance))
-            var snippet = String(compact[start..<end])
-            if start > compact.startIndex { snippet = "…" + snippet }
-            if end < compact.endIndex { snippet += "…" }
-            return snippet
-        }()
-
-        var attributed = AttributedString(snippet)
-
-        if !trimmedQuery.isEmpty,
-           let highlightRange = attributed.range(of: trimmedQuery, options: [.caseInsensitive, .diacriticInsensitive]) {
-            attributed[highlightRange].backgroundColor = .yellow.opacity(0.35)
-            attributed[highlightRange].foregroundColor = .primary
-        }
-        return attributed
-    }
-
-    private func ocrSnippetText(from text: String) -> AttributedString {
-        Self.buildOCRSnippet(text: text, query: searchText)
     }
 
     private var videoPreview: some View {

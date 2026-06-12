@@ -301,15 +301,24 @@ struct NativeClipHistoryList<RowContent: View, HeaderContent: View, ContextMenuC
 
         /// 只在 selection / focus / palette 之类影响 cell 渲染的行级状态真变了时才刷新，
         /// 避免搜索输入等高频 SwiftUI 更新都无谓地重建每个可见行的 rootView。
+        /// 并且只重建状态真正变化的那几行：全量重建会让每次点选/方向键移动
+        /// 都重新布局所有可见 cell 的 SwiftUI 树，CPU 瞬时打满。
         func updateVisibleRowsIfNeeded() {
-            let needsUpdate = lastSelectedItemIDs != parent.selectedItemIDs
-                || lastFocusedItemID != parent.focusedItemID
-                || lastShowCommandPalette != parent.showCommandPalette
-            guard needsUpdate else { return }
+            let selectionChanged = lastSelectedItemIDs != parent.selectedItemIDs
+            let focusChanged = lastFocusedItemID != parent.focusedItemID
+            let paletteChanged = lastShowCommandPalette != parent.showCommandPalette
+            guard selectionChanged || focusChanged || paletteChanged else { return }
+
+            var affected = lastSelectedItemIDs.symmetricDifference(parent.selectedItemIDs)
+            if focusChanged || paletteChanged {
+                if let id = lastFocusedItemID { affected.insert(id) }
+                if let id = parent.focusedItemID { affected.insert(id) }
+            }
+
             lastSelectedItemIDs = parent.selectedItemIDs
             lastFocusedItemID = parent.focusedItemID
             lastShowCommandPalette = parent.showCommandPalette
-            refreshVisibleRows()
+            refreshVisibleRows(limitedTo: affected)
         }
 
         /// Detects a row-height change (the compact ↔ comfortable flip when the
@@ -337,14 +346,19 @@ struct NativeClipHistoryList<RowContent: View, HeaderContent: View, ContextMenuC
             }
         }
 
-        private func refreshVisibleRows() {
+        /// `limitedTo` 为 nil 时重建所有可见行（行高切换等全局变化）；
+        /// 传集合时只重建命中的 item 行，header 行不受选中态影响、永远跳过。
+        private func refreshVisibleRows(limitedTo itemIDs: Set<PersistentIdentifier>? = nil) {
             guard let tableView else { return }
             let visibleRange = tableView.rows(in: tableView.visibleRect)
             guard visibleRange.length > 0 else { return }
             let upper = visibleRange.location + visibleRange.length
             for row in visibleRange.location..<upper {
-                guard row < parent.rows.count,
-                      let container = tableView.view(atColumn: 0, row: row, makeIfNecessary: false) as? NativeClipHistoryRowContainerView,
+                guard row < parent.rows.count else { continue }
+                if let itemIDs {
+                    guard case .item(let id) = parent.rows[row], itemIDs.contains(id) else { continue }
+                }
+                guard let container = tableView.view(atColumn: 0, row: row, makeIfNecessary: false) as? NativeClipHistoryRowContainerView,
                       let hostingView = container.hostedView
                 else { continue }
                 hostingView.rootView = makeRowView(for: row)

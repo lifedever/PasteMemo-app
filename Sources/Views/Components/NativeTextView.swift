@@ -18,6 +18,10 @@ struct NativeTextView: NSViewRepresentable {
     /// Empty string disables highlighting. Tokenization matches the search bar's
     /// behavior (whitespace → AND tokens). Rich-text branch ignores this.
     var searchText: String = ""
+    /// Plain-text style. Defaults match the standard text-clip preview; the
+    /// quick panel's OCR card passes a smaller secondary style instead.
+    var fontSize: CGFloat = 13
+    var textColor: NSColor = .labelColor
     var onTextChange: ((String) -> Void)?
     var onEscape: (() -> Void)?
 
@@ -25,6 +29,36 @@ struct NativeTextView: NSViewRepresentable {
     /// 200K chars ≈ a 200 KB plain-text clip; above this the per-keystroke scan
     /// starts being perceptible.
     static let highlightSizeLimit = 200_000
+
+    /// Measured plain-text render heights keyed by (text, width, fontSize).
+    /// Tiny bounded cache — OCR cards re-evaluate body often but only ever show
+    /// a handful of texts at a time.
+    @MainActor private static var measureCache: [Int: CGFloat] = [:]
+
+    /// 按给定宽度测量纯文本的渲染高度（已计入 NSTextContainer 默认的左右各
+    /// 5pt lineFragmentPadding）。供"高度贴内容、封顶滚动"的调用方使用，
+    /// 结果缓存，重复调用不重新跑 TextKit。
+    @MainActor static func measuredHeight(text: String, width: CGFloat, fontSize: CGFloat) -> CGFloat {
+        var hasher = Hasher()
+        hasher.combine(text)
+        hasher.combine(Int(width))
+        hasher.combine(fontSize)
+        let key = hasher.finalize()
+        if let cached = measureCache[key] { return cached }
+
+        let attributed = NSAttributedString(
+            string: text,
+            attributes: [.font: NSFont.systemFont(ofSize: fontSize)]
+        )
+        let bounds = attributed.boundingRect(
+            with: CGSize(width: max(width - 10, 10), height: .greatestFiniteMagnitude),
+            options: [.usesLineFragmentOrigin]
+        )
+        let height = ceil(bounds.height) + 4
+        if measureCache.count > 64 { measureCache.removeAll(keepingCapacity: true) }
+        measureCache[key] = height
+        return height
+    }
 
     func makeCoordinator() -> Coordinator {
         Coordinator(onTextChange: onTextChange, onEscape: onEscape)
@@ -35,8 +69,8 @@ struct NativeTextView: NSViewRepresentable {
         let textView = scrollView.documentView as! NSTextView
         textView.isEditable = isEditable
         textView.isSelectable = true
-        textView.font = .systemFont(ofSize: 13)
-        textView.textColor = .labelColor
+        textView.font = .systemFont(ofSize: fontSize)
+        textView.textColor = textColor
         textView.backgroundColor = .clear
         textView.drawsBackground = false
         textView.textContainerInset = .zero
@@ -80,8 +114,8 @@ struct NativeTextView: NSViewRepresentable {
                 // overwrite with the default plain attrs to clear all
                 // inherited formatting.
                 let plain = NSAttributedString(string: text, attributes: [
-                    .font: NSFont.systemFont(ofSize: 13),
-                    .foregroundColor: NSColor.labelColor,
+                    .font: NSFont.systemFont(ofSize: fontSize),
+                    .foregroundColor: textColor,
                 ])
                 textView.textStorage?.setAttributedString(plain)
                 textWasReplaced = true
