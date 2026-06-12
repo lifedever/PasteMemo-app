@@ -823,10 +823,7 @@
 "settings.ocr.auto" = "Автоматически обрабатывать новые изображения";
 "settings.ocr.markdown" = "Распознавать разметку как Markdown";
 "settings.ocr.markdown.hint" = "Распознаёт абзацы, списки и таблицы и сохраняет текст в формате Markdown. Требуется macOS 26.";
-"settings.ocr.rescanMarkdown" = "Пересканировать всё в Markdown";
-"settings.ocr.rescanMarkdown.confirm" = "Пересканировать %d изображений в Markdown?";
-"settings.ocr.rescanMarkdown.message" = "OCR будет выполнен заново для каждого изображения и заменит сохранённый текст на Markdown. Это происходит в фоне и может занять некоторое время.";
-"settings.ocr.rescanMarkdown.start" = "Пересканировать";
+"settings.ocr.stopScan" = "Остановить сканирование";
 "settings.ocr.scanExisting" = "Сканировать существующие изображения";
 "settings.ocr.scanStarted" = "Фоновый OCR для существующих изображений запущен.";
 "settings.ocr.hint" = "OCR выполняется на устройстве и делает текст внутри изображений доступным для поиска.";

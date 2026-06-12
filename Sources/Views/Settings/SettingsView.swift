@@ -56,6 +56,7 @@ struct SettingsView: View {
         case .appearance: AppearancePane()
         case .preferences: PreferencesPane()
         case .preview: PreviewPane()
+        case .ocr: OCRPane()
         case .shortcuts: ShortcutsTab()
         case .relay: RelayTab()
         case .privacy: PrivacyTab()
@@ -71,15 +72,15 @@ struct SettingsView: View {
 // MARK: - Settings Category
 
 enum SettingsCategory: String, CaseIterable, Identifiable, Hashable {
-    case general, appearance, preferences, preview
+    case general, appearance, preferences, preview, ocr
     case shortcuts, relay, privacy, aiAgents, automation, data
     case sponsor, about
 
     var id: String { rawValue }
 
-    /// 功能设置：基础(通用/外观) → 快捷面板(快捷键/偏好/链接预览) → 进阶(接力/AI/自动化)。
+    /// 功能设置：基础(通用/外观) → 快捷面板(快捷键/偏好/链接预览/OCR) → 进阶(接力/AI/自动化)。
     static let functionGroup: [SettingsCategory] =
-        [.general, .appearance, .shortcuts, .preferences, .preview,
+        [.general, .appearance, .shortcuts, .preferences, .preview, .ocr,
          .relay, .aiAgents, .automation]
 
     /// 数据与隐私。
@@ -94,6 +95,7 @@ enum SettingsCategory: String, CaseIterable, Identifiable, Hashable {
         case .appearance: return "settings.appearance"
         case .preferences: return "settings.preferences"
         case .preview: return "settings.linkPreview"
+        case .ocr: return "settings.ocr"
         case .shortcuts: return "settings.shortcuts"
         case .relay: return "relay.tab"
         case .privacy: return "settings.privacy"
@@ -111,6 +113,7 @@ enum SettingsCategory: String, CaseIterable, Identifiable, Hashable {
         case .appearance: return "paintbrush"
         case .preferences: return "slider.horizontal.3"
         case .preview: return "eye"
+        case .ocr: return "text.viewfinder"
         case .shortcuts: return "keyboard"
         case .relay: return "arrow.forward"
         case .privacy: return "lock.shield"
@@ -660,7 +663,14 @@ struct PreviewPane: View {
                     .foregroundStyle(.secondary)
             }
             .disabled(offlineModeEnabled)
+        }
+        .formStyle(.grouped)
+    }
+}
 
+struct OCRPane: View {
+    var body: some View {
+        Form {
             OCRSettingsSection()
         }
         .formStyle(.grouped)
@@ -752,8 +762,6 @@ struct OCRSettingsSection: View {
     @AppStorage(OCRTaskCoordinator.autoOCRKey) private var autoProcess = true
     @AppStorage(OCRTaskCoordinator.markdownKey) private var ocrMarkdown = true
     @ObservedObject private var coordinator = OCRTaskCoordinator.shared
-    @State private var showRescanConfirm = false
-    @State private var rescanCount = 0
 
     var body: some View {
         Section(L10n.tr("settings.ocr")) {
@@ -774,45 +782,28 @@ struct OCRSettingsSection: View {
                 if coordinator.isScanning {
                     VStack(alignment: .leading, spacing: 6) {
                         ProgressView(value: Double(coordinator.scanCompleted), total: Double(max(coordinator.scanTotal, 1)))
-                        Text("\(coordinator.scanCompleted) / \(coordinator.scanTotal)")
-                            .font(.callout)
-                            .foregroundStyle(.secondary)
+                        HStack {
+                            Text("\(coordinator.scanCompleted) / \(coordinator.scanTotal)")
+                                .font(.callout)
+                                .foregroundStyle(.secondary)
+                            Spacer()
+                            Button(L10n.tr("settings.ocr.stopScan")) {
+                                OCRTaskCoordinator.shared.cancelScan()
+                            }
+                            .pointerCursor()
+                        }
                     }
                 } else {
                     Button(L10n.tr("settings.ocr.scanExisting")) {
                         OCRTaskCoordinator.shared.scanExistingImages()
                     }
                     .pointerCursor()
-
-                    // One-time upgrade: re-run OCR on every image so already
-                    // recognized plain text is replaced with Markdown. Only
-                    // meaningful on macOS 26+ with Markdown recognition on.
-                    if #available(macOS 26.0, *), ocrMarkdown {
-                        Button(L10n.tr("settings.ocr.rescanMarkdown")) {
-                            rescanCount = OCRTaskCoordinator.shared.imageClipCount()
-                            if rescanCount > 0 {
-                                showRescanConfirm = true
-                            }
-                        }
-                        .pointerCursor()
-                    }
                 }
 
                 Text(L10n.tr("settings.ocr.hint"))
                     .font(.callout)
                     .foregroundStyle(.tertiary)
             }
-        }
-        .alert(
-            L10n.tr("settings.ocr.rescanMarkdown.confirm", rescanCount),
-            isPresented: $showRescanConfirm
-        ) {
-            Button(L10n.tr("settings.ocr.rescanMarkdown.start")) {
-                OCRTaskCoordinator.shared.scanExistingImages(includeCompleted: true)
-            }
-            Button(L10n.tr("action.cancel"), role: .cancel) {}
-        } message: {
-            Text(L10n.tr("settings.ocr.rescanMarkdown.message"))
         }
     }
 }

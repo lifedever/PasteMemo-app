@@ -11,6 +11,7 @@ final class OCRTaskCoordinator: ObservableObject {
     @Published var scanTotal = 0
     @Published var scanCompleted = 0
     @Published var isScanning = false
+    private var scanCancelRequested = false
 
     private init() {}
 
@@ -47,29 +48,23 @@ final class OCRTaskCoordinator: ObservableObject {
         isEnabled && item.contentType == .image && item.imageData != nil
     }
 
-    /// Scan image clips that still need OCR. When `includeCompleted` is true,
-    /// every image clip is reprocessed — including ones already marked `.done` —
-    /// which backs the one-time "re-scan all as Markdown" action so previously
-    /// recognized plain text is regenerated through the current engine.
-    func scanExistingImages(includeCompleted: Bool = false) {
+    func scanExistingImages() {
         guard let container = modelContainer, !isScanning else { return }
         let context = container.mainContext
         let descriptor = FetchDescriptor<ClipItem>()
         guard let items = try? context.fetch(descriptor) else { return }
-        let pending = items.filter {
-            $0.contentType == .image
-                && $0.imageData != nil
-                && (includeCompleted || $0.resolvedOCRStatus != OCRStatus.done)
-        }
+        let pending = items.filter { $0.contentType == .image && $0.resolvedOCRStatus != OCRStatus.done && $0.imageData != nil }
         guard !pending.isEmpty else { return }
 
         isScanning = true
         scanTotal = pending.count
         scanCompleted = 0
+        scanCancelRequested = false
 
         let ids = pending.map { $0.itemID }
         Task {
             for id in ids {
+                if scanCancelRequested { break }
                 await withCheckedContinuation { continuation in
                     enqueueForceThen(itemID: id) {
                         continuation.resume()
@@ -78,15 +73,16 @@ final class OCRTaskCoordinator: ObservableObject {
                 self.scanCompleted += 1
             }
             self.isScanning = false
+            self.scanCancelRequested = false
         }
     }
 
-    /// Number of OCR-able image clips, used to size the "re-scan all" confirmation.
-    func imageClipCount() -> Int {
-        guard let container = modelContainer else { return 0 }
-        let descriptor = FetchDescriptor<ClipItem>()
-        guard let items = try? container.mainContext.fetch(descriptor) else { return 0 }
-        return items.filter { $0.contentType == .image && $0.imageData != nil }.count
+    /// Stop the in-progress background scan after the item currently being
+    /// recognized finishes. Results already written are kept; remaining items
+    /// stay in their previous OCR state and can be scanned again later.
+    func cancelScan() {
+        guard isScanning else { return }
+        scanCancelRequested = true
     }
 
     private func enqueueForce(itemID: String) {

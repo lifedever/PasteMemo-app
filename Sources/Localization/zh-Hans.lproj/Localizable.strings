@@ -171,10 +171,7 @@
 "settings.ocr.auto" = "自动处理新图片";
 "settings.ocr.markdown" = "识别版面为 Markdown";
 "settings.ocr.markdown.hint" = "识别段落、列表和表格，并将文字保存为 Markdown。需要 macOS 26。";
-"settings.ocr.rescanMarkdown" = "全部重新识别为 Markdown";
-"settings.ocr.rescanMarkdown.confirm" = "将 %d 张图片重新识别为 Markdown？";
-"settings.ocr.rescanMarkdown.message" = "将对每张图片重新进行 OCR，并用 Markdown 替换已保存的文字。该过程在后台进行，可能需要一些时间。";
-"settings.ocr.rescanMarkdown.start" = "重新识别";
+"settings.ocr.stopScan" = "停止扫描";
 "settings.ocr.scanExisting" = "扫描已有图片";
 "settings.ocr.scanStarted" = "已开始在后台扫描已有图片。";
 "settings.ocr.hint" = "OCR 在本机完成，并让图片中的文字可被搜索。";
