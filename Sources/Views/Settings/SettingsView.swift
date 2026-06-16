@@ -651,9 +651,10 @@ struct PreviewPane: View {
             Section {
                 Toggle(L10n.tr("settings.showLinkURL"), isOn: $showLinkURL)
                 Toggle(L10n.tr("settings.webPreview"), isOn: $webPreviewEnabled)
-                Toggle(L10n.tr("settings.imageLinkPreview"), isOn: $imageLinkPreviewEnabled)
+                // 「预览时执行网页脚本」依赖「网页预览」开启,两者有联动,紧挨着放。
                 Toggle(L10n.tr("settings.previewExecutesJavaScript"), isOn: $previewExecutesJavaScript)
                     .disabled(!webPreviewEnabled || offlineModeEnabled)
+                Toggle(L10n.tr("settings.imageLinkPreview"), isOn: $imageLinkPreviewEnabled)
                 Toggle(L10n.tr("settings.richTextPreview"), isOn: $richTextPreviewEnabled)
             } header: {
                 Text(L10n.tr("settings.linkPreview"))
