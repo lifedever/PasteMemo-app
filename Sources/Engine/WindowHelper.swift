@@ -52,7 +52,10 @@ func showAutomationManagerWindow() {
         size: NSSize(width: 700, height: 500),
         floating: false,
         styleMask: [.titled, .closable, .miniaturizable, .resizable],
-        frameAutosaveName: "AutomationManagerWindow"
+        frameAutosaveName: "AutomationManagerWindow",
+        // 同主管理器:NavigationSplitView 侧边栏要通顶需要 fullSizeContentView,
+        // 由 bridgeToolbar 一并补上(否则侧边栏从标题栏下方才开始,顶部断一截)。
+        bridgeToolbar: true
     ) {
         AutomationManagerView()
             .modelContainer(PasteMemoApp.sharedModelContainer)
