@@ -378,7 +378,9 @@ struct ClipRow: View {
     @AppStorage("showLinkURL") private var showLinkURL = false
 
     private var displayTitle: String {
-        if item.isSensitive, !(isSelected && OptionKeyMonitor.shared.isOptionPressed) { return partialMask(item.content) }
+        // Holding Option reveals every sensitive row's content in the list, not just the
+        // selected one. (Each row reads `isOptionPressed` here, so all re-render on toggle.)
+        if item.isSensitive, !OptionKeyMonitor.shared.isOptionPressed { return partialMask(item.content) }
         if item.contentType == .link, !showLinkURL, let linkTitle = item.linkTitle {
             return linkTitle
         }
