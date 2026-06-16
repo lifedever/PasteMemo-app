@@ -7,6 +7,11 @@ import Darwin
 // 即使 socket 不存在(App 没启动),也要返回合法 MCP 响应,
 // 让 Agent 不报启动失败,只是看到 0 个工具。
 
+// 忽略 SIGPIPE:stdio(对端 = Claude)或 socket(对端 = 主 App)任一端断开时,
+// 往其写入默认会触发 SIGPIPE 终止本进程。忽略后写入改为返回 EPIPE,由现有的
+// 读循环 / 错误分支自然收尾,而不是被信号打死。
+signal(SIGPIPE, SIG_IGN)
+
 let socketPath: String = {
     // ~/Library/Application Support/com.lifedever.pastememo[.dev]/mcp.sock
     // 优先生产版,然后 dev 版,最后默认生产路径

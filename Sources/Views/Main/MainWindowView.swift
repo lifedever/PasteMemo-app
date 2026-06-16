@@ -1107,7 +1107,8 @@ struct MainWindowView: View {
         // to clipboard, post to a webhook, speak, write a file… PasteMemo just
         // pipes the clip in and triggers. We never touch NSPasteboard here.
         var currentContent = item.content
-        let currentImageData = item.imageData
+        // Verbatim original (not the thumbnail) — the Shortcut may save/process the image.
+        let currentImageData = item.imageBytesForExport()
         let currentContentType = item.contentType
 
         for action in rule.actions {

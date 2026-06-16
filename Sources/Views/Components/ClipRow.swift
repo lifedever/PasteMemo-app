@@ -268,7 +268,12 @@ struct ClipRow: View {
             let firstPath = item.content.components(separatedBy: "\n").first ?? ""
             if let label = imageFormatLabel(forPath: firstPath) { return label }
         }
-        // Raw pasteboard image: sniff magic bytes from stored thumbnail data.
+        // Raw clipboard image cached to disk: derive from the cache file's extension —
+        // `imageData` is now a JPEG thumbnail, so sniffing it would mislabel the original.
+        if let cached = item.originalImageFilePath {
+            if let label = imageFormatLabel(forPath: cached) { return label }
+        }
+        // Legacy raw clip (full original still inline): sniff magic bytes from the stored bytes.
         if let data = item.imageData {
             return imageFormatLabel(fromData: data)
         }

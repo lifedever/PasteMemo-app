@@ -1,5 +1,6 @@
 import AppKit
 import SwiftUI
+import Darwin
 
 // MARK: - Bridge for SwiftUI → AppKit window actions
 
@@ -29,6 +30,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        // 全局忽略 SIGPIPE。MCPSocketServer 给 AI Agent 客户端回包时,若对端(MCP
+        // helper / Claude)已断开,往那个 Unix socket send() 默认会触发 SIGPIPE,而
+        // 它的默认处置是「直接终止整个进程」—— 表现为 App「莫名其妙退出」且不留任何
+        // crash report(SIGPIPE 不生成崩溃报告)。忽略后 send()/write() 改为返回 -1
+        // 并置 errno=EPIPE(调用处本就丢弃返回值,无害),进程不再被杀。这是任何做
+        // socket/pipe IO 的 App 的标准防护;配合 MCPSocketServer 里 client fd 上的
+        // SO_NOSIGPIPE 双保险。放在最早的统一启动点,任何启动方式都先于 socket IO 跑到。
+        signal(SIGPIPE, SIG_IGN)
+
         let mode = UserDefaults.standard.string(forKey: "appearanceMode") ?? "system"
         AppDelegate.applyAppearance(mode)
 
@@ -40,6 +50,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         ClipboardManager.shared.modelContainer = PasteMemoApp.sharedModelContainer
         OCRTaskCoordinator.shared.configure(modelContainer: PasteMemoApp.sharedModelContainer)
+        // GC orphaned original-image cache files (deleted/expired clips, crash orphans).
+        // Runs before monitoring starts so a fresh copy can't be mistaken for an orphan.
+        ClipboardManager.sweepOrphanedOriginalImageCacheFiles(in: PasteMemoApp.sharedModelContainer.mainContext)
         if ProManager.AUTOMATION_ENABLED {
             BuiltInRules.seedIfNeeded(context: PasteMemoApp.sharedModelContainer.mainContext)
         }

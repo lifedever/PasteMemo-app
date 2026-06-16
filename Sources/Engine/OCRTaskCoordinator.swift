@@ -194,17 +194,12 @@ final class OCRTaskCoordinator: ObservableObject {
         }
     }
 
-    /// File-backed image clips store only a small thumbnail in `imageData`;
-    /// OCR'ing it would miss small text. Prefer the original file when it still
-    /// exists — Vision's URL handler streams it without loading the whole image.
+    /// Image clips keep only a small thumbnail in `imageData`; OCR'ing that would miss small
+    /// text. Prefer the original on disk — our cache file for raw screenshots, or the user's
+    /// file for Finder copies (both resolved by `sourceImageFileURL`). Vision's URL handler
+    /// streams it without loading the whole image. nil → fall back to `imageData` (legacy clips).
     private static func originalImageURL(for item: ClipItem) -> URL? {
-        let firstPath = item.content
-            .components(separatedBy: "\n")
-            .first(where: { !$0.isEmpty })
-        guard let path = firstPath, FileManager.default.fileExists(atPath: path) else {
-            return nil
-        }
-        return URL(fileURLWithPath: path)
+        item.sourceImageFileURL
     }
 
     private static func fetchItem(id: String, context: ModelContext) -> ClipItem? {

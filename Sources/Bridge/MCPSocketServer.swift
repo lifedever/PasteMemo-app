@@ -108,6 +108,12 @@ final class MCPSocketServer {
         source.setEventHandler {
             let clientFD = Darwin.accept(listenFD, nil, nil)
             if clientFD >= 0 {
+                // 给已断开的客户端 send() 默认会触发 SIGPIPE 打死整个 App(详见
+                // AppDelegate 里的全局 SIG_IGN 说明)。SO_NOSIGPIPE 是 macOS 上的
+                // 精准防护:让对这个 fd 的写入永远不产生 SIGPIPE,只返回 EPIPE。
+                // (macOS 不支持 Linux 的 MSG_NOSIGNAL,所以走 setsockopt。)
+                var on: Int32 = 1
+                _ = setsockopt(clientFD, SOL_SOCKET, SO_NOSIGPIPE, &on, socklen_t(MemoryLayout<Int32>.size))
                 Self.spawnClientReadLoop(fd: clientFD)
             }
         }

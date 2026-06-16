@@ -78,8 +78,10 @@ struct RelayItem: Identifiable {
     /// - Everything else → `.text` kind.
     @MainActor
     static func from(_ clip: ClipItem) -> RelayItem? {
-        // Pure image (screenshot / web-copied PNG with no file path)
-        if clip.contentType == .image, clip.content == "[Image]", let data = clip.imageData {
+        // Pure image (screenshot / web-copied PNG with no file path). Carry the verbatim
+        // ORIGINAL (the receiving device has no access to our local cache file), never the
+        // small thumbnail stored in `clip.imageData`.
+        if clip.contentType == .image, clip.content == "[Image]", let data = clip.imageBytesForExport() {
             return RelayItem(
                 content: clip.content,
                 imageData: data,

@@ -11,6 +11,7 @@ struct ClipItemSnapshot {
     let content: String
     let contentTypeRaw: String
     let imageData: Data?
+    let originalImageFilePath: String?
     let sourceApp: String?
     let sourceAppBundleID: String?
     let isFavorite: Bool
@@ -39,6 +40,7 @@ struct ClipItemSnapshot {
         content = item.content
         contentTypeRaw = item.contentTypeRaw
         imageData = item.imageData
+        originalImageFilePath = item.originalImageFilePath
         sourceApp = item.sourceApp
         sourceAppBundleID = item.sourceAppBundleID
         isFavorite = item.isFavorite
@@ -69,6 +71,7 @@ struct ClipItemSnapshot {
             content: content,
             contentType: type,
             imageData: imageData,
+            originalImageFilePath: originalImageFilePath,
             sourceApp: sourceApp,
             sourceAppBundleID: sourceAppBundleID,
             isFavorite: isFavorite,
@@ -182,11 +185,16 @@ final class DeleteUndoCoordinator {
     }
 
     /// Drops the undo handle without restoring. Called when the window expires
-    /// or a new delete supersedes this one.
+    /// or a new delete supersedes this one — i.e. the delete is now permanent, so
+    /// reclaim each clip's original-bytes cache file. (Undo runs through `undo()`,
+    /// not here, so a restored clip keeps its file.)
     func commitPending() {
         expirationTask?.cancel()
         expirationTask = nil
-        guard pending != nil else { return }
+        guard let committed = pending else { return }
+        for snapshot in committed.snapshots {
+            ClipboardManager.deleteOriginalCacheFile(at: snapshot.originalImageFilePath)
+        }
         pending = nil
         ToastCenter.shared.dismiss()
     }

@@ -170,6 +170,10 @@ final class ClipboardManager: ObservableObject {
         }
         if let bundleID = appInfo.bundleID, IgnoredAppsManager.shared.isIgnored(bundleID) { return }
         guard let newItem = captureCurrentClipboard(sourceApp: appInfo.name) else { return }
+        // If this capture is discarded (duplicate / skip-capture / dedup-reuse) instead of
+        // inserted, delete the original-bytes cache file it just wrote so it doesn't leak.
+        var didInsert = false
+        defer { if !didInsert { Self.deleteOriginalCacheFile(at: newItem.originalImageFilePath) } }
         newItem.sourceAppBundleID = appInfo.bundleID
 
         newItem.isSensitive = SensitiveDetector.isSensitive(
@@ -230,6 +234,7 @@ final class ClipboardManager: ObservableObject {
         }
 
         context.insert(newItem)
+        didInsert = true
         cleanExpiredItems(in: context)
         ClipItemStore.saveAndNotify(context)
 
@@ -304,9 +309,27 @@ final class ClipboardManager: ObservableObject {
             )
         }
 
-        // Image only (screenshots, copy image from apps that don't expose a file URL)
-        if rawHasImage {
-            return ClipItem(content: "[Image]", contentType: .image, imageData: rawImageData, sourceApp: sourceApp)
+        // Image only (screenshots, copy image from apps that don't expose a file URL).
+        // Persist the verbatim original to our own cache file (any size, no transcode) and keep
+        // only a small JPEG thumbnail in `imageData`, so list/preview never fault the full
+        // original off disk on selection. Paste/OCR read the original back via `sourceImageFileURL`
+        // (→ `originalImageFilePath`). If the cache write OR thumbnailing fails, fall back to
+        // storing the original inline in `imageData` so the image is never lost — just unoptimised.
+        if rawHasImage, let original = rawImageData {
+            if let cachePath = Self.writeOriginalImageToCache(original) {
+                if let thumb = Self.makeThumbnailData(from: original) {
+                    let item = ClipItem(content: "[Image]", contentType: .image, imageData: thumb,
+                                        originalImageFilePath: cachePath, sourceApp: sourceApp)
+                    // buildTitle measured the thumbnail; correct "Image (W×H)" to the original's dims.
+                    if let dims = ImageCache.shared.imageDimensions(for: original) {
+                        item.displayTitle = "Image (\(Int(dims.width))×\(Int(dims.height)))"
+                    }
+                    return item
+                }
+                // Thumbnail failed — don't leave an orphan cache file; fall through to inline.
+                try? FileManager.default.removeItem(atPath: cachePath)
+            }
+            return ClipItem(content: "[Image]", contentType: .image, imageData: original, sourceApp: sourceApp)
         }
 
         // Plain text (no rich formatting). Still attach the snapshot when the source wrote
@@ -350,11 +373,16 @@ final class ClipboardManager: ObservableObject {
     /// Upper bound on the total bytes we'll persist in a single pasteboard snapshot.
     /// Protects the database from pathological clipboards (huge embedded PDFs, etc.).
     private static let MAX_SNAPSHOT_BYTES = 50 * 1024 * 1024
-    /// Skip raw image clips above this size (un-encoded pasteboard PNG/JPEG/HEIC/TIFF bytes).
-    /// 20 MB covers any reasonable screenshot or app-rendered image; pathologically large
-    /// clipboards (Photoshop selections, RAW exports) get dropped to keep DB and backup
-    /// memory bounded.
-    private static let MAX_IMAGE_BYTES = 20 * 1024 * 1024
+    /// Hard ceiling on raw pasteboard image bytes we'll cache to disk (un-encoded
+    /// PNG/JPEG/HEIC/TIFF). Only an OOM safety valve for truly pathological clipboards
+    /// (multi-hundred-MB Photoshop selections / RAW). 200 MB comfortably covers any real
+    /// screenshot — an 8K Retina uncompressed TIFF is ~130 MB. (Tools like PixPin copy as
+    /// uncompressed TIFF, which is why the old 20 MB cap silently dropped ordinary full-screen
+    /// screenshots.) Must stay ≤ `MAX_PASTE_FILE_BYTES`: `imageBytesForExport()` reads the
+    /// cached original back through `loadOriginalImageData`, which rejects files above that
+    /// cap — a larger value here would leave a band where capture succeeds but paste silently
+    /// degrades to the thumbnail. UI never loads these bytes (it reads the small thumbnail).
+    private static let MAX_IMAGE_BYTES = MAX_PASTE_FILE_BYTES
     /// Skip rich-text clips above this size. RTFD with embedded images can balloon to GBs.
     private static let MAX_RICHTEXT_BYTES = 50 * 1024 * 1024
     // MAX_PASTE_FILE_BYTES lives at file scope (see top of file) so the nonisolated
@@ -425,6 +453,102 @@ final class ClipboardManager: ObservableObject {
         // NSImage which handles SVG natively on macOS 14+, then rasterize to JPEG
         // at FILE_THUMBNAIL_MAX_PIXELS so downstream preview code is unchanged.
         return rasterizeVectorThumbnail(at: fileURL)
+    }
+
+    /// Downsamples in-memory image bytes (a raw pasteboard TIFF/PNG) into a small JPEG
+    /// thumbnail stored in `ClipItem.imageData` for UI display. ImageIO streams the source
+    /// rather than fully decoding it, so even a 100 MB uncompressed TIFF is cheap. The full
+    /// original is kept separately on disk (`originalImageFilePath`). Returns nil on
+    /// undecodable input — the caller then keeps the original inline as a fallback.
+    nonisolated static func makeThumbnailData(from data: Data, maxPixels: Int = FILE_THUMBNAIL_MAX_PIXELS) -> Data? {
+        guard let source = CGImageSourceCreateWithData(data as CFData, [
+            kCGImageSourceShouldCache: false
+        ] as CFDictionary) else { return nil }
+        let options: [CFString: Any] = [
+            kCGImageSourceShouldCache: false,
+            kCGImageSourceCreateThumbnailFromImageAlways: true,
+            kCGImageSourceCreateThumbnailWithTransform: true,
+            kCGImageSourceThumbnailMaxPixelSize: maxPixels
+        ]
+        guard let cgImage = CGImageSourceCreateThumbnailAtIndex(source, 0, options as CFDictionary) else {
+            return nil
+        }
+        let bitmap = NSBitmapImageRep(cgImage: cgImage)
+        return bitmap.representation(using: .jpeg, properties: [.compressionFactor: 0.85])
+    }
+
+    /// `App Support/<bundleID>/Originals/` — holds verbatim-original cache files for raw
+    /// clipboard images. Created on demand. nil if it can't be created.
+    nonisolated static func originalsCacheDirectory() -> URL? {
+        let bundleID = Bundle.main.bundleIdentifier ?? "com.lifedever.pastememo"
+        let dir = URL.applicationSupportDirectory
+            .appendingPathComponent(bundleID, isDirectory: true)
+            .appendingPathComponent("Originals", isDirectory: true)
+        do {
+            try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+            return dir
+        } catch {
+            return nil
+        }
+    }
+
+    /// Writes verbatim original image bytes to a uniquely-named cache file (extension picked
+    /// from the magic bytes so the format reads back correctly) and returns its path.
+    /// Returns nil on any failure — the caller then keeps the original inline in `imageData`
+    /// so the image is never lost, just unoptimised.
+    nonisolated static func writeOriginalImageToCache(_ data: Data) -> String? {
+        guard let dir = originalsCacheDirectory() else { return nil }
+        let url = dir.appendingPathComponent("\(UUID().uuidString).\(imageFileExtension(for: data))")
+        do {
+            try data.write(to: url, options: .atomic)
+            return url.path
+        } catch {
+            return nil
+        }
+    }
+
+    /// File extension inferred from image magic bytes, so the cached original's format reads
+    /// back correctly (properties panel / badge derive the label from this). Defaults to "img".
+    private nonisolated static func imageFileExtension(for data: Data) -> String {
+        let b = [UInt8](data.prefix(12))
+        guard b.count >= 4 else { return "img" }
+        if b[0] == 0x89, b[1] == 0x50, b[2] == 0x4E, b[3] == 0x47 { return "png" }
+        if b[0] == 0xFF, b[1] == 0xD8, b[2] == 0xFF { return "jpg" }
+        if b[0] == 0x47, b[1] == 0x49, b[2] == 0x46 { return "gif" }
+        if (b[0] == 0x49 && b[1] == 0x49 && b[2] == 0x2A) ||
+           (b[0] == 0x4D && b[1] == 0x4D && b[2] == 0x00 && b[3] == 0x2A) { return "tiff" }
+        if b[0] == 0x42, b[1] == 0x4D { return "bmp" }
+        if b.count >= 12, b[0] == 0x52, b[1] == 0x49, b[2] == 0x46, b[3] == 0x46,
+           b[8] == 0x57, b[9] == 0x45, b[10] == 0x42, b[11] == 0x50 { return "webp" }
+        if b.count >= 8, b[4] == 0x66, b[5] == 0x74, b[6] == 0x79, b[7] == 0x70 { return "heic" }
+        return "img"
+    }
+
+    /// Removes an original-bytes cache file backing a capture that ended up discarded
+    /// (duplicate / skip-capture), so repeated duplicate copies don't leak files until the
+    /// next launch sweep. No-op for nil / non-cache clips.
+    nonisolated static func deleteOriginalCacheFile(at path: String?) {
+        guard let path, !path.isEmpty else { return }
+        try? FileManager.default.removeItem(atPath: path)
+    }
+
+    /// Launch-time GC for the Originals cache: deletes any cache file no live `ClipItem`
+    /// references (permanently-deleted clips, expired clips, crash-orphaned captures).
+    /// Both the on-disk file list and the referenced-path set are snapshotted synchronously
+    /// *before* monitoring starts, so a screenshot copied moments later (whose file isn't in
+    /// the snapshot) can never be swept by accident.
+    @MainActor
+    static func sweepOrphanedOriginalImageCacheFiles(in context: ModelContext) {
+        guard let dir = originalsCacheDirectory() else { return }
+        let files = (try? FileManager.default.contentsOfDirectory(at: dir, includingPropertiesForKeys: nil)) ?? []
+        guard !files.isEmpty else { return }
+        let descriptor = FetchDescriptor<ClipItem>()
+        let referenced = Set((try? context.fetch(descriptor))?.compactMap(\.originalImageFilePath) ?? [])
+        Task.detached(priority: .utility) {
+            for file in files where !referenced.contains(file.path) {
+                try? FileManager.default.removeItem(at: file)
+            }
+        }
     }
 
     private nonisolated static func rasterizeVectorThumbnail(at fileURL: URL) -> Data? {
@@ -812,6 +936,9 @@ final class ClipboardManager: ObservableObject {
         guard !expiredItems.isEmpty else { return }
 
         let hasGroupedItems = expiredItems.contains { $0.groupName != nil }
+        // Expiry is permanent (never undoable) — reclaim each clip's original-bytes cache
+        // file now rather than leaving it for the next launch sweep.
+        for item in expiredItems { Self.deleteOriginalCacheFile(at: item.originalImageFilePath) }
         ClipItemStore.deleteAndNotify(expiredItems, from: context)
         if hasGroupedItems {
             recalculateAllGroupCounts(context: context)
@@ -1007,10 +1134,14 @@ final class ClipboardManager: ObservableObject {
                     } else if let names = filenamesFromContent(item.content) {
                         pasteboard.setString(names, forType: .string)
                     }
-                } else if let data = item.imageData, let image = NSImage(data: data) {
-                    pasteboard.writeObjects([image])
-                } else if let data = item.imageData {
-                    pasteboard.setData(data, forType: .png)
+                } else if let data = item.imageBytesForExport() {
+                    // Raw image into a text-only app — hand back the verbatim original
+                    // (never the thumbnail), same as the general path below.
+                    if let image = NSImage(data: data) {
+                        pasteboard.writeObjects([image])
+                    } else {
+                        pasteboard.setData(data, forType: .png)
+                    }
                 }
             } else {
                 // writeObjects clears the pasteboard on each call, so combine URLs + image into a
@@ -1337,7 +1468,8 @@ final class ClipboardManager: ObservableObject {
                 } else {
                     groups.append(.files(paths))
                 }
-            } else if item.contentType == .image, item.content == "[Image]", let data = item.imageData {
+            } else if item.contentType == .image, item.content == "[Image]", let data = item.imageBytesForExport() {
+                // Multi-paste of a raw image: hand back the verbatim original, never the thumbnail.
                 groups.append(.image(data))
             } else if item.richTextData != nil, !downgradeRichText {
                 // Rich text: separate group to preserve formatting

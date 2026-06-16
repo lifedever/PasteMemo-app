@@ -131,7 +131,24 @@ final class ClipItem {
     /// Stored as raw String to avoid SwiftData enum deserialization crash on zombie objects.
     @Attribute(originalName: "contentType")
     var contentTypeRaw: String = ClipContentType.text.rawValue
+    /// In-app image bytes:
+    /// - Raw clipboard images (screenshots, `content == "[Image]"`): a small downsampled JPEG
+    ///   **thumbnail**. The verbatim original lives on disk at `originalImageFilePath`.
+    /// - File-backed image clips (Finder copies): likewise a thumbnail; original is the user's file.
+    /// - Link data-URIs / `.mixed`: the relevant decoded/redundant bytes.
+    /// - Legacy raw clips captured before the cache-file split: still the full original here.
+    ///
+    /// This is for **UI rendering only** (list rows, preview/detail). Paste / save / relay / OCR
+    /// must go through `imageBytesForExport()` / `sourceImageFileURL`, NEVER this directly —
+    /// otherwise a big copied image would paste back as the low-res thumbnail.
     @Attribute(.externalStorage) var imageData: Data?
+    /// Path to the verbatim-original cache file for raw clipboard images. Written by us at
+    /// capture time to `App Support/<bundleID>/Originals/<uuid>.<ext>`; the bytes are exactly
+    /// what was on the pasteboard (no transcode). Drives `sourceImageFileURL`, so preview /
+    /// properties / paste / OCR all read the full original from disk and the list/preview only
+    /// ever touch the small `imageData` thumbnail → no main-thread fault on selection.
+    /// nil for file-backed clips (they reference the user's own file) and legacy raw clips.
+    var originalImageFilePath: String?
     var sourceApp: String?
     var sourceAppBundleID: String?
     var isFavorite: Bool
@@ -171,6 +188,7 @@ final class ClipItem {
         content: String,
         contentType: ClipContentType = .text,
         imageData: Data? = nil,
+        originalImageFilePath: String? = nil,
         sourceApp: String? = nil,
         sourceAppBundleID: String? = nil,
         isFavorite: Bool = false,
@@ -187,6 +205,7 @@ final class ClipItem {
         self.content = content
         self.contentTypeRaw = contentType.rawValue
         self.imageData = imageData
+        self.originalImageFilePath = originalImageFilePath
         self.sourceApp = sourceApp
         self.sourceAppBundleID = sourceAppBundleID
         self.isFavorite = isFavorite
@@ -211,14 +230,21 @@ final class ClipItem {
         return raw.components(separatedBy: "\n").filter { !$0.isEmpty }
     }
 
-    /// Source file URL for a file-backed image clip if the original file is still
-    /// on disk. Returns nil for raw-pasteboard image clips (`content == "[Image]"`)
-    /// and for file-backed clips whose source has been deleted/moved.
+    /// On-disk URL of the original image bytes, if available. Two kinds:
+    /// 1. Raw clipboard images (screenshots): our own cache file at `originalImageFilePath`.
+    /// 2. File-backed clips (Finder copies): the user's source file referenced by `content`.
+    /// Returns nil if neither exists on disk (legacy raw clips, or a moved/deleted file).
     ///
-    /// File-backed image clips store only a small thumbnail in `imageData` — anything
-    /// that wants the original (paste, save-to-folder, OCR) reads from this URL.
+    /// Anything that wants the original (paste, save-to-folder, OCR) reads from this URL;
+    /// `imageData` only ever holds the small thumbnail.
     var sourceImageFileURL: URL? {
-        guard contentType == .image, content != "[Image]" else { return nil }
+        guard contentType == .image else { return nil }
+        // Raw clipboard image whose verbatim original we cached to disk.
+        if let cached = originalImageFilePath, FileManager.default.fileExists(atPath: cached) {
+            return URL(fileURLWithPath: cached)
+        }
+        // File-backed clip (Finder copy) — content is the user's file path.
+        guard content != "[Image]" else { return nil }
         let firstPath = content
             .components(separatedBy: "\n")
             .first(where: { !$0.isEmpty })
@@ -226,15 +252,15 @@ final class ClipItem {
         return URL(fileURLWithPath: path)
     }
 
-    /// Best image bytes to put on the pasteboard or write out as a new file.
-    /// File-backed clip with original on disk → reads the original (capped at
-    /// `MAX_PASTE_FILE_BYTES`); raw clips and file-backed clips whose source is
-    /// gone/oversized → falls back to stored `imageData` (full bytes for raw,
-    /// thumbnail for file-backed).
+    /// Best image bytes to put on the pasteboard or write out as a new file — the **verbatim
+    /// original** whenever we have it. Reads the on-disk original via `sourceImageFileURL`
+    /// (our cache file for raw clips, the user's file for Finder copies); only when no original
+    /// file exists (legacy raw clips that still hold full bytes in `imageData`, or a cache file
+    /// that failed to write / was lost) does it fall back to `imageData`.
     ///
-    /// Use this — never `imageData` directly — anywhere bytes are leaving the
-    /// app for paste, save-as, or relay. `imageData` is reserved for in-app UI
-    /// preview where the small/cheap version is what we want.
+    /// Use this — NEVER `imageData` directly — anywhere bytes leave the app for paste, save-as,
+    /// or relay. For new raw clips `imageData` is only the thumbnail, so reading it directly
+    /// would paste a low-res image.
     func imageBytesForExport() -> Data? {
         if let url = sourceImageFileURL,
            let original = ClipboardManager.loadOriginalImageData(at: url.path) {

@@ -1737,9 +1737,9 @@ struct QuickPanelView: View {
             return
         }
 
-        // Save pure images to folder
+        // Save pure images to folder — write the verbatim original, never the thumbnail.
         for img in imageItems {
-            guard let data = img.imageData else { continue }
+            guard let data = img.imageBytesForExport() else { continue }
             _ = clipboardManager.saveImageToFolder(data, folder: folder)
         }
 
@@ -1969,7 +1969,8 @@ struct QuickPanelView: View {
         // itself handles output (Copy to Clipboard, Post webhook, Show
         // Notification, etc). We never mutate NSPasteboard here.
         var currentContent = item.content
-        let currentImageData = item.imageData
+        // Verbatim original (not the thumbnail) — the Shortcut may save/process the image.
+        let currentImageData = item.imageBytesForExport()
         let currentContentType = item.contentType
 
         for action in rule.actions {
@@ -2417,15 +2418,15 @@ struct QuickPanelView: View {
             return
         }
 
-        // For file-backed clips, copy the original file directly. This preserves
-        // its exact bytes / format / metadata — re-encoding from `imageData`
-        // would only have given the small thumbnail.
+        // Genuine file-backed clip (Finder copy) → copy the user's original file directly,
+        // preserving its exact bytes / format / metadata and its filename.
+        // Raw pasteboard image (incl. our cached screenshots, content == "[Image]") → write
+        // the verbatim original bytes via `imageBytesForExport()` under a clean PasteMemo_<ts>
+        // name (copying our internal cache file would give it an ugly UUID filename).
         let savedURL: URL?
-        if let sourceURL = item.sourceImageFileURL {
+        if item.content != "[Image]", let sourceURL = item.sourceImageFileURL {
             savedURL = clipboardManager.copyImageFileToFolder(sourceURL: sourceURL, folder: folder)
         } else {
-            // Raw pasteboard image — write the stored bytes (which are the originals
-            // for raw clips) as a new file in the target folder.
             savedURL = clipboardManager.saveImageToFolder(
                 item.imageBytesForExport() ?? Data(),
                 folder: folder,
