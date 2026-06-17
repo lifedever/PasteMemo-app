@@ -189,34 +189,34 @@ final class ClipboardManager: ObservableObject {
 
         let context = container.mainContext
 
-        // Apply automation rules (text-based content only)
-        if newItem.contentType.isMergeable {
-            let originalContent = newItem.content
-            let result = AutomationEngine.shared.process(
-                content: newItem.content,
-                contentType: newItem.contentType,
-                sourceApp: appInfo.bundleID,
-                context: context
+        // Apply automation rules. Text transforms only touch text-like clips; image /
+        // file / etc. clips still flow through so metadata actions (move to group, pin,
+        // mark sensitive, skip capture) can run on them too. (issue #71)
+        let originalContent = newItem.content
+        let result = AutomationEngine.shared.process(
+            content: newItem.content,
+            contentType: newItem.contentType,
+            sourceApp: appInfo.bundleID,
+            context: context
+        )
+        switch result {
+        case .unchanged:
+            break
+        case .applied(let processed, _, let actions, let writeBack):
+            if actions.contains(.skipCapture) { return }
+            applyAutomationActions(actions, processed: processed, to: newItem, writeBack: writeBack, context: context)
+            if writeBack, newItem.contentType.isMergeable {
+                mirrorTransformedTextToPasteboard(processed, original: originalContent)
+            }
+        case .pendingConfirmation(let processed, let ruleName, _, let actions, let writeBack):
+            let accepted = showAutomationConfirmation(
+                ruleName: ruleName, original: newItem.content, processed: processed
             )
-            switch result {
-            case .unchanged:
-                break
-            case .applied(let processed, _, let actions, let writeBack):
+            if accepted {
                 if actions.contains(.skipCapture) { return }
                 applyAutomationActions(actions, processed: processed, to: newItem, writeBack: writeBack, context: context)
-                if writeBack {
+                if writeBack, newItem.contentType.isMergeable {
                     mirrorTransformedTextToPasteboard(processed, original: originalContent)
-                }
-            case .pendingConfirmation(let processed, let ruleName, _, let actions, let writeBack):
-                let accepted = showAutomationConfirmation(
-                    ruleName: ruleName, original: newItem.content, processed: processed
-                )
-                if accepted {
-                    if actions.contains(.skipCapture) { return }
-                    applyAutomationActions(actions, processed: processed, to: newItem, writeBack: writeBack, context: context)
-                    if writeBack {
-                        mirrorTransformedTextToPasteboard(processed, original: originalContent)
-                    }
                 }
             }
         }
@@ -1803,19 +1803,33 @@ extension ClipboardManager: ClipboardControllable {
     }
 
     private func applyAutomationActions(_ actions: [RuleAction], processed: String, to item: ClipItem, writeBack: Bool, context: ModelContext) {
-        let textChanged = processed != item.content
-        item.content = processed
-        item.displayTitle = ClipItem.buildTitle(content: processed, contentType: item.contentType)
-        // For a write-back rule that changed the text, also drop the captured rich
-        // text: we can't transform RTF, so the stored RTF would still carry the
-        // original (e.g. the newlines the rule just stripped), and a panel paste of
-        // this item would then disagree with the plain text we mirror to the live
-        // pasteboard. Archive-only rules (writeBack off) keep their rich text as
-        // before. (issue #62)
-        if actions.contains(.stripRichText) || (writeBack && textChanged) {
-            item.richTextData = nil
-            item.richTextType = nil
+        // Text mutations only make sense on text-like content. For images/files,
+        // `content` is a placeholder ("[Image]") or a file path — rewriting it (or
+        // re-deriving the title from it) would corrupt the clip — so non-mergeable
+        // types receive metadata actions only. (issue #71)
+        if item.contentType.isMergeable {
+            let textChanged = processed != item.content
+            item.content = processed
+            item.displayTitle = ClipItem.buildTitle(content: processed, contentType: item.contentType)
+            // For a write-back rule that changed the text, also drop the captured rich
+            // text: we can't transform RTF, so the stored RTF would still carry the
+            // original (e.g. the newlines the rule just stripped), and a panel paste of
+            // this item would then disagree with the plain text we mirror to the live
+            // pasteboard. Archive-only rules (writeBack off) keep their rich text as
+            // before. (issue #62)
+            if actions.contains(.stripRichText) || (writeBack && textChanged) {
+                item.richTextData = nil
+                item.richTextType = nil
+            }
         }
+        applyMetadataActions(actions, to: item, context: context)
+    }
+
+    /// Apply a rule's metadata-only actions (mark sensitive / pin / move to group) to a
+    /// clip. Shared by the capture path and the manual ⌘K / quick-panel apply paths so
+    /// all three stay in lockstep — text transforms stay per-caller because their
+    /// rich-text rules differ. Content-type agnostic: works on images/files too. (issue #71)
+    func applyMetadataActions(_ actions: [RuleAction], to item: ClipItem, context: ModelContext) {
         if actions.contains(.markSensitive) {
             item.isSensitive = true
         }

@@ -712,6 +712,7 @@ Verwenden Sie %@ zum Einfügen.";
 "automation.rule.triggerMode" = "Auslöser";
 "automation.rule.triggerMode.automatic" = "Automatisch";
 "automation.rule.triggerMode.manual" = "Nur manuell";
+"automation.rule.triggerMode.shortcutManualOnly" = "„Kurzbefehl ausführen“-Aktionen können nur manuell ausgelöst werden";
 "automation.rule.notifyBeforeApply" = "Vor Anwendung bestätigen";
 "automation.rule.newName" = "Neue Regel";
 "automation.condition.title" = "Bedingungen";

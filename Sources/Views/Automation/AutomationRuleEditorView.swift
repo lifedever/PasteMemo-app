@@ -14,6 +14,13 @@ struct AutomationRuleEditorView: View {
 
     private var isBuiltIn: Bool { rule.isBuiltIn }
 
+    /// Run-Shortcut actions are async and only run on the manual path; the automatic
+    /// capture path treats them as no-ops. So a rule containing one is locked to manual
+    /// triggering to keep it from silently never firing. (issue #71 review)
+    private var ruleHasRunShortcut: Bool {
+        rule.actions.contains { if case .runShortcut = $0 { return true }; return false }
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             Form {
@@ -137,7 +144,13 @@ struct AutomationRuleEditorView: View {
                 Text(L10n.tr("automation.rule.triggerMode.automatic")).tag(TriggerMode.automatic)
                 Text(L10n.tr("automation.rule.triggerMode.manual")).tag(TriggerMode.manual)
             }
-            .disabled(isBuiltIn)
+            .disabled(isBuiltIn || ruleHasRunShortcut)
+
+            if ruleHasRunShortcut {
+                Text(L10n.tr("automation.rule.triggerMode.shortcutManualOnly"))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
 
             if rule.triggerMode != .manual {
                 Toggle(isOn: Binding(
@@ -494,18 +507,20 @@ struct AutomationRuleEditorView: View {
                     set: { draftActions[index].value = .addSuffix(text: $0) }
                 ), prompt: Text(L10n.tr("automation.action.addSuffix.placeholder")))
             case .assignGroup(let name):
-                Text(L10n.tr("automation.action.assignGroup"))
-                Spacer()
-                Picker("", selection: Binding(
+                // Mirror the (normal-height) content-type condition picker exactly: label
+                // as the Picker's own argument, no separate Text/Spacer, no `.fixedSize()`.
+                // The previous empty-label `Picker("")` + `.fixedSize()` sized itself to its
+                // full inlined option list — that blew up the row height and shoved the
+                // "移入分组" label out of the visible card. (issue #71 review)
+                Picker(L10n.tr("automation.action.assignGroup"), selection: Binding(
                     get: { name },
                     set: { draftActions[index].value = .assignGroup(name: $0) }
                 )) {
                     let groups = (try? modelContext.fetch(FetchDescriptor<SmartGroup>(sortBy: [SortDescriptor(\.sortOrder)]))) ?? []
                     ForEach(groups, id: \.name) { group in
-                        Label(group.name, systemImage: group.icon).tag(group.name)
+                        Text(group.name).tag(group.name)
                     }
                 }
-                .fixedSize()
             case .markSensitive:
                 Text(L10n.tr("automation.action.markSensitive"))
             case .pin:
@@ -569,6 +584,11 @@ struct AutomationRuleEditorView: View {
         rule.conditions = draftConditions.map(\.value)
         rule.actions = draftActions.map(\.value)
         rule.conditionLogic = draftConditionLogic
+        // Run-Shortcut is manual-only — never leave such a rule on "automatic" where it
+        // would silently never fire. (issue #71 review)
+        if ruleHasRunShortcut {
+            rule.triggerMode = .manual
+        }
         rule.updatedAt = Date()
         try? modelContext.save()
         isEditing = false

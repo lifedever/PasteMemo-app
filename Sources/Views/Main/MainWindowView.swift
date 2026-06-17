@@ -1058,12 +1058,7 @@ struct MainWindowView: View {
             return
         }
 
-        let hasSpecialActions = actions.contains { action in
-            switch action {
-            case .stripRichText, .assignGroup, .markSensitive, .pin, .skipCapture: return true
-            default: return false
-            }
-        }
+        let hasSpecialActions = AutomationEngine.containsSpecialAction(actions)
 
         ClipItemStore.isBulkOperation = true
         for target in items {
@@ -1079,19 +1074,8 @@ struct MainWindowView: View {
                 target.richTextData = nil
                 target.richTextType = nil
             }
-            if actions.contains(.markSensitive) {
-                target.isSensitive = true
-            }
-            if actions.contains(.pin) {
-                target.isPinned = true
-            }
-            if let groupAction = actions.first(where: {
-                if case .assignGroup = $0 { return true }
-                return false
-            }), case .assignGroup(let name) = groupAction, !name.isEmpty {
-                target.groupName = name
-                ClipboardManager.shared.upsertSmartGroup(name: name, context: modelContext)
-            }
+            // markSensitive / pin / move-to-group — shared with the capture & quick-panel paths.
+            ClipboardManager.shared.applyMetadataActions(actions, to: target, context: modelContext)
             // skipCapture is only meaningful during clipboard capture, not manual apply
         }
         ClipItemStore.saveAndNotify(modelContext)

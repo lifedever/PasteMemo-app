@@ -699,6 +699,7 @@
 "automation.rule.triggerMode" = "Триггер";
 "automation.rule.triggerMode.automatic" = "Автоматический";
 "automation.rule.triggerMode.manual" = "Только вручную";
+"automation.rule.triggerMode.shortcutManualOnly" = "Действия «Выполнить быструю команду» можно запускать только вручную";
 "automation.rule.notifyBeforeApply" = "Подтверждать перед применением";
 "automation.rule.newName" = "Новое правило";
 "automation.condition.title" = "Условия";

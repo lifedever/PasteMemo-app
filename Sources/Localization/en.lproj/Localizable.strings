@@ -497,6 +497,7 @@
 "automation.rule.triggerMode" = "Trigger";
 "automation.rule.triggerMode.automatic" = "Automatic";
 "automation.rule.triggerMode.manual" = "Manual only";
+"automation.rule.triggerMode.shortcutManualOnly" = "Run Shortcut actions can only be triggered manually";
 "automation.rule.notifyBeforeApply" = "Confirm before applying";
 "automation.rule.newName" = "New Rule";
 "cmd.transform" = "Transform";

@@ -724,6 +724,7 @@ Utilisez %@ pour coller un par un.";
 "automation.rule.triggerMode" = "Déclenchement";
 "automation.rule.triggerMode.automatic" = "Automatique";
 "automation.rule.triggerMode.manual" = "Manuel uniquement";
+"automation.rule.triggerMode.shortcutManualOnly" = "Les actions « Exécuter le raccourci » ne peuvent être déclenchées que manuellement";
 "automation.rule.notifyBeforeApply" = "Confirmer avant d'appliquer";
 "automation.rule.newName" = "Nouvelle règle";
 

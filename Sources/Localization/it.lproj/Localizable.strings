@@ -688,6 +688,7 @@ Usa %@ per incollare uno per uno.";
 "automation.rule.triggerMode" = "Attivazione";
 "automation.rule.triggerMode.automatic" = "Automatica";
 "automation.rule.triggerMode.manual" = "Solo manuale";
+"automation.rule.triggerMode.shortcutManualOnly" = "Le azioni «Esegui comando rapido» possono essere attivate solo manualmente";
 "automation.rule.notifyBeforeApply" = "Conferma prima di applicare";
 "automation.rule.newName" = "Nuova regola";
 "automation.condition.title" = "Condizioni";

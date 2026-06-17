@@ -685,6 +685,7 @@
 "automation.rule.triggerMode" = "觸發模式";
 "automation.rule.triggerMode.automatic" = "自動觸發";
 "automation.rule.triggerMode.manual" = "僅手動觸發";
+"automation.rule.triggerMode.shortcutManualOnly" = "「執行捷徑」僅支援手動觸發";
 "automation.rule.notifyBeforeApply" = "觸發時彈窗確認";
 "automation.rule.newName" = "新規則";
 "automation.condition.title" = "當滿足以下條件";

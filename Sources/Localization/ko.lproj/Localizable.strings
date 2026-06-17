@@ -722,6 +722,7 @@
 "automation.rule.triggerMode" = "트리거";
 "automation.rule.triggerMode.automatic" = "자동";
 "automation.rule.triggerMode.manual" = "수동만";
+"automation.rule.triggerMode.shortcutManualOnly" = "'단축어 실행'은 수동 트리거만 지원합니다";
 "automation.rule.notifyBeforeApply" = "적용 전 확인";
 "automation.rule.newName" = "새 규칙";
 

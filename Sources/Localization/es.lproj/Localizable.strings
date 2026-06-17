@@ -724,6 +724,7 @@ Usa %@ para pegar uno por uno.";
 "automation.rule.triggerMode" = "Activador";
 "automation.rule.triggerMode.automatic" = "Automático";
 "automation.rule.triggerMode.manual" = "Solo manual";
+"automation.rule.triggerMode.shortcutManualOnly" = "Las acciones «Ejecutar atajo» solo se pueden activar manualmente";
 "automation.rule.notifyBeforeApply" = "Confirmar antes de aplicar";
 "automation.rule.newName" = "Nueva regla";
 

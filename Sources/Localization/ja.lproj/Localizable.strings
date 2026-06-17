@@ -743,6 +743,7 @@
 "automation.rule.triggerMode" = "トリガー";
 "automation.rule.triggerMode.automatic" = "自動";
 "automation.rule.triggerMode.manual" = "手動のみ";
+"automation.rule.triggerMode.shortcutManualOnly" = "「ショートカットを実行」は手動トリガーのみ対応しています";
 "automation.rule.notifyBeforeApply" = "適用前に確認する";
 "automation.rule.newName" = "新しいルール";
 

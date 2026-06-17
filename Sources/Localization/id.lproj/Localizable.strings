@@ -699,6 +699,7 @@ Gunakan %@ untuk menempel satu per satu.";
 "automation.rule.triggerMode" = "Pemicu";
 "automation.rule.triggerMode.automatic" = "Otomatis";
 "automation.rule.triggerMode.manual" = "Hanya manual";
+"automation.rule.triggerMode.shortcutManualOnly" = "Tindakan \"Jalankan Pintasan\" hanya bisa dipicu secara manual";
 "automation.rule.notifyBeforeApply" = "Konfirmasi sebelum menerapkan";
 "automation.rule.newName" = "Aturan Baru";
 "automation.condition.title" = "Kondisi";

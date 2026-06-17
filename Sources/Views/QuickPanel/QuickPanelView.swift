@@ -1951,7 +1951,10 @@ struct QuickPanelView: View {
 
         let processed = AutomationEngine.executeActions(actions, on: item.content)
         let contentChanged = processed != item.content
-        guard contentChanged || actions.contains(.stripRichText) else { return }
+        // Include metadata actions (move to group / pin / mark sensitive): a rule that
+        // only moves the clip to a group leaves the text unchanged, so guarding on
+        // contentChanged alone made such rules silently no-op here. (issue #71)
+        guard contentChanged || AutomationEngine.containsSpecialAction(actions) else { return }
         item.content = processed
         item.displayTitle = ClipItem.buildTitle(content: processed, contentType: item.contentType)
         // Clear rich text if content changed — otherwise stale rich formatting
@@ -1960,6 +1963,8 @@ struct QuickPanelView: View {
             item.richTextData = nil
             item.richTextType = nil
         }
+        // markSensitive / pin / move-to-group — shared with the capture & main-window paths.
+        ClipboardManager.shared.applyMetadataActions(actions, to: item, context: modelContext)
         ClipItemStore.saveAndNotify(modelContext)
     }
 

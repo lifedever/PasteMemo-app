@@ -54,7 +54,7 @@ final class AutomationEngine {
 
             if rule.notifyOnTrigger {
                 let displayName = rule.isBuiltIn ? L10n.tr(rule.name) : rule.name
-                sendNotification(ruleName: displayName, content: processed)
+                sendNotification(ruleName: displayName, content: processed, contentType: contentType)
             }
 
             if rule.notifyBeforeApply, needsConfirmation == nil {
@@ -138,9 +138,16 @@ final class AutomationEngine {
 
     // MARK: - Private
 
-    private func sendNotification(ruleName: String, content: String) {
+    private func sendNotification(ruleName: String, content: String, contentType: ClipContentType) {
         guard Bundle.main.bundleIdentifier != nil else { return }
-        let body = content.count > 80 ? String(content.prefix(80)) + "…" : content
+        // Text clips show a content preview; image/file/etc. clips show their type
+        // name instead of the raw "[Image]" placeholder or a file path. (issue #71)
+        let body: String
+        if contentType.isMergeable {
+            body = content.count > 80 ? String(content.prefix(80)) + "…" : content
+        } else {
+            body = contentType.label
+        }
         let notifContent = UNMutableNotificationContent()
         notifContent.title = L10n.tr("automation.notification.title") + ": " + ruleName
         notifContent.body = body
