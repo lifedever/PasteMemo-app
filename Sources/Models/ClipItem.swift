@@ -230,6 +230,36 @@ final class ClipItem {
         return raw.components(separatedBy: "\n").filter { !$0.isEmpty }
     }
 
+    /// The on-disk path this clip can reveal in Finder (⌘O), or nil when there's
+    /// nothing concrete to jump to. Two recognised shapes:
+    /// 1. File-style clips (`.file/.document/.archive/.application`) — the first
+    ///    path in `content` that still exists on disk. Media (`.image/.video/.audio`)
+    ///    is intentionally excluded: those keep Quick Look as their ⌘O action.
+    /// 2. Plain-text clips whose whole content is a single existing filesystem path
+    ///    — lets users jump to a path they copied as text even when capture-time
+    ///    detection classified it as `.text` (e.g. the file appeared afterwards).
+    /// A leading `~` is expanded; the returned path is always absolute so
+    /// `NSWorkspace.selectFile` resolves it correctly.
+    var revealableFinderPath: String? {
+        func existingAbsolutePath(_ raw: String) -> String? {
+            let expanded = (raw as NSString).expandingTildeInPath
+            return FileManager.default.fileExists(atPath: expanded) ? expanded : nil
+        }
+        switch contentType {
+        case .file, .document, .archive, .application:
+            guard content != "[Image]" else { return nil }
+            let first = content.components(separatedBy: "\n").first { !$0.isEmpty }
+            return first.flatMap(existingAbsolutePath)
+        case .text:
+            let trimmed = content.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !trimmed.isEmpty, !trimmed.contains("\n"),
+                  trimmed.hasPrefix("/") || trimmed.hasPrefix("~") else { return nil }
+            return existingAbsolutePath(trimmed)
+        default:
+            return nil
+        }
+    }
+
     /// On-disk URL of the original image bytes, if available. Two kinds:
     /// 1. Raw clipboard images (screenshots): our own cache file at `originalImageFilePath`.
     /// 2. File-backed clips (Finder copies): the user's source file referenced by `content`.

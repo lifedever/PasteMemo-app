@@ -64,6 +64,10 @@ struct QuickPanelView: View {
     @State private var store = ClipItemStore()
     @State private var searchText = ""
     @State private var groupSuggestionIndex = -1
+    /// Measured natural height of the `/` suggestion list. Drives a content-fitting,
+    /// max-capped frame so a long match list scrolls instead of stretching the panel.
+    /// Seeded at the cap so the first frame is already bounded (never grows the window).
+    @State private var suggestionsContentHeight: CGFloat = 280
     @State private var pill: PillSelection?
     /// 刚打开面板的前几十毫秒内抑制建议浮层渲染，避免上次残留状态首帧闪现
     @State private var suggestionsArmed = false
@@ -362,8 +366,11 @@ struct QuickPanelView: View {
             if pill != nil {
                 // Pill is active — search text is just keyword within the pill's scope
                 store.searchText = searchText
-            } else if searchText.hasPrefix(Self.GROUP_SEARCH_PREFIX) {
-                // Typing / for suggestion selection — don't search yet
+            } else if isSlashSubmenuMode {
+                // The `/` submenu is in control (query selects a group/type/app), so
+                // pause content search. When nothing matches — or the user pressed Esc
+                // to leave the submenu — we fall through and search the `/`-prefixed
+                // query literally (e.g. clips starting with "/advisor").
                 store.searchText = ""
             } else {
                 store.searchText = searchText
@@ -425,12 +432,20 @@ struct QuickPanelView: View {
         }
     }
 
+    /// Single source of truth for "the `/` submenu is driving the panel": the user
+    /// typed `/`, no pill is active, and there's either a match or just a bare `/`.
+    /// While true, content search is paused (the query selects a group/type/app);
+    /// Esc exits this mode (see keyDown 53) by clearing `userTypedSlash`, which flips
+    /// the panel back to a literal content search of the same query.
+    private var isSlashSubmenuMode: Bool {
+        guard userTypedSlash, pill == nil,
+              searchText.hasPrefix(Self.GROUP_SEARCH_PREFIX) else { return false }
+        return totalSuggestionCount > 0 || searchText == Self.GROUP_SEARCH_PREFIX
+    }
+
     private var isShowingSuggestions: Bool {
-        guard suggestionsArmed else { return false }
-        guard userTypedSlash else { return false }
-        guard pill == nil else { return false }
-        guard searchText.hasPrefix(Self.GROUP_SEARCH_PREFIX) else { return false }
-        return !currentSuggestionGroups.isEmpty || !currentSuggestionApps.isEmpty || !currentSuggestionTypes.isEmpty
+        guard suggestionsArmed, isSlashSubmenuMode else { return false }
+        return totalSuggestionCount > 0
     }
 
     /// `/` 建议里是否展示分组（tabBar 当前为类型时才展示）
@@ -438,23 +453,33 @@ struct QuickPanelView: View {
     /// `/` 建议里是否展示类型（tabBar 当前为分组时才展示）
     private var shouldSuggestTypes: Bool { secondaryRow == .groups }
 
+    /// Cap each `/` suggestion section so the dropdown stays short — an unbounded
+    /// match list (e.g. `/c` matching dozens of apps) both overflows visually and
+    /// stretches the panel. Most-relevant entries (highest count) surface first;
+    /// users narrow further by typing more.
+    private static let SUGGESTION_SECTION_LIMIT = 8
+
     private var currentSuggestionGroups: [(name: String, icon: String, count: Int, preservesItems: Bool)] {
         guard shouldSuggestGroups else { return [] }
         guard searchText.hasPrefix(Self.GROUP_SEARCH_PREFIX) else { return [] }
         let query = String(searchText.dropFirst()).trimmingCharacters(in: .whitespaces).lowercased()
-        return store.sidebarCounts.byGroup.filter { group in
-            guard group.count > 0 else { return false }
-            return query.isEmpty || group.name.lowercased().contains(query)
-        }
+        let matches = store.sidebarCounts.byGroup
+            .filter { group in
+                guard group.count > 0 else { return false }
+                return query.isEmpty || group.name.lowercased().contains(query)
+            }
+            .sorted { $0.count > $1.count }
+        return Array(matches.prefix(Self.SUGGESTION_SECTION_LIMIT))
     }
 
     private var currentSuggestionTypes: [ClipContentType] {
         guard shouldSuggestTypes else { return [] }
         guard searchText.hasPrefix(Self.GROUP_SEARCH_PREFIX) else { return [] }
         let query = String(searchText.dropFirst()).trimmingCharacters(in: .whitespaces).lowercased()
-        return availableContentTypes.filter { type in
+        let matches = availableContentTypes.filter { type in
             query.isEmpty || type.label.lowercased().contains(query)
         }
+        return Array(matches.prefix(Self.SUGGESTION_SECTION_LIMIT))
     }
 
     private var currentSuggestionApps: [(name: String, count: Int)] {
@@ -469,12 +494,16 @@ struct QuickPanelView: View {
                 return (name: name, count: count)
             }
             .sorted { $0.count > $1.count }
-        return query.isEmpty ? Array(apps.prefix(5)) : apps
+        let limit = query.isEmpty ? 5 : Self.SUGGESTION_SECTION_LIMIT
+        return Array(apps.prefix(limit))
     }
 
     private var totalSuggestionCount: Int {
         currentSuggestionGroups.count + currentSuggestionTypes.count + currentSuggestionApps.count
     }
+
+    /// Tallest the `/` suggestion dropdown is allowed to get; beyond this it scrolls.
+    private static let suggestionsMaxHeight: CGFloat = 280
 
     @ViewBuilder
     private var groupSuggestions: some View {
@@ -482,42 +511,62 @@ struct QuickPanelView: View {
         let types = currentSuggestionTypes
         let apps = currentSuggestionApps
         if !groups.isEmpty || !types.isEmpty || !apps.isEmpty {
-            VStack(spacing: 0) {
-                if !groups.isEmpty {
-                    suggestionSectionHeader(L10n.tr("filter.groups"))
-                    ForEach(Array(groups.enumerated()), id: \.element.name) { idx, group in
-                        suggestionRow(
-                            icon: group.icon, name: group.name, count: group.count,
-                            isSelected: idx == groupSuggestionIndex
-                        ) {
-                            selectSuggestion(.group(name: group.name, icon: group.icon, count: group.count))
+            ScrollViewReader { proxy in
+                ScrollView(.vertical, showsIndicators: true) {
+                    VStack(spacing: 0) {
+                        if !groups.isEmpty {
+                            suggestionSectionHeader(L10n.tr("filter.groups"))
+                            ForEach(Array(groups.enumerated()), id: \.element.name) { idx, group in
+                                suggestionRow(
+                                    icon: group.icon, name: group.name, count: group.count,
+                                    isSelected: idx == groupSuggestionIndex
+                                ) {
+                                    selectSuggestion(.group(name: group.name, icon: group.icon, count: group.count))
+                                }
+                                .id(idx)
+                            }
+                        }
+                        if !types.isEmpty {
+                            if !groups.isEmpty { Divider().padding(.vertical, 2) }
+                            suggestionSectionHeader(L10n.tr("filter.types"))
+                            let offset = groups.count
+                            ForEach(Array(types.enumerated()), id: \.element) { idx, type in
+                                suggestionRow(
+                                    icon: type.icon, name: type.label, count: store.sidebarCounts.byType[type] ?? 0,
+                                    isSelected: (offset + idx) == groupSuggestionIndex
+                                ) {
+                                    selectSuggestion(.type(type))
+                                }
+                                .id(offset + idx)
+                            }
+                        }
+                        if !apps.isEmpty {
+                            if !groups.isEmpty || !types.isEmpty { Divider().padding(.vertical, 2) }
+                            suggestionSectionHeader(L10n.tr("filter.apps"))
+                            let offset = groups.count + types.count
+                            ForEach(Array(apps.enumerated()), id: \.element.name) { idx, app in
+                                suggestionRow(
+                                    icon: "app.dashed", appName: app.name, name: app.name, count: app.count,
+                                    isSelected: (offset + idx) == groupSuggestionIndex
+                                ) {
+                                    selectSuggestion(.app(name: app.name, count: app.count))
+                                }
+                                .id(offset + idx)
+                            }
                         }
                     }
-                }
-                if !types.isEmpty {
-                    if !groups.isEmpty { Divider().padding(.vertical, 2) }
-                    suggestionSectionHeader(L10n.tr("filter.types"))
-                    let offset = groups.count
-                    ForEach(Array(types.enumerated()), id: \.element) { idx, type in
-                        suggestionRow(
-                            icon: type.icon, name: type.label, count: store.sidebarCounts.byType[type] ?? 0,
-                            isSelected: (offset + idx) == groupSuggestionIndex
-                        ) {
-                            selectSuggestion(.type(type))
+                    .background(
+                        GeometryReader { geo in
+                            Color.clear.preference(key: SuggestionsHeightKey.self, value: geo.size.height)
                         }
-                    }
+                    )
                 }
-                if !apps.isEmpty {
-                    if !groups.isEmpty || !types.isEmpty { Divider().padding(.vertical, 2) }
-                    suggestionSectionHeader(L10n.tr("filter.apps"))
-                    let offset = groups.count + types.count
-                    ForEach(Array(apps.enumerated()), id: \.element.name) { idx, app in
-                        suggestionRow(
-                            icon: "app.dashed", appName: app.name, name: app.name, count: app.count,
-                            isSelected: (offset + idx) == groupSuggestionIndex
-                        ) {
-                            selectSuggestion(.app(name: app.name, count: app.count))
-                        }
+                .frame(height: min(suggestionsContentHeight, Self.suggestionsMaxHeight))
+                .onPreferenceChange(SuggestionsHeightKey.self) { suggestionsContentHeight = $0 }
+                .onChange(of: groupSuggestionIndex) {
+                    guard groupSuggestionIndex >= 0 else { return }
+                    withAnimation(.easeOut(duration: 0.12)) {
+                        proxy.scrollTo(groupSuggestionIndex, anchor: .center)
                     }
                 }
             }
@@ -928,7 +977,7 @@ struct QuickPanelView: View {
                 WrappingHStack(spacing: 12, lineSpacing: 6, alignment: .trailing) {
                     footerKey("←→", L10n.tr("quick.switchType"))
                     footerKey("↑↓", L10n.tr("quick.navigate"))
-                    footerKey("⌘O", currentItem?.contentType == .link ? L10n.tr("quick.openLink") : L10n.tr("quick.preview"))
+                    footerKey("⌘O", cmdOFooterLabel)
                     footerKey("⌘T", isPanelPinned ? L10n.tr("quickPanel.unpin") : L10n.tr("quickPanel.pin"))
                     if !HotkeyManager.shared.isManagerCleared {
                         footerKey(
@@ -1347,7 +1396,13 @@ struct QuickPanelView: View {
                 return event
             case 53:
                 if isShowingSuggestions {
-                    searchText = ""
+                    // Dismiss the `/` submenu without clearing the box, and run the
+                    // query as a literal content search. Covers "I wanted to search
+                    // content but the app/group menu popped up" — Esc escapes the menu,
+                    // keeps "/cla", and searches it as text. Re-typing `/` from an empty
+                    // box brings the submenu back.
+                    userTypedSlash = false
+                    store.searchText = searchText
                     groupSuggestionIndex = -1
                     return nil
                 }
@@ -1573,9 +1628,13 @@ struct QuickPanelView: View {
             ToastCenter.shared.show(ToastDescriptor(message: L10n.tr("action.copied"), icon: .success))
         case .showInFinder:
             if let item = currentItem {
-                let paths = item.content.components(separatedBy: "\n").filter { !$0.isEmpty }
-                if let first = paths.first {
-                    NSWorkspace.shared.selectFile(first, inFileViewerRootedAtPath: "")
+                // Prefer the resolved (tilde-expanded, existence-checked) path; fall
+                // back to the first raw path so media file clips still reveal.
+                let path = item.revealableFinderPath
+                    ?? item.content.components(separatedBy: "\n").first { !$0.isEmpty }
+                        .map { ($0 as NSString).expandingTildeInPath }
+                if let path {
+                    NSWorkspace.shared.selectFile(path, inFileViewerRootedAtPath: URL(fileURLWithPath: path).deletingLastPathComponent().path)
                 }
             }
         case .transform(let ruleAction):
@@ -2042,12 +2101,24 @@ struct QuickPanelView: View {
         }
     }
 
+    /// ⌘O footer caption — links open, file/path clips reveal in Finder, others Quick Look.
+    private var cmdOFooterLabel: String {
+        guard let item = currentItem else { return L10n.tr("quick.preview") }
+        if item.contentType == .link { return L10n.tr("quick.openLink") }
+        if item.revealableFinderPath != nil { return L10n.tr("cmd.showInFinder") }
+        return L10n.tr("quick.preview")
+    }
+
     private func handleOpenLink() {
         guard let item = currentItem else { return }
         if item.contentType == .link,
            let url = item.resolvedURL {
             NSWorkspace.shared.open(url)
             handleDismiss()
+        } else if let path = item.revealableFinderPath {
+            // File / path clips: ⌘O jumps to the item in Finder instead of Quick Look.
+            handleDismiss()
+            NSWorkspace.shared.selectFile(path, inFileViewerRootedAtPath: URL(fileURLWithPath: path).deletingLastPathComponent().path)
         } else {
             QuickLookHelper.shared.toggle(item: item)
         }
@@ -2471,5 +2542,14 @@ struct KeyCap: View {
             .padding(.horizontal, 5)
             .padding(.vertical, 2)
             .background(Color.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: 4))
+    }
+}
+
+/// Reports the natural height of the `/` suggestion list so its scroll container
+/// can fit content while capping at `suggestionsMaxHeight`.
+private struct SuggestionsHeightKey: PreferenceKey {
+    static let defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = max(value, nextValue())
     }
 }

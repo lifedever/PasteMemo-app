@@ -34,6 +34,12 @@ struct QuickPreviewPane: View {
         item.contentType == .video && !item.content.contains("\n")
     }
 
+    /// Absolute path when a `.text` clip is itself an existing filesystem path,
+    /// so the preview can render it as a revealable file (see `quickContentArea`).
+    private var recognizedTextPath: String? {
+        item.contentType == .text ? item.revealableFinderPath : nil
+    }
+
     private var heavyPreviewDelay: Duration {
         switch item.contentType {
         case .code, .link:
@@ -163,6 +169,18 @@ struct QuickPreviewPane: View {
         } else if item.contentType == .code {
             codePreview
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
+        } else if let textPath = recognizedTextPath {
+            // Plain-text clip whose content is an existing filesystem path → show it
+            // like a file so users can reveal it in Finder (⌘O), same as `.file` clips.
+            SingleFilePreview(
+                path: textPath,
+                iconSize: 48,
+                nameFont: .system(size: 13, weight: .medium),
+                shortcutHint: "⌘O",
+                onOpenInFinder: { QuickPanelWindowController.shared.dismiss() }
+            )
+            .padding(14)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else if item.contentType == .text {
             previewContent
                 .padding(14)
@@ -185,6 +203,7 @@ struct QuickPreviewPane: View {
                 path: item.content.trimmingCharacters(in: .whitespacesAndNewlines),
                 iconSize: 48,
                 nameFont: .system(size: 13, weight: .medium),
+                shortcutHint: "⌘O",
                 onOpenInFinder: { QuickPanelWindowController.shared.dismiss() }
             )
             .padding(14)
@@ -497,7 +516,6 @@ struct QuickPreviewPane: View {
     // MARK: - Link Static Preview
 
     @State private var isLinkButtonHovered = false
-    @State private var isCopyButtonHovered = false
 
     @ViewBuilder
     private var codePreview: some View {
@@ -562,16 +580,6 @@ struct QuickPreviewPane: View {
                                 Text(L10n.tr("detail.openInBrowser"))
                                     .font(.system(size: 12))
                             }
-                        }
-                        .buttonStyle(.bordered)
-                        .controlSize(.small)
-
-                        Button {
-                            NSPasteboard.general.clearContents()
-                            NSPasteboard.general.setString(url.absoluteString, forType: .string)
-                        } label: {
-                            Label(L10n.tr("action.copy"), systemImage: "doc.on.doc")
-                                .font(.system(size: 12))
                         }
                         .buttonStyle(.bordered)
                         .controlSize(.small)
@@ -655,38 +663,29 @@ struct QuickPreviewPane: View {
                     .truncationMode(.middle)
             }
 
-            HStack(spacing: 12) {
-                Button {
-                    NSWorkspace.shared.open(url)
-                } label: {
-                    HStack(spacing: 4) {
-                        Image(nsImage: defaultBrowserIcon)
-                            .resizable()
-                            .aspectRatio(contentMode: .fit)
-                            .frame(width: 16, height: 16)
-                        Text(L10n.tr("detail.openInBrowser"))
-                            .font(.system(size: 12))
-                    }
-                    .foregroundStyle(isLinkButtonHovered ? .primary : .secondary)
+            Button {
+                NSWorkspace.shared.open(url)
+            } label: {
+                HStack(spacing: 6) {
+                    Image(nsImage: defaultBrowserIcon)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: 16, height: 16)
+                    Text(L10n.tr("detail.openInBrowser"))
+                        .font(.system(size: 12))
+                    // ⌘O opens the link in the browser — mirror the file preview hint.
+                    Text("⌘O")
+                        .font(.system(size: 11, weight: .semibold, design: .rounded))
+                        .foregroundStyle(.secondary)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 3)
+                        .background(Color.primary.opacity(0.08), in: RoundedRectangle(cornerRadius: 4))
+                        .padding(.leading, 2)
                 }
-                .buttonStyle(.plain)
-                .onHover { isLinkButtonHovered = $0 }
-
-                Button {
-                    NSPasteboard.general.clearContents()
-                    NSPasteboard.general.setString(url.absoluteString, forType: .string)
-                } label: {
-                    HStack(spacing: 4) {
-                        Image(systemName: "doc.on.doc")
-                            .font(.system(size: 13))
-                        Text(L10n.tr("action.copy"))
-                            .font(.system(size: 12))
-                    }
-                    .foregroundStyle(isCopyButtonHovered ? .primary : .secondary)
-                }
-                .buttonStyle(.plain)
-                .onHover { isCopyButtonHovered = $0 }
+                .foregroundStyle(isLinkButtonHovered ? .primary : .secondary)
             }
+            .buttonStyle(.plain)
+            .onHover { isLinkButtonHovered = $0 }
         }
         .padding(.horizontal, 16)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)

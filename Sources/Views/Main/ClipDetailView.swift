@@ -839,6 +839,9 @@ struct SingleFilePreview: View {
     let path: String
     var iconSize: CGFloat = 64
     var nameFont: Font = .system(size: 15, weight: .medium)
+    /// Optional keyboard hint (e.g. "⌘O") shown next to the reveal button. The
+    /// Quick Panel passes this so users see the shortcut; the main window omits it.
+    var shortcutHint: String? = nil
     var onOpenInFinder: (() -> Void)?
     @State private var isButtonHovered = false
 
@@ -870,15 +873,27 @@ struct SingleFilePreview: View {
 
             Button {
                 onOpenInFinder?()
-                NSWorkspace.shared.selectFile(path, inFileViewerRootedAtPath: URL(fileURLWithPath: path).deletingLastPathComponent().path)
+                let resolved = (path as NSString).expandingTildeInPath
+                NSWorkspace.shared.selectFile(resolved, inFileViewerRootedAtPath: URL(fileURLWithPath: resolved).deletingLastPathComponent().path)
             } label: {
-                HStack(spacing: 4) {
+                HStack(spacing: 6) {
                     Image(nsImage: finderAppIcon)
                         .resizable()
                         .aspectRatio(contentMode: .fit)
                         .frame(width: 16, height: 16)
                     Text(L10n.tr("detail.openInFinder"))
                         .font(.system(size: 12))
+                    if let shortcutHint {
+                        // Match the footer keycap style (footerKey) so it reads as a
+                        // proper shortcut chip rather than a cramped monospaced tag.
+                        Text(shortcutHint)
+                            .font(.system(size: 11, weight: .semibold, design: .rounded))
+                            .foregroundStyle(.secondary)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 3)
+                            .background(Color.primary.opacity(0.08), in: RoundedRectangle(cornerRadius: 4))
+                            .padding(.leading, 2)
+                    }
                 }
                 .foregroundStyle(isButtonHovered ? .primary : .secondary)
             }

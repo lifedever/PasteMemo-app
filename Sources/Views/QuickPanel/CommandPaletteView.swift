@@ -213,7 +213,9 @@ struct CommandPaletteContent: View {
            canOpenInPreview(item) {
             list.append(.openInPreview)
         }
-        if let item, item.contentType.isFileBased {
+        // File-based clips always offer "Show in Finder"; plain-text clips do too
+        // when their content is itself an existing filesystem path.
+        if let item, item.contentType.isFileBased || item.revealableFinderPath != nil {
             list.append(.showInFinder)
         }
         list.append(.copy)
