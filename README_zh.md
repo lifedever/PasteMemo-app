@@ -154,9 +154,11 @@ brew upgrade --cask pastememo
 | `PasteMemo-x.x.x-arm64.dmg` | Apple Silicon (M1/M2/M3/M4) |
 | `PasteMemo-x.x.x-x86_64.dmg` | Intel Mac |
 
-> 首次打开时：**右键点击 PasteMemo.app -> 打开 -> 打开**
+> **首次打开**（应用未做苹果公证，macOS 会拦截），任选一种放行：
+> - 终端执行：`xattr -cr /Applications/PasteMemo.app`，然后打开
+> - 或：**系统设置 -> 隐私与安全性 -> 下滑找到 PasteMemo -> 仍要打开**
 >
-> 或在终端执行：`xattr -cr /Applications/PasteMemo.app`
+> 旧版 macOS 也可右键点击 PasteMemo.app -> 打开 -> 打开；该方式在 **macOS 15 / 26 已失效**，请用上面两种方法。
 
 ### 从源码构建
 

@@ -154,9 +154,11 @@ Grab the latest `.dmg` from [Releases](https://github.com/lifedever/PasteMemo-ap
 | `PasteMemo-x.x.x-arm64.dmg` | Apple Silicon (M1/M2/M3/M4) |
 | `PasteMemo-x.x.x-x86_64.dmg` | Intel Mac |
 
-> On first launch: **Right-click PasteMemo.app -> Open -> Open**
+> **First launch** (the app isn't notarized yet, so macOS blocks it). Allow it one of two ways:
+> - Run in Terminal: `xattr -cr /Applications/PasteMemo.app`, then open it
+> - Or: **System Settings -> Privacy & Security -> scroll down -> Open Anyway**
 >
-> Or run: `xattr -cr /Applications/PasteMemo.app`
+> On older macOS you can also right-click PasteMemo.app -> Open -> Open. This shortcut **no longer works on macOS 15 / 26** — use one of the two methods above.
 
 ### Build from Source
 
