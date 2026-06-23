@@ -979,6 +979,8 @@ struct QuickPanelView: View {
             }
         )
         .id(scrollResetToken)
+        // 离开瀑布流（切走/关面板）后，把网格解码留下的高水位脏页还给系统。
+        .onDisappear { ImageCache.shared.reclaimFreedMemory() }
     }
 
     // MARK: - Empty State
@@ -2232,7 +2234,11 @@ struct QuickPanelView: View {
         }
     }
 
-    private func handleDismiss() { HotkeyManager.shared.hideQuickPanel() }
+    private func handleDismiss() {
+        HotkeyManager.shared.hideQuickPanel()
+        // 浏览结束，把刚才解码图片产生的高水位脏页还给系统（后台、不卡 UI）。
+        ImageCache.shared.reclaimFreedMemory()
+    }
 
     private var isTargetFinder: Bool {
         clipboardManager.isFinderApp(QuickPanelWindowController.shared.previousApp)

@@ -894,3 +894,5 @@ Gunakan %@ untuk menempel satu per satu.";
 "settings.imageGridDensity.sparse" = "Renggang";
 "settings.imageGridDensity.medium" = "Sedang";
 "settings.imageGridDensity.dense" = "Rapat";
+
+"settings.ocr.memoryHint" = "Saat aktif, PasteMemo mengenali teks pada gambar di latar belakang dengan Vision, yang dapat menambah penggunaan memori.";

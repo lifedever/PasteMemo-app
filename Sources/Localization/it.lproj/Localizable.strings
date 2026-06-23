@@ -884,3 +884,5 @@ Usa %@ per incollare uno per uno.";
 "settings.imageGridDensity.sparse" = "Rada";
 "settings.imageGridDensity.medium" = "Media";
 "settings.imageGridDensity.dense" = "Fitta";
+
+"settings.ocr.memoryHint" = "Se attivo, PasteMemo riconosce il testo nelle immagini in background tramite Vision, il che può aumentare l’uso della memoria.";

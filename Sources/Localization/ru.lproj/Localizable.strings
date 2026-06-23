@@ -894,3 +894,5 @@
 "settings.imageGridDensity.sparse" = "Разреженная";
 "settings.imageGridDensity.medium" = "Средняя";
 "settings.imageGridDensity.dense" = "Плотная";
+
+"settings.ocr.memoryHint" = "Когда включено, PasteMemo распознаёт текст на изображениях в фоне с помощью Vision, что может увеличить расход памяти.";

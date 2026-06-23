@@ -924,3 +924,5 @@ Utilisez %@ pour coller un par un.";
 "settings.imageGridDensity.sparse" = "Espacée";
 "settings.imageGridDensity.medium" = "Moyenne";
 "settings.imageGridDensity.dense" = "Dense";
+
+"settings.ocr.memoryHint" = "Une fois activé, PasteMemo reconnaît le texte des images en arrière-plan via Vision, ce qui peut augmenter la mémoire utilisée.";

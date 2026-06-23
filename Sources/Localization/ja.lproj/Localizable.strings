@@ -920,3 +920,5 @@
 "settings.imageGridDensity.sparse" = "粗";
 "settings.imageGridDensity.medium" = "中";
 "settings.imageGridDensity.dense" = "密";
+
+"settings.ocr.memoryHint" = "オンにすると、Vision を使って画像内の文字をバックグラウンドで認識します。メモリ使用量が増えることがあります。";

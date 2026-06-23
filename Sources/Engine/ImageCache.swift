@@ -15,7 +15,23 @@ final class ImageCache: @unchecked Sendable {
 
     private init() {
         cache.countLimit = 200
-        cache.totalCostLimit = 50 * 1024 * 1024 // 50MB
+        // 上限按「解码后位图」真实占用计（见 decodedCost）。之前用压缩字节当 cost，
+        // 50MB 的「上限」实际能囤 300MB~1GB+ 的解码位图才淘汰 —— 内存失控的主因。
+        cache.totalCostLimit = 96 * 1024 * 1024 // 96MB（解码位图真实预算，足够当前可见工作集，封住峰值）
+    }
+
+    /// NSCache 的 cost 必须反映「解码后位图」占用（宽×高×4 RGBA），而不是压缩字节，
+    /// 否则上限形同虚设、位图无限累积。取位图 rep 的像素数；拿不到再退回点尺寸估算。
+    private func decodedCost(_ image: NSImage) -> Int {
+        var maxPixels = 0
+        for rep in image.representations {
+            let p = rep.pixelsWide * rep.pixelsHigh
+            if p > 0 { maxPixels = max(maxPixels, p) }
+        }
+        if maxPixels == 0 {
+            maxPixels = Int(image.size.width.rounded()) * Int(image.size.height.rounded())
+        }
+        return max(1, maxPixels) * 4
     }
 
     func thumbnail(for data: Data, key: String, size: CGFloat = 36) -> NSImage? {
@@ -24,12 +40,21 @@ final class ImageCache: @unchecked Sendable {
 
         guard let source = downsample(data: data, maxPixelSize: size * 2) ?? NSImage(data: data) else { return nil }
         let thumb = resize(source, to: size)
-        cache.setObject(thumb, forKey: cacheKey, cost: data.count)
+        cache.setObject(thumb, forKey: cacheKey, cost: decodedCost(thumb))
         return thumb
     }
 
     func cachedThumbnail(for key: String, size: CGFloat) -> NSImage? {
         cache.object(forKey: thumbnailCacheKey(for: key, size: size))
+    }
+
+    /// 把 malloc 已释放但还没还给系统的页主动归还（解码大量图片后的高水位脏页）。
+    /// 只动 freed 内存、不碰活对象，安全；放后台线程跑，避免任何主线程卡顿。
+    /// 调用时机：浏览结束（关快捷面板 / 离开瀑布流）这类「刚产生过解码峰值」的点。
+    nonisolated func reclaimFreedMemory() {
+        DispatchQueue.global(qos: .utility).async {
+            malloc_zone_pressure_relief(malloc_default_zone(), 0)
+        }
     }
 
     func cachedPreview(for key: String, maxDimension: CGFloat) -> NSImage? {
@@ -43,7 +68,7 @@ final class ImageCache: @unchecked Sendable {
         guard let image = downsample(data: data, maxPixelSize: maxDimension * 2) ?? NSImage(data: data) else {
             return nil
         }
-        cache.setObject(image, forKey: cacheKey, cost: data.count)
+        cache.setObject(image, forKey: cacheKey, cost: decodedCost(image))
         return image
     }
 
@@ -223,7 +248,7 @@ final class ImageCache: @unchecked Sendable {
         let cacheKey = "fav_\(key)" as NSString
         if let cached = cache.object(forKey: cacheKey) { return cached }
         guard let img = NSImage(data: data) else { return nil }
-        cache.setObject(img, forKey: cacheKey, cost: data.count)
+        cache.setObject(img, forKey: cacheKey, cost: decodedCost(img))
         return img
     }
 
@@ -242,7 +267,7 @@ final class ImageCache: @unchecked Sendable {
 
     func setVideoThumbnail(_ image: NSImage, forPath path: String) {
         let cacheKey = "video_\(path)" as NSString
-        cache.setObject(image, forKey: cacheKey, cost: 4096)
+        cache.setObject(image, forKey: cacheKey, cost: decodedCost(image))
     }
 
     private func previewCacheKey(for key: String, maxDimension: CGFloat) -> NSString {

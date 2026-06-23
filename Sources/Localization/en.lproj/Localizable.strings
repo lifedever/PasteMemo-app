@@ -868,3 +868,5 @@
 "settings.imageGridDensity.sparse" = "Sparse";
 "settings.imageGridDensity.medium" = "Medium";
 "settings.imageGridDensity.dense" = "Dense";
+
+"settings.ocr.memoryHint" = "When on, PasteMemo recognizes text in images in the background using Vision, which may increase memory usage.";

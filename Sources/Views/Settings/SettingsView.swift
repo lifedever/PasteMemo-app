@@ -773,7 +773,7 @@ struct HistorySettingsSection: View {
 }
 
 struct OCRSettingsSection: View {
-    @AppStorage(OCRTaskCoordinator.enableOCRKey) private var ocrEnabled = true
+    @AppStorage(OCRTaskCoordinator.enableOCRKey) private var ocrEnabled = false
     @AppStorage(OCRTaskCoordinator.autoOCRKey) private var autoProcess = true
     @AppStorage(OCRTaskCoordinator.markdownKey) private var ocrMarkdown = true
     @ObservedObject private var coordinator = OCRTaskCoordinator.shared
@@ -782,6 +782,10 @@ struct OCRSettingsSection: View {
         Section(L10n.tr("settings.ocr")) {
             Toggle(L10n.tr("settings.ocr.enable"), isOn: $ocrEnabled)
             if ocrEnabled {
+                // 启用后给一句内存提示：OCR 后台跑 Vision 会增加内存占用。
+                Text(L10n.tr("settings.ocr.memoryHint"))
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
                 Toggle(L10n.tr("settings.ocr.auto"), isOn: $autoProcess)
 
                 // Layout-aware Markdown OCR relies on RecognizeDocumentsRequest,

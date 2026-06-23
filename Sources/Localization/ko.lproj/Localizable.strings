@@ -922,3 +922,5 @@
 "settings.imageGridDensity.sparse" = "넓게";
 "settings.imageGridDensity.medium" = "보통";
 "settings.imageGridDensity.dense" = "좁게";
+
+"settings.ocr.memoryHint" = "켜면 Vision으로 이미지 속 문자를 백그라운드에서 인식합니다. 메모리 사용량이 늘어날 수 있습니다.";

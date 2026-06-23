@@ -868,3 +868,5 @@
 "settings.imageGridDensity.sparse" = "疏";
 "settings.imageGridDensity.medium" = "中";
 "settings.imageGridDensity.dense" = "密";
+
+"settings.ocr.memoryHint" = "开启后会在后台用 Vision 识别图片中的文字，可能增加内存占用。";

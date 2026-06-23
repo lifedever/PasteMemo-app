@@ -191,7 +191,9 @@ private struct ImageGridCell<Menu: View, Palette: View>: View {
         AsyncPreviewImageView(
             data: item.imageData,
             cacheKey: item.itemID,
-            maxPixelSize: max(width * 2, 320),
+            // downsample 内部还会 ×2（retina）。这里传 width 即可得到 ≈width×2 的解码尺寸，
+            // 正好覆盖 2x 屏；之前传 width×2 会再 ×2 = 4 倍过采样，单张位图浪费 4 倍内存。
+            maxPixelSize: max(width, 160),
             cornerRadius: 0,
             thumbnailSize: max(width, 160)
         )

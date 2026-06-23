@@ -19,8 +19,10 @@ final class OCRTaskCoordinator: ObservableObject {
         self.modelContainer = modelContainer
     }
 
+    // 默认关：OCR 在后台用 Vision 识别图片（加载神经网络模型 + 解码图），内存开销较大。
+    // 新用户默认不开，需要的人在「设置 → 图片 OCR」手动启用（启用处有内存提示）。
     var isEnabled: Bool {
-        UserDefaults.standard.object(forKey: Self.enableOCRKey) as? Bool ?? true
+        UserDefaults.standard.object(forKey: Self.enableOCRKey) as? Bool ?? false
     }
 
     var autoProcessEnabled: Bool {

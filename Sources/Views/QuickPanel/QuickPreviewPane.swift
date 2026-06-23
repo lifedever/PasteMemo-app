@@ -310,7 +310,7 @@ struct QuickPreviewPane: View {
     private var imagePreview: some View {
         ZoomableClipImagePreview(
             item: item,
-            maxPixelSize: 1100,
+            maxPixelSize: 900,
             thumbnailSize: 180,
             cornerRadius: 6,
             onDoubleClick: {
@@ -501,7 +501,7 @@ struct QuickPreviewPane: View {
         ZoomableClipImagePreview(
             item: item,
             supplementalData: dataURIImageData,
-            maxPixelSize: 1100,
+            maxPixelSize: 900,
             thumbnailSize: 180,
             cornerRadius: 6,
             onDoubleClick: {
