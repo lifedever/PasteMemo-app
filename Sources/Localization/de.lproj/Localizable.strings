@@ -897,3 +897,12 @@ Verwenden Sie %@ zum Einfügen.";
 
 "settings.diagnostics" = "Diagnose";
 "settings.diagnostics.export" = "Diagnoseprotokoll exportieren";
+
+/* Image grid (Quick Panel) */
+"settings.imageLayout" = "Bilddarstellung";
+"settings.imageLayout.list" = "Liste";
+"settings.imageLayout.grid" = "Wasserfall-Raster";
+"settings.imageGridDensity" = "Rasterdichte";
+"settings.imageGridDensity.sparse" = "Locker";
+"settings.imageGridDensity.medium" = "Mittel";
+"settings.imageGridDensity.dense" = "Dicht";

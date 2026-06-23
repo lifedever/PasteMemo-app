@@ -871,3 +871,12 @@
 
 "settings.diagnostics" = "診斷";
 "settings.diagnostics.export" = "匯出診斷日誌";
+
+/* Image grid (Quick Panel) */
+"settings.imageLayout" = "圖片顯示方式";
+"settings.imageLayout.list" = "列表";
+"settings.imageLayout.grid" = "瀑布流網格";
+"settings.imageGridDensity" = "網格密度";
+"settings.imageGridDensity.sparse" = "疏";
+"settings.imageGridDensity.medium" = "中";
+"settings.imageGridDensity.dense" = "密";

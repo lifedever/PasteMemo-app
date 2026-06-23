@@ -100,9 +100,44 @@ struct QuickPanelView: View {
     @AppStorage(QuickPanelSettings.secondaryRowKey) private var quickPanelSecondaryRowRaw = QuickPanelSecondaryRow.types.rawValue
     @AppStorage(QuickPanelSettings.rememberLastFilterKey) private var rememberLastFilter = false
     @AppStorage(QuickPanelSettings.lastFilterKey) private var lastFilterStorage = "all"
+    @AppStorage(QuickPanelSettings.imageLayoutKey) private var imageLayoutRaw = QuickPanelImageLayout.list.rawValue
+    @AppStorage(QuickPanelSettings.imageGridDensityKey) private var imageGridDensityRaw = QuickPanelImageGridDensity.medium.rawValue
 
     private var secondaryRow: QuickPanelSecondaryRow {
         QuickPanelSecondaryRow(rawValue: quickPanelSecondaryRowRaw) ?? .types
+    }
+
+    // MARK: - 图片瀑布流网格
+
+    private var imageGridDensity: QuickPanelImageGridDensity {
+        QuickPanelImageGridDensity(rawValue: imageGridDensityRaw) ?? .medium
+    }
+
+    /// 仅当：用户开了「瀑布流网格」+ 当前主筛选是「图片」类型 + 有内容时，才用网格替代列表。
+    /// 其它任何筛选（全部 / 文本 / 链接 / 分组 …）一律保持原有列表。
+    private var isImageGridActive: Bool {
+        QuickPanelImageLayout(rawValue: imageLayoutRaw) == .grid
+            && selectedFilter == .type(.image)
+            && !displayOrderItems.isEmpty
+    }
+
+    private static let imageGridSpacing: CGFloat = 13
+    private static let imageGridHPad: CGFloat = 16
+
+    /// 按面板当前宽度 + 密度目标列宽算出列数（拖宽面板会自动增减列）。
+    /// 列分配只取决于列数，所以渲染（`QuickImageGridView`）与导航（`moveGrid`）传同一个值即可对齐。
+    private var imageGridColumnCount: Int {
+        let avail = max(1, layoutState.width - Self.imageGridHPad * 2)
+        let target = imageGridDensity.targetColumnWidth
+        return max(1, Int((avail + Self.imageGridSpacing) / (target + Self.imageGridSpacing)))
+    }
+
+    /// 实际列宽（列间拉伸撑满整宽）。渲染与导航必须共用同一个值，否则瀑布流打包
+    /// 会因常量间距算出不同的列分配，光标与屏幕对不上。
+    private var imageGridColumnWidth: CGFloat {
+        let n = imageGridColumnCount
+        let avail = max(1, layoutState.width - Self.imageGridHPad * 2)
+        return (avail - Self.imageGridSpacing * CGFloat(n - 1)) / CGFloat(n)
     }
 
     private var filteredItems: [ClipItem] { store.items }
@@ -238,6 +273,9 @@ struct QuickPanelView: View {
             Divider().opacity(0.3)
             if filteredItems.isEmpty {
                 emptyStateView
+            } else if isImageGridActive {
+                // 「图片」筛选 + 开了瀑布流：全宽网格替代列表（无右侧预览，图片面积最大）。
+                imageGridView
             } else {
                 HStack(spacing: 0) {
                     if layoutState.shouldShowPreview {
@@ -912,6 +950,37 @@ struct QuickPanelView: View {
         .id(scrollResetToken)
     }
 
+    // MARK: - Image Grid
+
+    private var imageGridView: some View {
+        QuickImageGridView(
+            items: displayOrderItems,
+            columnCount: imageGridColumnCount,
+            columnWidth: imageGridColumnWidth,
+            selectedItemIDs: selectedItemIDs,
+            focusedItemID: lastNavigatedID ?? selectedItemIDs.first,
+            showCommandPalette: showCommandPalette,
+            onTap: { id in handleItemClick(id) },
+            onCommandPaletteDismiss: {
+                showCommandPalette = false
+                isSearchFocused = true
+            },
+            onLoadMore: { store.loadMore() },
+            contextMenu: { item in historyItemContextMenu(item: item) },
+            commandPalette: { item in
+                CommandPaletteContent(
+                    item: item,
+                    isMultiSelected: isMultiSelected,
+                    manualRules: manualRulesForPalette(item: item),
+                    preservedGroupNames: SmartGroupRetention.preservedGroupNames(in: modelContext),
+                    onAction: { handleCommandAction($0) },
+                    onDismiss: { showCommandPalette = false; isSearchFocused = true }
+                )
+            }
+        )
+        .id(scrollResetToken)
+    }
+
     // MARK: - Empty State
 
     private var isFilterActive: Bool {
@@ -1273,6 +1342,32 @@ struct QuickPanelView: View {
         }
     }
 
+    /// 瀑布流网格的四向键盘移动。用与渲染相同的 `imageGridColumnCount` 建布局，
+    /// 取目标方向上视觉最近的格子，更新焦点 + 单选（粘贴/复制照旧读 selectedItemIDs）。
+    private func moveGrid(_ direction: MasonryLayout.Direction) {
+        let items = displayOrderItems
+        guard !items.isEmpty else { return }
+        let cursorID = lastNavigatedID ?? selectedItemIDs.first ?? items.first?.persistentModelID
+        guard let cursorID else { return }
+        // 必须与渲染用同一对 (列数, 列宽)：列分配受常量间距影响，列宽不同会算出不同布局。
+        let layout = MasonryLayout(
+            items: items,
+            columnCount: imageGridColumnCount,
+            columnWidth: imageGridColumnWidth,
+            spacing: Self.imageGridSpacing
+        )
+        guard let targetID = layout.neighbor(of: cursorID, direction) else { return }
+        lastNavigatedID = targetID
+        selectedItemIDs = [targetID]
+        selectionAnchor = nil
+    }
+
+    /// 网格里用 space 切换某项的多选（加入/移出），焦点不变。
+    private func toggleFocusedInSelection() {
+        guard let id = lastNavigatedID ?? selectedItemIDs.first else { return }
+        toggleItemInSelection(id)
+    }
+
     private func installKeyMonitor() {
         flagsMonitor = NSEvent.addLocalMonitorForEvents(matching: .flagsChanged) { event in
             guard HotkeyManager.shared.isQuickPanelVisible else { return event }
@@ -1357,6 +1452,19 @@ struct QuickPanelView: View {
                 handleDismiss()
                 AppAction.shared.openMainWindow?()
                 return nil
+            }
+
+            // 图片瀑布流模式：↑↓←→ 全部用来在图片间四向移动光标，space 切多选。
+            // 切换类型（Tab=48）、粘贴（Enter=36）、Cmd+C/删除/数字 等仍落到下面共享 switch。
+            if isImageGridActive {
+                switch Int(event.keyCode) {
+                case 126: moveGrid(.up); return nil
+                case 125: moveGrid(.down); return nil
+                case 123: moveGrid(.left); return nil
+                case 124: moveGrid(.right); return nil
+                case 49: toggleFocusedInSelection(); return nil // Space
+                default: break
+                }
             }
 
             switch Int(event.keyCode) {

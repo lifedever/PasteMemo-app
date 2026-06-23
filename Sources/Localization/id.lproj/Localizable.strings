@@ -885,3 +885,12 @@ Gunakan %@ untuk menempel satu per satu.";
 
 "settings.diagnostics" = "Diagnostik";
 "settings.diagnostics.export" = "Ekspor Log Diagnostik";
+
+/* Image grid (Quick Panel) */
+"settings.imageLayout" = "Tampilan gambar";
+"settings.imageLayout.list" = "Daftar";
+"settings.imageLayout.grid" = "Kisi air terjun";
+"settings.imageGridDensity" = "Kepadatan kisi";
+"settings.imageGridDensity.sparse" = "Renggang";
+"settings.imageGridDensity.medium" = "Sedang";
+"settings.imageGridDensity.dense" = "Rapat";

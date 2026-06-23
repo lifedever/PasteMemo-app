@@ -911,3 +911,12 @@
 
 "settings.diagnostics" = "診断";
 "settings.diagnostics.export" = "診断ログを書き出す";
+
+/* Image grid (Quick Panel) */
+"settings.imageLayout" = "画像の表示";
+"settings.imageLayout.list" = "リスト";
+"settings.imageLayout.grid" = "ウォーターフォール";
+"settings.imageGridDensity" = "グリッドの密度";
+"settings.imageGridDensity.sparse" = "粗";
+"settings.imageGridDensity.medium" = "中";
+"settings.imageGridDensity.dense" = "密";

@@ -45,6 +45,47 @@ enum QuickPanelSettings {
     static let rememberLastFilterKey = "quickPanelRememberLastFilter"
     /// 序列化后的上次 tab 主筛选，供恢复用
     static let lastFilterKey = "quickPanelLastFilter"
+    /// 「图片」筛选下的展示方式：列表 / 瀑布流网格（默认列表，行为不变）
+    static let imageLayoutKey = "quickPanelImageLayout"
+    /// 瀑布流密度（疏 / 中 / 密 → 目标列宽），默认中
+    static let imageGridDensityKey = "quickPanelImageGridDensity"
+}
+
+/// 选中「图片」类型时的展示方式。仅作用于图片筛选，其它类型始终用列表。
+enum QuickPanelImageLayout: String, CaseIterable {
+    case list
+    case grid
+
+    var titleKey: String {
+        switch self {
+        case .list: "settings.imageLayout.list"
+        case .grid: "settings.imageLayout.grid"
+        }
+    }
+}
+
+/// 瀑布流密度——决定「目标列宽」，面板宽度按它换算出列数（宽度变化列数自适应）。
+enum QuickPanelImageGridDensity: String, CaseIterable {
+    case sparse
+    case medium
+    case dense
+
+    /// 目标列宽（pt）。实际列宽会在此基础上拉伸撑满整宽，不留右侧空隙。
+    var targetColumnWidth: CGFloat {
+        switch self {
+        case .sparse: 210
+        case .medium: 165
+        case .dense: 125
+        }
+    }
+
+    var titleKey: String {
+        switch self {
+        case .sparse: "settings.imageGridDensity.sparse"
+        case .medium: "settings.imageGridDensity.medium"
+        case .dense: "settings.imageGridDensity.dense"
+        }
+    }
 }
 
 enum QuickPanelSecondaryRow: String, CaseIterable {

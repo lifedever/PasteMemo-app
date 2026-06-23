@@ -915,3 +915,12 @@ Usa %@ para pegar uno por uno.";
 
 "settings.diagnostics" = "Diagnóstico";
 "settings.diagnostics.export" = "Exportar registro de diagnóstico";
+
+/* Image grid (Quick Panel) */
+"settings.imageLayout" = "Visualización de imágenes";
+"settings.imageLayout.list" = "Lista";
+"settings.imageLayout.grid" = "Cuadrícula en cascada";
+"settings.imageGridDensity" = "Densidad de cuadrícula";
+"settings.imageGridDensity.sparse" = "Dispersa";
+"settings.imageGridDensity.medium" = "Media";
+"settings.imageGridDensity.dense" = "Densa";

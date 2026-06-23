@@ -875,3 +875,12 @@ Usa %@ per incollare uno per uno.";
 
 "settings.diagnostics" = "Diagnostica";
 "settings.diagnostics.export" = "Esporta registro diagnostico";
+
+/* Image grid (Quick Panel) */
+"settings.imageLayout" = "Visualizzazione immagini";
+"settings.imageLayout.list" = "Elenco";
+"settings.imageLayout.grid" = "Griglia a cascata";
+"settings.imageGridDensity" = "Densità griglia";
+"settings.imageGridDensity.sparse" = "Rada";
+"settings.imageGridDensity.medium" = "Media";
+"settings.imageGridDensity.dense" = "Fitta";

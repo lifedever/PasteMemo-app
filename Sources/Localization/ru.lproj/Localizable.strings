@@ -885,3 +885,12 @@
 
 "settings.diagnostics" = "Диагностика";
 "settings.diagnostics.export" = "Экспортировать журнал диагностики";
+
+/* Image grid (Quick Panel) */
+"settings.imageLayout" = "Отображение изображений";
+"settings.imageLayout.list" = "Список";
+"settings.imageLayout.grid" = "Каскадная сетка";
+"settings.imageGridDensity" = "Плотность сетки";
+"settings.imageGridDensity.sparse" = "Разреженная";
+"settings.imageGridDensity.medium" = "Средняя";
+"settings.imageGridDensity.dense" = "Плотная";

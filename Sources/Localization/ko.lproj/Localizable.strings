@@ -913,3 +913,12 @@
 
 "settings.diagnostics" = "진단";
 "settings.diagnostics.export" = "진단 로그 내보내기";
+
+/* Image grid (Quick Panel) */
+"settings.imageLayout" = "이미지 표시";
+"settings.imageLayout.list" = "목록";
+"settings.imageLayout.grid" = "워터폴 그리드";
+"settings.imageGridDensity" = "그리드 밀도";
+"settings.imageGridDensity.sparse" = "넓게";
+"settings.imageGridDensity.medium" = "보통";
+"settings.imageGridDensity.dense" = "좁게";

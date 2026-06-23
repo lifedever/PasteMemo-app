@@ -859,3 +859,12 @@
 
 "settings.diagnostics" = "诊断";
 "settings.diagnostics.export" = "导出诊断日志";
+
+/* Image grid (Quick Panel) */
+"settings.imageLayout" = "图片显示方式";
+"settings.imageLayout.list" = "列表";
+"settings.imageLayout.grid" = "瀑布流网格";
+"settings.imageGridDensity" = "网格密度";
+"settings.imageGridDensity.sparse" = "疏";
+"settings.imageGridDensity.medium" = "中";
+"settings.imageGridDensity.dense" = "密";

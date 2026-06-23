@@ -859,3 +859,12 @@
 
 "settings.diagnostics" = "Diagnostics";
 "settings.diagnostics.export" = "Export Diagnostic Log";
+
+/* Image grid (Quick Panel) */
+"settings.imageLayout" = "Image display";
+"settings.imageLayout.list" = "List";
+"settings.imageLayout.grid" = "Waterfall grid";
+"settings.imageGridDensity" = "Grid density";
+"settings.imageGridDensity.sparse" = "Sparse";
+"settings.imageGridDensity.medium" = "Medium";
+"settings.imageGridDensity.dense" = "Dense";

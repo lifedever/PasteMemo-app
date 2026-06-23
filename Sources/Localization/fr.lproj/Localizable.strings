@@ -915,3 +915,12 @@ Utilisez %@ pour coller un par un.";
 
 "settings.diagnostics" = "Diagnostic";
 "settings.diagnostics.export" = "Exporter le journal de diagnostic";
+
+/* Image grid (Quick Panel) */
+"settings.imageLayout" = "Affichage des images";
+"settings.imageLayout.list" = "Liste";
+"settings.imageLayout.grid" = "Grille en cascade";
+"settings.imageGridDensity" = "Densité de la grille";
+"settings.imageGridDensity.sparse" = "Espacée";
+"settings.imageGridDensity.medium" = "Moyenne";
+"settings.imageGridDensity.dense" = "Dense";

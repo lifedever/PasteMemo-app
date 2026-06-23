@@ -481,6 +481,8 @@ struct PreferencesPane: View {
     @AppStorage(QuickPanelSettings.launchAnimationEnabledKey) private var quickPanelLaunchAnimationEnabled = true
     @AppStorage(QuickPanelSettings.secondaryRowKey) private var quickPanelSecondaryRow = QuickPanelSecondaryRow.types.rawValue
     @AppStorage(QuickPanelSettings.rememberLastFilterKey) private var quickPanelRememberLastFilter = false
+    @AppStorage(QuickPanelSettings.imageLayoutKey) private var quickPanelImageLayout = QuickPanelImageLayout.list.rawValue
+    @AppStorage(QuickPanelSettings.imageGridDensityKey) private var quickPanelImageGridDensity = QuickPanelImageGridDensity.medium.rawValue
     @AppStorage(QuickPanelPositionSettings.modeKey) private var quickPanelPositionMode = QuickPanelPositionMode.screenCenter.rawValue
     @AppStorage(QuickPanelPositionSettings.screenTargetKey) private var quickPanelScreenTarget = QuickPanelScreenTarget.active.rawValue
     @AppStorage(QuickPanelPositionSettings.specifiedScreenIDKey) private var quickPanelSpecifiedScreenID = ""
@@ -499,6 +501,18 @@ struct PreferencesPane: View {
                 Picker(L10n.tr("settings.quickPanelSecondaryRow"), selection: $quickPanelSecondaryRow) {
                     ForEach(QuickPanelSecondaryRow.allCases, id: \.rawValue) { option in
                         Text(L10n.tr(option.titleKey)).tag(option.rawValue)
+                    }
+                }
+                Picker(L10n.tr("settings.imageLayout"), selection: $quickPanelImageLayout) {
+                    ForEach(QuickPanelImageLayout.allCases, id: \.rawValue) { option in
+                        Text(L10n.tr(option.titleKey)).tag(option.rawValue)
+                    }
+                }
+                if QuickPanelImageLayout(rawValue: quickPanelImageLayout) == .grid {
+                    Picker(L10n.tr("settings.imageGridDensity"), selection: $quickPanelImageGridDensity) {
+                        ForEach(QuickPanelImageGridDensity.allCases, id: \.rawValue) { option in
+                            Text(L10n.tr(option.titleKey)).tag(option.rawValue)
+                        }
                     }
                 }
                 HStack {
