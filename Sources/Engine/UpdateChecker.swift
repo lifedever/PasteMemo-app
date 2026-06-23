@@ -297,7 +297,12 @@ final class UpdateChecker: ObservableObject {
     }
 
     private func fetchLatestJSON() async -> LatestInfo? {
-        guard let url = URL(string: resolvedLatestJsonURL) else { return nil }
+        // 加时间戳做 cache-bust：latest.json 在 CDN 上有 10 分钟缓存，
+        // reloadIgnoringLocalCacheData 只越过本地缓存、越不过 CDN 边缘缓存，
+        // 导致刚发布的新版本要等 CDN 过期才查得到。每次唯一 URL → CDN 必回源取最新。
+        let separator = resolvedLatestJsonURL.contains("?") ? "&" : "?"
+        let bustedURL = "\(resolvedLatestJsonURL)\(separator)t=\(Int(Date().timeIntervalSince1970))"
+        guard let url = URL(string: bustedURL) else { return nil }
         do {
             var request = URLRequest(url: url)
             request.cachePolicy = .reloadIgnoringLocalCacheData
