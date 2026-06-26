@@ -2,6 +2,8 @@
 .dev-build/
 .release/
 dist/
+sync-server/sync-server
+sync-server/sync.db
 .swiftpm/
 *.xcodeproj
 *.xcworkspace

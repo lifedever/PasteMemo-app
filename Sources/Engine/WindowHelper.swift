@@ -32,10 +32,10 @@ func showSettingsWindowAppKit() {
     WindowManager.shared.show(
         id: "settings",
         title: L10n.tr("menu.settings"),
-        size: NSSize(width: 720, height: 470),
+        size: NSSize(width: 720, height: 520),
         floating: false,
-        styleMask: [.titled, .closable, .miniaturizable],
-        autoResizesToContent: true
+        styleMask: [.titled, .closable, .miniaturizable, .resizable],
+        frameAutosaveName: "SettingsWindow"
     ) {
         SettingsView()
             .environmentObject(ClipboardManager.shared)

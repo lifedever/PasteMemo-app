@@ -1,0 +1,1058 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PasteMemo Sync Server</title>
+  <link rel="icon" href="/favicon.ico" type="image/x-icon">
+  <style>
+    :root {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 13px;
+      --border: #ccc;
+      --muted: #666;
+      --surface: #f8f8f8;
+      --text: #111;
+      --accent: #f97316;
+      color-scheme: light;
+    }
+    html[data-theme="dark"] {
+      --border: #444;
+      --muted: #aaa;
+      --surface: #1a1a1a;
+      --text: #eee;
+      color-scheme: dark;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; line-height: 1.35; background: var(--surface); color: var(--text); }
+    header {
+      padding: 8px 14px; border-bottom: 1px solid var(--border); background: inherit;
+      position: sticky; top: 0; z-index: 10;
+      display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    }
+    .header-main { min-width: 0; }
+    .theme-toggle { flex-shrink: 0; }
+    h1 { margin: 0; font-size: 1.15rem; font-weight: 600; line-height: 1.25; }
+    .meta { color: var(--muted); font-size: 0.85rem; margin: 2px 0 0; }
+    main { padding: 10px 14px 24px; max-width: 1600px; margin: 0 auto; }
+    h2 { margin: 0 0 6px; font-size: 0.95rem; font-weight: 600; }
+    table { border-collapse: collapse; width: 100%; background: inherit; font-size: 0.92rem; }
+    th, td { border: 1px solid var(--border); padding: 4px 8px; text-align: left; vertical-align: middle; }
+    th { background: rgba(127,127,127,0.08); font-weight: 600; white-space: nowrap; }
+    code { font-size: 0.88em; word-break: break-all; }
+    .empty { color: var(--muted); font-style: italic; font-size: 0.92rem; }
+    .btn, .btn-link {
+      appearance: none; border: 1px solid var(--border); background: inherit;
+      padding: 3px 8px; border-radius: 5px; cursor: pointer; font: inherit; font-size: 0.92rem;
+      line-height: 1.3;
+    }
+    .btn:hover, .btn-link:hover { border-color: var(--accent); color: var(--accent); }
+    .btn-danger { border-color: #dc2626; color: #dc2626; }
+    .btn-danger:hover { background: rgba(220,38,38,0.08); }
+    .btn-sm { padding: 2px 6px; font-size: 0.85rem; }
+    .btn-link { border: none; padding: 0; color: var(--accent); text-decoration: underline; }
+    .btn-link + .btn-link { margin-left: 8px; }
+    .btn-link.btn-danger { color: #dc2626; }
+    .btn-link.btn-danger:hover { color: #b91c1c; }
+    .btn-link[disabled] { opacity: 0.5; pointer-events: none; }
+    .toolbar {
+      display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+      margin-bottom: 8px; padding: 6px 8px; border: 1px solid var(--border);
+      border-radius: 6px; background: inherit; font-size: 0.92rem;
+    }
+    .toolbar label { display: flex; align-items: center; gap: 4px; }
+    select { font: inherit; padding: 2px 6px; border-radius: 4px; border: 1px solid var(--border); background: inherit; font-size: 0.92rem; }
+    .hidden { display: none !important; }
+    .item-list { display: flex; flex-direction: column; gap: 5px; }
+    .item-card {
+      border: 1px solid var(--border); border-radius: 6px; padding: 6px 8px;
+      background: inherit; cursor: pointer;
+    }
+    .item-card:hover { border-color: var(--accent); }
+    .item-card:focus-visible,
+    .waterfall-card:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+    .item-card .row1 { display: flex; gap: 4px; align-items: center; flex-wrap: wrap; margin-bottom: 3px; }
+    .item-card .actions { margin-left: auto; display: flex; gap: 4px; }
+    @media (hover: hover) {
+      .item-card .actions,
+      .waterfall-card [data-delete] {
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.12s ease;
+      }
+      .item-card:hover .actions,
+      .item-card:focus-within .actions,
+      .waterfall-card:hover [data-delete],
+      .waterfall-card:focus-within [data-delete] {
+        opacity: 1;
+        pointer-events: auto;
+      }
+    }
+    .badge {
+      font-size: 0.72rem; padding: 1px 5px; border-radius: 999px; line-height: 1.35;
+      border: 1px solid var(--border); color: var(--muted);
+    }
+    .item-card .preview { color: var(--muted); font-size: 0.88rem; white-space: pre-wrap; word-break: break-word; }
+    .item-card .thumb { max-width: 96px; max-height: 64px; border-radius: 4px; margin-top: 4px; object-fit: cover; }
+    .waterfall { column-count: 5; column-gap: 8px; }
+    @media (max-width: 1200px) { .waterfall { column-count: 4; } }
+    @media (max-width: 900px) { .waterfall { column-count: 3; } }
+    @media (max-width: 640px) { .waterfall { column-count: 2; } }
+    @media (max-width: 420px) { .waterfall { column-count: 1; } }
+    .waterfall-card {
+      break-inside: avoid; margin-bottom: 8px; border: 1px solid var(--border);
+      border-radius: 6px; overflow: hidden; background: inherit; cursor: pointer;
+    }
+    .waterfall-card:hover { border-color: var(--accent); }
+    .waterfall-card img {
+      display: block; width: 100%; height: auto; background: rgba(127,127,127,0.1);
+    }
+    .waterfall-card .cap { padding: 4px 6px; font-size: 0.78rem; color: var(--muted); line-height: 1.3; }
+    .sentinel { height: 1px; }
+    .loading { text-align: center; color: var(--muted); padding: 8px; font-size: 0.92rem; }
+    .modal-backdrop {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.45);
+      display: flex; align-items: center; justify-content: center; z-index: 100; padding: 12px;
+    }
+    .modal {
+      width: min(640px, 100%); max-height: 90vh; overflow: auto;
+      background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 12px;
+      font-size: 0.92rem;
+    }
+    .modal h3 { margin: 0 0 6px; word-break: break-all; font-size: 1rem; }
+    .modal p { margin: 4px 0 8px; }
+    .modal pre {
+      white-space: pre-wrap; word-break: break-word; background: rgba(127,127,127,0.08);
+      padding: 8px; border-radius: 4px; font-size: 0.88rem; margin: 6px 0;
+    }
+    .modal img { max-width: 100%; border-radius: 4px; margin: 6px 0; }
+    .modal .close { float: right; margin-left: 8px; }
+    .passphrase-gate {
+      margin-bottom: 10px; padding: 10px 12px; border: 1px solid var(--border);
+      border-radius: 6px; background: inherit;
+    }
+    .passphrase-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 6px; }
+    .passphrase-row input {
+      flex: 1; min-width: 180px; font: inherit; padding: 4px 8px;
+      border-radius: 4px; border: 1px solid var(--border); background: inherit;
+    }
+    .passphrase-error { color: #dc2626; margin: 6px 0 0; font-size: 0.88rem; }
+    .status-line { color: var(--muted); font-size: 0.85rem; }
+  </style>
+  <script>
+    (function () {
+      const key = 'pastememo-sync-theme';
+      const saved = localStorage.getItem(key);
+      const theme = saved === 'dark' ? 'dark' : 'light';
+      document.documentElement.dataset.theme = theme;
+    })();
+  </script>
+</head>
+<body>
+  <header>
+    <div class="header-main">
+      <h1>PasteMemo Sync Server</h1>
+      <p class="meta">Generated at {{.Now}}</p>
+    </div>
+    <button type="button" class="btn theme-toggle" id="btn-theme" aria-label="Toggle dark mode">Dark mode</button>
+  </header>
+
+  <main>
+    <section id="clients-section">
+      <h2>Clients</h2>
+      {{if .Clients}}
+      <table>
+        <thead>
+          <tr>
+            <th>Client ID</th>
+            <th>Hostname</th>
+            <th>IP</th>
+            <th>Last Sync</th>
+            <th>Last Batch</th>
+            <th>Total Synced</th>
+            <th>Stored Items</th>
+            <th>Encrypted</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {{range .Clients}}
+          <tr>
+            <td><code>{{.ClientID}}</code></td>
+            <td>{{.LastHostname}}</td>
+            <td>{{.LastIP}}</td>
+            <td>{{.LastSyncAt}}</td>
+            <td>{{.LastSyncCount}}</td>
+            <td>{{.TotalSyncCount}}</td>
+            <td>{{.ItemCount}}</td>
+            <td>{{if .EncryptionEnabled}}🔒{{else}}—{{end}}</td>
+            <td>
+              <button type="button" class="btn-link" data-browse="{{.ClientID}}"
+                data-encrypted="{{if .EncryptionEnabled}}1{{else}}0{{end}}"
+                data-enc-salt="{{.EncryptionSalt}}"
+                data-enc-fp="{{.EncryptionKeyFP}}">Browse</button>
+              <button type="button" class="btn-link btn-danger" data-empty="{{.ClientID}}"
+                data-item-count="{{.ItemCount}}">Empty</button>
+            </td>
+          </tr>
+          {{end}}
+        </tbody>
+      </table>
+      {{else}}
+      <p class="empty">No clients have synced yet.</p>
+      {{end}}
+    </section>
+
+    <section id="items-section" class="hidden">
+      <div class="toolbar">
+        <button type="button" class="btn" id="btn-back">← Clients</button>
+        <span>Client: <code id="active-client"></code></span>
+        <label>
+          Type
+          <select id="type-filter">
+            <option value="">All types</option>
+          </select>
+        </label>
+        <button type="button" class="btn" id="btn-trash-toggle">Recycle bin</button>
+        <button type="button" class="btn btn-danger hidden" id="btn-empty-trash">Empty recycle bin</button>
+        <span class="status-line" id="items-status"></span>
+      </div>
+      <div id="passphrase-gate" class="passphrase-gate hidden">
+        <p>This client encrypts clip data. Enter the passphrase to view content.</p>
+        <div class="passphrase-row">
+          <input type="password" id="browse-passphrase" placeholder="Passphrase" autocomplete="off">
+          <button type="button" class="btn" id="btn-unlock">Unlock</button>
+        </div>
+        <p id="passphrase-error" class="passphrase-error hidden"></p>
+      </div>
+      <div id="items-container"></div>
+      <div id="scroll-sentinel" class="sentinel"></div>
+      <div id="load-more" class="loading hidden">Loading…</div>
+    </section>
+  </main>
+
+  <div id="modal-root" class="hidden"></div>
+
+  <script>
+    const THEME_KEY = 'pastememo-sync-theme';
+
+    function applyTheme(theme) {
+      const dark = theme === 'dark';
+      document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+      localStorage.setItem(THEME_KEY, dark ? 'dark' : 'light');
+      const btn = document.getElementById('btn-theme');
+      if (btn) {
+        btn.textContent = dark ? 'Light mode' : 'Dark mode';
+        btn.setAttribute('aria-label', dark ? 'Switch to light mode' : 'Switch to dark mode');
+      }
+    }
+
+    document.getElementById('btn-theme').addEventListener('click', () => {
+      const isDark = document.documentElement.dataset.theme === 'dark';
+      applyTheme(isDark ? 'light' : 'dark');
+    });
+    applyTheme(document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light');
+
+    const ALL_CONTENT_TYPES = [
+      'application', 'archive', 'audio', 'code', 'color', 'document', 'email',
+      'file', 'image', 'link', 'mixed', 'phone', 'text', 'video',
+    ];
+
+    const state = {
+      clientId: null,
+      type: '',
+      trash: false,
+      cursor: null,
+      loading: false,
+      hasMore: true,
+      observer: null,
+      clientEncryption: null,
+      browsePassphrase: null,
+    };
+
+    const cardDecryptOptions = new WeakMap();
+    const PMEM_MAGIC = [0x50, 0x4D, 0x45, 0x4D];
+    const PBKDF2_ITER = 600000;
+
+    // Check if Web Crypto API is available (requires secure context: HTTPS or localhost)
+    if (!crypto || !crypto.subtle) {
+      console.error('Web Crypto API not available. This page must be served over HTTPS or from localhost.');
+      document.addEventListener('DOMContentLoaded', () => {
+        const gate = document.getElementById('passphrase-gate');
+        const error = document.getElementById('passphrase-error');
+        if (gate && error) {
+          error.textContent = 'Encryption requires HTTPS or localhost. Web Crypto API is not available in insecure contexts.';
+          error.classList.remove('hidden');
+        }
+      });
+    }
+
+    async function sha256Hex(data) {
+      const hash = await crypto.subtle.digest('SHA-256', data);
+      return Array.from(new Uint8Array(hash)).map((b) => b.toString(16).padStart(2, '0')).join('');
+    }
+
+    async function deriveRawKeyBytes(passphrase, salt) {
+      if (!crypto || !crypto.subtle) {
+        throw new Error('Web Crypto API not available. Use HTTPS or localhost.');
+      }
+      const enc = new TextEncoder();
+      const keyMaterial = await crypto.subtle.importKey(
+        'raw', enc.encode(passphrase), 'PBKDF2', false, ['deriveBits']
+      );
+      return crypto.subtle.deriveBits(
+        { name: 'PBKDF2', salt, iterations: PBKDF2_ITER, hash: 'SHA-256' },
+        keyMaterial,
+        256
+      );
+    }
+
+    async function deriveSyncKey(passphrase, salt) {
+      const bits = await deriveRawKeyBytes(passphrase, salt);
+      return crypto.subtle.importKey('raw', bits, { name: 'AES-GCM' }, true, ['decrypt']);
+    }
+
+    async function keyFingerprint(passphrase, saltB64) {
+      const salt = Uint8Array.from(atob(saltB64), (c) => c.charCodeAt(0));
+      const raw = await deriveRawKeyBytes(passphrase, salt);
+      return sha256Hex(raw);
+    }
+
+    async function verifyBrowsePassphrase(passphrase, meta) {
+      if (!crypto || !crypto.subtle) {
+        throw new Error('Web Crypto API not available. Use HTTPS or localhost.');
+      }
+      const fp = await keyFingerprint(passphrase, meta.salt);
+      return fp.toLowerCase() === String(meta.fp || '').toLowerCase();
+    }
+
+    async function decryptPayloadBase64(b64, passphrase) {
+      const data = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+      if (data.length < 38) throw new Error('invalid encrypted payload');
+      for (let i = 0; i < 4; i++) {
+        if (data[i] !== PMEM_MAGIC[i]) throw new Error('invalid payload format');
+      }
+      if (data[5] !== 0x01) throw new Error('payload is not encrypted');
+      const salt = data.slice(6, 38);
+      const combined = data.slice(38);
+      if (combined.length < 12 + 16) throw new Error('invalid encrypted payload');
+      const iv = combined.slice(0, 12);
+      const ciphertext = combined.slice(12);
+      const key = await deriveSyncKey(passphrase, salt);
+      const plain = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, ciphertext);
+      return JSON.parse(new TextDecoder().decode(plain));
+    }
+
+    function detectImageMime(bytes) {
+      if (bytes.length >= 2 && bytes[0] === 0xff && bytes[1] === 0xd8) return 'image/jpeg';
+      if (bytes.length >= 8 && bytes[0] === 0x89 && bytes[1] === 0x50) return 'image/png';
+      if (bytes.length >= 6 && bytes[0] === 0x47 && bytes[1] === 0x49) return 'image/gif';
+      if (bytes.length >= 12 && bytes[4] === 0x66 && bytes[5] === 0x74 && bytes[6] === 0x79 && bytes[7] === 0x70) {
+        const brand = String.fromCharCode(bytes[8], bytes[9], bytes[10], bytes[11]);
+        if (brand.startsWith('heic') || brand.startsWith('heif')) return 'image/heic';
+        if (brand === 'avif') return 'image/avif';
+      }
+      if (bytes.length >= 4 && ((bytes[0] === 0x49 && bytes[1] === 0x49) || (bytes[0] === 0x4d && bytes[1] === 0x4d))) {
+        return 'image/tiff';
+      }
+      return 'image/jpeg';
+    }
+
+    function imageDataUrlFromBase64(b64) {
+      if (!b64) return null;
+      const binary = atob(b64);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+      const mime = detectImageMime(bytes);
+      return `data:${mime};base64,${b64}`;
+    }
+
+    function innerHasImage(inner) {
+      return !!(inner && inner.image_data_base64 && inner.image_data_base64.length > 0);
+    }
+
+    async function applyDecryptedItemUI(card, item, options = {}) {
+      const { thumb = false, mainImg = false, preview = true } = options;
+      if (!item.encrypted || !item.payload_encrypted || !state.browsePassphrase) return;
+      try {
+        const inner = await decryptPayloadBase64(item.payload_encrypted, state.browsePassphrase);
+        if (preview) {
+          const previewEl = card.querySelector('.preview');
+          if (previewEl) {
+            const text = inner.display_title || inner.content || inner.content_type || '(empty)';
+            previewEl.textContent = previewText(text, 240);
+          }
+        }
+        if (innerHasImage(inner)) {
+          const url = imageDataUrlFromBase64(inner.image_data_base64);
+          if (mainImg) {
+            const img = card.querySelector('[data-img]');
+            if (img && url) {
+              img.src = url;
+              img.style.display = '';
+              img.alt = inner.display_title || inner.content_type || 'Image';
+            }
+          }
+          if (thumb) {
+            let img = card.querySelector('img.thumb');
+            if (!img) {
+              img = document.createElement('img');
+              img.className = 'thumb';
+              card.appendChild(img);
+            }
+            if (url) img.src = url;
+          }
+        }
+        if (inner.ocr_text) {
+          let ocr = card.querySelector('.ocr-preview');
+          if (!ocr) {
+            ocr = document.createElement('div');
+            ocr.className = 'preview ocr-preview';
+            card.appendChild(ocr);
+          }
+          ocr.textContent = 'OCR: ' + previewText(inner.ocr_text, 120);
+        }
+      } catch (_) {
+        const previewEl = card.querySelector('.preview');
+        if (previewEl) previewEl.textContent = '🔒 Decrypt failed — wrong passphrase?';
+        const img = card.querySelector('[data-img]');
+        if (img) img.alt = 'Decrypt failed';
+      }
+    }
+
+    function registerEncryptedCard(card, options = {}) {
+      if (!card.dataset.encrypted) return;
+      cardDecryptOptions.set(card, options);
+      card.addEventListener('mouseenter', () => {
+        requestCardDecrypt(card);
+      });
+    }
+
+    async function requestCardDecrypt(card) {
+      if (!state.browsePassphrase || card.dataset.encrypted !== '1') return;
+      const status = card.dataset.decryptState;
+      if (status === 'done' || status === 'loading') return;
+
+      const clientId = card.dataset.clientId;
+      const itemId = card.dataset.itemId;
+      if (!clientId || !itemId) return;
+
+      card.dataset.decryptState = 'loading';
+      const options = cardDecryptOptions.get(card) || {};
+
+      try {
+        const res = await fetch(`/api/v1/items/${encodeURIComponent(clientId)}/${encodeURIComponent(itemId)}`);
+        if (!res.ok) throw new Error(await res.text());
+        const item = await res.json();
+        if (!item.encrypted || !item.payload_encrypted) {
+          card.dataset.decryptState = 'done';
+          return;
+        }
+        await applyDecryptedItemUI(card, item, options);
+        card.dataset.decryptState = 'done';
+      } catch (_) {
+        card.dataset.decryptState = 'failed';
+        const previewEl = card.querySelector('.preview');
+        if (previewEl) previewEl.textContent = '🔒 Decrypt failed — wrong passphrase?';
+        const img = card.querySelector('[data-img]');
+        if (img) img.alt = 'Decrypt failed';
+      }
+    }
+
+    function previewText(text, maxLen) {
+      if (!text) return '';
+      return text.length > maxLen ? text.slice(0, maxLen) + '…' : text;
+    }
+
+    const clientsSection = document.getElementById('clients-section');
+    const itemsSection = document.getElementById('items-section');
+    const itemsContainer = document.getElementById('items-container');
+    const typeFilter = document.getElementById('type-filter');
+    const activeClientEl = document.getElementById('active-client');
+    const itemsStatus = document.getElementById('items-status');
+    const loadMoreEl = document.getElementById('load-more');
+    const sentinel = document.getElementById('scroll-sentinel');
+    const modalRoot = document.getElementById('modal-root');
+    const btnTrashToggle = document.getElementById('btn-trash-toggle');
+    const btnEmptyTrash = document.getElementById('btn-empty-trash');
+    const passphraseGate = document.getElementById('passphrase-gate');
+    const browsePassphraseInput = document.getElementById('browse-passphrase');
+    const passphraseErrorEl = document.getElementById('passphrase-error');
+    const btnUnlock = document.getElementById('btn-unlock');
+
+    document.querySelectorAll('[data-browse]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const enc = btn.dataset.encrypted === '1';
+        openClient(btn.dataset.browse, {
+          encryption: enc ? { salt: btn.dataset.encSalt || '', fp: btn.dataset.encFp || '' } : null,
+        });
+      });
+    });
+    document.querySelectorAll('[data-empty]').forEach((btn) => {
+      btn.addEventListener('click', () => emptyClient(btn.dataset.empty, btn));
+    });
+    document.getElementById('btn-back').addEventListener('click', () => closeClient());
+    typeFilter.addEventListener('change', () => {
+      state.type = typeFilter.value;
+      syncURL(true);
+      resetAndLoad();
+    });
+    btnTrashToggle.addEventListener('click', () => {
+      state.trash = !state.trash;
+      updateTrashToggle();
+      syncURL(true);
+      resetAndLoad();
+    });
+    btnEmptyTrash.addEventListener('click', () => emptyTrash());
+
+    function closeDetailModal() {
+      modalRoot.classList.add('hidden');
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !modalRoot.classList.contains('hidden')) {
+        e.preventDefault();
+        closeDetailModal();
+      }
+    });
+
+    function imageURL(clientId, itemId) {
+      return `/api/v1/items/${encodeURIComponent(clientId)}/${encodeURIComponent(itemId)}/image`;
+    }
+
+    function attachImage(img, clientId, itemId) {
+      img.loading = 'lazy';
+      img.decoding = 'async';
+      img.src = imageURL(clientId, itemId);
+      img.addEventListener('error', () => {
+        img.src = imageURL(clientId, itemId) + '?_=' + Date.now();
+      }, { once: true });
+    }
+
+    function attachImageLazy(img, clientId, itemId) {
+      if (!('IntersectionObserver' in window)) {
+        attachImage(img, clientId, itemId);
+        return;
+      }
+      const observer = new IntersectionObserver((entries) => {
+        if (entries.some((e) => e.isIntersecting)) {
+          observer.disconnect();
+          attachImage(img, clientId, itemId);
+        }
+      }, { rootMargin: '200px' });
+      observer.observe(img);
+    }
+
+    function parseBrowseParams() {
+      const p = new URLSearchParams(location.search);
+      return {
+        clientId: p.get('client'),
+        type: p.get('type') || '',
+        trash: p.get('trash') === '1',
+      };
+    }
+
+    function buildBrowseURL() {
+      if (!state.clientId) return location.pathname;
+      const p = new URLSearchParams();
+      p.set('client', state.clientId);
+      if (state.type) p.set('type', state.type);
+      if (state.trash) p.set('trash', '1');
+      return `${location.pathname}?${p}`;
+    }
+
+    function syncURL(replace) {
+      const url = buildBrowseURL();
+      const current = location.pathname + location.search;
+      if (url === current) return;
+      const data = { browse: !!state.clientId, clientId: state.clientId };
+      if (replace) history.replaceState(data, '', url);
+      else history.pushState(data, '', url);
+    }
+
+    btnUnlock.addEventListener('click', () => unlockBrowsePassphrase());
+    browsePassphraseInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') unlockBrowsePassphrase();
+    });
+
+    async function unlockBrowsePassphrase() {
+      passphraseErrorEl.classList.add('hidden');
+      const pass = browsePassphraseInput.value;
+      if (!pass || !state.clientEncryption) return;
+      try {
+        const ok = await verifyBrowsePassphrase(pass, state.clientEncryption);
+        if (!ok) {
+          passphraseErrorEl.textContent = 'Wrong passphrase.';
+          passphraseErrorEl.classList.remove('hidden');
+          return;
+        }
+        state.browsePassphrase = pass;
+        sessionStorage.setItem('sync-pass:' + state.clientId, pass);
+        sessionStorage.setItem('sync-pass-verified:' + state.clientId, '1');
+        passphraseGate.classList.add('hidden');
+        itemsContainer.classList.remove('hidden');
+        resetAndLoad();
+      } catch (err) {
+        passphraseErrorEl.textContent = err.message || String(err);
+        passphraseErrorEl.classList.remove('hidden');
+      }
+    }
+
+    async function resolveClientEncryption(clientId) {
+      const btn = document.querySelector(`[data-browse="${CSS.escape(clientId)}"]`);
+      if (btn && btn.dataset.encrypted === '1') {
+        return { salt: btn.dataset.encSalt || '', fp: btn.dataset.encFp || '' };
+      }
+      const res = await fetch('/api/v1/clients');
+      if (!res.ok) return null;
+      const clients = await res.json();
+      const c = clients.find((x) => x.client_id === clientId);
+      if (c && c.encryption_enabled) {
+        return { salt: c.encryption_salt || '', fp: c.encryption_key_fingerprint || '' };
+      }
+      return null;
+    }
+
+    function showPassphraseGate() {
+      passphraseGate.classList.remove('hidden');
+      itemsContainer.classList.add('hidden');
+      itemsContainer.innerHTML = '';
+      browsePassphraseInput.value = '';
+      passphraseErrorEl.classList.add('hidden');
+      itemsStatus.textContent = 'Encrypted client — passphrase required';
+    }
+
+    async function openClient(clientId, options = {}) {
+      const { type = '', trash = false, skipURL = false, replaceURL = false, encryption = undefined } = options;
+      state.clientId = clientId;
+      state.type = type;
+      state.trash = trash;
+      state.browsePassphrase = null;
+      activeClientEl.textContent = clientId;
+      clientsSection.classList.add('hidden');
+      itemsSection.classList.remove('hidden');
+      updateTrashToggle();
+      itemsStatus.textContent = 'Loading…';
+      itemsContainer.innerHTML = '<p class="loading">Loading…</p>';
+
+      state.clientEncryption = encryption !== undefined
+        ? encryption
+        : await resolveClientEncryption(clientId);
+
+      if (state.clientEncryption) {
+        const saved = sessionStorage.getItem('sync-pass:' + clientId);
+        const verified = sessionStorage.getItem('sync-pass-verified:' + clientId) === '1';
+        if (saved && verified) {
+          state.browsePassphrase = saved;
+        } else if (saved) {
+          try {
+            const ok = await verifyBrowsePassphrase(saved, state.clientEncryption);
+            if (ok) {
+              state.browsePassphrase = saved;
+              sessionStorage.setItem('sync-pass-verified:' + clientId, '1');
+            }
+          } catch (_) { /* ignore */ }
+        }
+        if (!state.browsePassphrase) {
+          showPassphraseGate();
+          if (!skipURL) syncURL(replaceURL);
+          return;
+        }
+        passphraseGate.classList.add('hidden');
+        itemsContainer.classList.remove('hidden');
+      } else {
+        passphraseGate.classList.add('hidden');
+        itemsContainer.classList.remove('hidden');
+      }
+
+      populateTypeFilter();
+      typeFilter.value = state.type;
+      resetAndLoad();
+      setupObserver();
+      if (!skipURL) syncURL(replaceURL);
+    }
+
+    function updateTrashToggle() {
+      btnTrashToggle.textContent = state.trash ? '← Back to items' : 'Recycle bin';
+      btnTrashToggle.classList.toggle('btn-danger', state.trash);
+      btnEmptyTrash.classList.toggle('hidden', !state.trash);
+      typeFilter.disabled = state.trash;
+    }
+
+    async function emptyTrash() {
+      if (!state.clientId || !state.trash) return;
+      if (!confirm('Permanently delete all items in the recycle bin for this client? This cannot be undone.')) {
+        return;
+      }
+      btnEmptyTrash.disabled = true;
+      try {
+        const res = await fetch(`/api/v1/clients/${encodeURIComponent(state.clientId)}/trash`, {
+          method: 'DELETE',
+        });
+        if (!res.ok) throw new Error(await res.text());
+        const data = await res.json();
+        closeDetailModal();
+        resetAndLoad();
+        const count = data.deleted_count ?? 0;
+        itemsStatus.textContent = count > 0
+          ? `Permanently deleted ${count} item(s).`
+          : 'Recycle bin is already empty.';
+      } catch (err) {
+        alert(err.message || String(err));
+      } finally {
+        btnEmptyTrash.disabled = false;
+      }
+    }
+
+    async function emptyClient(clientId, btnEl) {
+      if (!clientId) return;
+      const itemCount = parseInt(btnEl?.dataset?.itemCount || '0', 10) || 0;
+      const itemLabel = itemCount === 1 ? '1 stored item' : `${itemCount} stored items`;
+      const message = `Permanently delete EVERYTHING for client ${clientId}?\n\n` +
+        `This removes ${itemLabel} (live + recycle bin) and unregisters the device from the server. ` +
+        `It cannot be undone. If the client syncs again, it will be re-registered as a new device.`;
+      if (!confirm(message)) return;
+      if (btnEl) btnEl.disabled = true;
+      try {
+        const res = await fetch(`/api/v1/clients/${encodeURIComponent(clientId)}`, {
+          method: 'DELETE',
+        });
+        if (!res.ok) throw new Error(await res.text());
+        // If the deleted client was open in the items view, return to the client list first.
+        if (state.clientId && clientId.toLowerCase() === state.clientId.toLowerCase()) {
+          closeClient();
+        } else {
+          closeDetailModal();
+        }
+        // Refresh the dashboard so the row disappears.
+        location.reload();
+      } catch (err) {
+        alert(err.message || String(err));
+        if (btnEl) btnEl.disabled = false;
+      }
+    }
+
+    function closeClient(skipURL = false) {
+      state.clientId = null;
+      state.type = '';
+      state.trash = false;
+      state.clientEncryption = null;
+      state.browsePassphrase = null;
+      itemsSection.classList.add('hidden');
+      clientsSection.classList.remove('hidden');
+      if (state.observer) state.observer.disconnect();
+      itemsContainer.innerHTML = '';
+      modalRoot.classList.add('hidden');
+      if (!skipURL) syncURL(false);
+    }
+
+    function populateTypeFilter() {
+      const selected = typeFilter.value || state.type || '';
+      typeFilter.innerHTML = '<option value="">All types</option>';
+      ALL_CONTENT_TYPES.forEach((t) => {
+        const opt = document.createElement('option');
+        opt.value = t;
+        opt.textContent = t;
+        typeFilter.appendChild(opt);
+      });
+      typeFilter.value = selected;
+    }
+
+    function resetAndLoad() {
+      state.cursor = null;
+      state.hasMore = true;
+      itemsContainer.innerHTML = '';
+      itemsStatus.textContent = '';
+      loadItems();
+    }
+
+    function setupObserver() {
+      if (state.observer) state.observer.disconnect();
+      state.observer = new IntersectionObserver((entries) => {
+        if (entries.some((e) => e.isIntersecting)) loadItems();
+      }, { rootMargin: '400px' });
+      state.observer.observe(sentinel);
+    }
+
+    async function loadItems() {
+      if (!state.clientId || state.loading || !state.hasMore) return;
+      state.loading = true;
+      loadMoreEl.classList.remove('hidden');
+
+      const params = new URLSearchParams({
+        client_id: state.clientId,
+        limit: '30',
+      });
+      if (state.type) params.set('type', state.type);
+      if (state.trash) params.set('trash', '1');
+      if (state.cursor) {
+        params.set('cursor_created_at', state.cursor.created_at);
+        params.set('cursor_item_id', state.cursor.item_id);
+        if (state.cursor.deleted_at) params.set('cursor_deleted_at', state.cursor.deleted_at);
+      }
+
+      try {
+        const res = await fetch(`/api/v1/items?${params}`);
+        if (!res.ok) throw new Error(await res.text());
+        const data = await res.json();
+        const isFirstPage = itemsContainer.childElementCount === 0;
+        renderItems(data.items || [], isFirstPage);
+        state.hasMore = !!data.has_more;
+        state.cursor = data.next_cursor || null;
+        const suffix = state.trash ? ' (recycle bin)' : '';
+        itemsStatus.textContent = (state.hasMore ? 'Scroll for more…' : 'End of list') + suffix;
+      } catch (err) {
+        itemsStatus.textContent = `Error: ${err.message}`;
+        state.hasMore = false;
+      } finally {
+        state.loading = false;
+        loadMoreEl.classList.add('hidden');
+      }
+    }
+
+    function renderItems(items, isFirstPage) {
+      if (!items.length && isFirstPage) {
+        itemsContainer.innerHTML = state.trash
+          ? '<p class="empty">Recycle bin is empty. Deleted items are kept for 10 days.</p>'
+          : '<p class="empty">No items found.</p>';
+        return;
+      }
+      const isImageGrid = !state.trash && state.type === 'image';
+      if (isImageGrid) {
+        let grid = itemsContainer.querySelector('.waterfall');
+        if (!grid) {
+          itemsContainer.innerHTML = '';
+          grid = document.createElement('div');
+          grid.className = 'waterfall';
+          itemsContainer.appendChild(grid);
+        }
+        items.forEach((item) => grid.appendChild(renderImageCard(item)));
+      } else {
+        let list = itemsContainer.querySelector('.item-list');
+        if (!list) {
+          itemsContainer.innerHTML = '';
+          list = document.createElement('div');
+          list.className = 'item-list';
+          itemsContainer.appendChild(list);
+        }
+        items.forEach((item) => list.appendChild(renderListCard(item)));
+      }
+    }
+
+    function renderImageCard(item) {
+      const card = document.createElement('article');
+      card.className = 'waterfall-card';
+      card.dataset.clientId = item.client_id;
+      card.dataset.itemId = item.item_id;
+      if (item.encrypted) card.dataset.encrypted = '1';
+      card.innerHTML = `
+        <img loading="lazy" decoding="async" alt="" data-img>
+        <div class="cap">
+          <span class="badge">${escapeHtml(item.content_type)}</span>
+          ${formatDate(item.created_at)}
+          ${item.encrypted ? ' · 🔒' : ''}
+          ${item.source_app ? ' · ' + escapeHtml(item.source_app) : ''}
+          <button type="button" class="btn btn-sm btn-danger" data-delete style="float:right">Delete</button>
+        </div>`;
+      if (item.encrypted) {
+        const img = card.querySelector('[data-img]');
+        img.alt = 'Encrypted';
+      } else {
+        attachImage(card.querySelector('[data-img]'), item.client_id, item.item_id);
+      }
+      card.querySelector('[data-delete]').addEventListener('click', (e) => {
+        e.stopPropagation();
+        deleteItem(item.client_id, item.item_id, card);
+      });
+      card.addEventListener('click', () => openDetail(item.client_id, item.item_id));
+      if (item.encrypted && state.browsePassphrase) {
+        registerEncryptedCard(card, { mainImg: true, preview: false });
+      }
+      return card;
+    }
+
+    function renderListCard(item) {
+      const card = document.createElement('article');
+      card.className = 'item-card';
+      card.dataset.clientId = item.client_id;
+      card.dataset.itemId = item.item_id;
+      if (item.encrypted) card.dataset.encrypted = '1';
+      const title = item.encrypted ? '🔒 Encrypted' : (item.display_title || item.content_preview || '(empty)');
+      const deletedBadge = state.trash && item.deleted_at
+        ? `<span class="badge">deleted ${formatDate(item.deleted_at)}</span>` : '';
+      const actionBtn = state.trash
+        ? `<button type="button" class="btn btn-sm" data-restore>Restore</button>`
+        : `<button type="button" class="btn btn-sm btn-danger" data-delete>Delete</button>`;
+      card.innerHTML = `
+        <div class="row1">
+          <span class="badge">${escapeHtml(item.content_type)}</span>
+          <span class="badge">${formatDate(item.created_at)}</span>
+          ${deletedBadge}
+          ${item.source_app ? `<span class="badge">${escapeHtml(item.source_app)}</span>` : ''}
+          ${item.truncated ? '<span class="badge">truncated</span>' : ''}
+          <span class="actions">${actionBtn}</span>
+        </div>
+        <div class="preview">${escapeHtml(title)}</div>`;
+      const action = card.querySelector('[data-delete], [data-restore]');
+      action.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (state.trash) restoreItem(item.client_id, item.item_id, card);
+        else deleteItem(item.client_id, item.item_id, card);
+      });
+      if (item.has_image && !item.encrypted) {
+        const img = document.createElement('img');
+        img.className = 'thumb';
+        attachImageLazy(img, item.client_id, item.item_id);
+        card.appendChild(img);
+      }
+      if (item.ocr_preview && !item.encrypted) {
+        const ocr = document.createElement('div');
+        ocr.className = 'preview';
+        ocr.textContent = 'OCR: ' + item.ocr_preview;
+        card.appendChild(ocr);
+      }
+      card.addEventListener('click', () => openDetail(item.client_id, item.item_id));
+      if (item.encrypted && state.browsePassphrase) {
+        registerEncryptedCard(card, { preview: true, thumb: true });
+      }
+      return card;
+    }
+
+    function findItemCard(clientId, itemId) {
+      return itemsContainer.querySelector(
+        `.item-card[data-client-id="${CSS.escape(clientId)}"][data-item-id="${CSS.escape(itemId)}"],` +
+        `.waterfall-card[data-client-id="${CSS.escape(clientId)}"][data-item-id="${CSS.escape(itemId)}"]`
+      );
+    }
+
+    function removeItemCard(clientId, itemId, cardEl) {
+      const card = cardEl || findItemCard(clientId, itemId);
+      if (card) card.remove();
+      if (!itemsContainer.querySelector('.item-card, .waterfall-card')) {
+        itemsContainer.innerHTML = state.trash
+          ? '<p class="empty">Recycle bin is empty. Deleted items are kept for 10 days.</p>'
+          : '<p class="empty">No items found.</p>';
+      }
+    }
+
+    async function deleteItem(clientId, itemId, cardEl) {
+      const res = await fetch(`/api/v1/items/${encodeURIComponent(clientId)}/${encodeURIComponent(itemId)}`, {
+        method: 'DELETE',
+      });
+      if (!res.ok) {
+        alert(await res.text());
+        return;
+      }
+      closeDetailModal();
+      removeItemCard(clientId, itemId, cardEl);
+    }
+
+    async function restoreItem(clientId, itemId, cardEl) {
+      const res = await fetch(`/api/v1/items/${encodeURIComponent(clientId)}/${encodeURIComponent(itemId)}/restore`, {
+        method: 'POST',
+      });
+      if (!res.ok) {
+        alert(await res.text());
+        return;
+      }
+      closeDetailModal();
+      removeItemCard(clientId, itemId, cardEl);
+    }
+
+    async function openDetail(clientId, itemId) {
+      const res = await fetch(`/api/v1/items/${encodeURIComponent(clientId)}/${encodeURIComponent(itemId)}`);
+      if (!res.ok) return;
+      let item = await res.json();
+      let inner = null;
+      if (item.encrypted && item.payload_encrypted) {
+        if (!state.browsePassphrase) {
+          alert('Passphrase required to view encrypted content.');
+          return;
+        }
+        try {
+          inner = await decryptPayloadBase64(item.payload_encrypted, state.browsePassphrase);
+        } catch (err) {
+          alert('Failed to decrypt: ' + (err.message || err));
+          return;
+        }
+      }
+      const display = inner || item;
+      const inTrash = !!item.deleted_at;
+      const actionBtn = inTrash
+        ? `<button type="button" class="btn" id="modal-restore">Restore</button>`
+        : `<button type="button" class="btn btn-danger" id="modal-delete">Delete</button>`;
+      const title = escapeHtml(display.display_title || item.display_title || item.item_id);
+      const contentType = escapeHtml(display.content_type || item.content_type);
+      const contentText = escapeHtml(display.content || '');
+      const ocrBlock = display.ocr_text
+        ? `<p><strong>OCR</strong></p><pre>${escapeHtml(display.ocr_text)}</pre>` : '';
+      const filesBlock = display.file_paths
+        ? `<p><strong>Files</strong></p><pre>${escapeHtml(display.file_paths)}</pre>` : '';
+      let imageBlock = '';
+      if (innerHasImage(inner)) {
+        const url = imageDataUrlFromBase64(inner.image_data_base64);
+        imageBlock = url ? `<img alt="" src="${url}">` : '';
+      } else if (item.has_image && !item.encrypted) {
+        imageBlock = '<img alt="" data-modal-img>';
+      }
+      modalRoot.classList.remove('hidden');
+      modalRoot.innerHTML = `
+        <div class="modal-backdrop" data-close>
+          <div class="modal" role="dialog">
+            <button type="button" class="btn close" data-close>Close</button>
+            <h3>${title}</h3>
+            <p><span class="badge">${contentType}</span>
+               <span class="badge">${formatDate(item.created_at)}</span>
+               ${item.encrypted ? '<span class="badge">🔒 encrypted</span>' : ''}
+               ${inTrash ? `<span class="badge">deleted ${formatDate(item.deleted_at)}</span>` : ''}
+               ${display.source_app ? `<span class="badge">${escapeHtml(display.source_app)}</span>` : ''}</p>
+            <p>${actionBtn}</p>
+            ${imageBlock}
+            <pre>${contentText}</pre>
+            ${ocrBlock}
+            ${filesBlock}
+          </div>
+        </div>`;
+      const modalImg = modalRoot.querySelector('[data-modal-img]');
+      if (modalImg) attachImage(modalImg, clientId, itemId);
+      const delBtn = modalRoot.querySelector('#modal-delete');
+      if (delBtn) delBtn.addEventListener('click', () => deleteItem(clientId, itemId));
+      const restoreBtn = modalRoot.querySelector('#modal-restore');
+      if (restoreBtn) restoreBtn.addEventListener('click', () => restoreItem(clientId, itemId));
+      modalRoot.querySelectorAll('[data-close]').forEach((el) => {
+        el.addEventListener('click', (e) => {
+          if (e.target === el) closeDetailModal();
+        });
+      });
+    }
+
+    function formatDate(raw) {
+      if (!raw) return '';
+      const d = new Date(raw);
+      return isNaN(d) ? raw : d.toLocaleString();
+    }
+
+    function escapeHtml(s) {
+      return String(s)
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;');
+    }
+
+    window.addEventListener('popstate', () => {
+      const { clientId, type, trash } = parseBrowseParams();
+      if (clientId) openClient(clientId, { type, trash, skipURL: true });
+      else closeClient(true);
+    });
+
+    const initial = parseBrowseParams();
+    if (initial.clientId) {
+      openClient(initial.clientId, { type: initial.type, trash: initial.trash, skipURL: true });
+    }
+  </script>
+</body>
+</html>

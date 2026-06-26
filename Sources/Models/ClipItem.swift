@@ -126,7 +126,7 @@ enum ClipContentType: String, Codable, CaseIterable {
 
 @Model
 final class ClipItem {
-    var itemID: String = UUID().uuidString
+    var itemID: String = KSUID.generate()
     var content: String
     /// Stored as raw String to avoid SwiftData enum deserialization crash on zombie objects.
     @Attribute(originalName: "contentType")
@@ -182,6 +182,10 @@ final class ClipItem {
     /// Identifier of the AI Agent (MCP client) that wrote this item, e.g. "claude-code", "cursor".
     /// Set when the clip originates from a `clipboard_set` MCP call. nil for normal user copies.
     var agentSource: String?
+    /// Sync origin: client that originally created this clip (this Mac's sync client ID for local captures).
+    var originClientID: String?
+    var originHostname: String?
+    var originIP: String?
 
     @MainActor
     init(

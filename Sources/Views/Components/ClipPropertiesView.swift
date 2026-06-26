@@ -21,6 +21,7 @@ struct ClipPropertiesView: View {
         VStack(alignment: .leading, spacing: 0) {
             commonProperties
             typeSpecificProperties
+            syncOriginProperties
             propDivider
             propRow(L10n.tr("detail.created"), formatDate(item.createdAt))
         }
@@ -79,6 +80,22 @@ struct ClipPropertiesView: View {
                 propDivider
                 propRow(L10n.tr("detail.group"), groupName)
             }
+        }
+    }
+
+    @ViewBuilder
+    private var syncOriginProperties: some View {
+        if let clientID = item.originClientID, !clientID.isEmpty {
+            propDivider
+            propRow(L10n.tr("detail.syncOriginClient"), clientID)
+        }
+        if let hostname = item.originHostname, !hostname.isEmpty {
+            propDivider
+            propRow(L10n.tr("detail.syncOriginHostname"), hostname)
+        }
+        if let ip = item.originIP, !ip.isEmpty {
+            propDivider
+            propRow(L10n.tr("detail.syncOriginIP"), ip)
         }
     }
 
