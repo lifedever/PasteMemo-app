@@ -299,7 +299,12 @@ final class QuickPanelWindowController {
             defer: false
         )
         panel.isFloatingPanel = true
-        panel.level = .floating
+        // .floating(3) 离 .normal(0) 太近：作为后台非激活面板，前台 App 的普通窗口会被系统
+        // 抬到同层之上，把面板盖住（剪映导出框 level=0 仍遮住面板，issue #78）。提到 .statusBar(25)
+        // 拉开层差，与项目内 Toast / Maccy / Clippy 命令面板的做法一致。
+        panel.level = .statusBar
+        // 跨 Space / 全屏跟随，否则全屏 App 下面板不出现。项目内 Toast / Relay 都设了，唯独这里漏。
+        panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         panel.animationBehavior = .none
         panel.isMovableByWindowBackground = true
         panel.backgroundColor = .clear
@@ -756,7 +761,8 @@ private class SnapGuideWindow: NSWindow {
         self.isReleasedWhenClosed = false
         self.isOpaque = false
         self.backgroundColor = .clear
-        self.level = .floating + 1
+        // 比面板高 1 层，保证拖动时对齐参考线显示在面板之上（面板已抬到 .statusBar，见 buildPanel）。
+        self.level = .statusBar + 1
         self.ignoresMouseEvents = true
         self.hasShadow = false
         self.contentView = guideView
