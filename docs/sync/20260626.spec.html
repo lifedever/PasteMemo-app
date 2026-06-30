@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PasteMemo 同步功能需求规格说明书 — 20260626</title>
+  <style>
+    :root {
+      --text: #1a1a1a;
+      --muted: #555;
+      --border: #ddd;
+      --accent: #2563eb;
+      --bg: #fff;
+      --surface: #f8fafc;
+      --warn: #b45309;
+      --ok: #15803d;
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", sans-serif;
+      line-height: 1.65;
+      color: var(--text);
+      background: var(--bg);
+      margin: 0;
+      padding: 0;
+    }
+    header.doc-header {
+      background: linear-gradient(135deg, #1e3a5f 0%, #2563eb 100%);
+      color: #fff;
+      padding: 2.5rem 2rem;
+    }
+    header.doc-header h1 { margin: 0 0 0.5rem; font-size: 1.75rem; font-weight: 700; }
+    header.doc-header .meta { opacity: 0.9; font-size: 0.95rem; }
+    .layout {
+      display: grid;
+      grid-template-columns: 240px 1fr;
+      max-width: 1200px;
+      margin: 0 auto;
+      gap: 0;
+    }
+    nav.toc {
+      position: sticky;
+      top: 0;
+      align-self: start;
+      max-height: 100vh;
+      overflow-y: auto;
+      padding: 1.5rem 1rem 2rem;
+      border-right: 1px solid var(--border);
+      background: var(--surface);
+      font-size: 0.88rem;
+    }
+    nav.toc a {
+      display: block;
+      color: var(--muted);
+      text-decoration: none;
+      padding: 0.25rem 0;
+    }
+    nav.toc a:hover { color: var(--accent); }
+    nav.toc .toc-h2 { font-weight: 600; color: var(--text); margin-top: 0.75rem; }
+    nav.toc .toc-h3 { padding-left: 0.75rem; font-size: 0.85rem; }
+    main {
+      padding: 2rem 2.5rem 4rem;
+      min-width: 0;
+    }
+    h2 {
+      font-size: 1.35rem;
+      margin: 2.5rem 0 1rem;
+      padding-bottom: 0.35rem;
+      border-bottom: 2px solid var(--accent);
+    }
+    h3 { font-size: 1.1rem; margin: 1.75rem 0 0.75rem; color: #334155; }
+    h4 { font-size: 1rem; margin: 1.25rem 0 0.5rem; }
+    p, li { font-size: 0.95rem; }
+    .lead { font-size: 1.05rem; color: var(--muted); }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+      margin: 1rem 0;
+    }
+    th, td {
+      border: 1px solid var(--border);
+      padding: 0.5rem 0.65rem;
+      text-align: left;
+      vertical-align: top;
+    }
+    th { background: var(--surface); font-weight: 600; }
+    code, pre {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 0.85rem;
+    }
+    pre {
+      background: #0f172a;
+      color: #e2e8f0;
+      padding: 1rem;
+      border-radius: 6px;
+      overflow-x: auto;
+    }
+    .diagram {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.25rem;
+      margin: 1rem 0;
+      font-family: ui-monospace, monospace;
+      font-size: 0.82rem;
+      line-height: 1.5;
+      white-space: pre;
+      overflow-x: auto;
+    }
+    .req {
+      border-left: 4px solid var(--accent);
+      padding: 0.75rem 1rem;
+      margin: 1rem 0;
+      background: var(--surface);
+    }
+    .req-id { font-weight: 700; color: var(--accent); font-size: 0.85rem; }
+    .tag {
+      display: inline-block;
+      font-size: 0.75rem;
+      padding: 0.15rem 0.45rem;
+      border-radius: 4px;
+      font-weight: 600;
+      margin-right: 0.35rem;
+    }
+    .tag-must { background: #dbeafe; color: #1d4ed8; }
+    .tag-should { background: #fef3c7; color: #92400e; }
+    .tag-may { background: #f3f4f6; color: #374151; }
+    .note {
+      background: #fffbeb;
+      border: 1px solid #fcd34d;
+      border-radius: 6px;
+      padding: 0.75rem 1rem;
+      margin: 1rem 0;
+      font-size: 0.9rem;
+    }
+    .warn {
+      background: #fef2f2;
+      border: 1px solid #fca5a5;
+      border-radius: 6px;
+      padding: 0.75rem 1rem;
+      margin: 1rem 0;
+      font-size: 0.9rem;
+    }
+    ul.checklist { list-style: none; padding-left: 0; }
+    ul.checklist li::before { content: "☐ "; color: var(--accent); }
+    footer {
+      margin-top: 3rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--border);
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+    @media (max-width: 900px) {
+      .layout { grid-template-columns: 1fr; }
+      nav.toc { position: static; max-height: none; border-right: none; border-bottom: 1px solid var(--border); }
+    }
+  </style>
+</head>
+<body>
+
+<header class="doc-header">
+  <h1>PasteMemo 同步功能需求规格说明书</h1>
+  <div class="meta">
+    文档编号：20260626.spec &nbsp;|&nbsp; 版本：1.2 &nbsp;|&nbsp; 日期：2026-06-26 &nbsp;|&nbsp; 状态：与代码库一致
+  </div>
+</header>
+
+<div class="layout">
+  <nav class="toc">
+    <strong>目录</strong>
+    <a class="toc-h2" href="#s1">1. 概述</a>
+    <a class="toc-h2" href="#s2">2. 目标与范围</a>
+    <a class="toc-h2" href="#s3">3. 术语</a>
+    <a class="toc-h2" href="#s4">4. 用户角色</a>
+    <a class="toc-h2" href="#s5">5. 功能需求</a>
+    <a class="toc-h3" href="#s5-1">5.1 服务器与认证</a>
+    <a class="toc-h3" href="#s5-2">5.2 客户端配置</a>
+    <a class="toc-h3" href="#s5-3">5.3 上传同步</a>
+    <a class="toc-h3" href="#s5-4">5.4 对端拉取</a>
+    <a class="toc-h3" href="#s5-5">5.5 回收站同步</a>
+    <a class="toc-h3" href="#s5-6">5.6 定时同步</a>
+    <a class="toc-h3" href="#s5-7">5.7 端到端加密</a>
+    <a class="toc-h3" href="#s5-8">5.8 来源追踪</a>
+    <a class="toc-h3" href="#s5-9">5.9 Web 管理台</a>
+    <a class="toc-h2" href="#s6">6. 非功能需求</a>
+    <a class="toc-h2" href="#s7">7. 用户界面</a>
+    <a class="toc-h2" href="#s8">8. 数据与约束</a>
+    <a class="toc-h2" href="#s9">9. 验收标准</a>
+    <a class="toc-h2" href="#s10">10. 已知限制</a>
+  </nav>
+
+  <main>
+
+    <section id="s1">
+      <h2>1. 概述</h2>
+      <p class="lead">
+        PasteMemo 同步功能允许用户在多台 Mac 之间，通过自托管的 <strong>sync-server</strong> 共享剪贴板历史。
+        客户端以增量方式上传本机产生的条目，并可选择从其它设备拉取条目；服务端提供 Web 仪表盘浏览与管理数据。
+      </p>
+      <div class="diagram">┌─────────────┐     Bearer Token      ┌──────────────┐     SQLite     ┌─────────┐
+│ PasteMemo   │ ── POST /sync ──────► │ sync-server  │ ─────────────► │ items   │
+│ macOS App   │ ◄─ GET /pull ──────── │ (Go HTTP)    │                │ clients │
+└─────────────┘     GET /trash         └──────────────┘                └─────────┘
+       │                                        ▲
+       │                                        │ GET / (浏览器)
+       └──────── SwiftData ClipItem ────────────┘</div>
+    </section>
+
+    <section id="s2">
+      <h2>2. 目标与范围</h2>
+      <h3>2.1 目标</h3>
+      <ul>
+        <li>在多台 Mac 间共享剪贴板历史，无需第三方云剪贴板服务。</li>
+        <li>用户完全掌控数据：自托管服务器、可选端到端加密。</li>
+        <li>增量同步，降低带宽与服务器负载。</li>
+        <li>记录条目来源设备信息，便于区分本机与其它设备内容。</li>
+      </ul>
+      <h3>2.2 范围内</h3>
+      <ul>
+        <li>macOS 客户端设置页「同步」模块。</li>
+        <li>Go 语言 sync-server（API + Web UI）。</li>
+        <li>上传、对端拉取、回收站删除同步、加密、来源元数据。</li>
+      </ul>
+      <h3>2.3 范围外</h3>
+      <ul>
+        <li>本机删除剪贴板条目同步到服务器（单向：服务器 → 客户端）。</li>
+        <li>已上传条目的内容修改/版本更新同步。</li>
+        <li>iOS / Windows 客户端。</li>
+        <li>账户体系、多租户、细粒度 ACL。</li>
+      </ul>
+    </section>
+
+    <section id="s3">
+      <h2>3. 术语</h2>
+      <table>
+        <thead><tr><th>术语</th><th>说明</th></tr></thead>
+        <tbody>
+          <tr><td>Client ID</td><td>每台 PasteMemo 实例的唯一 KSUID（27 字符 base62，时间排序），由 <code>KSUID.generate()</code> 生成，标识同步身份。</td></tr>
+          <tr><td>KSUID</td><td>27 字符 base62 编码的时间排序唯一 ID（segmentio/ksuid 兼容），用作 <code>ClipItem.itemID</code> 的跨设备主键。生成见 <code>Sources/Engine/KSUID.swift</code>。</td></tr>
+          <tr><td>Sync Token</td><td>客户端与服务器共享的 Bearer 密钥，用于 API 鉴权。</td></tr>
+          <tr><td>对端 (Peer)</td><td>同一 sync-server 上其它 Client ID 对应的设备。</td></tr>
+          <tr><td>水印 (Watermark)</td><td>记录上次成功同步时间点，用于增量上传/拉取。</td></tr>
+          <tr><td>本机条目</td><td><code>originClientID</code> 为空或等于本机 Client ID 的条目。</td></tr>
+          <tr><td>对端条目</td><td>从其它设备拉取、<code>originClientID</code> 为对端 ID 的条目。</td></tr>
+          <tr><td>PMEM</td><td>PasteMemo 导出/加密使用的容器格式（Magic + PBKDF2 + AES-GCM）。</td></tr>
+          <tr><td>Item Cursor</td><td>分页定位符：<code>(created_at, item_id)</code> 或 <code>(deleted_at, item_id)</code>，保证同时间戳下分页稳定。</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="s4">
+      <h2>4. 用户角色</h2>
+      <table>
+        <thead><tr><th>角色</th><th>描述</th><th>主要操作</th></tr></thead>
+        <tbody>
+          <tr><td>终端用户</td><td>使用 PasteMemo 的 Mac 用户</td><td>配置同步、手动/自动同步、选择对端、设置加密口令</td></tr>
+          <tr><td>服务器管理员</td><td>部署 sync-server 的运维人员</td><td>配置 Token、数据库路径、反向代理、备份 SQLite</td></tr>
+          <tr><td>浏览者</td><td>通过浏览器访问 Web 仪表盘</td><td>浏览条目、删除/恢复、清空回收站、解密查看（若加密）</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="s5">
+      <h2>5. 功能需求</h2>
+
+      <h3 id="s5-1">5.1 服务器与认证</h3>
+      <div class="req">
+        <div class="req-id">REQ-SRV-001</div>
+        <span class="tag tag-must">必须</span>
+        服务器通过环境变量 <code>SYNC_TOKEN</code> 配置共享密钥；未配置则拒绝启动。
+      </div>
+      <div class="req">
+        <div class="req-id">REQ-SRV-002</div>
+        <span class="tag tag-must">必须</span>
+        上传 (<code>POST /api/v1/sync</code>)、拉取 (<code>GET /api/v1/pull</code>)、回收站列表 (<code>GET /api/v1/trash</code>)、清空客户端数据 (<code>DELETE /api/v1/clients/{id}/items</code>) 须携带 <code>Authorization: Bearer &lt;token&gt;</code>。
+      </div>
+      <div class="req">
+        <div class="req-id">REQ-SRV-003</div>
+        <span class="tag tag-should">应当</span>
+        生产环境通过 HTTPS 与反向代理部署；支持 <code>SYNC_TRUST_PROXY</code> 获取真实客户端 IP。
+      </div>
+
+      <h3 id="s5-2">5.2 客户端配置</h3>
+      <div class="req">
+        <div class="req-id">REQ-CLI-001</div>
+        <span class="tag tag-must">必须</span>
+        用户可配置：服务器 URL、Token、是否启用自动同步、同步间隔（分钟）、批次大小。
+      </div>
+      <div class="req">
+        <div class="req-id">REQ-CLI-002</div>
+        <span class="tag tag-must">必须</span>
+        首次使用时自动生成 Client ID（27 字符 base62 KSUID），支持复制与重新生成。重新生成不会迁移服务器上旧 ID 的数据。
+      </div>
+      <div class="req">
+        <div class="req-id">REQ-CLI-003</div>
+        <span class="tag tag-must">必须</span>
+        默认服务器 URL 为 <code>http://127.0.0.1:8787</code>；默认同步间隔 5 分钟；默认批次 20 条。
+      </div>
+      <div class="req">
+        <div class="req-id">REQ-CLI-004</div>
+        <span class="tag tag-must">必须</span>
+        同步间隔范围 1–10080 分钟（7 天）；批次大小范围 1–500。
+      </div>
+      <div class="req">
+        <div class="req-id">REQ-CLI-005</div>
+        <span class="tag tag-should">应当</span>
+        单二进制字段上限 10 MiB（超出则清空该字段并标记 <code>truncated</code>）；单请求体上限 48 MiB；超限由 <code>uploadBatchAdaptive</code> 自动二分拆分 batch，单条仍超限时再次 <code>stripBinaryFields</code>。
+      </div>
+
+      <h3 id="s5-3">5.3 上传同步</h3>
+      <div class="req">
+        <div class="req-id">REQ-UPL-001</div>
+        <span class="tag tag-must">必须</span>
+        客户端将 <code>createdAt</code> 晚于上次成功同步时间的<strong>本机条目</strong>分批上传至服务器。
+      </div>
+      <div class="req">
+        <div class="req-id">REQ-UPL-002</div>
+        <span class="tag tag-must">必须</span>
+        从其它设备拉取的条目（对端条目）<strong>不得</strong>再次上传，包括全量重同步场景。
+      </div>
+      <div class="req">
+        <div class="req-id">REQ-UPL-003</div>
+        <span class="tag tag-must">必须</span>
+        服务器按 <code>(client_id, item_id)</code> 去重；重复条目计入 <code>deduped_count</code>，不报错。
+      </div>
+      <div class="req">
+        <div class="req-id">REQ-UPL-004</div>
+        <span class="tag tag-must">必须</span>
+        上传请求携带本机 hostname；每条目携带来源 Client ID、Hostname、IP（见 5.8）。
+      </div>
+      <div class="req">
+        <div class="req-id">REQ-UPL-005</div>
+        <span class="tag tag-should">应当</span>
+        单字段二进制上限 10 MiB；超出则省略该字段并标记 <code>truncated</code>。
+      </div>
+
+      <h3 id="s5-4">5.4 对端拉取</h3>
+      <div class="req">
+        <div class="req-id">REQ-PULL-001</div>
+        <span class="tag tag-must">必须</span>
+        用户可从服务器发现的设备列表中选择对端；拉取对端自上次拉取以来新增的条目。
+      </div>
+      <div class="req">
+        <div class="req-id">REQ-PULL-002</div>
+        <span class="tag tag-must">必须</span>
+        本地已存在相同 <code>item_id</code> 的条目时跳过导入（幂等）。
+      </div>
+      <div class="req">
+        <div class="req-id">REQ-PULL-003</div>
+        <span class="tag tag-must">必须</span>
+        对端启用加密时，须先输入并验证对端口令后方可选择该对端；口令指纹与服务器公布的 salt/fingerprint 一致。
+      </div>
+      <div class="req">
+        <div class="req-id">REQ-PULL-004</div>
+        <span class="tag tag-must">必须</span>
+        导入时写入来源 Client ID、Hostname、IP；属性面板可查看（见 5.8）。
+      </div>
+
+      <h3 id="s5-5">5.5 回收站同步</h3>
+      <div class="req">
+        <div class="req-id">REQ-TRASH-001</div>
+        <span class="tag tag-must">必须</span>
+        Web 仪表盘删除条目为软删除（进入回收站）；客户端通过对端/本机 trash API 拉取删除记录并本地删除对应 <code>item_id</code>。
+      </div>
+      <div class="req">
+        <div class="req-id">REQ-TRASH-002</div>
+        <span class="tag tag-must">必须</span>
+        回收站条目保留 10 天后由服务器自动永久清除。
+      </div>
+      <div class="req">
+        <div class="req-id">REQ-TRASH-003</div>
+        <span class="tag tag-must">必须</span>
+        Web 回收站视图提供「全部清除」，永久删除该 Client 下所有回收站条目。
+      </div>
+      <div class="req">
+        <div class="req-id">REQ-TRASH-005</div>
+        <span class="tag tag-should">应当</span>
+        回收站/拉取接口基于 <code>created_at DESC, item_id DESC</code>（或 <code>deleted_at DESC, item_id DESC</code>）的稳定排序返回，由 <code>cursor_created_at</code>+<code>cursor_item_id</code>（或 <code>cursor_deleted_at</code>+<code>cursor_item_id</code>）定位下一页。
+      </div>
+      <div class="req">
+        <div class="req-id">REQ-TRASH-004</div>
+        <span class="tag tag-must">必须</span>
+        客户端在 PasteMemo 内删除条目<strong>不会</strong>同步到服务器。
+      </div>
+
+      <h3 id="s5-6">5.6 定时同步</h3>
+      <div class="req">
+        <div class="req-id">REQ-SCH-001</div>
+        <span class="tag tag-must">必须</span>
+        启用自动同步后，按配置间隔执行完整同步流程（上传 → 拉取 → 回收站）。
+      </div>
+      <div class="req">
+        <div class="req-id">REQ-SCH-002</div>
+        <span class="tag tag-must">必须</span>
+        提供「立即同步」手动触发；同步进行中禁止重复触发。
+      </div>
+      <div class="req">
+        <div class="req-id">REQ-SCH-003</div>
+        <span class="tag tag-must">必须</span>
+        同步失败时自动暂停定时同步（<code>autoPaused=true</code>、<code>stop()</code> 定时器、记录 <code>lastError</code>），显示错误信息；用户可「恢复自动同步」清 <code>autoPaused</code> 并重新 <code>reschedule()</code>。
+      </div>
+      <div class="req">
+        <div class="req-id">REQ-SCH-004</div>
+        <span class="tag tag-should">应当</span>
+        当本次无新上传、无新下载、无新删除时，视为成功（无新内容），仍推进上传水印。
+      </div>
+
+      <h3 id="s5-7">5.7 端到端加密</h3>
+      <div class="req">
+        <div class="req-id">REQ-ENC-001</div>
+        <span class="tag tag-must">必须</span>
+        用户可启用上传加密；口令经 PBKDF2（600000 次）派生密钥，AES-GCM 加密条目 JSON（PMEM 格式）。
+      </div>
+      <div class="req">
+        <div class="req-id">REQ-ENC-002</div>
+        <span class="tag tag-must">必须</span>
+        服务器仅存储密文与密钥指纹、salt；不存储口令或明文密钥。
+      </div>
+      <div class="req">
+        <div class="req-id">REQ-ENC-003</div>
+        <span class="tag tag-must">必须</span>
+        启用/更改加密或口令时：删除服务器上该 Client 的全部条目、重置所有同步水印、自动触发仅含<strong>本机条目</strong>的全量重传。
+      </div>
+      <div class="req">
+        <div class="req-id">REQ-ENC-004</div>
+        <span class="tag tag-must">必须</span>
+        对端加密条目拉取时须持有对端口令；本机加密上传须持有本机口令。
+      </div>
+      <div class="req">
+        <div class="req-id">REQ-ENC-005</div>
+        <span class="tag tag-should">应当</span>
+        Web 仪表盘浏览加密 Client 时，用户输入口令后在浏览器内解密预览（Web Crypto）。
+      </div>
+
+      <h3 id="s5-8">5.8 来源追踪</h3>
+      <div class="req">
+        <div class="req-id">REQ-ORG-001</div>
+        <span class="tag tag-must">必须</span>
+        本机新捕获的剪贴板条目记录：来源 Client ID（KSUID）、Hostname、IPv4。
+      </div>
+      <div class="req">
+        <div class="req-id">REQ-ORG-002</div>
+        <span class="tag tag-must">必须</span>
+        从对端导入的条目保留/补全来源三元组；快捷面板与管理器属性列表展示上述字段。
+      </div>
+      <div class="req">
+        <div class="req-id">REQ-ORG-003</div>
+        <span class="tag tag-must">必须</span>
+        来源信息随条目 payload 同步至服务器 <code>origin_*</code> 字段持久化。
+      </div>
+
+      <h3 id="s5-9">5.9 Web 管理台</h3>
+      <div class="req">
+        <div class="req-id">REQ-WEB-001</div>
+        <span class="tag tag-must">必须</span>
+        首页展示已连接 Client 列表：ID、Hostname、IP、同步统计、条目数、是否加密。
+      </div>
+      <div class="req">
+        <div class="req-id">REQ-WEB-002</div>
+        <span class="tag tag-must">必须</span>
+        按 Client 浏览条目：类型筛选、分页滚动加载、列表/图片瀑布流视图。
+      </div>
+      <div class="req">
+        <div class="req-id">REQ-WEB-003</div>
+        <span class="tag tag-must">必须</span>
+        条目详情弹窗；支持删除（进回收站）、回收站内恢复。
+      </div>
+      <div class="req">
+        <div class="req-id">REQ-WEB-004</div>
+        <span class="tag tag-should">应当</span>
+        支持明暗主题切换（<code>localStorage['pastememo-sync-theme']</code>）；加密 Client 浏览前口令门控，浏览器侧 <code>crypto.subtle.decrypt</code> 解密 PMEM；口令存于 <code>sessionStorage['sync-pass:{clientId}']</code> 与验证标志 <code>sync-pass-verified:{clientId}</code>。
+      </div>
+      <div class="req">
+        <div class="req-id">REQ-WEB-005</div>
+        <span class="tag tag-may">可选</span>
+        服务端 JSON 响应在客户端 <code>Accept-Encoding: gzip</code> 时启用 gzip（BestSpeed）；图片预览走 <code>GET /api/v1/items/{c}/{i}/image</code>，JPEG/PNG/GIF 原样下发，HEIC/TIFF 等在 macOS 上经 <code>sips</code> 转 JPEG；非 Darwin 不支持转码时返回 415。
+      </div>
+    </section>
+
+    <section id="s6">
+      <h2>6. 非功能需求</h2>
+      <table>
+        <thead><tr><th>类别</th><th>要求</th></tr></thead>
+        <tbody>
+          <tr><td>性能</td><td>默认批次 20 条；单请求体客户端上限 48 MiB（超限自适应拆分）；服务端上传上限 512 MiB。</td></tr>
+          <tr><td>可靠性</td><td>同步失败不丢本地数据；dedup 保证重复上传安全。</td></tr>
+          <tr><td>可用性</td><td>设置页同步模块支持窗口缩放与内容区滚动。</td></tr>
+          <tr><td>安全</td><td>Token 鉴权保护写入类 API；生产环境 HTTPS；加密可选；仪表盘默认无鉴权（需网络层防护）。</td></tr>
+          <tr><td>可维护性</td><td>SQLite 单文件备份；Go 1.22+ 构建 sync-server。</td></tr>
+          <tr><td>兼容性</td><td>旧条目无 <code>originClientID</code> 视为本机条目；旧同步间隔键自动迁移为分钟。</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="s7">
+      <h2>7. 用户界面</h2>
+      <h3>7.1 设置 → 同步</h3>
+      <table>
+        <thead><tr><th>区块</th><th>内容</th></tr></thead>
+        <tbody>
+          <tr><td>说明</td><td>功能简介</td></tr>
+          <tr><td>身份</td><td>Client ID 展示、复制、重新生成（需确认）</td></tr>
+          <tr><td>服务器</td><td>URL、Token（Token 用 <code>RevealableSecureField</code>：长按眼睛图标临时明文）</td></tr>
+          <tr><td>加密</td><td>开关、口令（<code>RevealableSecureField</code>）、应用/关闭加密</td></tr>
+          <tr><td>对端设备</td><td>刷新列表、多选、加密对端口令弹窗（指纹校验后保存 <code>peerPassphrase</code>）</td></tr>
+          <tr><td>计划</td><td>启用自动同步、间隔（分钟）、批次、暂停恢复（<code>resumeAutoSync</code>）</td></tr>
+          <tr><td>状态</td><td>上次成功时间、上传/下载/删除计数、<code>lastError</code>、<code>autoPaused</code>、立即同步</td></tr>
+        </tbody>
+      </table>
+      <h3>7.2 剪贴板属性</h3>
+      <p>快捷面板预览侧栏与管理器详情页的 <code>ClipPropertiesView</code> 在「创建时间」前展示（有值时）：</p>
+      <ul>
+        <li>来源 Client ID</li>
+        <li>来源主机名</li>
+        <li>来源 IP</li>
+      </ul>
+    </section>
+
+    <section id="s8">
+      <h2>8. 数据与约束</h2>
+      <h3>8.1 同步条目标识</h3>
+      <p><code>item_id</code> 为跨设备唯一键；本机捕获时由 <code>KSUID.generate()</code> 生成 27 字符 base62 字符串（时间排序），导入时沿用对端 ID。</p>
+      <h3>8.2 本机 vs 对端判定</h3>
+      <table>
+        <thead><tr><th>originClientID</th><th>是否上传</th></tr></thead>
+        <tbody>
+          <tr><td><code>null</code> / 空（旧数据）</td><td>是（视为本机）</td></tr>
+          <tr><td>等于本机 Client ID</td><td>是</td></tr>
+          <tr><td>其它 Client ID</td><td>否</td></tr>
+        </tbody>
+      </table>
+      <h3>8.3 加密变更后的重同步</h3>
+      <div class="note">
+        加密设置变更 → 服务器 DELETE 该 client 全部 items → 重置 <code>lastCompletedAt</code>、各 peer pull/trash 水印 → 仅上传本机条目。
+      </div>
+    </section>
+
+    <section id="s9">
+      <h2>9. 验收标准</h2>
+      <ul class="checklist">
+        <li>两台 Mac 配置同一 Token，A 复制文本，B 手动同步后可看到 A 的条目。</li>
+        <li>B 拉取的条目在 B 的属性中显示 A 的 Client ID / Hostname / IP。</li>
+        <li>B 不会将 A 的条目再次上传至服务器（服务器 item 计数不重复增长）。</li>
+        <li>Web 删除 A 的条目后，B 同步后本地对应条目消失。</li>
+        <li>启用加密后服务器存密文；Web 输入正确口令可解密查看；错误口令拒绝。</li>
+        <li>更改加密口令后仅本机历史重传，不含对端拉取条目。</li>
+        <li>同步失败显示错误并暂停；恢复后继续按间隔同步。</li>
+        <li>回收站「全部清除」后该 Client 回收站为空。</li>
+        <li>设置页同步内容超出窗口高度时可滚动。</li>
+      </ul>
+    </section>
+
+    <section id="s10">
+      <h2>10. 已知限制</h2>
+      <ul>
+        <li>本地删除不同步到服务器；条目在服务器上仍存在直至 Web 删除或过期。</li>
+        <li>不支持已同步条目的内容更新（仅新增 + 删除传播）。</li>
+        <li>Web 仪表盘及多数只读 API 无 Bearer 鉴权，公网暴露需额外防护。</li>
+        <li>加密口令存储于 UserDefaults（明文），依赖 macOS 用户会话安全。</li>
+        <li>重新生成 Client ID 不会迁移服务器上旧 ID 的数据。</li>
+        <li>HEIC 等格式在 Web 仪表盘非 Safari 浏览器中无法直接渲染；服务端在 <code>GET /api/v1/items/{c}/{i}/image</code> 通过 <code>sips</code>（Darwin）转码为 JPEG 后再下发。</li>
+        <li>单批次请求体超过 48 MiB 时客户端会二分拆分；单条超限则清空四个二进制字段并标记 <code>truncated=true</code>，仍超限时上报错误。</li>
+        <li>每个 ClipItem 在 <code>SyncEngine.performSync</code> 末尾若 <code>uploaded == 0 &amp;&amp; downloaded == 0 &amp;&amp; deleted == 0</code> 会抛出 <code>SyncError.noItems</code>，由 <code>SyncScheduler</code> 视为成功（推进上传水印）。</li>
+      </ul>
+      <div class="warn">
+        <strong>安全提示：</strong>生产环境务必使用 HTTPS、强随机 Token，并通过防火墙或反向代理限制 Web 仪表盘访问。
+      </div>
+    </section>
+
+    <footer>
+      PasteMemo Sync Feature — Requirements Specification 20260626.spec.html<br>
+      关联文档：<a href="20260626.tech.html">20260626.tech.html 技术实现说明书</a>
+    </footer>
+
+  </main>
+</div>
+
+</body>
+</html>

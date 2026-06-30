@@ -27,15 +27,11 @@ struct SettingsView: View {
 
             Divider()
 
-            // scrollDisabled：让面板内容把窗口撑高，而不是出现滚动条
-            //（沿用旧版 TabView 的"内容自适应、永不滚动"语义）。
+            // 详情区在窗口内占满剩余高度；内容超出时由各自面板滚动（如同步设置）。
             detailView(for: selection ?? .general)
-                .scrollDisabled(true)
-                .frame(width: 536, alignment: .top)
+                .frame(minWidth: 536, maxWidth: 536, maxHeight: .infinity, alignment: .topLeading)
         }
-        // 高度跟随当前面板内容；下限保证侧边栏所有条目完整可见、无需滚动。
-        .frame(minHeight: 470)
-        .fixedSize(horizontal: false, vertical: true)
+        .frame(minWidth: 720, maxWidth: .infinity, minHeight: 470, maxHeight: .infinity)
         .localized()
     }
 
@@ -59,6 +55,9 @@ struct SettingsView: View {
         case .ocr: OCRPane()
         case .shortcuts: ShortcutsTab()
         case .relay: RelayTab()
+        case .sync:
+            SyncSettingsView()
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         case .privacy: PrivacyTab()
         case .aiAgents: AIAgentIntegrationView()
         case .automation: AutomationTab()
@@ -73,7 +72,7 @@ struct SettingsView: View {
 
 enum SettingsCategory: String, CaseIterable, Identifiable, Hashable {
     case general, appearance, preferences, preview, ocr
-    case shortcuts, relay, privacy, aiAgents, automation, data
+    case shortcuts, relay, sync, privacy, aiAgents, automation, data
     case sponsor, about
 
     var id: String { rawValue }
@@ -81,7 +80,7 @@ enum SettingsCategory: String, CaseIterable, Identifiable, Hashable {
     /// 功能设置：基础(通用/外观) → 快捷面板(快捷键/偏好/链接预览/OCR) → 进阶(接力/AI/自动化)。
     static let functionGroup: [SettingsCategory] =
         [.general, .appearance, .shortcuts, .preferences, .preview, .ocr,
-         .relay, .aiAgents, .automation]
+         .relay, .sync, .aiAgents, .automation]
 
     /// 数据与隐私。
     static let dataPrivacyGroup: [SettingsCategory] = [.privacy, .data]
@@ -98,6 +97,7 @@ enum SettingsCategory: String, CaseIterable, Identifiable, Hashable {
         case .ocr: return "settings.ocr"
         case .shortcuts: return "settings.shortcuts"
         case .relay: return "relay.tab"
+        case .sync: return "sync.tab"
         case .privacy: return "settings.privacy"
         case .aiAgents: return "settings.tab.aiAgents"
         case .automation: return "settings.automation"
@@ -116,6 +116,7 @@ enum SettingsCategory: String, CaseIterable, Identifiable, Hashable {
         case .ocr: return "text.viewfinder"
         case .shortcuts: return "keyboard"
         case .relay: return "arrow.forward"
+        case .sync: return "arrow.triangle.2.circlepath"
         case .privacy: return "lock.shield"
         case .aiAgents: return "sparkles.rectangle.stack"
         case .automation: return "gearshape.2"

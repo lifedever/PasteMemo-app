@@ -186,6 +186,7 @@ final class ClipboardManager: ObservableObject {
         if let agent = NSPasteboard.general.string(forType: .agentSource), !agent.isEmpty {
             newItem.agentSource = agent
         }
+        SyncOrigin.stampLocal(on: newItem)
 
         let context = container.mainContext
 

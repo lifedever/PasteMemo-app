@@ -100,6 +100,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         BackupScheduler.shared.start(container: PasteMemoApp.sharedModelContainer)
+        SyncScheduler.shared.start(container: PasteMemoApp.sharedModelContainer)
 
         // 总开关:默认值由 PasteMemoApp.migrateMCPEnabledIfNeeded() 决定 ——
         // 1.7.x 升级用户 = true (保持原行为),全新安装 = false (隐私优先)。issue #50
@@ -122,6 +123,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationWillTerminate(_ notification: Notification) {
         BackupScheduler.shared.stop()
+        SyncScheduler.shared.stop()
         MCPSocketServer.shared.stop()
         // Persist relay queue synchronously before termination — otherwise in-memory
         // items never reach disk when the user quits while a relay session is active.

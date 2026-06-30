@@ -84,6 +84,9 @@ final class WindowManager {
             window.contentView = NSHostingView(rootView: content())
         }
         window.isReleasedWhenClosed = false
+        if styleMask.contains(.resizable) {
+            window.contentMinSize = NSSize(width: size.width, height: min(size.height, 470))
+        }
         if let frameAutosaveName {
             window.setFrameAutosaveName(frameAutosaveName)
             if !window.setFrameUsingName(frameAutosaveName) { window.center() }

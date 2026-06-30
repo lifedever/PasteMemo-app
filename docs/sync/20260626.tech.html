@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PasteMemo 同步功能技术实现说明书 — 20260626</title>
+  <style>
+    :root {
+      --text: #1a1a1a;
+      --muted: #555;
+      --border: #ddd;
+      --accent: #0d9488;
+      --bg: #fff;
+      --surface: #f0fdfa;
+      --code-bg: #0f172a;
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", sans-serif;
+      line-height: 1.65;
+      color: var(--text);
+      margin: 0;
+    }
+    header.doc-header {
+      background: linear-gradient(135deg, #134e4a 0%, #0d9488 100%);
+      color: #fff;
+      padding: 2.5rem 2rem;
+    }
+    header.doc-header h1 { margin: 0 0 0.5rem; font-size: 1.75rem; }
+    header.doc-header .meta { opacity: 0.9; font-size: 0.95rem; }
+    .layout {
+      display: grid;
+      grid-template-columns: 260px 1fr;
+      max-width: 1280px;
+      margin: 0 auto;
+    }
+    nav.toc {
+      position: sticky;
+      top: 0;
+      align-self: start;
+      max-height: 100vh;
+      overflow-y: auto;
+      padding: 1.5rem 1rem 2rem;
+      border-right: 1px solid var(--border);
+      background: #fafafa;
+      font-size: 0.85rem;
+    }
+    nav.toc a { display: block; color: var(--muted); text-decoration: none; padding: 0.2rem 0; }
+    nav.toc a:hover { color: var(--accent); }
+    nav.toc .toc-h2 { font-weight: 600; color: var(--text); margin-top: 0.65rem; }
+    nav.toc .toc-h3 { padding-left: 0.65rem; font-size: 0.82rem; }
+    main { padding: 2rem 2.5rem 4rem; min-width: 0; }
+    h2 {
+      font-size: 1.35rem;
+      margin: 2.5rem 0 1rem;
+      padding-bottom: 0.35rem;
+      border-bottom: 2px solid var(--accent);
+    }
+    h3 { font-size: 1.08rem; margin: 1.5rem 0 0.65rem; color: #334155; }
+    h4 { font-size: 0.98rem; margin: 1rem 0 0.4rem; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.88rem; margin: 0.75rem 0; }
+    th, td { border: 1px solid var(--border); padding: 0.45rem 0.6rem; text-align: left; vertical-align: top; }
+    th { background: var(--surface); }
+    code { font-family: ui-monospace, Menlo, monospace; font-size: 0.85em; background: #f1f5f9; padding: 0.1em 0.35em; border-radius: 3px; }
+    pre {
+      background: var(--code-bg);
+      color: #e2e8f0;
+      padding: 1rem;
+      border-radius: 6px;
+      overflow-x: auto;
+      font-size: 0.82rem;
+      line-height: 1.5;
+    }
+    .file { color: #7dd3fc; }
+    .kw { color: #c084fc; }
+    .str { color: #86efac; }
+    .diagram {
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem;
+      font-family: ui-monospace, monospace;
+      font-size: 0.8rem;
+      white-space: pre;
+      overflow-x: auto;
+      line-height: 1.45;
+    }
+    .module {
+      background: var(--surface);
+      border-left: 4px solid var(--accent);
+      padding: 0.65rem 1rem;
+      margin: 0.75rem 0;
+      font-size: 0.9rem;
+    }
+    footer { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid var(--border); font-size: 0.85rem; color: var(--muted); }
+    @media (max-width: 900px) {
+      .layout { grid-template-columns: 1fr; }
+      nav.toc { position: static; border-right: none; border-bottom: 1px solid var(--border); }
+    }
+  </style>
+</head>
+<body>
+
+<header class="doc-header">
+  <h1>PasteMemo 同步功能技术实现说明书</h1>
+  <div class="meta">
+    文档编号：20260626.tech &nbsp;|&nbsp; 版本：1.2 &nbsp;|&nbsp; 日期：2026-06-26 &nbsp;|&nbsp; 状态：与代码库一致
+  </div>
+</header>
+
+<div class="layout">
+  <nav class="toc">
+    <strong>目录</strong>
+    <a class="toc-h2" href="#t1">1. 架构总览</a>
+    <a class="toc-h2" href="#t2">2. 代码结构</a>
+    <a class="toc-h2" href="#t3">3. 数据模型</a>
+    <a class="toc-h3" href="#t3-1">3.1 ClipItem</a>
+    <a class="toc-h3" href="#t3-2">3.2 SQLite</a>
+    <a class="toc-h3" href="#t3-3">3.3 Payload JSON</a>
+    <a class="toc-h2" href="#t4">4. 同步引擎</a>
+    <a class="toc-h3" href="#t4-1">4.1 performSync</a>
+    <a class="toc-h3" href="#t4-2">4.2 上传</a>
+    <a class="toc-h3" href="#t4-3">4.3 拉取</a>
+    <a class="toc-h3" href="#t4-4">4.4 回收站</a>
+    <a class="toc-h3" href="#t4-5">4.5 来源过滤</a>
+    <a class="toc-h2" href="#t5">5. 调度与配置</a>
+    <a class="toc-h2" href="#t6">6. 加密实现</a>
+    <a class="toc-h2" href="#t7">7. sync-server API</a>
+    <a class="toc-h2" href="#t8">8. Web 仪表盘</a>
+    <a class="toc-h2" href="#t9">9. 水印与状态</a>
+    <a class="toc-h2" href="#t10">10. 错误处理</a>
+    <a class="toc-h2" href="#t11">11. 部署</a>
+  </nav>
+
+  <main>
+
+    <section id="t1">
+      <h2>1. 架构总览</h2>
+      <div class="diagram">┌──────────────────────────────────────────────────────────────────┐
+│                        PasteMemo macOS Client                     │
+│  ClipboardManager ──► ClipItem (SwiftData, KSUID itemID)           │
+│       │ SyncOrigin.stampLocal ▲ importPayload                    │
+│       ▼                      │ (origin_* 三元组补全)              │
+│  SyncScheduler (@MainActor) ──► SyncEngine.performSync()         │
+│       │ reschedule/stop      ├─ prepareUploadPayloads (PMEM)     │
+│       │ (autoPaused, lastErr)├─ uploadBatchAdaptive → POST /sync│
+│       │                      ├─ pullFromPeer → GET /pull         │
+│       │                      └─ syncTrashFromClient → GET /trash │
+│  SyncSettingsView / RevealableSecureField / SyncEncryption        │
+│  KSUID.generate / SyncCrypto (PBKDF2+AES-GCM)                    │
+└───────────────────────────────┬──────────────────────────────────┘
+                                │ HTTPS (Bearer on write APIs)
+                                ▼
+┌──────────────────────────────────────────────────────────────────┐
+│                     sync-server (Go 1.22+)                          │
+│  httpserver ─► store (SQLite + item_attachments)                   │
+│       │ gzip + Bearer 中间件；clientIP(trust_proxy)              │
+│       │ cron PurgeExpiredTrash (TrashRetentionDays=10)           │
+│  web/index.html (//go:embed) ── Web Crypto + sips(HEIC) 转码      │
+│  imagetype (DetectMIME/AsJPEG) + pmemcrypto (验证)                │
+└──────────────────────────────────────────────────────────────────┘</div>
+      <p>同步为<strong>中心化存储 + 多客户端增量交换</strong>模式：各 Client 以自身 <code>client_id</code>（27 字符 base62 KSUID）为命名空间上传；拉取时读取对端命名空间；<code>item_id</code> 同样为 27 字符 base62 KSUID 跨设备主键。无 P2P、无 CRDT。</p>
+    </section>
+
+    <section id="t2">
+      <h2>2. 代码结构</h2>
+      <h3>2.1 客户端 (Swift)</h3>
+      <table>
+        <thead><tr><th>路径</th><th>职责</th></tr></thead>
+        <tbody>
+          <tr><td><code>Sources/Engine/Sync/SyncEngine.swift</code></td><td>同步编排、payload 构建/导入、HTTP 调用、自适应分片</td></tr>
+          <tr><td><code>Sources/Engine/Sync/SyncScheduler.swift</code></td><td>定时器、手动 syncNow、进度与错误状态、autoPaused</td></tr>
+          <tr><td><code>Sources/Engine/Sync/SyncSettings.swift</code></td><td>UserDefaults 键、URL 规范化、水印读写</td></tr>
+          <tr><td><code>Sources/Engine/Sync/SyncEncryption.swift</code></td><td>加密开关、口令、对端 info、apply 变更、resetSyncWatermarks</td></tr>
+          <tr><td><code>Sources/Engine/Sync/SyncCrypto.swift</code></td><td>PBKDF2 指纹、PMEM 加解密封装（PBKDF2_HMAC_SHA256 / AES-256-GCM）</td></tr>
+          <tr><td><code>Sources/Engine/Sync/SyncOrigin.swift</code></td><td>本机来源 stamping、isLocalOrigin 判定、本机 hostname/IP 探测</td></tr>
+          <tr><td><code>Sources/Engine/Sync/SyncClientAPI.swift</code></td><td>GET /clients 对端列表 DTO</td></tr>
+          <tr><td><code>Sources/Engine/KSUID.swift</code></td><td>27 字符 base62 KSUID 生成（<code>ClipItem.itemID</code> 默认值）</td></tr>
+          <tr><td><code>Sources/Views/Settings/SyncSettingsView.swift</code></td><td>设置 UI（含加密口令输入、对端列表、状态展示）</td></tr>
+          <tr><td><code>Sources/Views/Components/RevealableSecureField.swift</code></td><td>按住眼睛图标可临时明文显示的 SecureField，用于口令/Token</td></tr>
+          <tr><td><code>Sources/Engine/ClipboardManager.swift</code></td><td>捕获时 <code>SyncOrigin.stampLocal</code> 写入 origin 三元组</td></tr>
+          <tr><td><code>Sources/Views/Components/ClipPropertiesView.swift</code></td><td>来源属性展示（在「创建时间」前显示 Client ID/Hostname/IP）</td></tr>
+          <tr><td><code>Sources/Engine/DataPorterCrypto.swift</code></td><td>PMEM 二进制格式（与导出共用，sync 加密走同一实现）</td></tr>
+        </tbody>
+      </table>
+      <h3>2.2 服务端 (Go)</h3>
+      <table>
+        <thead><tr><th>路径</th><th>职责</th></tr></thead>
+        <tbody>
+          <tr><td><code>sync-server/cmd/sync-server/main.go</code></td><td>入口、环境变量、定时 purge trash</td></tr>
+          <tr><td><code>sync-server/internal/config/config.go</code></td><td>配置加载（Token/ListenAddr/DBPath/TrustProxy）</td></tr>
+          <tr><td><code>sync-server/internal/httpserver/server.go</code></td><td>路由注册、Dashboard、auth 中间件、gzip 压缩、clientIP 解析</td></tr>
+          <tr><td><code>sync-server/internal/httpserver/items.go</code></td><td>items/pull/trash/clients handlers（含分页 cursor 解析）</td></tr>
+          <tr><td><code>sync-server/internal/httpserver/web/index.html</code></td><td>嵌入式 Web UI（//go:embed，含 PMEM 浏览器端解密、sessionStorage 口令）</td></tr>
+          <tr><td><code>sync-server/internal/httpserver/web/favicon.ico</code></td><td>站点图标（/favicon.ico）</td></tr>
+          <tr><td><code>sync-server/internal/store/store.go</code></td><td>Schema、migrate、ensureColumn、IngestSync（写 items + clients）</td></tr>
+          <tr><td><code>sync-server/internal/store/items.go</code></td><td>ListItems / GetItemDetail / ListPullItems / contentTypeFilterSQL</td></tr>
+          <tr><td><code>sync-server/internal/store/trash.go</code></td><td>Soft delete、restore、ListTrashDeletions、PurgeExpiredTrash（10 天）</td></tr>
+          <tr><td><code>sync-server/internal/store/attachments.go</code></td><td><code>item_attachments</code> 子表、BLOB 迁移（<code>migrateAttachmentsOutOfItems</code>）、<code>has_*</code> flag 维护、AFTER DELETE 触发器</td></tr>
+          <tr><td><code>sync-server/internal/store/encryption.go</code></td><td>DeleteAllClientItems、UpdateClientEncryption、GetClientEncryption</td></tr>
+          <tr><td><code>sync-server/internal/imagetype/imagetype.go</code></td><td>DetectMIME（PNG/JPEG/GIF/TIFF/BMP/WEBP/HEIC/AVIF）、AsJPEG（解码→重新编码）</td></tr>
+          <tr><td><code>sync-server/internal/imagetype/transcode_darwin.go</code></td><td>macOS 下 <code>sips</code> 回退转码（HEIC 等浏览器不支持的格式）</td></tr>
+          <tr><td><code>sync-server/internal/imagetype/transcode_other.go</code></td><td>非 Darwin 下返回错误占位</td></tr>
+          <tr><td><code>sync-server/internal/pmemcrypto/</code></td><td>Go 侧 PMEM 解密 + KeyFingerprint（与 Swift/JS 对齐，PBKDF2 600000）</td></tr>
+          <tr><td><code>sync-server/internal/model/model.go</code></td><td>SyncRequest/SyncItem/SyncResponse/ItemCursor/ItemSummary 等 JSON DTO</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="t3">
+      <h2>3. 数据模型</h2>
+
+      <h3 id="t3-1">3.1 ClipItem（SwiftData）</h3>
+      <p>文件：<code>Sources/Models/ClipItem.swift</code></p>
+      <table>
+        <thead><tr><th>字段</th><th>同步相关说明</th></tr></thead>
+        <tbody>
+          <tr><td><code>itemID</code></td><td>跨设备主键，<strong>27 字符 base62 KSUID</strong>（<code>KSUID.generate()</code>，segmentio/ksuid 兼容）；导入时保留对端 ID</td></tr>
+          <tr><td><code>createdAt</code></td><td>上传增量水印依据（与 <code>lastCompletedAt</code> 比较）</td></tr>
+          <tr><td><code>originClientID</code></td><td>原始设备 Client ID（27 字符 base62 KSUID）；nil=旧数据视为本机</td></tr>
+          <tr><td><code>originHostname</code></td><td>原始设备主机名（<code>Host.current().localizedName</code>）</td></tr>
+          <tr><td><code>originIP</code></td><td>原始设备 IPv4（<code>getifaddrs</code>，跳过 lo0）</td></tr>
+          <tr><td><code>sourceApp</code> / <code>sourceAppBundleID</code></td><td>复制来源 macOS 应用（与 sync 来源不同）</td></tr>
+          <tr><td><code>imageData</code> / <code>faviconData</code> / <code>richTextData</code> / <code>pasteboardSnapshot</code></td><td>均为 <code>@Attribute(.externalStorage)</code>；上传 image 用 <code>imageBytesForExport()</code>（优先读 <code>sourceImageFileURL</code>）</td></tr>
+          <tr><td><code>ocrText</code> / <code>ocrStatus</code> / <code>ocrUpdatedAt</code> / <code>ocrErrorMessage</code> / <code>ocrVersion</code></td><td>OCR 元数据，整条同步</td></tr>
+          <tr><td><code>agentSource</code></td><td>写入此条目的 AI Agent 标识（如 <code>claude-code</code>）；普通用户复制为 nil</td></tr>
+        </tbody>
+      </table>
+
+      <h3 id="t3-2">3.2 SQLite Schema</h3>
+      <p>文件：<code>sync-server/internal/store/store.go</code> — <code>migrate()</code>。所有新增列通过 <code>ensureColumn</code> 安全迁移。</p>
+      <h4>clients</h4>
+<pre>client_id TEXT PRIMARY KEY
+last_ip, last_hostname TEXT
+last_sync_at, last_sync_count, total_sync_count
+created_at, updated_at
+encryption_enabled, encryption_key_fp, encryption_salt  -- ensureColumn 迁移</pre>
+      <h4>items</h4>
+<pre>PRIMARY KEY (client_id, item_id)
+created_at, received_at, last_used_at, deleted_at
+content_type, content, content_preview, ocr_preview
+display_title, source_app, source_app_bundle_id
+is_favorite, is_pinned, is_sensitive
+link_title, code_language, rich_text_type, group_name
+file_paths, original_image_file_path, agent_source
+ocr_text, ocr_status, ocr_updated_at, ocr_error_message, ocr_version
+truncated, payload_json, is_encrypted
+origin_client_id, origin_hostname, origin_ip
+has_image, has_favicon, has_rich_text, has_pasteboard  -- attachment flags</pre>
+      <p>注意：早期版本的 <code>image_data / favicon_data / rich_text_data / pasteboard_snapshot</code> BLOB 与 <code>payload_json</code> 在 <code>migrateAttachmentsOutOfItems()</code> 中已迁移到独立的 <code>item_attachments</code> 子表，并在 items 表保留 <code>has_*</code> flag 表示是否有附件。索引：</p>
+<pre>idx_items_client_created       (client_id, created_at DESC)
+idx_items_client_type          (client_id, content_type)
+idx_items_client_type_created  (client_id, content_type, created_at DESC) WHERE deleted_at IS NULL
+idx_items_client_active_created(client_id, created_at DESC, item_id DESC) WHERE deleted_at IS NULL
+idx_items_trash                (client_id, deleted_at DESC) WHERE deleted_at IS NOT NULL</pre>
+      <h4>item_attachments</h4>
+<pre>PRIMARY KEY (client_id, item_id)
+image_data, favicon_data, rich_text_data, pasteboard_snapshot BLOB
+payload_json TEXT  -- 加密 payload 落盘（加密项的内容）
+
+触发器 items_delete_attachments:
+  AFTER DELETE ON items → DELETE FROM item_attachments
+    WHERE client_id = OLD.client_id AND item_id = OLD.item_id</pre>
+
+      <h3 id="t3-3">3.3 SyncClipPayload（JSON）</h3>
+      <p>文件：<code>Sources/Engine/Sync/SyncEngine.swift</code> — <code>struct SyncClipPayload</code></p>
+      <p>与 <code>sync-server/internal/model/model.go</code> 的 <code>SyncItem</code> 字段对齐。关键字段：</p>
+<pre>{
+  <span class="str">"item_id"</span>: <span class="str">"1uLGgQ8l2XJk6V3pWoY9ZD0NaA3"</span>,            <span class="comment">// 27 字符 base62 KSUID</span>
+  <span class="str">"created_at"</span>: <span class="str">"2026-06-26T12:00:00.000Z"</span>,
+  <span class="str">"last_used_at"</span>: <span class="str">"2026-06-26T12:00:00.000Z"</span>,
+  <span class="str">"content_type"</span>: <span class="str">"text"</span>,
+  <span class="str">"content"</span>: <span class="str">"hello"</span>,
+  <span class="str">"is_favorite"</span>: <span class="kw">false</span>,
+  <span class="str">"is_pinned"</span>: <span class="kw">false</span>,
+  <span class="str">"is_sensitive"</span>: <span class="kw">false</span>,
+  <span class="str">"image_data_base64"</span>: <span class="str">"..."</span>,             <span class="comment">// ≤ 10 MiB</span>
+  <span class="str">"favicon_data_base64"</span>: <span class="str">"..."</span>,
+  <span class="str">"rich_text_data_base64"</span>: <span class="str">"..."</span>,
+  <span class="str">"pasteboard_snapshot_base64"</span>: <span class="str">"..."</span>,
+  <span class="str">"truncated"</span>: <span class="kw">false</span>,                            <span class="comment">// 超过 10MiB 时置 true 并清空四个二进制字段</span>
+  <span class="str">"encrypted"</span>: <span class="kw">false</span>,
+  <span class="str">"payload_encrypted"</span>: <span class="str">"base64 PMEM..."</span>,     <span class="comment">// 加密时填充</span>
+  <span class="str">"origin_client_id"</span>: <span class="str">"1uLGgQ8l2XJk6V3pWoY9ZD0NaA3"</span>,  <span class="comment">// 27 字符 base62 KSUID</span>
+  <span class="str">"origin_hostname"</span>: <span class="str">"MacBook-Pro"</span>,
+  <span class="str">"origin_ip"</span>: <span class="str">"192.168.1.10"</span>
+}</pre>
+      <p>二进制字段以 Base64 传输；单字段上限 <code>SyncSettings.binaryFieldCap = 10 MiB</code>；单请求体上限 <code>SyncSettings.maxRequestBodyBytes = 48 MiB</code>（超出 <code>uploadBatchAdaptive</code> 自动二分）。</p>
+      <p>外层 <code>SyncUploadRequest</code> 还包含 <code>client_id</code>、<code>hostname</code>、<code>sent_at</code> 与可选 <code>encryption: { enabled, key_fingerprint, salt }</code> 元数据。</p>
+    </section>
+
+    <section id="t4">
+      <h2>4. 同步引擎</h2>
+      <p>入口：<code>SyncEngine.performSync(container:progress:)</code>（<code>@MainActor</code> 枚举，内部 async HTTP）</p>
+
+      <h3 id="t4-1">4.1 流程顺序</h3>
+      <div class="diagram">1. 读取配置 (URL, token, clientID, since=lastCompletedAt)
+2. fetchItems(createdAt > since) → filter isLocalOrigin
+3. fetchRemoteClients (GET /clients) → peerByID 字典
+4. FOR each batch (size=syncBatchSize):
+     prepareUploadPayloads → uploadBatchAdaptive (POST /sync)
+     自适应: body > 48 MiB 则二分 batch；单条超限则 stripBinaryFields 标 truncated
+5. FOR each selected peer: pullFromPeer (GET /pull paginated)
+6. FOR self + peers: syncTrashFromClient (GET /trash paginated)
+7. uploaded==0 && downloaded==0 && deleted==0 ⇒ throw .noItems
+8. 返回 SyncResult(uploaded, downloaded, deleted)</div>
+
+      <h3 id="t4-2">4.2 上传实现</h3>
+      <div class="module"><strong>buildPayload(from:localClientID:)</strong> — 序列化 ClipItem；补全 origin 三元组；Base64 编码 blob。</div>
+      <div class="module"><strong>uploadBatch</strong> — 构造 SyncUploadRequest；若启用加密则 <code>prepareUploadPayloads</code> 将完整 inner JSON 加密为 PMEM Base64。</div>
+      <div class="module"><strong>uploadBatchAdaptive</strong> — 请求体 &gt; 48 MiB 时二分拆分 batch；单条仍过大则 <code>stripBinaryFields</code> 后再试。</div>
+      <p>ISO8601：<code>ISO8601DateFormatter</code>，<code>.withInternetDateTime, .withFractionalSeconds</code>。</p>
+
+      <h3 id="t4-3">4.3 拉取实现</h3>
+      <p><code>pullFromPeer</code> 查询参数：</p>
+      <table>
+        <thead><tr><th>参数</th><th>来源</th></tr></thead>
+        <tbody>
+          <tr><td><code>client_id</code></td><td>对端 peerID（必填）</td></tr>
+          <tr><td><code>since</code></td><td><code>SyncSettings.lastPullAt(peerID)</code>（ISO8601）</td></tr>
+          <tr><td><code>limit</code></td><td><code>syncBatchSize</code>（默认 20，服务端 clamp 到 1–100）</td></tr>
+          <tr><td><code>cursor_created_at</code></td><td>下一页起点 <code>created_at</code></td></tr>
+          <tr><td><code>cursor_item_id</code></td><td>下一页起点 <code>item_id</code></td></tr>
+        </tbody>
+      </table>
+      <p>解密：<code>decryptPayloadIfNeeded</code> → JSON decode 为 <code>SyncClipPayload</code>。</p>
+      <p>导入：<code>importPayload</code> — dedup by itemID；origin 三元组优先取 payload 字段，缺失时回退到对端元数据（<code>peerID / peer?.lastHostname / peer?.lastIP</code>）。</p>
+      <p>全部页成功后：<code>SyncSettings.setLastPullAt(peerID, Date())</code>。</p>
+
+      <h3 id="t4-4">4.4 回收站同步</h3>
+      <p>目标列表：<code>syncTrashTargets</code> = 本机 clientID + 所有 selected peers（去重，<code>seen.insert(key)</code>）。</p>
+      <p>GET <code>/api/v1/trash</code>，<code>client_id</code> 必填，<code>since</code> = <code>lastTrashSyncAt(clientID)</code>，分页用 <code>cursor_deleted_at</code> + <code>cursor_item_id</code>。</p>
+      <p>本地：<code>deleteLocalItems(itemIDs:)</code> 用 <code>FetchDescriptor&lt;ClipItem&gt;</code> 按 <code>itemID</code> 查找并调 <code>ClipItemStore.deleteAndNotify</code>。</p>
+      <p>服务端软删除由 Web UI <code>DELETE /api/v1/items/{client}/{item}</code> 触发；保留 10 天（<code>store.TrashRetentionDays = 10</code>）后由定时任务 <code>PurgeExpiredTrash</code> 永久删除。</p>
+
+      <h3 id="t4-5">4.5 本机条目过滤</h3>
+      <p>文件：<code>Sources/Engine/Sync/SyncOrigin.swift</code></p>
+<pre><span class="kw">static func</span> isLocalOrigin(originClientID: String?, localClientID: String) -> Bool {
+    <span class="kw">guard let</span> originClientID, !originClientID.isEmpty <span class="kw">else</span> { <span class="kw">return true</span> }  <span class="comment">// legacy</span>
+    <span class="kw">return</span> SyncSettings.clientIDsMatch(originClientID, localClientID)
+}</pre>
+      <p>在 <code>performSync</code> 中：<code>localItems.filter { isLocalOrigin(...) }</code>，全量重同步（<code>since == nil</code>）同样生效。</p>
+    </section>
+
+    <section id="t5">
+      <h2>5. 调度与配置</h2>
+      <h3>5.1 SyncScheduler</h3>
+      <ul>
+        <li><code>@MainActor @Observable</code>；<code>SyncScheduler.shared</code> 单例。</li>
+        <li><code>start(container:)</code> — <code>AppDelegate.applicationDidFinishLaunching</code> 调用；<code>reschedule()</code> 决定是立即触发 <code>syncNow()</code> 还是安排 <code>Timer</code>。</li>
+        <li><code>stop()</code> — <code>AppDelegate.applicationWillTerminate</code> 调用；也用于 <code>autoPaused</code> 暂停时。</li>
+        <li><code>resumeAutoSync()</code> — 清 <code>autoPaused</code>、重新 <code>reschedule()</code>。</li>
+        <li><code>syncNow()</code> 防重入 <code>isSyncing</code>；成功路径写 <code>lastCompletedAt</code>、<code>lastSyncCount/Downloaded/Deleted</code>、清 <code>lastError</code>、<code>autoPaused=false</code>、<code>reschedule()</code>。</li>
+        <li>失败路径：写 <code>lastError</code>、<code>autoPaused=true</code>、<code>stop()</code>（暂停定时器）。</li>
+        <li><code>SyncError.noItems</code> 视为成功（仍推进 <code>lastCompletedAt</code> 并清错误），避免无限重试空客户端。</li>
+        <li><code>nextSyncDate</code> = <code>lastCompletedAt + interval</code>，仅在 <code>enabled &amp;&amp; !autoPaused</code> 时返回非 nil。</li>
+      </ul>
+      <h3>5.2 UserDefaults 键</h3>
+      <table>
+        <thead><tr><th>键</th><th>常量</th><th>说明</th></tr></thead>
+        <tbody>
+          <tr><td>syncEnabled</td><td>SyncSettings.enabledKey</td><td>自动同步开关</td></tr>
+          <tr><td>syncClientID</td><td>SyncSettings.clientIDKey</td><td>本机 Client ID（27 字符 base62 KSUID，首次启动自动生成）</td></tr>
+          <tr><td>syncServerURL</td><td>SyncSettings.serverURLKey</td><td>默认 <code>http://127.0.0.1:8787</code></td></tr>
+          <tr><td>syncToken</td><td>SyncSettings.tokenKey</td><td>Bearer token</td></tr>
+          <tr><td>syncIntervalMinutes</td><td>SyncSettings.intervalMinutesKey</td><td>默认 5，范围 1–10080；旧值自动从 seconds/hours 迁移</td></tr>
+          <tr><td>syncIntervalSeconds</td><td>SyncSettings.intervalSecondsKey</td><td>旧键（已迁移）</td></tr>
+          <tr><td>syncIntervalHours</td><td>SyncSettings.intervalHoursKey</td><td>旧键（已迁移）</td></tr>
+          <tr><td>syncBatchSize</td><td>SyncSettings.batchSizeKey</td><td>默认 20，范围 1–500</td></tr>
+          <tr><td>syncLastCompletedAt</td><td>SyncSettings.lastCompletedAtKey</td><td>上传水印（ISO Date）</td></tr>
+          <tr><td>syncLastSyncCount</td><td>SyncSettings.lastSyncCountKey</td><td>最近一次同步的上传条目数</td></tr>
+          <tr><td>syncLastSyncDownloaded</td><td>SyncSettings.lastSyncDownloadedKey</td><td>最近一次同步的下载条目数</td></tr>
+          <tr><td>syncLastSyncDeleted</td><td>SyncSettings.lastSyncDeletedKey</td><td>最近一次同步的本地删除条目数</td></tr>
+          <tr><td>syncLastError</td><td>SyncSettings.lastErrorKey</td><td>最近一次失败描述（成功或恢复时清空）</td></tr>
+          <tr><td>syncAutoPaused</td><td>SyncSettings.autoPausedKey</td><td>同步失败时置 true，定时器 <code>stop()</code>；需用户 <code>resumeAutoSync()</code></td></tr>
+          <tr><td>syncSelectedPeerClientIDs</td><td>SyncSettings.selectedPeerIDsKey</td><td>对端 Client ID 数组</td></tr>
+          <tr><td>syncPeerLastPullAtByClient</td><td>SyncSettings.peerLastPullAtKey</td><td><code>[peerID: timeIntervalSince1970]</code></td></tr>
+          <tr><td>syncPeerLastTrashSyncAtByClient</td><td>SyncSettings.peerLastTrashSyncAtKey</td><td><code>[clientID: timeIntervalSince1970]</code></td></tr>
+          <tr><td>syncEncryptionEnabled</td><td>SyncEncryption.enabledKey</td><td>本机加密开关</td></tr>
+          <tr><td>syncEncryptionSalt</td><td>SyncEncryption.saltKey</td><td>本机 salt（Base64）</td></tr>
+          <tr><td>syncEncryptionKeyFingerprint</td><td>SyncEncryption.fingerprintKey</td><td>本机密钥指纹（hex SHA256）</td></tr>
+          <tr><td>syncEncryptionPassphrase</td><td>SyncEncryption.passphraseKey</td><td>本机口令（明文，依赖 macOS 用户会话安全）</td></tr>
+          <tr><td>syncPeerEncryptionInfo</td><td>SyncEncryption.peerInfoKey</td><td><code>[peerID: JSON(PeerEncryptionInfo)]</code></td></tr>
+          <tr><td>syncPeerPassphrases</td><td>SyncEncryption.peerPassphrasesKey</td><td><code>[peerID: passphrase]</code>（明文）</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="t6">
+      <h2>6. 加密实现</h2>
+      <h3>6.1 算法参数（Swift / Go / Web 一致）</h3>
+      <table>
+        <thead><tr><th>步骤</th><th>参数</th></tr></thead>
+        <tbody>
+          <tr><td>PBKDF2</td><td>HMAC-SHA256，<strong>600000 iterations</strong>，32-byte key</td></tr>
+          <tr><td>指纹</td><td>SHA256(derivedKey) → 64 字符 hex（小写比较）</td></tr>
+          <tr><td>对称加密</td><td>AES-256-GCM（nonce 12 字节，tag 16 字节）</td></tr>
+          <tr><td>PMEM 布局</td><td>Magic(4, <code>PMEM</code>) + version(1, <code>0x01</code>) + flag(1, <code>0x01</code> 表示加密) + salt(32) + AES-GCM combined(12+cipher+16)</td></tr>
+          <tr><td>salt 生成</td><td><code>SecRandomCopyBytes</code> / <code>crypto/rand</code>，32 字节，Base64 存储</td></tr>
+          <tr><td>实现一致性</td><td><code>Sources/Engine/Sync/SyncCrypto.swift</code> / <code>Sources/Engine/DataPorterCrypto.swift</code> / <code>sync-server/internal/pmemcrypto/</code> / <code>web/index.html</code>（<code>PMEM_MAGIC</code>+<code>PBKDF2_ITER = 600000</code>）</td></tr>
+        </tbody>
+      </table>
+      <h3>6.2 applyEncryptionChange</h3>
+      <p>文件：<code>Sources/Engine/Sync/SyncEncryption.swift</code> — <code>applyEncryptionChange(enabled:passphrase:clientID:baseURL:token:)</code></p>
+      <div class="diagram">enabled?
+  ├─ NO  → configChanged = wasEnabled
+  └─ YES → wasEnabled & 已有 salt/fp 且口令验签通过?
+            ├─ YES → setOwnPassphrase; return false (无重传)
+            └─ NO  → newSalt = random(32); newFP = keyFingerprint(pass, salt)
+                     configChanged = true
+
+  configChanged?
+  ├─ NO  → return false
+  └─ YES → DELETE /api/v1/clients/{id}/items (purgeServerItems, 120s 超时)
+        → resetSyncWatermarks() (清 lastCompletedAt / peerLastPullAt / peerLastTrashSyncAt)
+        → 写 UD: enabled / salt / fingerprint / passphrase
+        → return true → UI 触发 syncNow()，performSync 自然走 since=nil 全量重传</div>
+      <p>注意：<code>SyncError.passphraseRequired(clientID)</code> 在拉取加密对端但本机无对应 peerPassphrase 时抛出，由 <code>eligiblePeerIDs</code> 过滤掉缺少口令的对端以避免冲突。</p>
+      <h3>6.3 上传加密形态</h3>
+      <p><code>encryptPayloadForUpload</code> 生成内层 <code>inner: SyncClipPayload</code>（含完整 <code>origin_*</code>、metadata、4 个二进制 Base64、<code>created_at</code>、<code>last_used_at</code>），<code>JSONEncoder.encode(inner)</code> 后用 <code>SyncCrypto.encryptPayloadJSON</code>（内部走 <code>DataPorterCrypto.encrypt</code>）输出 PMEM Base64。</p>
+      <p>外层返回的 <code>SyncClipPayload</code> 仅保留：<code>item_id / created_at / last_used_at / content_type / encrypted=true / payload_encrypted=...</code>；其它字段（含 <code>content</code>、<code>source_app</code>、<code>image_data_base64</code>、<code>origin_*</code> 等）一律置 nil/false/""。</p>
+      <p>服务端 <code>store.IngestSync</code> 收到 <code>encrypted=true</code> 后只写 <code>content_type</code>、<code>created_at</code>、<code>last_used_at</code>、<code>is_encrypted=1</code>，把 PMEM Base64 落 <code>item_attachments.payload_json</code>（不写 <code>items.content</code>）。</p>
+      <h3>6.4 Web 解密</h3>
+      <p><code>index.html</code> 中 <code>decryptPayloadBase64</code> 走 <code>crypto.subtle.decrypt</code>（仅在 HTTPS 或 localhost 安全上下文可用，否则显示警告）；指纹验证用 <code>keyFingerprint(passphrase, salt)</code>。图片通过 <code>GET /api/v1/items/{c}/{i}/image</code> 由服务端按格式检测后下发（JPEG/PNG/GIF 原样，否则在 macOS 上经 <code>sips</code> 转码为 JPEG；HEIC/TIFF 等不被 Chrome/Firefox 直接渲染）。</p>
+    </section>
+
+    <section id="t7">
+      <h2>7. sync-server API</h2>
+      <p>所有 JSON 响应在客户端声明 <code>Accept-Encoding: gzip</code> 时经 <code>compressMiddleware</code> gzip（BestSpeed）。Bearer 鉴权 4 个写接口；其余只读接口对外暴露，公网部署需网络层防护。</p>
+      <table>
+        <thead><tr><th>Method</th><th>Path</th><th>Auth</th><th>Handler</th><th>说明</th></tr></thead>
+        <tbody>
+          <tr><td>GET</td><td>/healthz</td><td>—</td><td><code>handleHealthz</code></td><td>健康检查，返回 <code>{status:"ok"}</code></td></tr>
+          <tr><td>POST</td><td>/api/v1/sync</td><td>Bearer + gzip</td><td><code>handleSync</code></td><td>上传，请求体 <code>io.LimitReader(512 MiB)</code>，超限返回 413</td></tr>
+          <tr><td>GET</td><td>/api/v1/pull</td><td>Bearer + gzip</td><td><code>handlePullItems</code></td><td>查询参数：<code>client_id</code> 必填、<code>since</code> ISO 时间、<code>limit</code>、<code>cursor_created_at</code>+<code>cursor_item_id</code></td></tr>
+          <tr><td>GET</td><td>/api/v1/trash</td><td>Bearer + gzip</td><td><code>handleListTrash</code></td><td>查询参数：<code>client_id</code>、<code>since</code>、<code>limit</code>、<code>cursor_deleted_at</code>+<code>cursor_item_id</code></td></tr>
+          <tr><td>DELETE</td><td>/api/v1/clients/{clientID}/items</td><td>Bearer</td><td><code>handleDeleteClientItems</code></td><td>清空该 Client 全部 items（含 trash），返回 <code>{deleted_count}</code></td></tr>
+          <tr><td>GET</td><td>/api/v1/clients</td><td>gzip</td><td><code>handleListClientsJSON</code></td><td>JSON 客户端列表（含 encryption salt/fp）</td></tr>
+          <tr><td>GET</td><td>/api/v1/types</td><td>gzip</td><td><code>handleListTypes</code></td><td><code>client_id</code> 必填，返回固定 content_type 列表（<code>model.AllContentTypes</code>）</td></tr>
+          <tr><td>GET</td><td>/api/v1/items</td><td>gzip</td><td><code>handleListItems</code></td><td>分页摘要，<code>trash=1</code> 查回收站，<code>cursor_*</code> 同上</td></tr>
+          <tr><td>GET</td><td>/api/v1/items/{clientID}/{itemID}</td><td>gzip</td><td><code>handleGetItem</code></td><td>详情；加密项返回 <code>payload_encrypted</code>（来自 <code>item_attachments.payload_json</code>）</td></tr>
+          <tr><td>GET</td><td>/api/v1/items/{clientID}/{itemID}/image</td><td>—</td><td><code>handleGetItemImage</code></td><td>JPEG/PNG/GIF 原样下发；其它在 Darwin 下经 <code>imagetype.AsJPEG</code>（含 <code>sips</code> 回退）转 JPEG；非 Darwin 仅走内置解码器</td></tr>
+          <tr><td>DELETE</td><td>/api/v1/items/{clientID}/{itemID}</td><td>—</td><td><code>handleDeleteItem</code></td><td>软删除（写 <code>deleted_at</code>），返回 <code>{status:"deleted"}</code></td></tr>
+          <tr><td>POST</td><td>/api/v1/items/{clientID}/{itemID}/restore</td><td>—</td><td><code>handleRestoreItem</code></td><td>从回收站恢复</td></tr>
+          <tr><td>DELETE</td><td>/api/v1/clients/{clientID}/trash</td><td>—</td><td><code>handlePurgeClientTrash</code></td><td>永久删除该 Client 全部回收站项，返回 <code>{deleted_count}</code></td></tr>
+          <tr><td>GET</td><td>/favicon.ico</td><td>—</td><td><code>handleFavicon</code></td><td>站点图标，Cache-Control 1 天</td></tr>
+          <tr><td>GET</td><td>/</td><td>—</td><td><code>handleDashboard</code></td><td>HTML Dashboard（<code>text/template</code> 渲染 <code>web/index.html</code>）</td></tr>
+        </tbody>
+      </table>
+      <p>分页：默认 limit 30（<code>defaultItemPageSize</code>），最大 100（<code>maxItemPageSize</code>）；游标 <code>ItemCursor = (created_at, item_id[, deleted_at])</code>，next_cursor 由服务端基于 limit+1 判断 <code>has_more</code> 后回填。</p>
+      <p>排序：<code>items / pull</code> 用 <code>created_at DESC, item_id DESC</code>；<code>trash</code> 用 <code>deleted_at DESC, item_id DESC</code>（次级键 <code>item_id</code> 保证同时间戳分页稳定）。</p>
+      <p>Ingest 时 origin 默认值（<code>store.IngestSync</code>）：<code>origin_client_id</code> ← item 或 <code>req.ClientID</code>；<code>origin_hostname</code> ← item 或 <code>req.Hostname</code>；<code>origin_ip</code> ← item 或 <code>clientIP(r, trustProxy)</code>（trust_proxy=true 时优先取 <code>X-Forwarded-For</code>/<code>X-Real-IP</code>）。</p>
+    </section>
+
+    <section id="t8">
+      <h2>8. Web 仪表盘</h2>
+      <p>单页应用：<code>sync-server/internal/httpserver/web/index.html</code>，构建时 <code>//go:embed</code>。</p>
+      <h3>8.1 主要状态</h3>
+<pre>state = {
+  clientId, type, trash, cursor, loading, hasMore,
+  clientEncryption, browsePassphrase
+}</pre>
+      <h3>8.2 功能模块</h3>
+      <ul>
+        <li><strong>Browse</strong> — URL 参数 <code>?client=&amp;type=&amp;trash=1</code>；<code>history.pushState</code> 同步 URL；IntersectionObserver 无限滚动加载。</li>
+        <li><strong>加密门控</strong> — fingerprint 校验；<code>sessionStorage</code> 双 key：
+          <ul>
+            <li><code>sync-pass:{clientId}</code> — 保存口令原文</li>
+            <li><code>sync-pass-verified:{clientId}</code> — <code>"1"</code> 表示已通过指纹校验</li>
+          </ul>
+          二次进入若仅有 <code>sync-pass</code> 但 <code>verified</code> 缺失，会再次跑 <code>verifyBrowsePassphrase</code>。
+        </li>
+        <li><strong>渲染</strong> — 列表卡片 / image 瀑布流（响应式 5→1 列）；加密项浏览器内 <code>crypto.subtle.decrypt</code> 后显示缩略图与详情（<code>applyDecryptedItemUI</code>）。</li>
+        <li><strong>回收站</strong> — Trash 切换 → 重新加载；Empty recycle bin → DELETE <code>/api/v1/clients/{id}/trash</code>。</li>
+        <li><strong>主题</strong> — <code>localStorage['pastememo-sync-theme']</code> 持久化 light/dark；HTML 根 <code>data-theme</code> 属性驱动。</li>
+      </ul>
+    </section>
+
+    <section id="t9">
+      <h2>9. 水印与状态</h2>
+      <table>
+        <thead><tr><th>水印</th><th>存储</th><th>更新时机</th><th>用途</th></tr></thead>
+        <tbody>
+          <tr><td>lastCompletedAt</td><td><code>syncLastCompletedAt</code></td><td>syncNow 成功；<code>SyncError.noItems</code> 也视为成功</td><td>上传：<code>createdAt &gt; since</code></td></tr>
+          <tr><td>lastPullAt[peer]</td><td><code>syncPeerLastPullAtByClient</code></td><td><code>pullFromPeer</code> 整轮结束（中间分页失败则不更新，<code>since</code> 保留为上一成功值）</td><td>GET <code>/pull?since=</code></td></tr>
+          <tr><td>lastTrashSyncAt[id]</td><td><code>syncPeerLastTrashSyncAtByClient</code></td><td><code>syncTrashFromClient</code> 整轮结束（同上失败保护）</td><td>GET <code>/trash?since=</code></td></tr>
+        </tbody>
+      </table>
+      <p><code>SyncEncryption.resetSyncWatermarks()</code> 清除上述三者 — 加密配置变更（开启/关闭/换口令）时调用，触发 <code>performSync</code> 走 <code>since = nil</code> 的全量重传。</p>
+      <p>失败时 <code>syncNow</code> 仅写 <code>lastError</code> 与 <code>autoPaused = true</code>，<strong>不</strong>推进水印，下一次 <code>syncNow</code> 会从上次成功点继续。</p>
+    </section>
+
+    <section id="t10">
+      <h2>10. 错误处理</h2>
+      <h3>10.1 SyncError</h3>
+      <table>
+        <thead><tr><th>Case</th><th>触发</th></tr></thead>
+        <tbody>
+          <tr><td><code>notConfigured</code></td><td>URL / token 任一为空</td></tr>
+          <tr><td><code>invalidURL</code></td><td>endpoint 构建失败（<code>URLComponents.url</code> 为 nil 等）</td></tr>
+          <tr><td><code>noItems</code></td><td>uploaded == 0 &amp;&amp; downloaded == 0 &amp;&amp; deleted == 0；Scheduler 视为成功</td></tr>
+          <tr><td><code>httpStatus(code, body)</code></td><td>响应非 2xx</td></tr>
+          <tr><td><code>serverMessage(String)</code></td><td>JSON decode 失败、非 HTTPResponse、响应缺失 <code>payload_encrypted</code> 等</td></tr>
+          <tr><td><code>transport(Error)</code></td><td>URLSession 抛出（连接被拒、超时等）</td></tr>
+          <tr><td><code>passphraseRequired(peerID)</code></td><td>上传需本机口令、加密对端缺 peerPassphrase、加密 payload 缺口令</td></tr>
+        </tbody>
+      </table>
+      <p><code>CryptoError</code>（<code>keyDerivationFailed</code>、<code>invalidFormat</code>、<code>wrongPassword</code>）由 <code>SyncCrypto</code> 与 <code>DataPorterCrypto</code> 抛出，被 <code>SyncEngine</code> 包装为 <code>SyncError.serverMessage</code>。</p>
+      <h3>10.2 超时</h3>
+      <table>
+        <thead><tr><th>操作</th><th>实现位置</th><th>timeout</th></tr></thead>
+        <tbody>
+          <tr><td>upload（POST /sync）</td><td><code>SyncEngine.sendRequest</code></td><td>120s</td></tr>
+          <tr><td>pull（GET /pull）</td><td><code>SyncEngine.pullFromPeer</code></td><td>120s</td></tr>
+          <tr><td>trash（GET /trash）</td><td><code>SyncEngine.syncTrashFromClient</code></td><td>60s</td></tr>
+          <tr><td>fetch clients（GET /clients）</td><td><code>SyncClientAPI.fetchRemoteClients</code></td><td>30s</td></tr>
+          <tr><td>purge client items（DELETE /clients/{id}/items）</td><td><code>SyncEncryption.purgeServerItems</code></td><td>120s</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="t11">
+      <h2>11. 部署</h2>
+      <h3>11.1 构建 sync-server</h3>
+<pre>cd sync-server
+go build -o sync-server ./cmd/sync-server/</pre>
+      <h3>11.2 环境变量</h3>
+      <table>
+        <thead><tr><th>变量</th><th>必需</th><th>默认</th></tr></thead>
+        <tbody>
+          <tr><td>SYNC_TOKEN</td><td>是</td><td>—</td></tr>
+          <tr><td>SYNC_LISTEN_ADDR</td><td>否</td><td>:8787</td></tr>
+          <tr><td>SYNC_DB_PATH</td><td>否</td><td>./sync.db</td></tr>
+          <tr><td>SYNC_TRUST_PROXY</td><td>否</td><td>false</td></tr>
+        </tbody>
+      </table>
+      <h3>11.3 客户端集成点</h3>
+      <ul>
+        <li><code>AppDelegate.applicationDidFinishLaunching</code> — <code>SyncScheduler.shared.start(container: PasteMemoApp.sharedModelContainer)</code></li>
+        <li><code>AppDelegate.applicationWillTerminate</code> — <code>SyncScheduler.shared.stop()</code></li>
+        <li><code>SettingsView</code> — <code>case .sync: SyncSettingsView()</code></li>
+        <li>设置窗口 — <code>showSettingsWindowAppKit()</code>，可 resize，<code>frameAutosaveName = "SettingsWindow"</code></li>
+        <li>口令/Token 输入使用 <code>RevealableSecureField</code>（长按眼睛图标临时明文）</li>
+      </ul>
+      <h3>11.4 测试</h3>
+      <ul>
+        <li><code>Tests/KSUIDTests.swift</code> — Swift Testing：27 字符长度、base62 字符集、时间排序、<code>ClipItem.itemID</code> 默认值</li>
+        <li><code>sync-server/internal/store/trash_test.go</code> — 软删、恢复、purge</li>
+        <li><code>sync-server/internal/store/items_test.go</code> — 列表摘要不含 <code>payload_encrypted</code>、<code>content_preview</code> 截断</li>
+        <li><code>sync-server/internal/pmemcrypto/</code>（含 <code>pmemcrypto_test.go</code>）— 与 Swift / Web PMEM 对齐</li>
+        <li><code>sync-server/internal/imagetype/imagetype_test.go</code> — MIME 检测、AsJPEG</li>
+      </ul>
+    </section>
+
+    <footer>
+      PasteMemo Sync Feature — Technical Implementation 20260626.tech.html<br>
+      关联文档：<a href="20260626.spec.html">20260626.spec.html 需求规格说明书</a> &nbsp;|&nbsp;
+      运行手册：<a href="../../sync-server/README.md">sync-server/README.md</a>
+    </footer>
+
+  </main>
+</div>
+
+</body>
+</html>
