@@ -4,7 +4,7 @@ import Combine
 
 /// Captures every persisted field of a `ClipItem` at delete time so the
 /// undo-toast can faithfully recreate the row if the user changes their mind.
-/// `itemID` is preserved so anything referencing the clip by UUID (automation
+/// `itemID` is preserved so anything referencing the clip by ID (automation
 /// rules, relay handles, external tracking) reconnects on restore.
 struct ClipItemSnapshot {
     let itemID: String

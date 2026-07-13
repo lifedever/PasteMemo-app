@@ -126,7 +126,7 @@ enum ClipContentType: String, Codable, CaseIterable {
 
 @Model
 final class ClipItem {
-    var itemID: String = UUID().uuidString
+    var itemID: String = KSUID.generate()
     var content: String
     /// Stored as raw String to avoid SwiftData enum deserialization crash on zombie objects.
     @Attribute(originalName: "contentType")
