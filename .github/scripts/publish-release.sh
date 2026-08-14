@@ -1,7 +1,12 @@
 #!/bin/bash
 # Publish one staged stable draft release: turn it public on GitHub, push DMGs
-# + latest.json to the site repo (mirrored to Gitee), create a Gitee release,
-# and bump the Homebrew cask.
+# + latest.json to the site repo, and bump the Homebrew cask.
+#
+# Gitee was dropped from the pipeline (2026-08-14, v1.8.0): the runner→Gitee
+# network path hung the whole workflow three times (v1.7.12 twice, v1.8.0),
+# while the primary path (GitHub Pages CDN) never failed and Gitee downloads
+# saw no real use. The gitee.com/lifedever/pastememo mirror is left frozen at
+# v1.7.14 as a historical archive.
 #
 # Beta releases bypass this whole flow — `release-stage.sh --beta` pushes DMGs
 # straight to the site repo locally. Anything that lands in this script is by
@@ -10,7 +15,6 @@
 # Called by the auto-release workflow. Expects these env vars:
 #   GH_TOKEN         — set by the workflow for ops on this repo
 #   CROSS_REPO_PAT   — PAT that can push to lifedever/PasteMemo and lifedever/homebrew-tap
-#   GITEE_TOKEN      — Gitee PAT for API + HTTPS git push
 #   REPO             — owner/repo of this repo (the draft lives here)
 set -euo pipefail
 
@@ -18,12 +22,10 @@ TAG="${1:?Usage: $0 <tag>}"
 VERSION="${TAG#v}"
 REPO="${REPO:-lifedever/PasteMemo-app}"
 SITE_REPO="lifedever/PasteMemo"
-SITE_REPO_GITEE="lifedever/pastememo"
 TAP_REPO="lifedever/homebrew-tap"
 APP_NAME="PasteMemo"
 
 : "${CROSS_REPO_PAT:?CROSS_REPO_PAT secret not set}"
-: "${GITEE_TOKEN:?GITEE_TOKEN secret not set}"
 
 WORK=$(mktemp -d)
 trap 'rm -rf "$WORK"' EXIT
@@ -136,70 +138,7 @@ fi
 git push origin main
 git push origin "v$VERSION"
 
-git remote add gitee "https://oauth2:${GITEE_TOKEN}@gitee.com/${SITE_REPO_GITEE}.git"
-git push gitee main
-git push gitee "v$VERSION"
-
 cd -
-
-echo "🔁 Creating Gitee release..."
-GITEE_BODY=$(printf '## 更新内容\n\n%s\n\n## What'"'"'s New\n\n%s' "$NOTES_ZH" "$NOTES_EN")
-
-# Idempotent: reuse existing release if retry after partial success
-EXISTING=$(curl -sf "https://gitee.com/api/v5/repos/${SITE_REPO_GITEE}/releases/tags/v${VERSION}?access_token=${GITEE_TOKEN}" 2>/dev/null || echo '{}')
-GITEE_RELEASE_ID=$(echo "$EXISTING" | jq -r '.id // empty')
-
-if [ -z "$GITEE_RELEASE_ID" ]; then
-    RESP=$(curl -sf -X POST "https://gitee.com/api/v5/repos/${SITE_REPO_GITEE}/releases" \
-        --data-urlencode "access_token=${GITEE_TOKEN}" \
-        --data-urlencode "tag_name=v${VERSION}" \
-        --data-urlencode "name=v${VERSION}" \
-        --data-urlencode "body=${GITEE_BODY}" \
-        --data-urlencode "target_commitish=main" \
-        --data-urlencode "prerelease=false")
-    GITEE_RELEASE_ID=$(echo "$RESP" | jq -r .id)
-    if [ -z "$GITEE_RELEASE_ID" ] || [ "$GITEE_RELEASE_ID" = "null" ]; then
-        echo "Error: Gitee release creation failed" >&2
-        echo "$RESP" >&2
-        exit 1
-    fi
-    echo "   Gitee release id $GITEE_RELEASE_ID"
-else
-    echo "   Gitee release $GITEE_RELEASE_ID already exists, reusing"
-fi
-
-# Uploading DMGs to Gitee is best-effort: the GitHub Actions runner's
-# network path to Gitee is very slow. Re-runs of a partially-completed
-# release would wait out the same timeout again, so skip any DMG that
-# is already attached to the Gitee release.
-EXISTING_ASSETS=$(echo "${EXISTING:-{}}" | jq -r '[.assets[]?.name] // []' 2>/dev/null || echo '[]')
-# Fall back to a live fetch if we didn't query the existing release above
-if [ "$EXISTING_ASSETS" = "[]" ] || [ -z "$EXISTING_ASSETS" ]; then
-    EXISTING_ASSETS=$(curl -sf --max-time 15 "https://gitee.com/api/v5/repos/${SITE_REPO_GITEE}/releases/${GITEE_RELEASE_ID}?access_token=${GITEE_TOKEN}" 2>/dev/null \
-        | jq -c '[.assets[]?.name]' 2>/dev/null || echo '[]')
-fi
-
-upload_gitee_asset() {
-    local dmg="$1"
-    local name
-    name=$(basename "$dmg")
-    if echo "$EXISTING_ASSETS" | jq -e --arg n "$name" 'index($n)' >/dev/null 2>&1; then
-        echo "   ✓ $name already on Gitee, skip"
-        return 0
-    fi
-    echo "   uploading $name..."
-    if curl -sf --max-time 45 \
-        -X POST "https://gitee.com/api/v5/repos/${SITE_REPO_GITEE}/releases/${GITEE_RELEASE_ID}/attach_files" \
-        -F "access_token=${GITEE_TOKEN}" \
-        -F "file=@${dmg}" \
-        >/dev/null 2>&1; then
-        echo "   ✓ uploaded"
-    else
-        echo "   ⚠ upload failed; skip (retry locally if needed)"
-    fi
-}
-upload_gitee_asset "$ARM_DMG"
-upload_gitee_asset "$X86_DMG"
 
 echo "🍺 Updating Homebrew cask..."
 TAP_DIR="$WORK/tap"
