@@ -442,8 +442,20 @@ struct QuickPanelView: View {
             // 切分类回到标签级焦点：←→ 继续切分类，↓ 才进入网格
             isGridFocused = false
             applyFiltersToStore()
+            // 切分类 = 导航动作，一律选中新列表第一条（与打开面板时「列表顶部 = 预览」
+            // 一致）。不能交给 onChange(of: store.items) 的兜底——它只在旧选中项从新列表
+            // 消失时才重选，于是「全部 → 文本 → 全部」会把途中自动选中的文本条目带回
+            // 「全部」，看起来选中随机跳到了第三行。store.applyFilters() 是同步的
+            // （show 流程同一序列），这里 rebuild 后缓存即为新列表。
+            rebuildGroupedItems()
+            selectDefaultHistoryItem()
         }
-        .onChange(of: pill) { applyFiltersToStore() }
+        .onChange(of: pill) {
+            applyFiltersToStore()
+            // 同上：pill 筛选切换也是导航动作，选中新列表第一条。
+            rebuildGroupedItems()
+            selectDefaultHistoryItem()
+        }
         .onChange(of: quickPanelSecondaryRowRaw) {
             // 切换 tabBar 维度时，相关过滤会失配，统一重置成干净状态
             selectedFilter = .all
