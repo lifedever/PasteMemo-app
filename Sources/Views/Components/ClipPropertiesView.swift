@@ -12,8 +12,15 @@ struct ClipPropertiesView: View {
         let words: Int
     }
 
+    struct FileStats: Equatable, Sendable {
+        let itemCount: Int
+        let totalSize: Int
+        let location: String
+    }
+
     @State private var textStats: TextStats?
     @State private var dataImageDimensions: CGSize?
+    @State private var fileStats: FileStats?
 
     @ViewBuilder
     var body: some View {
@@ -49,6 +56,39 @@ struct ClipPropertiesView: View {
             }.value
             if !Task.isCancelled {
                 dataImageDimensions = dims
+            }
+        }
+        // Off the main thread on purpose: a Finder copy can carry thousands of paths,
+        // and stat-ing each one synchronously in `body` froze the panel alongside the
+        // 1,920-file preview. Same pattern as `textStats` above.
+        .task(id: "\(item.itemID):\(item.content.count):files") {
+            fileStats = nil
+            guard needsFileStats else { return }
+            let content = item.content
+            let stats = await Task.detached(priority: .userInitiated) { () -> FileStats in
+                let paths = content.components(separatedBy: "\n").filter { !$0.isEmpty }
+                let fm = FileManager.default
+                var itemCount = 0
+                var totalSize = 0
+                for path in paths {
+                    var isDir: ObjCBool = false
+                    guard fm.fileExists(atPath: path, isDirectory: &isDir) else { continue }
+                    if isDir.boolValue {
+                        // Directories: count children, no recursive size traversal.
+                        itemCount += (try? fm.contentsOfDirectory(atPath: path))?.count ?? 0
+                    } else {
+                        itemCount += 1
+                        let attrs = try? fm.attributesOfItem(atPath: path)
+                        totalSize += (attrs?[.size] as? Int) ?? 0
+                    }
+                }
+                let location = paths
+                    .compactMap { URL(fileURLWithPath: $0).deletingLastPathComponent().path }
+                    .first ?? ""
+                return FileStats(itemCount: itemCount, totalSize: totalSize, location: location)
+            }.value
+            if !Task.isCancelled {
+                fileStats = stats
             }
         }
         }
@@ -228,23 +268,32 @@ struct ClipPropertiesView: View {
 
     // MARK: - File
 
+    /// Mirrors the two render paths that reach `fileProperties` (file-based types, and
+    /// image clips that are really multi-file copies) so the stats task only runs when
+    /// the rows will actually be shown.
+    private var needsFileStats: Bool {
+        switch item.contentType {
+        case .file, .video, .audio, .document, .archive, .application:
+            return true
+        case .image:
+            return item.content != "[Image]" && item.imageData == nil
+        default:
+            return false
+        }
+    }
+
+    @ViewBuilder
     private var fileProperties: some View {
-        let paths = item.content.components(separatedBy: "\n").filter { !$0.isEmpty }
-        let itemCount = countItems(paths)
-        let location = paths.count == 1
-            ? URL(fileURLWithPath: paths[0]).deletingLastPathComponent().path
-            : paths.compactMap { URL(fileURLWithPath: $0).deletingLastPathComponent().path }.first ?? ""
-        let fileSize = calculatePlainFileSize(paths)
-        return Group {
+        if let stats = fileStats {
             propDivider
-            propRow(L10n.tr("detail.fileCount"), "\(itemCount)")
-            if fileSize > 0 {
+            propRow(L10n.tr("detail.fileCount"), "\(stats.itemCount)")
+            if stats.totalSize > 0 {
                 propDivider
-                propRow(L10n.tr("detail.size"), formatFileSize(fileSize))
+                propRow(L10n.tr("detail.size"), formatFileSize(stats.totalSize))
             }
-            if !location.isEmpty {
+            if !stats.location.isEmpty {
                 propDivider
-                locationRow(location)
+                locationRow(stats.location)
             }
         }
     }
@@ -451,35 +500,6 @@ struct ClipPropertiesView: View {
     }
 
     /// Counts items: plain files count as 1, directories count their immediate children.
-    private func countItems(_ paths: [String]) -> Int {
-        let fm = FileManager.default
-        var total = 0
-        for path in paths {
-            var isDir: ObjCBool = false
-            guard fm.fileExists(atPath: path, isDirectory: &isDir) else { continue }
-            if isDir.boolValue {
-                let children = (try? fm.contentsOfDirectory(atPath: path))?.count ?? 0
-                total += children
-            } else {
-                total += 1
-            }
-        }
-        return total
-    }
-
-    /// Returns total size of plain files only. Directories return 0 (no recursive traversal).
-    private func calculatePlainFileSize(_ paths: [String]) -> Int {
-        let fm = FileManager.default
-        var total = 0
-        for path in paths {
-            var isDir: ObjCBool = false
-            guard fm.fileExists(atPath: path, isDirectory: &isDir), !isDir.boolValue else { continue }
-            let attrs = try? fm.attributesOfItem(atPath: path)
-            total += (attrs?[.size] as? Int) ?? 0
-        }
-        return total
-    }
-
     private func detectImageFormat(_ data: Data) -> String {
         guard data.count >= 4 else { return "Unknown" }
         let header = [UInt8](data.prefix(4))

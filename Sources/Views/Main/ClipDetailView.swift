@@ -597,7 +597,9 @@ struct ClipDetailView: View {
             SingleFilePreview(path: path, iconSize: 64, nameFont: .system(size: 15, weight: .medium))
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else {
-            VStack(alignment: .leading, spacing: 4) {
+            // Lazy on purpose: multi-thousand-file Finder copies would otherwise build
+            // every FileRow (icon lookup each) in one body pass and freeze the app.
+            LazyVStack(alignment: .leading, spacing: 4) {
                 ForEach(Array(paths.enumerated()), id: \.offset) { _, path in
                     FileRow(path: path)
                 }

@@ -180,9 +180,32 @@ func fileIconForPath(_ path: String) -> String {
     fileIconInfo(path).symbol
 }
 
-/// Returns the macOS system icon for a file path (folder, app, document, etc.)
-func systemIcon(forFile path: String) -> NSImage {
-    NSWorkspace.shared.icon(forFile: path)
+@MainActor private var fileIconCache: [String: NSImage] = [:]
+/// Path-keyed entries (folders, .app bundles, extension-less files) can grow without
+/// bound across a long session; extension-keyed entries are naturally few. Clear the
+/// whole cache on overflow — icons are cheap to re-resolve one visible row at a time.
+private let FILE_ICON_CACHE_LIMIT = 512
+
+/// Returns the macOS system icon for a file path (folder, app, document, etc.).
+/// Cached: `NSWorkspace.icon(forFile:)` is a Launch Services round-trip, and a single
+/// Finder copy can reference thousands of files (issue: 1,920-file copy froze the
+/// preview pane). Plain files share one icon per extension; folders, .app bundles and
+/// extension-less paths keep per-path entries (their icons can be customised).
+@MainActor func systemIcon(forFile path: String) -> NSImage {
+    let ext = URL(fileURLWithPath: path).pathExtension.lowercased()
+    var isDir: ObjCBool = false
+    let exists = FileManager.default.fileExists(atPath: path, isDirectory: &isDir)
+    let key: String
+    if ext.isEmpty || ext == "app" || (exists && isDir.boolValue) {
+        key = "path:\(path)"
+    } else {
+        key = "ext:\(ext)"
+    }
+    if let cached = fileIconCache[key] { return cached }
+    let icon = NSWorkspace.shared.icon(forFile: path)
+    if fileIconCache.count >= FILE_ICON_CACHE_LIMIT { fileIconCache.removeAll() }
+    fileIconCache[key] = icon
+    return icon
 }
 
 /// Parse hex/rgb color string to NSColor

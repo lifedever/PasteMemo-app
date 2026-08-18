@@ -429,7 +429,10 @@ struct QuickPreviewPane: View {
             )
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else {
-            VStack(alignment: .leading, spacing: 4) {
+            // Lazy on purpose: a Finder copy can carry thousands of paths (a 1,920-file
+            // copy froze the panel for seconds), and each FileRow does an icon lookup.
+            // The enclosing ScrollView only materialises the visible rows this way.
+            LazyVStack(alignment: .leading, spacing: 4) {
                 ForEach(Array(paths.enumerated()), id: \.offset) { _, path in
                     FileRow(path: path, onOpenInFinder: { QuickPanelWindowController.shared.dismiss() })
                 }
