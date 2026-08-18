@@ -15,6 +15,11 @@ jobs:
     steps:
       - name: Check out workflow scripts
         uses: actions/checkout@v4
+        with:
+          # Full history: the "Sync main" step below needs real ancestry to run
+          # `git merge-base --is-ancestor`. On a shallow clone that check can
+          # never succeed, so the guard fires on a plain fast-forward.
+          fetch-depth: 0
 
       - name: Find draft releases with release-meta.json
         id: drafts
