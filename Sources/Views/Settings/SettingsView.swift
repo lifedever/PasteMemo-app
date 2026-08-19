@@ -154,20 +154,34 @@ struct SMSCodeSettingsSection: View {
         } header: {
             Text(L10n.tr("settings.smsCode"))
         } footer: {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(L10n.tr("settings.smsCode.description"))
-                Text(L10n.tr("settings.smsCode.hint"))
-                HStack(spacing: 4) {
-                    Text(L10n.tr("settings.smsCode.feedback"))
-                    Link(
-                        L10n.tr("settings.smsCode.feedbackLink"),
-                        destination: URL(string: "https://github.com/lifedever/PasteMemo-app/issues/new")!
-                    )
-                    .pointerCursor()
-                }
+            VStack(alignment: .leading, spacing: 8) {
+                footerRow("info.circle", Text(L10n.tr("settings.smsCode.description")))
+                footerRow("iphone", Text(L10n.tr("settings.smsCode.hint")))
+                footerRow("exclamationmark.bubble", Text(feedbackLine))
             }
             .font(.footnote)
-            .foregroundStyle(.secondary)
+        }
+    }
+
+    /// Feedback sentence with an inline tappable link — built as AttributedString
+    /// so the link keeps its accent color inside the secondary-styled footer.
+    private var feedbackLine: AttributedString {
+        var line = AttributedString(L10n.tr("settings.smsCode.feedback") + " ")
+        var link = AttributedString(L10n.tr("settings.smsCode.feedbackLink"))
+        link.link = URL(string: "https://github.com/lifedever/PasteMemo-app/issues/new")
+        link.foregroundColor = Color.accentColor
+        return line + link
+    }
+
+    private func footerRow(_ icon: String, _ text: Text) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 6) {
+            Image(systemName: icon)
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+                .frame(width: 14, alignment: .center)
+            text
+                .foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 
