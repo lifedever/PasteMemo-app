@@ -935,3 +935,5 @@
 "settings.smsCode.hint" = "iPhoneの「SMS転送」でこのMacへの転送を有効にしてください（設定 → メッセージ → SMS転送）。許可後も動作しない場合はPasteMemoを再起動してください。";
 "sms.notification.codeCopied" = "認証コード %@ をコピーしました";
 "sms.notification.fallbackTitle" = "認証コードを含む可能性のあるメッセージ";
+"sms.preview.messageLabel" = "元のメッセージ";
+"settings.smsCode.description" = "オンにすると、受信メッセージから認証コードを自動抽出してクリップボードにコピーし、通知します。解析できないメッセージは全文を通知で表示するため、コードを見逃すことはありません。";

@@ -157,7 +157,7 @@ final class SMSCodeWatcher: ObservableObject, @unchecked Sendable {
     @MainActor
     private static func handle(message: String) {
         if let code = VerificationCodeExtractor.extract(from: message) {
-            copyToClipboard(code)
+            copyToClipboard(code, message: message)
             notify(
                 title: L10n.tr("sms.notification.codeCopied", code),
                 body: preview(of: message)
@@ -173,14 +173,15 @@ final class SMSCodeWatcher: ObservableObject, @unchecked Sendable {
     }
 
     /// Same pattern as SetClipboardTool: write content + source marker, let the
-    /// capture poller flow it into history. `captureAndSave` reads the marker and
-    /// attributes the clip to the Messages app.
+    /// capture poller flow it into history. `captureAndSave` reads the marker
+    /// (whose value is the full SMS body) and attributes the clip to the
+    /// Messages app + stores the body for the preview pane.
     @MainActor
-    private static func copyToClipboard(_ code: String) {
+    private static func copyToClipboard(_ code: String, message: String) {
         let pasteboard = NSPasteboard.general
         pasteboard.clearContents()
         pasteboard.setString(code, forType: .string)
-        pasteboard.setString("sms", forType: .smsCodeSource)
+        pasteboard.setString(message, forType: .smsCodeSource)
     }
 
     /// Localized display name of the Messages app ("信息" / "Messages" / …).
@@ -209,7 +210,7 @@ final class SMSCodeWatcher: ObservableObject, @unchecked Sendable {
 
         let center = UNUserNotificationCenter.current()
         center.getNotificationSettings { settings in
-            let post = {
+            let post: @Sendable () -> Void = {
                 let request = UNNotificationRequest(
                     identifier: UUID().uuidString, content: content, trigger: nil
                 )

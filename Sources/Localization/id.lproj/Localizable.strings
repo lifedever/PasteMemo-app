@@ -909,3 +909,5 @@ Gunakan %@ untuk menempel satu per satu.";
 "settings.smsCode.hint" = "Memerlukan penerusan SMS iPhone ke Mac ini (Pengaturan → Pesan → Penerusan Pesan Teks). Jika tidak berfungsi setelah izin diberikan, mulai ulang PasteMemo.";
 "sms.notification.codeCopied" = "Kode %@ disalin";
 "sms.notification.fallbackTitle" = "Pesan mungkin berisi kode verifikasi";
+"sms.preview.messageLabel" = "Pesan asli";
+"settings.smsCode.description" = "Jika diaktifkan, PasteMemo mengekstrak kode verifikasi dari pesan masuk, menyalinnya ke papan klip, dan memberi tahu Anda. Pesan yang tidak dapat diurai ditampilkan lengkap lewat notifikasi — tidak ada kode yang terlewat diam-diam.";

@@ -883,3 +883,5 @@
 "settings.smsCode.hint" = "Requires iPhone Text Message Forwarding to this Mac (Settings → Messages → Text Message Forwarding). If it doesn't work after granting access, relaunch PasteMemo.";
 "sms.notification.codeCopied" = "Code %@ copied";
 "sms.notification.fallbackTitle" = "Message may contain a verification code";
+"sms.preview.messageLabel" = "Original message";
+"settings.smsCode.description" = "When on, PasteMemo extracts verification codes from incoming Messages, copies them to the clipboard and notifies you. Messages it can't parse are shown in full via notification, so a code is never silently missed.";

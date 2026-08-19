@@ -883,3 +883,5 @@
 "settings.smsCode.hint" = "需要 iPhone 开启「短信转发」到这台 Mac（设置 → 信息 → 短信转发）。若授权后仍未生效，请重启 PasteMemo。";
 "sms.notification.codeCopied" = "验证码 %@ 已复制";
 "sms.notification.fallbackTitle" = "收到疑似验证码短信";
+"sms.preview.messageLabel" = "短信原文";
+"settings.smsCode.description" = "开启后，收到验证码短信时会自动提取验证码、复制到剪贴板并发送通知；无法解析的疑似验证码短信会以通知展示全文，不会静默漏掉。";

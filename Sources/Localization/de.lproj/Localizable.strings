@@ -921,3 +921,5 @@ Verwenden Sie %@ zum Einfügen.";
 "settings.smsCode.hint" = "Erfordert die SMS-Weiterleitung vom iPhone an diesen Mac (Einstellungen → Nachrichten → SMS-Weiterleitung). Falls es nach der Freigabe nicht funktioniert, starte PasteMemo neu.";
 "sms.notification.codeCopied" = "Code %@ kopiert";
 "sms.notification.fallbackTitle" = "Nachricht enthält möglicherweise einen Bestätigungscode";
+"sms.preview.messageLabel" = "Originalnachricht";
+"settings.smsCode.description" = "Wenn aktiviert, extrahiert PasteMemo Bestätigungscodes aus eingehenden Nachrichten, kopiert sie in die Zwischenablage und benachrichtigt dich. Nicht auswertbare Nachrichten werden vollständig per Mitteilung angezeigt — kein Code geht stillschweigend verloren.";

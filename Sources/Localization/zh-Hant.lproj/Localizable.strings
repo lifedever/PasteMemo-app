@@ -895,3 +895,5 @@
 "settings.smsCode.hint" = "需要 iPhone 開啟「簡訊轉傳」到這台 Mac（設定 → 訊息 → 簡訊轉傳）。若授權後仍未生效，請重新啟動 PasteMemo。";
 "sms.notification.codeCopied" = "驗證碼 %@ 已複製";
 "sms.notification.fallbackTitle" = "收到疑似驗證碼簡訊";
+"sms.preview.messageLabel" = "簡訊原文";
+"settings.smsCode.description" = "開啟後，收到驗證碼簡訊時會自動擷取驗證碼、複製到剪貼板並發送通知；無法解析的疑似驗證碼簡訊會以通知顯示全文，不會靜默漏掉。";

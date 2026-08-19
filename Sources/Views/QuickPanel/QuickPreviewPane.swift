@@ -183,6 +183,10 @@ struct QuickPreviewPane: View {
             )
             .padding(14)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+        } else if let smsText = item.smsMessageText, item.contentType == .text {
+            // 短信验证码条目:大号显示码 + 短信原文,不走普通文本渲染
+            SMSCodePreview(code: item.content, message: smsText)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else if item.contentType == .text {
             previewContent
                 .padding(14)

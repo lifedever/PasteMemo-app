@@ -49,6 +49,7 @@ struct SettingsView: View {
         case .preview: PreviewPane()
         case .shortcuts: ShortcutsTab()
         case .relay: RelayTab()
+        case .smsCode: SMSCodePane()
         case .privacy: PrivacyTab()
         case .aiAgents: AIAgentIntegrationView()
         case .automation: AutomationTab()
@@ -63,15 +64,15 @@ struct SettingsView: View {
 
 enum SettingsCategory: String, CaseIterable, Identifiable, Hashable {
     case general, appearance, quickPanel, preview
-    case shortcuts, relay, privacy, aiAgents, automation, data
+    case shortcuts, relay, smsCode, privacy, aiAgents, automation, data
     case sponsor, about
 
     var id: String { rawValue }
 
-    /// 功能设置：基础(通用/外观) → 快捷面板(快捷键/面板/预览与识别) → 进阶(接力/AI/自动化)。
+    /// 功能设置：基础(通用/外观) → 快捷面板(快捷键/面板/预览与识别) → 进阶(接力/短信验证码/AI/自动化)。
     static let functionGroup: [SettingsCategory] =
         [.general, .appearance, .shortcuts, .quickPanel, .preview,
-         .relay, .aiAgents, .automation]
+         .relay, .smsCode, .aiAgents, .automation]
 
     /// 数据与隐私。
     static let dataPrivacyGroup: [SettingsCategory] = [.privacy, .data]
@@ -87,6 +88,7 @@ enum SettingsCategory: String, CaseIterable, Identifiable, Hashable {
         case .preview: return "settings.previewRecognition"
         case .shortcuts: return "settings.shortcuts"
         case .relay: return "relay.tab"
+        case .smsCode: return "settings.smsCode"
         case .privacy: return "settings.privacy"
         case .aiAgents: return "settings.tab.aiAgents"
         case .automation: return "settings.automation"
@@ -104,6 +106,7 @@ enum SettingsCategory: String, CaseIterable, Identifiable, Hashable {
         case .preview: return "text.viewfinder"
         case .shortcuts: return "keyboard"
         case .relay: return "arrow.forward"
+        case .smsCode: return "message.badge.filled.fill"
         case .privacy: return "lock.shield"
         case .aiAgents: return "sparkles.rectangle.stack"
         case .automation: return "gearshape.2"
@@ -111,6 +114,66 @@ enum SettingsCategory: String, CaseIterable, Identifiable, Hashable {
         case .sponsor: return "heart"
         case .about: return "info.circle"
         }
+    }
+}
+
+// MARK: - SMS Code Pane
+
+/// 短信验证码：开关(默认关) + 完全磁盘访问权限引导 + 使用说明。
+struct SMSCodePane: View {
+    @AppStorage(SMSCodeWatcher.enabledKey) private var smsCodeEnabled = false
+    @ObservedObject private var smsWatcher = SMSCodeWatcher.shared
+
+    var body: some View {
+        Form {
+            Section(L10n.tr("settings.smsCode")) {
+                Toggle(L10n.tr("settings.smsCode.enabled"), isOn: $smsCodeEnabled)
+                    .onChange(of: smsCodeEnabled) {
+                        // 默认关闭;打开时才启动 watcher,由它检测完全磁盘访问权限
+                        // 并通过 hasFullDiskAccess 驱动下面的授权引导行。
+                        if smsCodeEnabled {
+                            SMSCodeWatcher.shared.startIfEnabled()
+                        } else {
+                            SMSCodeWatcher.shared.stop()
+                        }
+                    }
+                if smsCodeEnabled {
+                    if smsWatcher.hasFullDiskAccess {
+                        Label(L10n.tr("settings.smsCode.granted"), systemImage: "checkmark.circle.fill")
+                            .foregroundStyle(.green)
+                            .font(.callout)
+                    } else {
+                        HStack {
+                            Label(L10n.tr("settings.smsCode.needsFDA"), systemImage: "exclamationmark.triangle.fill")
+                                .foregroundStyle(.orange)
+                                .font(.callout)
+                            Spacer()
+                            Button(L10n.tr("settings.smsCode.openSettings")) {
+                                openFullDiskAccessSettings()
+                            }
+                            .pointerCursor()
+                        }
+                    }
+                }
+            }
+
+            Section {
+                Text(L10n.tr("settings.smsCode.description"))
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                Text(L10n.tr("settings.smsCode.hint"))
+                    .font(.callout)
+                    .foregroundStyle(.tertiary)
+            }
+        }
+        .formStyle(.grouped)
+    }
+
+    private func openFullDiskAccessSettings() {
+        guard let url = URL(
+            string: "x-apple.systempreferences:com.apple.preference.security?Privacy_AllFiles"
+        ) else { return }
+        NSWorkspace.shared.open(url)
     }
 }
 
@@ -125,8 +188,6 @@ struct GeneralPane: View {
     @AppStorage("copySoundName") private var copySoundName = "custom:sound2"
     @AppStorage("pasteSoundName") private var pasteSoundName = "custom:sound1"
     @AppStorage("clipboardMonitoringEnabled") private var clipboardMonitoringEnabled = true
-    @AppStorage(SMSCodeWatcher.enabledKey) private var smsCodeEnabled = false
-    @ObservedObject private var smsWatcher = SMSCodeWatcher.shared
     @ObservedObject private var languageManager = LanguageManager.shared
     @State private var previousLanguage = LanguageManager.shared.current
 
@@ -195,40 +256,6 @@ struct GeneralPane: View {
                 }
             }
 
-            Section(L10n.tr("settings.smsCode")) {
-                Toggle(L10n.tr("settings.smsCode.enabled"), isOn: $smsCodeEnabled)
-                    .onChange(of: smsCodeEnabled) {
-                        // 默认关闭;打开时才启动 watcher,由它检测完全磁盘访问权限
-                        // 并通过 hasFullDiskAccess 驱动下面的授权引导行。
-                        if smsCodeEnabled {
-                            SMSCodeWatcher.shared.startIfEnabled()
-                        } else {
-                            SMSCodeWatcher.shared.stop()
-                        }
-                    }
-                if smsCodeEnabled {
-                    if smsWatcher.hasFullDiskAccess {
-                        Label(L10n.tr("settings.smsCode.granted"), systemImage: "checkmark.circle.fill")
-                            .foregroundStyle(.green)
-                            .font(.callout)
-                    } else {
-                        HStack {
-                            Label(L10n.tr("settings.smsCode.needsFDA"), systemImage: "exclamationmark.triangle.fill")
-                                .foregroundStyle(.orange)
-                                .font(.callout)
-                            Spacer()
-                            Button(L10n.tr("settings.smsCode.openSettings")) {
-                                openFullDiskAccessSettings()
-                            }
-                            .pointerCursor()
-                        }
-                    }
-                    Text(L10n.tr("settings.smsCode.hint"))
-                        .font(.callout)
-                        .foregroundStyle(.tertiary)
-                }
-            }
-
             Section {
                 Button(L10n.tr("settings.showGuide")) {
                     showOnboardingWindow()
@@ -272,13 +299,6 @@ struct GeneralPane: View {
         .onChange(of: selection.wrappedValue) {
             SoundManager.preview(.from(storageKey: selection.wrappedValue))
         }
-    }
-
-    private func openFullDiskAccessSettings() {
-        guard let url = URL(
-            string: "x-apple.systempreferences:com.apple.preference.security?Privacy_AllFiles"
-        ) else { return }
-        NSWorkspace.shared.open(url)
     }
 
     private func showLanguageRestartAlert() {

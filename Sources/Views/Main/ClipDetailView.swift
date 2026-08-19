@@ -82,6 +82,10 @@ struct ClipDetailView: View {
         } else if item.contentType == .code {
             CodePreviewView(code: item.content, language: item.resolvedCodeLanguage, insets: NSSize(width: 16, height: 16))
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
+        } else if let smsText = item.smsMessageText, item.contentType == .text {
+            // 短信验证码条目:大号显示码 + 短信原文,不走普通文本渲染
+            SMSCodePreview(code: item.content, message: smsText)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         } else if item.contentType == .text {
             contentPreview
                 .padding(16)

@@ -194,6 +194,13 @@ final class ClipboardManager: ObservableObject {
             newItem.agentSource = agent
         }
 
+        // 短信验证码:marker 的值就是短信全文,存到 smsMessageText 供列表角标 +
+        // 预览区「短信原文」使用(content 只有码本身)。
+        if isSMSCodeWrite,
+           let smsBody = NSPasteboard.general.string(forType: .smsCodeSource), !smsBody.isEmpty {
+            newItem.smsMessageText = smsBody
+        }
+
         let context = container.mainContext
 
         // Apply automation rules. Text transforms only touch text-like clips; image /
@@ -832,6 +839,9 @@ final class ClipboardManager: ObservableObject {
         existingItem.sourceApp = newItem.sourceApp
         existingItem.sourceAppBundleID = newItem.sourceAppBundleID
         existingItem.displayTitle = newItem.displayTitle
+        if newItem.smsMessageText != nil {
+            existingItem.smsMessageText = newItem.smsMessageText
+        }
 
         if existingItem.imageData == nil {
             existingItem.imageData = newItem.imageData

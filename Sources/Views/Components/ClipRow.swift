@@ -37,6 +37,17 @@ struct ClipRow: View {
                                             Color(red: 0.55, green: 0.30, blue: 0.90),
                                             in: Capsule()
                                         )
+                                } else if item.smsMessageText != nil, !compact {
+                                    // 短信验证码角标(同 AI 角标的位置与规格)
+                                    Image(systemName: "key.fill")
+                                        .font(.system(size: 8, weight: .semibold))
+                                        .foregroundStyle(.white)
+                                        .padding(.horizontal, 4)
+                                        .padding(.vertical, 1.5)
+                                        .background(
+                                            Color(red: 0.18, green: 0.60, blue: 0.38),
+                                            in: Capsule()
+                                        )
                                 }
                             }
                         if item.isPinned {

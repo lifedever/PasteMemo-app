@@ -939,3 +939,5 @@ Utilisez %@ pour coller un par un.";
 "settings.smsCode.hint" = "Nécessite le transfert de SMS de l'iPhone vers ce Mac (Réglages → Messages → Transfert de SMS). Si cela ne fonctionne pas après l'autorisation, relancez PasteMemo.";
 "sms.notification.codeCopied" = "Code %@ copié";
 "sms.notification.fallbackTitle" = "Message pouvant contenir un code de vérification";
+"sms.preview.messageLabel" = "Message d'origine";
+"settings.smsCode.description" = "Lorsque cette option est activée, PasteMemo extrait les codes de vérification des messages entrants, les copie dans le presse-papiers et vous en informe. Les messages non analysables sont affichés en entier par notification — aucun code n'est manqué en silence.";

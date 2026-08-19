@@ -182,6 +182,10 @@ final class ClipItem {
     /// Identifier of the AI Agent (MCP client) that wrote this item, e.g. "claude-code", "cursor".
     /// Set when the clip originates from a `clipboard_set` MCP call. nil for normal user copies.
     var agentSource: String?
+    /// Full SMS body when this clip is a verification code extracted by
+    /// SMSCodeWatcher (content holds just the code). Drives the code badge in
+    /// list rows and the original-message preview. nil for every other clip.
+    var smsMessageText: String?
 
     @MainActor
     init(

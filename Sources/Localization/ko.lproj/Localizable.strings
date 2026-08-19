@@ -937,3 +937,5 @@
 "settings.smsCode.hint" = "iPhone에서 이 Mac으로 문자 메시지 전달을 켜야 합니다(설정 → 메시지 → 문자 메시지 전달). 권한 부여 후에도 작동하지 않으면 PasteMemo를 재시동하세요.";
 "sms.notification.codeCopied" = "인증번호 %@ 복사됨";
 "sms.notification.fallbackTitle" = "인증번호가 포함된 것으로 보이는 메시지";
+"sms.preview.messageLabel" = "원본 메시지";
+"settings.smsCode.description" = "켜면 수신 메시지에서 인증번호를 자동으로 추출해 클립보드에 복사하고 알림을 보냅니다. 해석할 수 없는 메시지는 전문을 알림으로 표시하므로 인증번호를 놓치지 않습니다.";
