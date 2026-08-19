@@ -873,3 +873,13 @@
 "settings.imageGridDensity.dense" = "Dense";
 
 "settings.ocr.memoryHint" = "When on, PasteMemo recognizes text in images in the background using Vision, which may increase memory usage.";
+
+// SMS verification codes
+"settings.smsCode" = "SMS Verification Codes";
+"settings.smsCode.enabled" = "Auto-copy verification codes from Messages";
+"settings.smsCode.needsFDA" = "Full Disk Access is required to read Messages";
+"settings.smsCode.openSettings" = "Open System Settings";
+"settings.smsCode.granted" = "Full Disk Access granted";
+"settings.smsCode.hint" = "Requires iPhone Text Message Forwarding to this Mac (Settings → Messages → Text Message Forwarding). If it doesn't work after granting access, relaunch PasteMemo.";
+"sms.notification.codeCopied" = "Code %@ copied";
+"sms.notification.fallbackTitle" = "Message may contain a verification code";

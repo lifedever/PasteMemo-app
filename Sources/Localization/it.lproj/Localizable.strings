@@ -889,3 +889,13 @@ Usa %@ per incollare uno per uno.";
 "settings.imageGridDensity.dense" = "Fitta";
 
 "settings.ocr.memoryHint" = "Se attivo, PasteMemo riconosce il testo nelle immagini in background tramite Vision, il che può aumentare l’uso della memoria.";
+
+// SMS verification codes
+"settings.smsCode" = "Codici di verifica SMS";
+"settings.smsCode.enabled" = "Copia automaticamente i codici ricevuti in Messaggi";
+"settings.smsCode.needsFDA" = "Per leggere i messaggi è richiesto l'accesso completo al disco";
+"settings.smsCode.openSettings" = "Apri Impostazioni di Sistema";
+"settings.smsCode.granted" = "Accesso completo al disco concesso";
+"settings.smsCode.hint" = "Richiede l'inoltro degli SMS dall'iPhone a questo Mac (Impostazioni → Messaggi → Inoltro SMS). Se non funziona dopo l'autorizzazione, riavvia PasteMemo.";
+"sms.notification.codeCopied" = "Codice %@ copiato";
+"sms.notification.fallbackTitle" = "Messaggio che potrebbe contenere un codice di verifica";

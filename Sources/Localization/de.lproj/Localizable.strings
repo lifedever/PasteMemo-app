@@ -911,3 +911,13 @@ Verwenden Sie %@ zum Einfügen.";
 "settings.imageGridDensity.dense" = "Dicht";
 
 "settings.ocr.memoryHint" = "Wenn aktiviert, erkennt PasteMemo Text in Bildern im Hintergrund mit Vision, was den Speicherverbrauch erhöhen kann.";
+
+// SMS verification codes
+"settings.smsCode" = "SMS-Bestätigungscodes";
+"settings.smsCode.enabled" = "Bestätigungscodes aus Nachrichten automatisch kopieren";
+"settings.smsCode.needsFDA" = "Festplattenvollzugriff ist zum Lesen von Nachrichten erforderlich";
+"settings.smsCode.openSettings" = "Systemeinstellungen öffnen";
+"settings.smsCode.granted" = "Festplattenvollzugriff gewährt";
+"settings.smsCode.hint" = "Erfordert die SMS-Weiterleitung vom iPhone an diesen Mac (Einstellungen → Nachrichten → SMS-Weiterleitung). Falls es nach der Freigabe nicht funktioniert, starte PasteMemo neu.";
+"sms.notification.codeCopied" = "Code %@ kopiert";
+"sms.notification.fallbackTitle" = "Nachricht enthält möglicherweise einen Bestätigungscode";

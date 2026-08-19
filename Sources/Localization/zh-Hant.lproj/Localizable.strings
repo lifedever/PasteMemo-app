@@ -885,3 +885,13 @@
 "settings.imageGridDensity.dense" = "密";
 
 "settings.ocr.memoryHint" = "開啟後會在背景用 Vision 辨識圖片中的文字，可能增加記憶體佔用。";
+
+// SMS verification codes
+"settings.smsCode" = "簡訊驗證碼";
+"settings.smsCode.enabled" = "自動擷取「訊息」中的簡訊驗證碼並複製";
+"settings.smsCode.needsFDA" = "讀取簡訊需要「完整磁碟取用權限」";
+"settings.smsCode.openSettings" = "打開系統設定";
+"settings.smsCode.granted" = "已取得完整磁碟取用權限";
+"settings.smsCode.hint" = "需要 iPhone 開啟「簡訊轉傳」到這台 Mac（設定 → 訊息 → 簡訊轉傳）。若授權後仍未生效，請重新啟動 PasteMemo。";
+"sms.notification.codeCopied" = "驗證碼 %@ 已複製";
+"sms.notification.fallbackTitle" = "收到疑似驗證碼簡訊";

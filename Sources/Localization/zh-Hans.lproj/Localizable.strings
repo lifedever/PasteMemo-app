@@ -873,3 +873,13 @@
 "settings.imageGridDensity.dense" = "密";
 
 "settings.ocr.memoryHint" = "开启后会在后台用 Vision 识别图片中的文字，可能增加内存占用。";
+
+// SMS verification codes
+"settings.smsCode" = "短信验证码";
+"settings.smsCode.enabled" = "自动提取「信息」中的短信验证码并复制";
+"settings.smsCode.needsFDA" = "读取短信需要「完全磁盘访问权限」";
+"settings.smsCode.openSettings" = "打开系统设置";
+"settings.smsCode.granted" = "已获得完全磁盘访问权限";
+"settings.smsCode.hint" = "需要 iPhone 开启「短信转发」到这台 Mac（设置 → 信息 → 短信转发）。若授权后仍未生效，请重启 PasteMemo。";
+"sms.notification.codeCopied" = "验证码 %@ 已复制";
+"sms.notification.fallbackTitle" = "收到疑似验证码短信";

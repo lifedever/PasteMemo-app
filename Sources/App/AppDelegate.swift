@@ -59,6 +59,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if ClipboardManager.shared.isMonitoringEnabled {
             ClipboardManager.shared.startMonitoring()
         }
+        // 短信验证码提取(默认关):注册在这里而不是视图生命周期,登录自启的后台
+        // 启动也必跑(issue #66 教训)。
+        SMSCodeWatcher.shared.startIfEnabled()
         UsageTracker.pingIfNeeded()
 
         // 三个开窗闭包必须在这里注册(applicationDidFinishLaunching 任何启动方式都

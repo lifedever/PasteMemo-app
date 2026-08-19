@@ -125,6 +125,8 @@ struct GeneralPane: View {
     @AppStorage("copySoundName") private var copySoundName = "custom:sound2"
     @AppStorage("pasteSoundName") private var pasteSoundName = "custom:sound1"
     @AppStorage("clipboardMonitoringEnabled") private var clipboardMonitoringEnabled = true
+    @AppStorage(SMSCodeWatcher.enabledKey) private var smsCodeEnabled = false
+    @ObservedObject private var smsWatcher = SMSCodeWatcher.shared
     @ObservedObject private var languageManager = LanguageManager.shared
     @State private var previousLanguage = LanguageManager.shared.current
 
@@ -193,6 +195,40 @@ struct GeneralPane: View {
                 }
             }
 
+            Section(L10n.tr("settings.smsCode")) {
+                Toggle(L10n.tr("settings.smsCode.enabled"), isOn: $smsCodeEnabled)
+                    .onChange(of: smsCodeEnabled) {
+                        // 默认关闭;打开时才启动 watcher,由它检测完全磁盘访问权限
+                        // 并通过 hasFullDiskAccess 驱动下面的授权引导行。
+                        if smsCodeEnabled {
+                            SMSCodeWatcher.shared.startIfEnabled()
+                        } else {
+                            SMSCodeWatcher.shared.stop()
+                        }
+                    }
+                if smsCodeEnabled {
+                    if smsWatcher.hasFullDiskAccess {
+                        Label(L10n.tr("settings.smsCode.granted"), systemImage: "checkmark.circle.fill")
+                            .foregroundStyle(.green)
+                            .font(.callout)
+                    } else {
+                        HStack {
+                            Label(L10n.tr("settings.smsCode.needsFDA"), systemImage: "exclamationmark.triangle.fill")
+                                .foregroundStyle(.orange)
+                                .font(.callout)
+                            Spacer()
+                            Button(L10n.tr("settings.smsCode.openSettings")) {
+                                openFullDiskAccessSettings()
+                            }
+                            .pointerCursor()
+                        }
+                    }
+                    Text(L10n.tr("settings.smsCode.hint"))
+                        .font(.callout)
+                        .foregroundStyle(.tertiary)
+                }
+            }
+
             Section {
                 Button(L10n.tr("settings.showGuide")) {
                     showOnboardingWindow()
@@ -236,6 +272,13 @@ struct GeneralPane: View {
         .onChange(of: selection.wrappedValue) {
             SoundManager.preview(.from(storageKey: selection.wrappedValue))
         }
+    }
+
+    private func openFullDiskAccessSettings() {
+        guard let url = URL(
+            string: "x-apple.systempreferences:com.apple.preference.security?Privacy_AllFiles"
+        ) else { return }
+        NSWorkspace.shared.open(url)
     }
 
     private func showLanguageRestartAlert() {

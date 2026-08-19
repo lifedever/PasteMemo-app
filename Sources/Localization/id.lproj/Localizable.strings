@@ -899,3 +899,13 @@ Gunakan %@ untuk menempel satu per satu.";
 "settings.imageGridDensity.dense" = "Rapat";
 
 "settings.ocr.memoryHint" = "Saat aktif, PasteMemo mengenali teks pada gambar di latar belakang dengan Vision, yang dapat menambah penggunaan memori.";
+
+// SMS verification codes
+"settings.smsCode" = "Kode Verifikasi SMS";
+"settings.smsCode.enabled" = "Salin otomatis kode verifikasi dari Pesan";
+"settings.smsCode.needsFDA" = "Akses Disk Penuh diperlukan untuk membaca pesan";
+"settings.smsCode.openSettings" = "Buka Pengaturan Sistem";
+"settings.smsCode.granted" = "Akses Disk Penuh diberikan";
+"settings.smsCode.hint" = "Memerlukan penerusan SMS iPhone ke Mac ini (Pengaturan → Pesan → Penerusan Pesan Teks). Jika tidak berfungsi setelah izin diberikan, mulai ulang PasteMemo.";
+"sms.notification.codeCopied" = "Kode %@ disalin";
+"sms.notification.fallbackTitle" = "Pesan mungkin berisi kode verifikasi";

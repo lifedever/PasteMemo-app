@@ -7,8 +7,9 @@ private let SQLITE_TRANSIENT = unsafeBitCast(-1, to: sqlite3_destructor_type.sel
 final class SQLiteConnection {
     private var db: OpaquePointer?
 
-    init?(path: String) {
-        guard sqlite3_open_v2(path, &db, SQLITE_OPEN_READWRITE, nil) == SQLITE_OK else {
+    init?(path: String, readOnly: Bool = false) {
+        let flags = readOnly ? SQLITE_OPEN_READONLY : SQLITE_OPEN_READWRITE
+        guard sqlite3_open_v2(path, &db, flags, nil) == SQLITE_OK else {
             sqlite3_close(db)
             return nil
         }
@@ -124,6 +125,29 @@ final class SQLiteConnection {
             let count = Int(sqlite3_column_int64(stmt, 2))
             let preservesItems = sqlite3_column_int64(stmt, 3) != 0
             results.append((name, icon, count, preservesItems))
+        }
+        return results
+    }
+
+    /// Rows of (rowid, text, blob). Used by SMSCodeWatcher to read Messages rows
+    /// whose body may live either in `text` or in the `attributedBody` blob.
+    func queryIntTextBlobRows(_ sql: String, params: [Any] = []) -> [(Int, String?, Data?)] {
+        var stmt: OpaquePointer?
+        guard sqlite3_prepare_v2(db, sql, -1, &stmt, nil) == SQLITE_OK else { return [] }
+        defer { sqlite3_finalize(stmt) }
+
+        bind(params, to: stmt)
+
+        var results: [(Int, String?, Data?)] = []
+        while sqlite3_step(stmt) == SQLITE_ROW {
+            let id = Int(sqlite3_column_int64(stmt, 0))
+            let text = sqlite3_column_text(stmt, 1).map { String(cString: $0) }
+            var blob: Data?
+            if sqlite3_column_type(stmt, 2) == SQLITE_BLOB,
+               let bytes = sqlite3_column_blob(stmt, 2) {
+                blob = Data(bytes: bytes, count: Int(sqlite3_column_bytes(stmt, 2)))
+            }
+            results.append((id, text, blob))
         }
         return results
     }

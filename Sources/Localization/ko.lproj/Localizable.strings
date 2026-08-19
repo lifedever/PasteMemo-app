@@ -927,3 +927,13 @@
 "settings.imageGridDensity.dense" = "좁게";
 
 "settings.ocr.memoryHint" = "켜면 Vision으로 이미지 속 문자를 백그라운드에서 인식합니다. 메모리 사용량이 늘어날 수 있습니다.";
+
+// SMS verification codes
+"settings.smsCode" = "SMS 인증번호";
+"settings.smsCode.enabled" = "메시지 앱의 인증번호 자동 복사";
+"settings.smsCode.needsFDA" = "메시지를 읽으려면 전체 디스크 접근 권한이 필요합니다";
+"settings.smsCode.openSettings" = "시스템 설정 열기";
+"settings.smsCode.granted" = "전체 디스크 접근 권한이 허용됨";
+"settings.smsCode.hint" = "iPhone에서 이 Mac으로 문자 메시지 전달을 켜야 합니다(설정 → 메시지 → 문자 메시지 전달). 권한 부여 후에도 작동하지 않으면 PasteMemo를 재시동하세요.";
+"sms.notification.codeCopied" = "인증번호 %@ 복사됨";
+"sms.notification.fallbackTitle" = "인증번호가 포함된 것으로 보이는 메시지";

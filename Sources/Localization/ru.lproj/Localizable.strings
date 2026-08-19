@@ -899,3 +899,13 @@
 "settings.imageGridDensity.dense" = "Плотная";
 
 "settings.ocr.memoryHint" = "Когда включено, PasteMemo распознаёт текст на изображениях в фоне с помощью Vision, что может увеличить расход памяти.";
+
+// SMS verification codes
+"settings.smsCode" = "SMS-коды подтверждения";
+"settings.smsCode.enabled" = "Автоматически копировать коды из Сообщений";
+"settings.smsCode.needsFDA" = "Для чтения сообщений требуется полный доступ к диску";
+"settings.smsCode.openSettings" = "Открыть Системные настройки";
+"settings.smsCode.granted" = "Полный доступ к диску предоставлен";
+"settings.smsCode.hint" = "Требуется пересылка SMS с iPhone на этот Mac (Настройки → Сообщения → Пересылка SMS). Если после выдачи доступа не работает, перезапустите PasteMemo.";
+"sms.notification.codeCopied" = "Код %@ скопирован";
+"sms.notification.fallbackTitle" = "Сообщение может содержать код подтверждения";

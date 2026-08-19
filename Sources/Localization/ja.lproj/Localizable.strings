@@ -925,3 +925,13 @@
 "settings.imageGridDensity.dense" = "密";
 
 "settings.ocr.memoryHint" = "オンにすると、Vision を使って画像内の文字をバックグラウンドで認識します。メモリ使用量が増えることがあります。";
+
+// SMS verification codes
+"settings.smsCode" = "SMS認証コード";
+"settings.smsCode.enabled" = "「メッセージ」から認証コードを自動コピー";
+"settings.smsCode.needsFDA" = "メッセージの読み取りには「フルディスクアクセス」が必要です";
+"settings.smsCode.openSettings" = "システム設定を開く";
+"settings.smsCode.granted" = "フルディスクアクセスが許可されています";
+"settings.smsCode.hint" = "iPhoneの「SMS転送」でこのMacへの転送を有効にしてください（設定 → メッセージ → SMS転送）。許可後も動作しない場合はPasteMemoを再起動してください。";
+"sms.notification.codeCopied" = "認証コード %@ をコピーしました";
+"sms.notification.fallbackTitle" = "認証コードを含む可能性のあるメッセージ";

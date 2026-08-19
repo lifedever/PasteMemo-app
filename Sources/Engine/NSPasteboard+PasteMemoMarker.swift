@@ -14,6 +14,11 @@ extension NSPasteboard.PasteboardType {
     /// `ClipboardManager.captureAndSave` reads this and stores it onto `ClipItem.agentSource`,
     /// so the side panel / quick panel can offer the "AI Agent" filter category.
     static let agentSource = NSPasteboard.PasteboardType(rawValue: "com.lifedever.pastememo.agent-source")
+
+    /// SMS verification-code marker. Attached when `SMSCodeWatcher` pushes an
+    /// extracted code onto the pasteboard — `captureAndSave` reads it and
+    /// attributes the clip to the Messages app instead of the frontmost app.
+    static let smsCodeSource = NSPasteboard.PasteboardType(rawValue: "com.lifedever.pastememo.sms-source")
 }
 
 extension NSPasteboard {

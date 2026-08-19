@@ -929,3 +929,13 @@ Utilisez %@ pour coller un par un.";
 "settings.imageGridDensity.dense" = "Dense";
 
 "settings.ocr.memoryHint" = "Une fois activé, PasteMemo reconnaît le texte des images en arrière-plan via Vision, ce qui peut augmenter la mémoire utilisée.";
+
+// SMS verification codes
+"settings.smsCode" = "Codes de vérification SMS";
+"settings.smsCode.enabled" = "Copier automatiquement les codes reçus dans Messages";
+"settings.smsCode.needsFDA" = "L'accès complet au disque est requis pour lire les messages";
+"settings.smsCode.openSettings" = "Ouvrir Réglages Système";
+"settings.smsCode.granted" = "Accès complet au disque accordé";
+"settings.smsCode.hint" = "Nécessite le transfert de SMS de l'iPhone vers ce Mac (Réglages → Messages → Transfert de SMS). Si cela ne fonctionne pas après l'autorisation, relancez PasteMemo.";
+"sms.notification.codeCopied" = "Code %@ copié";
+"sms.notification.fallbackTitle" = "Message pouvant contenir un code de vérification";

@@ -162,7 +162,12 @@ final class ClipboardManager: ObservableObject {
         }
         // If an app switch happened very recently, the copy likely came from the previous app
         let appInfo: (name: String?, bundleID: String?)
-        if Date().timeIntervalSince(lastSwitchTime) < Self.APP_SWITCH_THRESHOLD,
+        let isSMSCodeWrite = NSPasteboard.general.string(forType: .smsCodeSource) != nil
+        if isSMSCodeWrite {
+            // SMS 验证码由 SMSCodeWatcher 写入,归因到「信息」App 而不是当前前台 App,
+            // 侧栏来源过滤 / 自动化规则的 sourceApp 条件都按 com.apple.MobileSMS 命中。
+            appInfo = (name: SMSCodeWatcher.messagesAppDisplayName(), bundleID: "com.apple.MobileSMS")
+        } else if Date().timeIntervalSince(lastSwitchTime) < Self.APP_SWITCH_THRESHOLD,
            appBeforeSwitch.bundleID != nil {
             appInfo = appBeforeSwitch
         } else {
@@ -176,7 +181,9 @@ final class ClipboardManager: ObservableObject {
         defer { if !didInsert { Self.deleteOriginalCacheFile(at: newItem.originalImageFilePath) } }
         newItem.sourceAppBundleID = appInfo.bundleID
 
-        newItem.isSensitive = SensitiveDetector.isSensitive(
+        // 提取出的短信验证码不做敏感标记:内容只有码本身,整个功能就是为了让它
+        // 可见可粘;8 位混合码会被高熵检测误伤成打码显示。
+        newItem.isSensitive = isSMSCodeWrite ? false : SensitiveDetector.isSensitive(
             content: newItem.content, sourceAppBundleID: appInfo.bundleID, contentType: newItem.contentType
         )
 
