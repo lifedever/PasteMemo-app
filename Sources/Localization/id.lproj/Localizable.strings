@@ -526,6 +526,11 @@
 "backup.changePath" = "Ubah…";
 "backup.webdav.testSuccess" = "Koneksi berhasil.";
 "backup.webdav.testFailed" = "Koneksi gagal.";
+"backup.webdav.testSuccessHTTP" = "Koneksi berhasil (HTTP tanpa enkripsi).";
+"backup.webdav.authFailed" = "Server dapat dijangkau, tetapi nama pengguna atau kata sandi salah.";
+"backup.webdav.certError" = "Sertifikat server tidak valid; koneksi aman tidak dapat dibuat.";
+"backup.webdav.invalidURL" = "URL server tidak valid. Hanya http:// dan https:// yang didukung.";
+"backup.webdav.insecureWarning" = "Koneksi HTTP tanpa enkripsi: nama pengguna, kata sandi, dan data cadangan dikirim sebagai teks biasa.";
 
 // Relay Mode
 "relay.title" = "Mode Relay";

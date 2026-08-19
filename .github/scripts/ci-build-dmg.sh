@@ -116,6 +116,11 @@ build_arch() {
     <string>Copyright © 2026 lifedever. All rights reserved.</string>
     <key>NSAppleEventsUsageDescription</key>
     <string>PasteMemo needs to communicate with Finder to save images to folders.</string>
+    <key>NSAppTransportSecurity</key>
+    <dict>
+        <key>NSAllowsArbitraryLoads</key>
+        <true/>
+    </dict>
 </dict>
 </plist>
 PLIST

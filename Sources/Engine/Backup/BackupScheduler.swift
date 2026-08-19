@@ -48,6 +48,7 @@ final class BackupScheduler {
         }
 
         do {
+            await resolveWebDAVURLIfNeeded()
             let destination = buildDestination()
             try await BackupEngine.performBackup(
                 container: container,
@@ -119,6 +120,28 @@ final class BackupScheduler {
     }
 
     // MARK: - Private
+
+    /// Users who enable WebDAV backup without ever hitting "Test Connection"
+    /// may have a scheme-less server address stored. Resolve it once here
+    /// and persist the result so backups (and the settings UI) use the
+    /// confirmed scheme instead of guessing.
+    private func resolveWebDAVURLIfNeeded() async {
+        guard destinationType == .webdav else { return }
+        let defaults = UserDefaults.standard
+        let stored = (defaults.string(forKey: "webdavURL") ?? "")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !stored.isEmpty, !stored.contains("://") else { return }
+        let resolution = await WebDAVBackupDestination.resolveServerURL(
+            stored,
+            username: defaults.string(forKey: "webdavUsername") ?? "",
+            password: defaults.string(forKey: "webdavPassword") ?? ""
+        )
+        if case .resolved(let url, _, _) = resolution {
+            defaults.set(url, forKey: "webdavURL")
+        }
+        // Unresolvable: keep the stored value; buildURL falls back to HTTPS
+        // and the upload error surfaces through lastBackupError as usual.
+    }
 
     private func scheduleTimer(after interval: TimeInterval) {
         timer = Timer.scheduledTimer(withTimeInterval: interval, repeats: false) { [weak self] _ in

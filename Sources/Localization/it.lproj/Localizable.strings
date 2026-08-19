@@ -526,6 +526,11 @@
 "backup.changePath" = "Cambia…";
 "backup.webdav.testSuccess" = "Connessione riuscita.";
 "backup.webdav.testFailed" = "Connessione fallita.";
+"backup.webdav.testSuccessHTTP" = "Connessione riuscita (HTTP non crittografato).";
+"backup.webdav.authFailed" = "Server raggiunto, ma il nome utente o la password non sono corretti.";
+"backup.webdav.certError" = "Il certificato del server non è valido; impossibile stabilire una connessione sicura.";
+"backup.webdav.invalidURL" = "URL del server non valido. Sono supportati solo http:// e https://.";
+"backup.webdav.insecureWarning" = "Connessione HTTP non crittografata: le credenziali e i dati di backup vengono trasmessi in chiaro.";
 
 // Modalità staffetta
 // Tavolozza comandi

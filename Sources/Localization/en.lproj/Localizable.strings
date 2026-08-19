@@ -686,6 +686,11 @@
 "backup.changePath" = "Change…";
 "backup.webdav.testSuccess" = "Connection successful.";
 "backup.webdav.testFailed" = "Connection failed.";
+"backup.webdav.testSuccessHTTP" = "Connection successful (unencrypted HTTP).";
+"backup.webdav.authFailed" = "Server reached, but the username or password is incorrect.";
+"backup.webdav.certError" = "The server certificate is invalid; a secure connection could not be established.";
+"backup.webdav.invalidURL" = "Invalid server URL. Only http:// and https:// are supported.";
+"backup.webdav.insecureWarning" = "Unencrypted HTTP connection: credentials and backup data are sent in plain text.";
 
 // Relay Mode
 // Command Palette

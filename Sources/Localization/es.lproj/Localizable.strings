@@ -434,6 +434,11 @@
 "backup.changePath" = "Cambiar…";
 "backup.webdav.testSuccess" = "Conexión exitosa.";
 "backup.webdav.testFailed" = "Error de conexión.";
+"backup.webdav.testSuccessHTTP" = "Conexión exitosa (HTTP sin cifrar).";
+"backup.webdav.authFailed" = "Se estableció conexión con el servidor, pero el nombre de usuario o la contraseña son incorrectos.";
+"backup.webdav.certError" = "El certificado del servidor no es válido; no se pudo establecer una conexión segura.";
+"backup.webdav.invalidURL" = "URL del servidor no válida. Solo se admiten http:// y https://.";
+"backup.webdav.insecureWarning" = "Conexión HTTP sin cifrar: las credenciales y los datos de la copia de seguridad se transmiten en texto plano.";
 
 // Modo relevo
 // Paleta de comandos

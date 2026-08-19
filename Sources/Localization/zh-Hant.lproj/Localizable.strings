@@ -526,6 +526,11 @@
 "backup.changePath" = "更改…";
 "backup.webdav.testSuccess" = "連線成功。";
 "backup.webdav.testFailed" = "連線失敗。";
+"backup.webdav.testSuccessHTTP" = "連線成功（未加密 HTTP）。";
+"backup.webdav.authFailed" = "已連上伺服器，但使用者名稱或密碼不正確。";
+"backup.webdav.certError" = "伺服器憑證無效，無法建立安全連線。";
+"backup.webdav.invalidURL" = "伺服器位址無效，僅支援 http:// 或 https://。";
+"backup.webdav.insecureWarning" = "目前為未加密的 HTTP 連線，帳號密碼與備份資料將以明文傳輸。";
 
 // 接力模式
 // 命令面板

@@ -434,6 +434,11 @@
 "backup.changePath" = "변경…";
 "backup.webdav.testSuccess" = "연결 성공.";
 "backup.webdav.testFailed" = "연결 실패.";
+"backup.webdav.testSuccessHTTP" = "연결 성공(암호화되지 않은 HTTP).";
+"backup.webdav.authFailed" = "서버에는 연결되었지만 사용자 이름 또는 비밀번호가 올바르지 않습니다.";
+"backup.webdav.certError" = "서버 인증서가 유효하지 않아 보안 연결을 설정할 수 없습니다.";
+"backup.webdav.invalidURL" = "서버 URL이 올바르지 않습니다. http:// 또는 https://만 지원됩니다.";
+"backup.webdav.insecureWarning" = "암호화되지 않은 HTTP 연결입니다. 계정 정보와 백업 데이터가 평문으로 전송됩니다.";
 
 // 릴레이 모드
 // 명령 팔레트

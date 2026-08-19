@@ -136,6 +136,12 @@ struct BackupSettingsSection: View {
             TextField(L10n.tr("backup.webdav.url"), text: $webdavURL)
                 .lineLimit(1)
                 .truncationMode(.tail)
+            if webdavURL.trimmingCharacters(in: .whitespacesAndNewlines)
+                .lowercased().hasPrefix("http://") {
+                Text(L10n.tr("backup.webdav.insecureWarning"))
+                    .font(.caption)
+                    .foregroundStyle(.orange)
+            }
             LabeledContent(L10n.tr("backup.webdav.username")) {
                 TextField("", text: $webdavUsername)
                     .multilineTextAlignment(.trailing)
@@ -229,13 +235,34 @@ struct BackupSettingsSection: View {
     private func testConnection() {
         isTestingConnection = true
         Task {
-            let ok = await WebDAVBackupDestination.testConnection(
-                serverURL: webdavURL,
+            let resolution = await WebDAVBackupDestination.resolveServerURL(
+                webdavURL,
                 username: webdavUsername,
                 password: webdavPassword
             )
             isTestingConnection = false
-            showAlert(ok ? L10n.tr("backup.webdav.testSuccess") : L10n.tr("backup.webdav.testFailed"))
+            switch resolution {
+            case .resolved(let url, let status, let insecure):
+                // Persist the resolved scheme so backups and the UI both
+                // use the confirmed address.
+                webdavURL = url
+                switch status {
+                case 200...299:
+                    showAlert(insecure
+                              ? L10n.tr("backup.webdav.testSuccessHTTP")
+                              : L10n.tr("backup.webdav.testSuccess"))
+                case 401, 403:
+                    showAlert(L10n.tr("backup.webdav.authFailed"))
+                default:
+                    showAlert(L10n.tr("backup.webdav.testFailed") + " (HTTP \(status))")
+                }
+            case .certificateError:
+                showAlert(L10n.tr("backup.webdav.certError"))
+            case .unreachable(let message):
+                showAlert(L10n.tr("backup.webdav.testFailed") + " " + message)
+            case .invalidURL:
+                showAlert(L10n.tr("backup.webdav.invalidURL"))
+            }
         }
     }
 

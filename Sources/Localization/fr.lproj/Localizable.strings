@@ -434,6 +434,11 @@
 "backup.changePath" = "Modifier…";
 "backup.webdav.testSuccess" = "Connexion réussie.";
 "backup.webdav.testFailed" = "Échec de la connexion.";
+"backup.webdav.testSuccessHTTP" = "Connexion réussie (HTTP non chiffré).";
+"backup.webdav.authFailed" = "Serveur joignable, mais le nom d'utilisateur ou le mot de passe est incorrect.";
+"backup.webdav.certError" = "Le certificat du serveur n'est pas valide ; impossible d'établir une connexion sécurisée.";
+"backup.webdav.invalidURL" = "URL du serveur non valide. Seuls http:// et https:// sont pris en charge.";
+"backup.webdav.insecureWarning" = "Connexion HTTP non chiffrée : les identifiants et les données de sauvegarde sont transmis en clair.";
 
 // Mode relais
 // Palette de commandes

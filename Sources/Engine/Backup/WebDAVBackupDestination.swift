@@ -99,20 +99,124 @@ struct WebDAVBackupDestination: BackupDestination {
         }
     }
 
-    static func testConnection(serverURL: String, username: String, password: String) async -> Bool {
-        let dest = WebDAVBackupDestination(
-            serverURL: serverURL,
-            username: username,
-            password: password,
-            remotePath: ""
-        )
-        return await dest.isAvailable
+    // MARK: - Scheme Resolution
+
+    enum SchemeResolution {
+        /// Full URL with a confirmed scheme. `insecure` means plain HTTP.
+        case resolved(url: String, statusCode: Int, insecure: Bool)
+        /// The server answered TLS but its certificate is invalid — do NOT
+        /// fall back to HTTP: that would silently send credentials in
+        /// plain text to a server that does support TLS.
+        case certificateError(String)
+        case unreachable(String)
+        case invalidURL
+    }
+
+    /// Resolves a user-entered server address into a full http(s) URL.
+    /// Addresses without a scheme are probed with HTTPS first, then HTTP.
+    /// A bare "host:port" string parses as scheme="host" in Foundation
+    /// (RFC 3986 allows dots in schemes), so URLSession would otherwise
+    /// fail with the cryptic NSURLErrorUnsupportedURL.
+    static func resolveServerURL(_ input: String, username: String, password: String) async -> SchemeResolution {
+        let trimmed = input.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return .invalidURL }
+
+        if trimmed.contains("://") {
+            let lower = trimmed.lowercased()
+            guard lower.hasPrefix("http://") || lower.hasPrefix("https://") else {
+                return .invalidURL
+            }
+            switch await probe(trimmed, username: username, password: password) {
+            case .reachable(let status):
+                return .resolved(url: trimmed, statusCode: status, insecure: lower.hasPrefix("http://"))
+            case .certificate(let msg):
+                return .certificateError(msg)
+            case .failed(let msg):
+                return .unreachable(msg)
+            case .invalid:
+                return .invalidURL
+            }
+        }
+
+        switch await probe("https://" + trimmed, username: username, password: password) {
+        case .reachable(let status):
+            return .resolved(url: "https://" + trimmed, statusCode: status, insecure: false)
+        case .certificate(let msg):
+            return .certificateError(msg)
+        case .invalid:
+            return .invalidURL
+        case .failed:
+            switch await probe("http://" + trimmed, username: username, password: password) {
+            case .reachable(let status):
+                return .resolved(url: "http://" + trimmed, statusCode: status, insecure: true)
+            case .certificate(let msg):
+                return .certificateError(msg)
+            case .failed(let msg):
+                return .unreachable(msg)
+            case .invalid:
+                return .invalidURL
+            }
+        }
+    }
+
+    private enum ProbeOutcome {
+        case reachable(Int)
+        case certificate(String)
+        case failed(String)
+        case invalid
+    }
+
+    /// Any HTTP response (even 401/404) proves the scheme works at the
+    /// transport level; the status code is passed through so callers can
+    /// distinguish auth problems from reachability.
+    private static func probe(_ urlString: String, username: String, password: String) async -> ProbeOutcome {
+        guard let url = encodeURL(urlString) else { return .invalid }
+        var request = URLRequest(url: url, timeoutInterval: 10)
+        request.httpMethod = "OPTIONS"
+        let credentials = "\(username):\(password)"
+        if let data = credentials.data(using: .utf8) {
+            request.setValue("Basic \(data.base64EncodedString())", forHTTPHeaderField: "Authorization")
+        }
+        do {
+            let (_, response) = try await URLSession.shared.data(for: request)
+            guard let http = response as? HTTPURLResponse else {
+                return .failed(URLError(.badServerResponse).localizedDescription)
+            }
+            return .reachable(http.statusCode)
+        } catch let error as URLError {
+            switch error.code {
+            case .serverCertificateUntrusted, .serverCertificateHasBadDate,
+                 .serverCertificateHasUnknownRoot, .serverCertificateNotYetValid:
+                return .certificate(error.localizedDescription)
+            default:
+                return .failed(error.localizedDescription)
+            }
+        } catch {
+            return .failed(error.localizedDescription)
+        }
+    }
+
+    /// Percent-encodes a raw URL string the same way for probing and for
+    /// actual requests, and requires a host to be present.
+    private static func encodeURL(_ raw: String) -> URL? {
+        let encoded = raw.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed)?
+            .replacingOccurrences(of: "%3A", with: ":")
+            .replacingOccurrences(of: "%2F", with: "/")
+        guard let url = URL(string: encoded ?? raw), url.host != nil else { return nil }
+        return url
     }
 
     // MARK: - Private
 
     private func buildURL(_ fileName: String) -> URL? {
-        var base = serverURL
+        var base = serverURL.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !base.isEmpty else { return nil }
+        // Scheme-less input normally gets resolved (and persisted) by the
+        // test-connection flow or BackupScheduler before reaching here;
+        // default to HTTPS as a safe fallback.
+        if !base.contains("://") { base = "https://" + base }
+        let lower = base.lowercased()
+        guard lower.hasPrefix("http://") || lower.hasPrefix("https://") else { return nil }
         if !remotePath.isEmpty {
             if !base.hasSuffix("/") { base += "/" }
             let path = remotePath.hasPrefix("/") ? String(remotePath.dropFirst()) : remotePath
@@ -122,11 +226,7 @@ struct WebDAVBackupDestination: BackupDestination {
             if !base.hasSuffix("/") { base += "/" }
             base += fileName
         }
-        guard let encoded = base.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed)?
-            .replacingOccurrences(of: "%3A", with: ":")
-            .replacingOccurrences(of: "%2F", with: "/")
-        else { return URL(string: base) }
-        return URL(string: encoded)
+        return Self.encodeURL(base)
     }
 
     private func applyAuth(_ request: inout URLRequest) {

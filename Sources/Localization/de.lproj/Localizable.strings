@@ -434,6 +434,11 @@
 "backup.changePath" = "Ändern…";
 "backup.webdav.testSuccess" = "Verbindung erfolgreich.";
 "backup.webdav.testFailed" = "Verbindung fehlgeschlagen.";
+"backup.webdav.testSuccessHTTP" = "Verbindung erfolgreich (unverschlüsseltes HTTP).";
+"backup.webdav.authFailed" = "Server erreichbar, aber Benutzername oder Passwort ist falsch.";
+"backup.webdav.certError" = "Das Serverzertifikat ist ungültig; es konnte keine sichere Verbindung hergestellt werden.";
+"backup.webdav.invalidURL" = "Ungültige Server-URL. Nur http:// und https:// werden unterstützt.";
+"backup.webdav.insecureWarning" = "Unverschlüsselte HTTP-Verbindung: Zugangsdaten und Backup-Daten werden im Klartext übertragen.";
 
 // Relay-Modus
 // Befehlspalette

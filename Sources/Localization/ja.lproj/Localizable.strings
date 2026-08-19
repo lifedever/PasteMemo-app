@@ -451,6 +451,11 @@
 "backup.changePath" = "変更…";
 "backup.webdav.testSuccess" = "接続に成功しました。";
 "backup.webdav.testFailed" = "接続に失敗しました。";
+"backup.webdav.testSuccessHTTP" = "接続に成功しました（暗号化されていないHTTP）。";
+"backup.webdav.authFailed" = "サーバーには接続できましたが、ユーザー名またはパスワードが正しくありません。";
+"backup.webdav.certError" = "サーバー証明書が無効なため、安全な接続を確立できませんでした。";
+"backup.webdav.invalidURL" = "サーバーURLが無効です。http:// と https:// のみに対応しています。";
+"backup.webdav.insecureWarning" = "暗号化されていないHTTP接続のため、認証情報とバックアップデータは平文で送信されます。";
 
 // リレーモード
 // コマンドパレット

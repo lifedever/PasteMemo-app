@@ -526,6 +526,11 @@
 "backup.changePath" = "Изменить…";
 "backup.webdav.testSuccess" = "Подключение успешно.";
 "backup.webdav.testFailed" = "Ошибка подключения.";
+"backup.webdav.testSuccessHTTP" = "Подключение успешно (незашифрованный HTTP).";
+"backup.webdav.authFailed" = "Сервер доступен, но имя пользователя или пароль неверны.";
+"backup.webdav.certError" = "Сертификат сервера недействителен; не удалось установить защищённое соединение.";
+"backup.webdav.invalidURL" = "Неверный URL сервера. Поддерживаются только http:// и https://.";
+"backup.webdav.insecureWarning" = "Незашифрованное HTTP-соединение: учётные данные и данные резервной копии передаются в открытом виде.";
 
 // Relay Mode
 "relay.title" = "Режим Эстафеты";
