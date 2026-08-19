@@ -896,6 +896,6 @@
 "sms.notification.codeCopied" = "驗證碼 %@ 已複製";
 "sms.notification.fallbackTitle" = "收到疑似驗證碼簡訊";
 "sms.preview.messageLabel" = "簡訊原文";
-"settings.smsCode.description" = "開啟後，收到驗證碼簡訊時會自動擷取驗證碼、複製到剪貼板並發送通知；無法解析的疑似驗證碼簡訊會以通知顯示全文，不會靜默漏掉。";
+"settings.smsCode.description" = "開啟後，收到驗證碼簡訊時會自動擷取驗證碼、複製到剪貼板並發送通知。";
 "settings.smsCode.feedback" = "遇到未能識別的驗證碼簡訊？歡迎回饋（去識別化後的）簡訊內容，協助完善識別規則。";
 "settings.smsCode.feedbackLink" = "提交回饋";

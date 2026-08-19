@@ -1,0 +1,27 @@
+name: "📩 验证码识别反馈 / SMS Code Report"
+description: "反馈未能正确识别的验证码短信 / Report a verification-code message that wasn't recognized"
+labels: ["sms-code"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感谢反馈！只需提供**脱敏后的短信内容**即可——请把手机号、姓名、卡号等个人信息用 `*` 替换，验证码数字也可以随意改动几位（保留位数和格式即可）。
+        Thanks for the report! All we need is the **redacted message text** — replace phone numbers, names and card numbers with `*`; feel free to alter the code digits (just keep the length and format).
+
+  - type: textarea
+    id: message
+    attributes:
+      label: 脱敏后的短信内容 / Redacted message text
+      placeholder: |
+        例如 / e.g.：【某某银行】您的验证码123456，请勿泄露。客服电话95***
+    validations:
+      required: true
+
+  - type: input
+    id: expected
+    attributes:
+      label: 应提取的验证码 / The code that should be extracted
+      description: 选填 / Optional
+      placeholder: "123456"
+    validations:
+      required: false

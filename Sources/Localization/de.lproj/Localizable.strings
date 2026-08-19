@@ -922,6 +922,6 @@ Verwenden Sie %@ zum Einfügen.";
 "sms.notification.codeCopied" = "Code %@ kopiert";
 "sms.notification.fallbackTitle" = "Nachricht enthält möglicherweise einen Bestätigungscode";
 "sms.preview.messageLabel" = "Originalnachricht";
-"settings.smsCode.description" = "Wenn aktiviert, extrahiert PasteMemo Bestätigungscodes aus eingehenden Nachrichten, kopiert sie in die Zwischenablage und benachrichtigt dich. Nicht auswertbare Nachrichten werden vollständig per Mitteilung angezeigt — kein Code geht stillschweigend verloren.";
+"settings.smsCode.description" = "Wenn aktiviert, extrahiert PasteMemo Bestätigungscodes aus eingehenden Nachrichten, kopiert sie in die Zwischenablage und benachrichtigt dich.";
 "settings.smsCode.feedback" = "Wurde ein Code nicht erkannt? Teile den (anonymisierten) Nachrichtentext, damit wir die Erkennung verbessern können.";
 "settings.smsCode.feedbackLink" = "Feedback senden";

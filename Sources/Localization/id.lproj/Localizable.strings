@@ -910,6 +910,6 @@ Gunakan %@ untuk menempel satu per satu.";
 "sms.notification.codeCopied" = "Kode %@ disalin";
 "sms.notification.fallbackTitle" = "Pesan mungkin berisi kode verifikasi";
 "sms.preview.messageLabel" = "Pesan asli";
-"settings.smsCode.description" = "Jika diaktifkan, PasteMemo mengekstrak kode verifikasi dari pesan masuk, menyalinnya ke papan klip, dan memberi tahu Anda. Pesan yang tidak dapat diurai ditampilkan lengkap lewat notifikasi — tidak ada kode yang terlewat diam-diam.";
+"settings.smsCode.description" = "Jika diaktifkan, PasteMemo mengekstrak kode verifikasi dari pesan masuk, menyalinnya ke papan klip, dan memberi tahu Anda.";
 "settings.smsCode.feedback" = "Ada kode yang tidak dikenali? Bagikan teks pesan (yang sudah disamarkan) untuk membantu menyempurnakan aturan.";
 "settings.smsCode.feedbackLink" = "Kirim masukan";

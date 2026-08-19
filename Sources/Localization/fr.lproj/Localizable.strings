@@ -940,6 +940,6 @@ Utilisez %@ pour coller un par un.";
 "sms.notification.codeCopied" = "Code %@ copié";
 "sms.notification.fallbackTitle" = "Message pouvant contenir un code de vérification";
 "sms.preview.messageLabel" = "Message d'origine";
-"settings.smsCode.description" = "Lorsque cette option est activée, PasteMemo extrait les codes de vérification des messages entrants, les copie dans le presse-papiers et vous en informe. Les messages non analysables sont affichés en entier par notification — aucun code n'est manqué en silence.";
+"settings.smsCode.description" = "Lorsque cette option est activée, PasteMemo extrait les codes de vérification des messages entrants, les copie dans le presse-papiers et vous en informe.";
 "settings.smsCode.feedback" = "Un code n'a pas été reconnu ? Partagez le texte (anonymisé) du message pour nous aider à améliorer les règles.";
 "settings.smsCode.feedbackLink" = "Envoyer un retour";

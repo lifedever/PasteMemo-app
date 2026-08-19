@@ -900,6 +900,6 @@ Usa %@ per incollare uno per uno.";
 "sms.notification.codeCopied" = "Codice %@ copiato";
 "sms.notification.fallbackTitle" = "Messaggio che potrebbe contenere un codice di verifica";
 "sms.preview.messageLabel" = "Messaggio originale";
-"settings.smsCode.description" = "Se attivo, PasteMemo estrae i codici di verifica dai messaggi in arrivo, li copia negli appunti e ti avvisa. I messaggi non analizzabili vengono mostrati per intero tramite notifica: nessun codice viene perso in silenzio.";
+"settings.smsCode.description" = "Se attivo, PasteMemo estrae i codici di verifica dai messaggi in arrivo, li copia negli appunti e ti avvisa.";
 "settings.smsCode.feedback" = "Un codice non è stato riconosciuto? Condividi il testo (anonimizzato) del messaggio per aiutarci a migliorare le regole.";
 "settings.smsCode.feedbackLink" = "Invia feedback";

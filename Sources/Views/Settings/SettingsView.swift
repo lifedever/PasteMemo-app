@@ -168,7 +168,7 @@ struct SMSCodeSettingsSection: View {
     private var feedbackLine: AttributedString {
         var line = AttributedString(L10n.tr("settings.smsCode.feedback") + " ")
         var link = AttributedString(L10n.tr("settings.smsCode.feedbackLink"))
-        link.link = URL(string: "https://github.com/lifedever/PasteMemo-app/issues/new")
+        link.link = URL(string: "https://github.com/lifedever/PasteMemo-app/issues")
         link.foregroundColor = Color.accentColor
         return line + link
     }
