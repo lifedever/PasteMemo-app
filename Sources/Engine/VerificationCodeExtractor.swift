@@ -20,8 +20,15 @@ enum VerificationCodeExtractor {
     // MARK: - Public API
 
     /// Stage 1: does this message look like a verification-code SMS?
+    ///
+    /// Drives the caller's fallback path (keyword hit + `extract` nil → surface
+    /// the full message). Marketing messages abusing "验证码" wording are
+    /// excluded HERE but deliberately not in `extract` — real senders sometimes
+    /// append unsubscribe tails too (盛趣"拒收请回复R"、咪咕"回复qx退订"), and
+    /// those still extract because their code sits next to the keyword.
     static func isLikelyVerificationMessage(_ message: String) -> Bool {
         let text = normalize(clip(message))
+        guard !isMarketingMessage(text) else { return false }
         return !keywordRanges(in: text).isEmpty
     }
 
@@ -70,6 +77,9 @@ enum VerificationCodeExtractor {
         "验证代码", "校验代码", "检验代码", "激活代码", "确认代码", "动态代码",
         "安全代码", "代码为", "登录码", "登入码", "认证码", "识别码", "短信码",
         "短信口令", "动态密码", "动态口令", "交易码", "上网密码", "随机码", "授权码",
+        // Real-data additions (2026-08 chat.db validation): 和包"验证密码"、
+        // 运营商"服务密码为"、途牛"密码是"、阿里云邮"操作码"
+        "验证密码", "密码是", "密码为", "操作码",
         // zh-Hant
         "驗證碼", "校驗碼", "檢驗碼", "確認碼", "激活碼", "動態碼", "安全碼",
         "驗證代碼", "校驗代碼", "檢驗代碼", "確認代碼", "激活代碼", "動態代碼",
@@ -161,8 +171,10 @@ enum VerificationCodeExtractor {
         // part of the code (Citi "RKJ-YP6"). Pure-digit groups never land here —
         // their separator is cosmetic and the grouped patterns above join them.
         ("(?<![0-9A-Za-z-])(?=[A-Z0-9-]*[A-Z])(?=[A-Z0-9-]*[0-9])[A-Z0-9]+-[A-Z0-9]+(?![0-9A-Za-z-])", 22, false),
-        // Uppercase alphanumeric with ≥1 letter and ≥1 digit ("7Q8R2" / "12345X")
-        ("(?<![0-9A-Za-z])(?=[0-9A-Z]*[A-Z])(?=[0-9A-Z]*[0-9])[0-9A-Z]{4,8}(?![0-9A-Za-z])", 20, false),
+        // Alphanumeric with ≥1 letter and ≥1 digit ("7Q8R2" / "12345X" / "y3n3").
+        // Mixed case included — real codes are occasionally lowercase; the
+        // URL-adjacency reject below keeps path fragments like "a/5m4899vD" out.
+        ("(?<![0-9A-Za-z])(?=[0-9A-Za-z]*[A-Za-z])(?=[0-9A-Za-z]*[0-9])[0-9A-Za-z]{4,8}(?![0-9A-Za-z])", 20, false),
     ]
 
     private static func mineCandidates(in text: String) -> [Candidate] {
@@ -221,6 +233,7 @@ enum VerificationCodeExtractor {
         "(hotline|call|dial|tel|phone)[\\s::.,]{0,3}$",
         "(订单|訂單|单号|單號|运单|運單|流水号|流水號)[\\s::.,]{0,3}$",     // order number
         "(order|tracking)\\s?(no\\.?|number|#)?[\\s::.,]{0,3}$",
+        "[/=&#.]$",                                                     // URL path/query fragment
     ]
 
     private static func isExcluded(_ candidate: Candidate, in text: String) -> Bool {
@@ -243,13 +256,27 @@ enum VerificationCodeExtractor {
             return true
         }
 
-        // Inside an unclosed 【…】 pair → sender/brand label, not a code
+        // Inside the leading 【…】 pair → sender/brand label, not a code. Only the
+        // bracket that OPENS the message counts: later brackets often wrap the code
+        // itself ("您的短信验证码为【213986】", real 114-挂号 template).
         let prefix = ns.substring(to: start)
-        if let open = prefix.range(of: "【", options: .backwards) {
-            let closed = prefix.range(of: "】", options: .backwards)
-            if closed == nil || closed!.lowerBound < open.lowerBound { return true }
-        }
+        if prefix.hasPrefix("【"), !prefix.contains("】") { return true }
         return false
+    }
+
+    /// Marketing SMS carry unsubscribe tails ("回T退订"、"拒收请回复R") and love
+    /// fake "验证码" wording ("验证码回T退订" promos, "回验证码N拒") that would spam
+    /// the fallback-notification path. Only `isLikelyVerificationMessage` checks
+    /// this — never `extract` — because real verification SMS can carry these
+    /// strings too (盛趣 code + "拒收请回复R"、"您将退订某业务" as the verified
+    /// action). CJK forms only: US A2P compliance puts "Reply STOP" on
+    /// legitimate English OTP messages.
+    private static let MARKETING_TAILS: [String] = [
+        "退订", "退訂", "退定", "退回T", "拒收请回复", "拒收回", "拒T", "退T", "回T拒", "N拒",
+    ]
+
+    private static func isMarketingMessage(_ text: String) -> Bool {
+        MARKETING_TAILS.contains { text.contains($0) }
     }
 
     // MARK: - Stage 2: scoring

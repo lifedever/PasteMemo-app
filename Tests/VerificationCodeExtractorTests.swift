@@ -52,6 +52,28 @@ struct VerificationCodeExtractorTests {
         // Spaced-out digits → whitespace-stripped retry pass
         ("【测试】您的验证码 3 3 4 4 5 5，请勿泄露。", "334455"),
 
+        // ---- zh-Hans: templates from real chat.db validation (sanitized) ----
+        // Code wrapped in fullwidth brackets AFTER the brand label (114-挂号)
+        ("【北京114预约挂号】您的短信验证码为【824193】", "824193"),
+        // 和包 "验证密码" wording, no "验证码" anywhere
+        ("【验证密码】335577，尊敬的客户，您好！您尾号为1234的手机号将登录和包账户，有效期3分钟。若非本人操作请勿泄露，可直接回复DJZH冻结账户。【中国移动 和包】", "335577"),
+        // Carrier service-password reset ("密码为")
+        ("【服务密码变更提醒】尊敬的客户，您重置的服务密码为：264855。服务密码是您身份鉴权的一个重要方式，请注意妥善保管避免泄露。", "264855"),
+        // "密码是" wording (途牛)
+        ("【途牛旅游网】尊敬的客户，您好！您的途牛密码是：428731，您可以使用手机号登录途牛网站或App，预订您喜欢的产品和查看订单。", "428731"),
+        // "操作码" wording (阿里云邮)
+        ("【阿里云邮】您的邮箱(user@example.com)申请更改邮箱设置，如确认是本人行为，请正确提交以下操作码：771384", "771384"),
+        // Bank transfer code with account-number distractor
+        ("验证码566218，该手机交易码用于您进行贵金属积存签约交易，交易账户为：8801。【中国银行】", "566218"),
+        // Leading-zero code + masked phone number distractor
+        ("【验证密码】：073916。尊敬的客户，您好！您正在通过中国移动线上渠道为号码178****0000兑换3元话费兑换券。", "073916"),
+        ("动态验证码为4275，尊敬的客户，您好！您正在中国移动互联网上办理会员低价合约，资费1元/月，订购立即生效，有效期12个月。", "4275"),
+        // Lowercase alphanumeric codes
+        ("【北京口腔健康网】正在进行注册操作，您的验证码是u7k2", "u7k2"),
+        ("83nfkq2v 是你重置密码的验证码。请勿回复此短信。[PIN]", "83nfkq2v"),
+        // URL fragment must not shadow the real code
+        ("【测试】您的验证码为 995511，详情见 https://e.example.com/a/5m4899vD", "995511"),
+
         // ---- zh-Hant ----
         ("【中華電信】您的驗證碼為 224466，請於5分鐘內輸入。", "224466"),
         ("【台灣銀行】動態密碼：135790。", "135790"),
@@ -117,12 +139,35 @@ struct VerificationCodeExtractorTests {
         "会议改到明天 14:30，地点 3021 会议室，记得带电脑。",
         // Long service notification stuffed with IDs, dates and URLs (MessAuto corpus)
         "【腾讯云】尊敬的腾讯云用户，您的账号（账号 ID：100022305033，昵称：724818342@qq.com）下有 1 个域名即将到期：xjp.asia 将于北京时间 2023-11-01 到期。域名过期三天后仍未续费，将会停止正常解析，请及时登录腾讯云进行续费：https://mc.tencent.com/N1op7G3l",
+        // Marketing / spam abusing "验证码" wording — unsubscribe tail kills the gate
+        // (real chat.db validation, sanitized)
+        "【卡姿兰官方旗舰店】618今晚8点抢！1分钱抢包包！戳 s.tb.cn/y6.ERlOw 验证码回T退订",
+        "【京红包】恭喜您，获得京东618超级红包补贴，最高20618元，打开京东APP首页输入：红包每天领 即可领取，可领三次，验证码 拒T",
+        "【什么值得买】北京消费券再来！1500元大额券包！每天10点发放，买大件超值 smzdm.com/a/xxxx 回验证码N拒",
+        "【天津农行】密码太长不用烦，快捷登录更安全！点击 go.abchina.com/k/0t7 立即设置。如有疑问请致电95599。退订请回TD#TJ。",
     ]
 
     @Test("Ordinary SMS never trigger", arguments: negativeCases)
     func ignoresOrdinarySMS(message: String) {
         #expect(!VerificationCodeExtractor.isLikelyVerificationMessage(message))
         #expect(VerificationCodeExtractor.extract(from: message) == nil)
+    }
+
+    // MARK: - Real code SMS carrying unsubscribe-looking strings
+
+    /// The marketing-tail filter applies only to `isLikelyVerificationMessage`
+    /// (fallback suppression), never to `extract` — real senders append these
+    /// strings too. Callers try `extract` first, so these still deliver a code
+    /// even though `isLikely` is false.
+    static let tailCarryingCases: [(message: String, expected: String)] = [
+        ("【盛趣游戏】账号登录短信验证码:118264.拒收请回复R", "118264"),
+        ("验证码930528，仅用于咪咕帐号登录，有效期5分钟。如非本人操作，请忽略此短信。回复qx退订。 【中国移动　咪咕视频】", "930528"),
+        ("【验证密码】662917，尊敬的客户，您好！您将通过线上渠道退订基础安防包-3天事件，验证码5分钟内有效，若非本人操作，请勿泄露。【中国移动智慧家庭】", "662917"),
+    ]
+
+    @Test("Unsubscribe tails never block extraction", arguments: tailCarryingCases)
+    func extractsDespiteUnsubscribeTail(testCase: (message: String, expected: String)) {
+        #expect(VerificationCodeExtractor.extract(from: testCase.message) == testCase.expected)
     }
 
     // MARK: - Fallback path: looks like a code SMS but no extractable code
