@@ -327,14 +327,20 @@ final class ClipItemStore {
 
     private func addFilterConditions(_ conditions: inout [String], _ params: inout [Any]) {
         if let type = filterType {
+            // Legacy phone/email clips have no pill of their own — they surface
+            // under Text (mirrored in refreshSidebarCounts' byType bucketing).
+            let rawValues = type == .text
+                ? [type.rawValue, ClipContentType.phone.rawValue, ClipContentType.email.rawValue]
+                : [type.rawValue]
+            let placeholders = rawValues.map { _ in "?" }.joined(separator: ", ")
             // Mixed items carry multiple independent representations — they should appear
             // under every category whose corresponding auxiliary field is populated.
             if let mixedClause = Self.mixedCrossoverSQL(for: type) {
-                conditions.append("(ZCONTENTTYPERAW = ? OR \(mixedClause))")
+                conditions.append("(ZCONTENTTYPERAW IN (\(placeholders)) OR \(mixedClause))")
             } else {
-                conditions.append("ZCONTENTTYPERAW = ?")
+                conditions.append("ZCONTENTTYPERAW IN (\(placeholders))")
             }
-            params.append(type.rawValue)
+            params.append(contentsOf: rawValues)
         }
         if pinnedOnly { conditions.append("ZISPINNED = 1") }
         if sensitiveOnly { conditions.append("ZISSENSITIVE = 1") }
@@ -456,10 +462,12 @@ final class ClipItemStore {
         for (rawType, count) in db.queryStringIntPairs(
             "SELECT ZCONTENTTYPERAW, COUNT(*) FROM ZCLIPITEM GROUP BY ZCONTENTTYPERAW"
         ) {
-            guard count > 0,
-                  let type = ClipContentType(rawValue: rawType),
-                  visibleTypes.contains(type) else { continue }
-            counts.byType[type] = count
+            guard count > 0, let type = ClipContentType(rawValue: rawType) else { continue }
+            // Legacy phone/email clips have no pill of their own — fold them into
+            // Text (mirrored in addFilterConditions' type filter).
+            let bucket: ClipContentType = type.isLegacy ? .text : type
+            guard visibleTypes.contains(bucket) else { continue }
+            counts.byType[bucket, default: 0] += count
         }
         // Mixed items contribute to every category whose corresponding representation is present.
         for (type, clause) in [

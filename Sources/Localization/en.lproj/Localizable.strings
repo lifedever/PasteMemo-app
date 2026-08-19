@@ -885,3 +885,5 @@
 "sms.notification.fallbackTitle" = "Message may contain a verification code";
 "sms.preview.messageLabel" = "Original message";
 "settings.smsCode.description" = "When on, PasteMemo extracts verification codes from incoming Messages, copies them to the clipboard and notifies you. Messages it can't parse are shown in full via notification, so a code is never silently missed.";
+"settings.smsCode.feedback" = "Got a code message that wasn't recognized? Share the (redacted) SMS text to help improve the rules.";
+"settings.smsCode.feedbackLink" = "Send feedback";

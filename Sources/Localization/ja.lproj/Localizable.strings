@@ -937,3 +937,5 @@
 "sms.notification.fallbackTitle" = "認証コードを含む可能性のあるメッセージ";
 "sms.preview.messageLabel" = "元のメッセージ";
 "settings.smsCode.description" = "オンにすると、受信メッセージから認証コードを自動抽出してクリップボードにコピーし、通知します。解析できないメッセージは全文を通知で表示するため、コードを見逃すことはありません。";
+"settings.smsCode.feedback" = "認証コードが認識されないメッセージがありましたか？（個人情報を除いた）本文をお送りいただければ、認識ルールの改善に役立てます。";
+"settings.smsCode.feedbackLink" = "フィードバックを送る";

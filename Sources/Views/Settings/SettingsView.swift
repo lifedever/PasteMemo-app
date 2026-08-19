@@ -157,6 +157,14 @@ struct SMSCodeSettingsSection: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text(L10n.tr("settings.smsCode.description"))
                 Text(L10n.tr("settings.smsCode.hint"))
+                HStack(spacing: 4) {
+                    Text(L10n.tr("settings.smsCode.feedback"))
+                    Link(
+                        L10n.tr("settings.smsCode.feedbackLink"),
+                        destination: URL(string: "https://github.com/lifedever/PasteMemo-app/issues/new")!
+                    )
+                    .pointerCursor()
+                }
             }
             .font(.footnote)
             .foregroundStyle(.secondary)

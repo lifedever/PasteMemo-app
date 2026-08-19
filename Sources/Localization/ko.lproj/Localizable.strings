@@ -939,3 +939,5 @@
 "sms.notification.fallbackTitle" = "인증번호가 포함된 것으로 보이는 메시지";
 "sms.preview.messageLabel" = "원본 메시지";
 "settings.smsCode.description" = "켜면 수신 메시지에서 인증번호를 자동으로 추출해 클립보드에 복사하고 알림을 보냅니다. 해석할 수 없는 메시지는 전문을 알림으로 표시하므로 인증번호를 놓치지 않습니다.";
+"settings.smsCode.feedback" = "인증번호가 인식되지 않는 메시지가 있나요? (개인정보를 제거한) 문자 내용을 알려주시면 인식 규칙 개선에 도움이 됩니다.";
+"settings.smsCode.feedbackLink" = "피드백 보내기";

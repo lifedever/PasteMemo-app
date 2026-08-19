@@ -38,12 +38,12 @@ struct ClipRow: View {
                                             in: Capsule()
                                         )
                                 } else if item.smsMessageText != nil, !compact {
-                                    // 短信验证码角标(同 AI 角标的位置与规格)
-                                    Image(systemName: "key.fill")
-                                        .font(.system(size: 8, weight: .semibold))
+                                    // 短信验证码角标(同 AI 角标的样式,文字胶囊比图标轻)
+                                    Text("OTP")
+                                        .font(.system(size: 8, weight: .semibold, design: .rounded))
                                         .foregroundStyle(.white)
                                         .padding(.horizontal, 4)
-                                        .padding(.vertical, 1.5)
+                                        .padding(.vertical, 1)
                                         .background(
                                             Color(red: 0.18, green: 0.60, blue: 0.38),
                                             in: Capsule()

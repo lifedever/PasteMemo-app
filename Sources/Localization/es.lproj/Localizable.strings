@@ -941,3 +941,5 @@ Usa %@ para pegar uno por uno.";
 "sms.notification.fallbackTitle" = "Mensaje que podría contener un código de verificación";
 "sms.preview.messageLabel" = "Mensaje original";
 "settings.smsCode.description" = "Al activarlo, PasteMemo extrae los códigos de verificación de los mensajes entrantes, los copia al portapapeles y te avisa. Los mensajes que no puede analizar se muestran completos en una notificación: ningún código se pierde en silencio.";
+"settings.smsCode.feedback" = "¿Algún código no fue reconocido? Comparte el texto (anonimizado) del mensaje para ayudarnos a mejorar las reglas.";
+"settings.smsCode.feedbackLink" = "Enviar comentarios";
