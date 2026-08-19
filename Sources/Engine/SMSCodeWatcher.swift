@@ -136,6 +136,7 @@ final class SMSCodeWatcher: ObservableObject, @unchecked Sendable {
         guard let connection = SQLiteConnection(path: Self.chatDBPath, readOnly: true),
               connection.queryInt("SELECT count(*) FROM sqlite_master WHERE name='message'") > 0
         else {
+            Self.registerInFullDiskAccessPane()
             publishAccess(false)
             return false
         }
@@ -143,6 +144,23 @@ final class SMSCodeWatcher: ObservableObject, @unchecked Sendable {
         publishAccess(true)
         DiagnosticLog.log("SMS watcher connected to chat.db")
         return true
+    }
+
+    /// There's no public API to add an app to the Full Disk Access list, but
+    /// attempting to READ a TCC-protected directory via FileManager makes the
+    /// system list the app there with the switch off (mechanism documented by
+    /// inket/FullDiskAccess). Raw sqlite open() on chat.db does NOT trigger the
+    /// listing — only these FileManager directory reads do, so this runs both
+    /// from the failed-connection path and before opening System Settings.
+    static func registerInFullDiskAccessPane() {
+        let protectedPaths = [
+            "/Library/Containers/com.apple.stocks",  // macOS 12+ probe path
+            "/Library/Messages",
+            "/Library/Safari",                       // pre-Monterey fallback
+        ]
+        for path in protectedPaths {
+            _ = try? FileManager.default.contentsOfDirectory(atPath: NSHomeDirectory() + path)
+        }
     }
 
     private func publishAccess(_ granted: Bool) {
