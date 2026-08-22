@@ -892,3 +892,7 @@
 "settings.smsCode.description" = "When on, PasteMemo extracts verification codes from incoming Messages, copies them to the clipboard and notifies you.";
 "settings.smsCode.feedback" = "Got a code message that wasn't recognized? Share the (redacted) SMS text to help improve the rules.";
 "settings.smsCode.feedbackLink" = "Send feedback";
+
+// MARK: - List row metrics
+"meta.chars" = "%@ chars";
+"meta.lines" = "%@ lines";

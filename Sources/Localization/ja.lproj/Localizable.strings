@@ -944,3 +944,7 @@
 "settings.smsCode.description" = "オンにすると、受信メッセージから認証コードを自動抽出してクリップボードにコピーし、通知します。";
 "settings.smsCode.feedback" = "認証コードが認識されないメッセージがありましたか？（個人情報を除いた）本文をお送りいただければ、認識ルールの改善に役立てます。";
 "settings.smsCode.feedbackLink" = "フィードバックを送る";
+
+// MARK: - List row metrics
+"meta.chars" = "%@ 文字";
+"meta.lines" = "%@ 行";

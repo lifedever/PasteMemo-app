@@ -948,3 +948,7 @@ Utilisez %@ pour coller un par un.";
 "settings.smsCode.description" = "Lorsque cette option est activée, PasteMemo extrait les codes de vérification des messages entrants, les copie dans le presse-papiers et vous en informe.";
 "settings.smsCode.feedback" = "Un code n'a pas été reconnu ? Partagez le texte (anonymisé) du message pour nous aider à améliorer les règles.";
 "settings.smsCode.feedbackLink" = "Envoyer un retour";
+
+// MARK: - List row metrics
+"meta.chars" = "%@ caractères";
+"meta.lines" = "%@ lignes";

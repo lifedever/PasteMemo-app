@@ -918,3 +918,7 @@ Gunakan %@ untuk menempel satu per satu.";
 "settings.smsCode.description" = "Jika diaktifkan, PasteMemo mengekstrak kode verifikasi dari pesan masuk, menyalinnya ke papan klip, dan memberi tahu Anda.";
 "settings.smsCode.feedback" = "Ada kode yang tidak dikenali? Bagikan teks pesan (yang sudah disamarkan) untuk membantu menyempurnakan aturan.";
 "settings.smsCode.feedbackLink" = "Kirim masukan";
+
+// MARK: - List row metrics
+"meta.chars" = "%@ karakter";
+"meta.lines" = "%@ baris";

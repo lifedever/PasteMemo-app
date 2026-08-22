@@ -17,6 +17,9 @@ struct ClipRow: View {
     @AppStorage("imageLinkPreviewEnabled") private var imageLinkPreviewEnabled = true
     @AppStorage("offlineModeEnabled") private var offlineModeEnabled = false
     @State private var dataURIThumbnailImage: NSImage?
+    /// 副行计量的成品文案；nil = 还没算完，或这条不够格显示。
+    @State private var metricsText: String?
+    @ObservedObject private var languageManager = LanguageManager.shared
 
     var body: some View {
         if item.isDeleted {
@@ -89,6 +92,17 @@ struct ClipRow: View {
                             Text(formatTimeAgo(item.lastUsedAt))
                                 .font(.system(size: 11))
                                 .foregroundStyle(.tertiary)
+                                .layoutPriority(1)
+                            if let metricsText {
+                                Text("·")
+                                    .font(.system(size: 11))
+                                    .foregroundStyle(.quaternary)
+                                Text(metricsText)
+                                    .font(.system(size: 11))
+                                    .foregroundStyle(.tertiary)
+                                    .lineLimit(1)
+                                    .truncationMode(.tail)
+                            }
                             if showGroupLabel, let groupName = item.groupName, !groupName.isEmpty {
                                 Spacer().frame(width: 2)
                                 Image(systemName: groupIcon ?? "folder")
@@ -102,7 +116,83 @@ struct ClipRow: View {
                     }
                 }
             }
+            .task(id: metricsKey) { await loadMetrics() }
         }
+    }
+
+    // MARK: - Row metrics
+
+    /// 重算触发键兼缓存键。**这里是每帧每行都会求值的位置**，所以只碰
+    /// itemID / displayTitle 这类短字段，绝不碰 `content`——理由见
+    /// `ClipRowMetrics.Key` 的注释。
+    private var metricsKey: ClipRowMetrics.Key {
+        ClipRowMetrics.Key(
+            itemID: item.itemID,
+            titleSnapshot: item.displayTitle ?? "",
+            language: languageManager.current
+        )
+    }
+
+    /// 副行的计量文案：文本/代码看字数行数，图片看尺寸体积，链接看域名。
+    /// 一律在 `.task` 里算好存进 `metricsText`，body 只负责读。
+    private func loadMetrics() async {
+        // compact 单行列表刻意保持干净；敏感条目连内容长度都不该泄露。
+        guard !compact, !item.isDeleted, !item.isSensitive else {
+            metricsText = nil
+            return
+        }
+        let key = metricsKey
+        if let cached = ClipMetricsCache.shared.cachedLabel(forKey: key) {
+            metricsText = cached
+            return
+        }
+        let label: String?
+        switch item.contentType {
+        case .text, .code:
+            label = await measureText()
+        case .image:
+            label = await measureImage()
+        case .link:
+            label = linkLabel()
+        default:
+            label = nil
+        }
+        guard !Task.isCancelled else { return }
+        ClipMetricsCache.shared.setLabel(label, forKey: key)
+        metricsText = label
+    }
+
+    private func measureText() async -> String? {
+        // 取字符串本身是廉价的（桥接是惰性的）；一切遍历都留给后台线程，
+        // 长度判定也一样——`utf8.count` 在桥接态下同样是 O(n)。
+        let content = item.content
+        guard let metrics = await ClipMetricsWorker.shared.measureText(content) else { return nil }
+        return ClipRowMetrics.label(for: metrics)
+    }
+
+    private func measureImage() async -> String? {
+        // 主线程只读短字段。`imageData` 会 fault 出真实字节，所以只在确实需要
+        // legacy 兜底（raw 截图 + 没有原图缓存文件）时才碰它。
+        let content = item.content
+        let originalPath = item.originalImageFilePath
+        let legacyBytes = (content == "[Image]" && originalPath == nil) ? item.imageData : nil
+        let title = item.displayTitle
+        guard let metrics = await ClipMetricsWorker.shared.measureImage(
+            content: content,
+            originalImagePath: originalPath,
+            legacyBytes: legacyBytes
+        ) else { return nil }
+        // raw 截图的标题已经是 `Image (W×H)`，副行再报一遍尺寸是重复。
+        let titleHasDims = title?.contains("\(metrics.width)×\(metrics.height)") ?? false
+        return ClipRowMetrics.label(for: metrics, includeDimensions: !titleHasDims)
+    }
+
+    private func linkLabel() -> String? {
+        // 域名只在标题显示网页标题时才有信息量：标题本身就是 URL 原文时
+        // （用户开了 showLinkURL，或这条压根没抓到 linkTitle）副行再报一遍域名
+        // 就是重复。条件与 `displayTitle` 选用 linkTitle 的条件保持一致。
+        guard !showLinkURL, let linkTitle = item.linkTitle, !linkTitle.isEmpty else { return nil }
+        return ClipRowMetrics.linkHost(item.content)
     }
 
     // MARK: - Thumbnail

@@ -892,3 +892,7 @@
 "settings.smsCode.description" = "开启后，收到验证码短信时会自动提取验证码、复制到剪贴板并发送通知。";
 "settings.smsCode.feedback" = "遇到未能识别的验证码短信？欢迎反馈（脱敏后的）短信内容，帮助完善识别规则。";
 "settings.smsCode.feedbackLink" = "提交反馈";
+
+// MARK: - List row metrics
+"meta.chars" = "%@ 字";
+"meta.lines" = "%@ 行";
