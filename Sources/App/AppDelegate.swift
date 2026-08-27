@@ -59,6 +59,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if ClipboardManager.shared.isMonitoringEnabled {
             ClipboardManager.shared.startMonitoring()
         }
+        // 补齐早期版本没存缩略图的视频条目(源文件还在的才补)。放启动流程而非视图
+        // 生命周期,登录自启的后台启动也必跑(issue #66 教训)。
+        ClipboardManager.shared.backfillVideoThumbnails(in: PasteMemoApp.sharedModelContainer.mainContext)
         // 短信验证码提取(默认关):注册在这里而不是视图生命周期,登录自启的后台
         // 启动也必跑(issue #66 教训)。
         SMSCodeWatcher.shared.startIfEnabled()

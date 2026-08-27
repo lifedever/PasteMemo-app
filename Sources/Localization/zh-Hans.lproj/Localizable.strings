@@ -219,6 +219,9 @@
 "detail.size" = "大小";
 "detail.format" = "格式";
 "detail.fileCount" = "文件数";
+"detail.fileStatus" = "状态";
+"file.unavailable.missing" = "文件已不存在";
+"file.unavailable.denied" = "无访问权限";
 "detail.host" = "域名";
 "detail.url" = "链接";
 "detail.aiPreview" = "AI 友好预览";

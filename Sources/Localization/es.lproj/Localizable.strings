@@ -599,6 +599,9 @@ Usa %@ para pegar uno por uno.";
 /* Detail - Additional */
 "detail.dimensions" = "Dimensiones";
 "detail.fileCount" = "Archivos";
+"detail.fileStatus" = "Estado";
+"file.unavailable.missing" = "El archivo ya no existe";
+"file.unavailable.denied" = "Sin permiso de acceso";
 "detail.format" = "Formato";
 "detail.host" = "Host";
 "detail.linkTitle" = "Título";

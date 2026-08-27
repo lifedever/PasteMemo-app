@@ -219,6 +219,9 @@
 "detail.size" = "Size";
 "detail.format" = "Format";
 "detail.fileCount" = "Files";
+"detail.fileStatus" = "Status";
+"file.unavailable.missing" = "File no longer exists";
+"file.unavailable.denied" = "No permission to access";
 "detail.host" = "Host";
 "detail.url" = "URL";
 "detail.aiPreview" = "AI-Ready Preview";

@@ -200,6 +200,9 @@
 "detail.size" = "Размер";
 "detail.format" = "Формат";
 "detail.fileCount" = "Файлы";
+"detail.fileStatus" = "Статус";
+"file.unavailable.missing" = "Файл больше не существует";
+"file.unavailable.denied" = "Нет прав доступа";
 "detail.host" = "Хост";
 "detail.url" = "URL";
 "detail.aiPreview" = "Предпросмотр для AI";

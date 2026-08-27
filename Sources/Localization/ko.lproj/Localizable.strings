@@ -599,6 +599,9 @@
 /* Detail - Additional */
 "detail.dimensions" = "크기";
 "detail.fileCount" = "파일 수";
+"detail.fileStatus" = "상태";
+"file.unavailable.missing" = "파일이 존재하지 않습니다";
+"file.unavailable.denied" = "접근 권한이 없습니다";
 "detail.format" = "포맷";
 "detail.host" = "호스트";
 "detail.linkTitle" = "제목";

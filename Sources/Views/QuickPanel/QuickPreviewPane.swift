@@ -403,7 +403,10 @@ struct QuickPreviewPane: View {
     }
 
     private var videoPreview: some View {
-        VideoThumbnailView(path: item.content.trimmingCharacters(in: .whitespacesAndNewlines))
+        VideoThumbnailView(
+            path: item.content.trimmingCharacters(in: .whitespacesAndNewlines),
+            storedThumbnail: item.imageData
+        )
             .clipShape(RoundedRectangle(cornerRadius: 6))
     }
 

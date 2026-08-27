@@ -331,7 +331,10 @@ struct ClipDetailView: View {
     }
 
     private var videoPreview: some View {
-        VideoThumbnailView(path: item.content.trimmingCharacters(in: .whitespacesAndNewlines))
+        VideoThumbnailView(
+            path: item.content.trimmingCharacters(in: .whitespacesAndNewlines),
+            storedThumbnail: item.imageData
+        )
             .frame(maxHeight: 400)
             .clipShape(RoundedRectangle(cornerRadius: 8))
     }

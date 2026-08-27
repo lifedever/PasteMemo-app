@@ -199,6 +199,9 @@
 "detail.size" = "大小";
 "detail.format" = "格式";
 "detail.fileCount" = "檔案數";
+"detail.fileStatus" = "狀態";
+"file.unavailable.missing" = "檔案已不存在";
+"file.unavailable.denied" = "無存取權限";
 "detail.host" = "網域";
 "detail.url" = "連結";
 "detail.aiPreview" = "AI 友善預覽";

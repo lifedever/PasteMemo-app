@@ -1166,7 +1166,7 @@ struct QuickPanelView: View {
                         if let cur = currentItem {
                             footerKey("↵", primaryFooterLabel(for: cur))
                             if !compact, quickPanelAutoPaste {
-                                if !(cur.imageData != nil && canPasteToFinderFolder), !canSaveTextToFolder {
+                                if !(cur.pasteableImageData != nil && canPasteToFinderFolder), !canSaveTextToFolder {
                                     footerKey("⇧↵", L10n.tr("quick.pasteNewLine"))
                                 }
                             }
@@ -1217,7 +1217,7 @@ struct QuickPanelView: View {
 
     private func primaryFooterLabel(for item: ClipItem) -> String {
         if quickPanelAutoPaste {
-            if item.imageData != nil, canPasteToFinderFolder {
+            if item.pasteableImageData != nil, canPasteToFinderFolder {
                 return L10n.tr("quick.pasteImage")
             }
             if canSaveTextToFolder {
@@ -1937,7 +1937,9 @@ struct QuickPanelView: View {
     }
 
     private var canPasteToFinderFolder: Bool {
-        guard let item = currentItem, item.imageData != nil else { return false }
+        // `pasteableImageData`, not `imageData`: a video's stored poster frame must not
+        // turn "paste into this Finder window" into "drop a JPEG here".
+        guard let item = currentItem, item.pasteableImageData != nil else { return false }
         return clipboardManager.isFinderApp(QuickPanelWindowController.shared.previousApp)
     }
 
@@ -2344,7 +2346,7 @@ struct QuickPanelView: View {
 
     private var canSaveAttachmentToFolder: Bool {
         guard let item = currentItem,
-              item.imageData != nil,
+              item.pasteableImageData != nil,
               item.contentType != .image else { return false }
         return isTargetFinder
     }
@@ -2677,7 +2679,7 @@ struct QuickPanelView: View {
     }
 
     private func handlePasteImageToFolder() {
-        guard let item = currentItem, item.imageData != nil else {
+        guard let item = currentItem, item.pasteableImageData != nil else {
             // No image at all, fallback to normal paste
             if let item = currentItem {
                 QuickPanelWindowController.shared.dismissAndPaste(item, clipboardManager: clipboardManager)

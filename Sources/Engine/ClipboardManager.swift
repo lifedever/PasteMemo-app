@@ -1,4 +1,5 @@
 import AppKit
+import AVFoundation
 import ImageIO
 import SwiftUI
 import SwiftData
@@ -244,6 +245,7 @@ final class ClipboardManager: ObservableObject {
             SoundManager.playCopy()
             refreshLinkMetadataIfNeeded(for: existingItem, in: context)
             enqueueOCRIfNeeded(for: existingItem)
+            enqueueVideoThumbnailIfNeeded(for: existingItem, in: context)
             return
         }
 
@@ -256,6 +258,7 @@ final class ClipboardManager: ObservableObject {
 
         refreshLinkMetadataIfNeeded(for: newItem, in: context)
         enqueueOCRIfNeeded(for: newItem)
+        enqueueVideoThumbnailIfNeeded(for: newItem, in: context)
     }
 
     func captureCurrentClipboard(sourceApp: String? = nil) -> ClipItem? {
@@ -469,6 +472,27 @@ final class ClipboardManager: ObservableObject {
         // NSImage which handles SVG natively on macOS 14+, then rasterize to JPEG
         // at FILE_THUMBNAIL_MAX_PIXELS so downstream preview code is unchanged.
         return rasterizeVectorThumbnail(at: fileURL)
+    }
+
+    /// Grabs a frame from a video file as a small JPEG — the `.video` counterpart to
+    /// `generateImageFileThumbnail`.
+    ///
+    /// Async on purpose: `AVAssetImageGenerator` decodes a frame, which is far too slow
+    /// for the synchronous capture path images use. Infinite tolerance lets it settle on
+    /// the nearest keyframe, so clips shorter than the requested 1s still yield an image
+    /// instead of failing outright.
+    nonisolated static func generateVideoFileThumbnail(at fileURL: URL) async -> Data? {
+        let asset = AVURLAsset(url: fileURL)
+        let generator = AVAssetImageGenerator(asset: asset)
+        generator.appliesPreferredTrackTransform = true
+        generator.maximumSize = CGSize(width: FILE_THUMBNAIL_MAX_PIXELS, height: FILE_THUMBNAIL_MAX_PIXELS)
+        generator.requestedTimeToleranceBefore = .positiveInfinity
+        generator.requestedTimeToleranceAfter = .positiveInfinity
+        guard let result = try? await generator.image(at: CMTime(seconds: 1, preferredTimescale: 600)) else {
+            return nil
+        }
+        let bitmap = NSBitmapImageRep(cgImage: result.image)
+        return bitmap.representation(using: .jpeg, properties: [.compressionFactor: 0.85])
     }
 
     /// Downsamples in-memory image bytes (a raw pasteboard TIFF/PNG) into a small JPEG
@@ -945,6 +969,62 @@ final class ClipboardManager: ObservableObject {
     private func enqueueOCRIfNeeded(for item: ClipItem) {
         guard item.contentType == .image, item.imageData != nil else { return }
         OCRTaskCoordinator.shared.enqueue(itemID: item.itemID)
+    }
+
+    /// Videos get their thumbnail after the fact, since decoding a frame is far too slow
+    /// for the synchronous capture path.
+    ///
+    /// Persisting it matters more here than for image files: video clips overwhelmingly
+    /// come from self-cleaning temp dirs (CleanShot's media folder, WeChat's container,
+    /// browser downloads), so with nothing stored the preview turns permanently gray the
+    /// moment the source app tidies up — which it always eventually does.
+    private func enqueueVideoThumbnailIfNeeded(for item: ClipItem, in context: ModelContext) {
+        guard item.contentType == .video, item.imageData == nil else { return }
+        guard let path = item.content.components(separatedBy: "\n").first(where: { !$0.isEmpty }) else { return }
+
+        let targetItem = item
+        Task(priority: .utility) {
+            guard let data = await Self.generateVideoFileThumbnail(at: URL(fileURLWithPath: path)) else { return }
+            await MainActor.run {
+                // Frame decoding takes a while; the clip can be deleted or filled in by the
+                // backfill pass before we get back.
+                guard !targetItem.isDeleted, targetItem.imageData == nil else { return }
+                targetItem.imageData = data
+                ClipItemStore.saveAndNotifyContent(context)
+            }
+        }
+    }
+
+    /// One-shot pass over video clips stored before thumbnails were persisted. Clips whose
+    /// source file is already gone are skipped — nothing can be recovered for those, and
+    /// retrying them on every launch would just burn I/O.
+    ///
+    /// Runs sequentially: frame decoding is expensive, and this is strictly background
+    /// catch-up work with no deadline.
+    func backfillVideoThumbnails(in context: ModelContext) {
+        let descriptor = FetchDescriptor<ClipItem>(
+            predicate: #Predicate<ClipItem> { $0.contentTypeRaw == "video" && $0.imageData == nil }
+        )
+        guard let pending = try? context.fetch(descriptor), !pending.isEmpty else { return }
+
+        Task(priority: .utility) {
+            var wrote = false
+            for item in pending {
+                guard !item.isDeleted,
+                      let path = item.content.components(separatedBy: "\n").first(where: { !$0.isEmpty }),
+                      FileAvailability.check(path).isAvailable,
+                      let data = await Self.generateVideoFileThumbnail(at: URL(fileURLWithPath: path)) else { continue }
+                await MainActor.run {
+                    guard !item.isDeleted, item.imageData == nil else { return }
+                    item.imageData = data
+                    wrote = true
+                }
+            }
+            // One save for the whole pass — nothing to persist if every clip was skipped.
+            if wrote {
+                await MainActor.run { ClipItemStore.saveAndNotifyContent(context) }
+            }
+        }
     }
 
     private func cleanExpiredItems(in context: ModelContext) {

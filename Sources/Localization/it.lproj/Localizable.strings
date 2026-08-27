@@ -200,6 +200,9 @@
 "detail.size" = "Peso";
 "detail.format" = "Formato";
 "detail.fileCount" = "File";
+"detail.fileStatus" = "Stato";
+"file.unavailable.missing" = "Il file non esiste piu";
+"file.unavailable.denied" = "Nessun permesso di accesso";
 "detail.host" = "Host";
 "detail.url" = "URL";
 "detail.aiPreview" = "Anteprima per AI";

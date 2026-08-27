@@ -619,6 +619,9 @@
 /* Detail - Additional */
 "detail.dimensions" = "サイズ";
 "detail.fileCount" = "ファイル数";
+"detail.fileStatus" = "状態";
+"file.unavailable.missing" = "ファイルは存在しません";
+"file.unavailable.denied" = "アクセス権限がありません";
 "detail.format" = "フォーマット";
 "detail.host" = "ホスト";
 "detail.linkTitle" = "タイトル";

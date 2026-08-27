@@ -200,6 +200,9 @@
 "detail.size" = "Ukuran";
 "detail.format" = "Format";
 "detail.fileCount" = "File";
+"detail.fileStatus" = "Status";
+"file.unavailable.missing" = "File tidak ada lagi";
+"file.unavailable.denied" = "Tidak ada izin akses";
 "detail.host" = "Host";
 "detail.url" = "URL";
 "detail.aiPreview" = "Pratinjau untuk AI";

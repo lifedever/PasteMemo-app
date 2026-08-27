@@ -16,6 +16,10 @@ struct ClipPropertiesView: View {
         let itemCount: Int
         let totalSize: Int
         let location: String
+        /// Why a zero count happened. Without it "文件数 0" reads as a permission problem
+        /// whether the file was deleted or the read was refused — two situations needing
+        /// opposite reactions from the user.
+        let availability: FileAvailability
     }
 
     @State private var textStats: TextStats?
@@ -85,7 +89,13 @@ struct ClipPropertiesView: View {
                 let location = paths
                     .compactMap { URL(fileURLWithPath: $0).deletingLastPathComponent().path }
                     .first ?? ""
-                return FileStats(itemCount: itemCount, totalSize: totalSize, location: location)
+                // Only probe errno when nothing was countable — `fileExists` already
+                // proved the readable case, and open(2) per path isn't free.
+                let availability: FileAvailability = itemCount > 0
+                    ? .available
+                    : FileAvailability.check(paths: paths)
+                return FileStats(itemCount: itemCount, totalSize: totalSize,
+                                 location: location, availability: availability)
             }.value
             if !Task.isCancelled {
                 fileStats = stats
@@ -286,7 +296,13 @@ struct ClipPropertiesView: View {
     private var fileProperties: some View {
         if let stats = fileStats {
             propDivider
-            propRow(L10n.tr("detail.fileCount"), "\(stats.itemCount)")
+            // A bare "0" is the same for a deleted file and a refused read, which is how
+            // an ordinary temp-file cleanup ends up looking like a permissions bug.
+            if stats.availability.isAvailable {
+                propRow(L10n.tr("detail.fileCount"), "\(stats.itemCount)")
+            } else {
+                unavailableRow(stats.availability)
+            }
             if stats.totalSize > 0 {
                 propDivider
                 propRow(L10n.tr("detail.size"), formatFileSize(stats.totalSize))
@@ -296,6 +312,27 @@ struct ClipPropertiesView: View {
                 locationRow(stats.location)
             }
         }
+    }
+
+    private func unavailableRow(_ availability: FileAvailability) -> some View {
+        HStack {
+            Text(L10n.tr("detail.fileStatus"))
+                .font(.system(size: fontSize))
+                .foregroundStyle(.tertiary)
+                .lineLimit(1)
+            Spacer()
+            HStack(spacing: 4) {
+                Image(systemName: availability == .denied ? "lock.fill" : "questionmark.folder")
+                    .font(.system(size: fontSize - 1))
+                Text(L10n.tr(availability == .denied
+                             ? "file.unavailable.denied"
+                             : "file.unavailable.missing"))
+                    .font(.system(size: fontSize))
+                    .lineLimit(1)
+            }
+            .foregroundStyle(.secondary)
+        }
+        .padding(.vertical, fontSize <= 11 ? 3 : 4)
     }
 
     // MARK: - Link
