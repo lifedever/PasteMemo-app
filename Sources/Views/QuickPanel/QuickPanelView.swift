@@ -1940,12 +1940,13 @@ struct QuickPanelView: View {
         // `pasteableImageData`, not `imageData`: a video's stored poster frame must not
         // turn "paste into this Finder window" into "drop a JPEG here".
         guard let item = currentItem, item.pasteableImageData != nil else { return false }
-        return clipboardManager.isFinderApp(QuickPanelWindowController.shared.previousApp)
+        return isTargetFinder
     }
 
     private func handleMultiPaste(asPlainText: Bool, forceNewLine: Bool = false, respectAutoPaste: Bool = true) {
         let items = currentItems
         guard !items.isEmpty else { return }
+        QuickPanelWindowController.shared.refreshTargetFocusIfPinned()
 
         if respectAutoPaste && !quickPanelAutoPaste {
             guard !forceNewLine else { return }
@@ -2340,8 +2341,15 @@ struct QuickPanelView: View {
         ImageCache.shared.reclaimFreedMemory()
     }
 
+    /// 「把内容存成文件放进 Finder 当前文件夹」这组动作的总开关。
+    ///
+    /// 目标是 Finder **且**它的键盘焦点不在文本输入控件上时才成立：焦点在搜索框 /
+    /// 重命名框里时，用户要的是把内容粘进那个框（走正常 ⌘V），而不是在文件夹里
+    /// 凭空生成一个文件——只判断「目标 App 是不是 Finder」会让 Finder 搜索框粘贴
+    /// 完全失效（默默建了个 .txt，搜索框里什么都没有）。
     private var isTargetFinder: Bool {
         clipboardManager.isFinderApp(QuickPanelWindowController.shared.previousApp)
+            && !QuickPanelWindowController.shared.previousFocusIsTextInput
     }
 
     private var canSaveAttachmentToFolder: Bool {
@@ -2366,6 +2374,7 @@ struct QuickPanelView: View {
 
     private func handleCmdEnter(respectAutoPaste: Bool = true) {
         guard let item = currentItem else { return }
+        QuickPanelWindowController.shared.refreshTargetFocusIfPinned()
         // Link → open in browser
         if item.contentType == .link,
            let url = item.resolvedURL {
@@ -2654,6 +2663,7 @@ struct QuickPanelView: View {
 
     private func handlePaste(forceNewLine: Bool = false, respectAutoPaste: Bool = true) {
         guard let item = currentItem else { return }
+        QuickPanelWindowController.shared.refreshTargetFocusIfPinned()
         if respectAutoPaste && !quickPanelAutoPaste {
             guard !forceNewLine else { return }
             // ⌘C / Enter-to-copy must put full-fidelity content on the clipboard

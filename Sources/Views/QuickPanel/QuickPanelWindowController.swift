@@ -74,6 +74,11 @@ final class QuickPanelWindowController {
     private var pinnedActivationObserver: Any?
     private var resizeObserver: Any?
     private(set) var previousApp: NSRunningApplication?
+    /// 面板弹出瞬间，`previousApp` 的键盘焦点是否落在文本输入控件上。
+    /// Finder 的「存到当前文件夹」分支据此让路：焦点在搜索框 / 重命名框里时，用户要的是
+    /// 把内容粘进那个框，而不是在文件夹里生成一个 .txt / 图片文件。只看「目标 App 是不是
+    /// Finder」会把这两种意图混为一谈——Finder 搜索框粘贴因此完全失效（只默默建了个文件）。
+    private(set) var previousFocusIsTextInput = false
     private var isWarmedUp = false
     var isPinned = false {
         didSet {
@@ -161,6 +166,8 @@ final class QuickPanelWindowController {
         }
 
         previousApp = NSWorkspace.shared.frontmostApplication
+        // 必须在下面 makeKey() 之前采样：抢了 key 之后读到的可能已是面板自己的焦点。
+        previousFocusIsTextInput = Self.focusIsTextInput(previousApp)
 
         if !isWarmedUp {
             warmUp(clipboardManager: clipboardManager, modelContainer: modelContainer)
@@ -219,6 +226,40 @@ final class QuickPanelWindowController {
         installMoveObserver()
         NotificationCenter.default.post(name: .quickPanelDidShow, object: nil)
         UsageTracker.pingIfNeeded(source: .quick)
+    }
+
+    /// 粘贴动作发生时重采一次目标 App 的焦点——**仅置顶模式**。
+    ///
+    /// 置顶时面板不持有 key，用户可以在目标 App 里自由移动焦点（比如在 Finder 里从文件
+    /// 列表点进搜索框），而这**不会**发出任何系统通知，`show()` / App 激活时采的值就过期了。
+    /// 非置顶时面板已抢走 key，此刻读到的是面板自己的焦点，只能沿用 `show()` 时的采样。
+    func refreshTargetFocusIfPinned() {
+        guard isPinned else { return }
+        previousFocusIsTextInput = Self.focusIsTextInput(previousApp)
+    }
+
+    /// 焦点落在这些 AX 角色上时，用户的意图是「往这个框里打字」，而不是操作 App 的主内容区。
+    private static let TEXT_INPUT_AX_ROLES: Set<String> = [
+        kAXTextFieldRole, kAXTextAreaRole, kAXComboBoxRole, "AXSearchField",
+    ]
+
+    /// 采样目标 App 此刻的键盘焦点是不是文本输入控件。
+    ///
+    /// 必须在面板 `makeKey()` **之前**调用。无辅助功能权限、目标 App 不响应 AX、
+    /// 或焦点不在文本控件上时一律返回 false —— 即退回既有行为，不会让粘贴变得更差。
+    private static func focusIsTextInput(_ app: NSRunningApplication?) -> Bool {
+        guard let pid = app?.processIdentifier else { return false }
+        let axApp = AXUIElementCreateApplication(pid)
+        // 目标 App 卡住时 AX 查询默认要等好几秒，会把面板弹出一起拖住；限死 200ms。
+        AXUIElementSetMessagingTimeout(axApp, 0.2)
+        var focusedRef: CFTypeRef?
+        guard AXUIElementCopyAttributeValue(axApp, kAXFocusedUIElementAttribute as CFString, &focusedRef) == .success,
+              let focusedRef, CFGetTypeID(focusedRef) == AXUIElementGetTypeID() else { return false }
+        let element = focusedRef as! AXUIElement
+        var roleRef: CFTypeRef?
+        guard AXUIElementCopyAttributeValue(element, kAXRoleAttribute as CFString, &roleRef) == .success,
+              let role = roleRef as? String else { return false }
+        return TEXT_INPUT_AX_ROLES.contains(role)
     }
 
     /// - Parameter force: 置顶时，粘贴/复制完成的收尾调用（`force == false`）不关闭面板，
@@ -293,6 +334,7 @@ final class QuickPanelWindowController {
             }
             dismiss()
             previousApp = nil
+            previousFocusIsTextInput = false
         }
 
         // 延迟 orderOut 机制下 dismiss 返回时面板可能仍持有 key，立刻发合成 ⌘V 会落空
@@ -648,6 +690,8 @@ final class QuickPanelWindowController {
                 guard let app = NSWorkspace.shared.frontmostApplication,
                       app.bundleIdentifier != Bundle.main.bundleIdentifier else { return }
                 self.previousApp = app
+                // 置顶时面板已让出 key，这里读到的就是目标 App 自己的焦点。
+                self.previousFocusIsTextInput = Self.focusIsTextInput(app)
                 NotificationCenter.default.post(name: .quickPanelPasteTargetChanged, object: nil)
             }
         }
