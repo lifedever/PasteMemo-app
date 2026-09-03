@@ -421,7 +421,9 @@ struct ShortcutsTab: View {
 
     var body: some View {
         Form {
-            Section(L10n.tr("settings.shortcuts")) {
+            // 按「快捷键作用的对象」分组：快捷面板 / 管理器窗口 / 接力。
+            // 每组的提示文字紧跟所属条目，避免所有行挤在一个分区里读不出归属。
+            Section(L10n.tr("settings.shortcuts.section.quickPanel")) {
                 HStack {
                     Text(L10n.tr("settings.quickPanelShortcut"))
                     Spacer()
@@ -444,6 +446,25 @@ struct ShortcutsTab: View {
                     .pointerCursor()
                 }
 
+                // 双击修饰键走 DoubleTapDetector → toggleQuickPanel，和上面的面板快捷键
+                // 是同一个目标的两种唤起方式，所以放在同一组。
+                Toggle(L10n.tr("settings.doubleTap"), isOn: $doubleTapEnabled)
+                    .onChange(of: doubleTapEnabled) {
+                        DoubleTapDetector.shared.restart()
+                    }
+                if doubleTapEnabled {
+                    Picker(L10n.tr("settings.doubleTap.modifier"), selection: $doubleTapModifier) {
+                        ForEach(DoubleTapModifier.allCases, id: \.rawValue) { mod in
+                            Text(mod.label).tag(mod.rawValue)
+                        }
+                    }
+                    .onChange(of: doubleTapModifier) {
+                        DoubleTapDetector.shared.restart()
+                    }
+                }
+            }
+
+            Section(L10n.tr("settings.shortcuts.section.manager")) {
                 HStack {
                     Text(L10n.tr("settings.managerShortcut"))
                     Spacer()
@@ -482,7 +503,9 @@ struct ShortcutsTab: View {
                 Text(L10n.tr("settings.managerShortcut.scopeHint"))
                     .font(.callout)
                     .foregroundStyle(.tertiary)
+            }
 
+            Section(L10n.tr("settings.shortcuts.section.relay")) {
                 HStack {
                     Text(L10n.tr("settings.relayShortcut"))
                     Spacer()
@@ -519,21 +542,6 @@ struct ShortcutsTab: View {
                     : L10n.tr("relay.settings.pasteKeyNote"))
                     .font(.callout)
                     .foregroundStyle(.tertiary)
-
-                Toggle(L10n.tr("settings.doubleTap"), isOn: $doubleTapEnabled)
-                    .onChange(of: doubleTapEnabled) {
-                        DoubleTapDetector.shared.restart()
-                    }
-                if doubleTapEnabled {
-                    Picker(L10n.tr("settings.doubleTap.modifier"), selection: $doubleTapModifier) {
-                        ForEach(DoubleTapModifier.allCases, id: \.rawValue) { mod in
-                            Text(mod.label).tag(mod.rawValue)
-                        }
-                    }
-                    .onChange(of: doubleTapModifier) {
-                        DoubleTapDetector.shared.restart()
-                    }
-                }
             }
         }
         .formStyle(.grouped)

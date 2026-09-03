@@ -143,6 +143,9 @@
 /* Settings */
 "settings.features" = "기능";
 "settings.shortcuts" = "단축키";
+"settings.shortcuts.section.quickPanel" = "빠른 붙여넣기";
+"settings.shortcuts.section.manager" = "관리자 창";
+"settings.shortcuts.section.relay" = "릴레이";
 "settings.quickPanelShortcut" = "빠른 붙여넣기";
 "settings.managerShortcut" = "관리자 열기";
 "settings.managerShortcut.global" = "전역";

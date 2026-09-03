@@ -143,6 +143,9 @@
 /* Settings */
 "settings.features" = "Funktionen";
 "settings.shortcuts" = "Tastenkürzel";
+"settings.shortcuts.section.quickPanel" = "Schnellpanel";
+"settings.shortcuts.section.manager" = "Verwaltungsfenster";
+"settings.shortcuts.section.relay" = "Relay";
 "settings.quickPanelShortcut" = "Schnelles Einfügen";
 "settings.managerShortcut" = "Manager öffnen";
 "settings.managerShortcut.global" = "Global";

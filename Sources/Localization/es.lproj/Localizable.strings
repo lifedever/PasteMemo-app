@@ -143,6 +143,9 @@
 /* Settings */
 "settings.features" = "Funciones";
 "settings.shortcuts" = "Atajos";
+"settings.shortcuts.section.quickPanel" = "Pegado rápido";
+"settings.shortcuts.section.manager" = "Ventana del gestor";
+"settings.shortcuts.section.relay" = "Relevo";
 "settings.quickPanelShortcut" = "Pegado rápido";
 "settings.managerShortcut" = "Abrir gestor";
 "settings.managerShortcut.global" = "Global";

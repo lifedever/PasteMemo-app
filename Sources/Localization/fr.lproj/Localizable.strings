@@ -143,6 +143,9 @@
 /* Settings */
 "settings.features" = "Fonctionnalités";
 "settings.shortcuts" = "Raccourcis";
+"settings.shortcuts.section.quickPanel" = "Collage rapide";
+"settings.shortcuts.section.manager" = "Fenêtre du gestionnaire";
+"settings.shortcuts.section.relay" = "Relais";
 "settings.quickPanelShortcut" = "Collage rapide";
 "settings.managerShortcut" = "Ouvrir le gestionnaire";
 "settings.managerShortcut.global" = "Global";

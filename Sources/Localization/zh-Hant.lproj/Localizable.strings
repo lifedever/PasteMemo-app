@@ -112,6 +112,9 @@
 "settings.currentVersion" = "目前版本";
 "settings.features" = "功能";
 "settings.shortcuts" = "快捷鍵";
+"settings.shortcuts.section.quickPanel" = "快捷面板";
+"settings.shortcuts.section.manager" = "管理器視窗";
+"settings.shortcuts.section.relay" = "接力";
 "settings.quickPanelShortcut" = "開啟快捷面板";
 "settings.managerShortcut" = "開啟管理器";
 "settings.managerShortcut.global" = "全域";

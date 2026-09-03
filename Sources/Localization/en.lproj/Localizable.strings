@@ -121,6 +121,9 @@
 "settings.currentVersion" = "Current Version";
 "settings.features" = "Features";
 "settings.shortcuts" = "Shortcuts";
+"settings.shortcuts.section.quickPanel" = "Quick Paste";
+"settings.shortcuts.section.manager" = "Manager Window";
+"settings.shortcuts.section.relay" = "Relay";
 "settings.quickPanelShortcut" = "Quick Paste";
 "settings.managerShortcut" = "Open Manager";
 "settings.managerShortcut.global" = "Global";

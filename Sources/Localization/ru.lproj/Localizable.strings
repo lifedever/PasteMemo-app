@@ -113,6 +113,9 @@
 "settings.currentVersion" = "Текущая версия";
 "settings.features" = "Функции";
 "settings.shortcuts" = "Горячие клавиши";
+"settings.shortcuts.section.quickPanel" = "Быстрая вставка";
+"settings.shortcuts.section.manager" = "Окно менеджера";
+"settings.shortcuts.section.relay" = "Эстафета";
 "settings.quickPanelShortcut" = "Быстрая вставка";
 "settings.managerShortcut" = "Открыть менеджер";
 "settings.managerShortcut.global" = "Глобально";

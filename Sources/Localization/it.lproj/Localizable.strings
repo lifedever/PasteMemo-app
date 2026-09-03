@@ -113,6 +113,9 @@
 "settings.currentVersion" = "Versione attuale";
 "settings.features" = "Funzionalità";
 "settings.shortcuts" = "Scorciatoie";
+"settings.shortcuts.section.quickPanel" = "Incolla Rapido";
+"settings.shortcuts.section.manager" = "Finestra Gestore";
+"settings.shortcuts.section.relay" = "Staffetta";
 "settings.quickPanelShortcut" = "Incolla Rapido";
 "settings.managerShortcut" = "Apri Gestore";
 "settings.managerShortcut.global" = "Globale";

@@ -113,6 +113,9 @@
 "settings.currentVersion" = "Versi Saat Ini";
 "settings.features" = "Fitur";
 "settings.shortcuts" = "Pintasan";
+"settings.shortcuts.section.quickPanel" = "Tempel Cepat";
+"settings.shortcuts.section.manager" = "Jendela Pengelola";
+"settings.shortcuts.section.relay" = "Relay";
 "settings.quickPanelShortcut" = "Tempel Cepat";
 "settings.managerShortcut" = "Buka Pengelola";
 "settings.managerShortcut.global" = "Global";
