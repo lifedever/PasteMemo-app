@@ -459,7 +459,6 @@
 "cmd.automation" = "Automatisierung";
 
 "relay.title" = "Relay-Modus";
-"relay.tab" = "Relay";
 "relay.exit" = "Beenden";
 "relay.clearAndExit" = "Leeren & beenden";
 "relay.close" = "Schließen";
@@ -486,7 +485,6 @@ Verwenden Sie %@ zum Einfügen.";
 "relay.settings.pasteKey" = "Relay-Einfüge-Tastenkürzel";
 "relay.settings.pasteKeyNote" = "Einige Apps (Terminal, Emacs) verwenden möglicherweise das gleiche Tastenkürzel.";
 "relay.settings.pauseToChange" = "Pausieren oder beenden Sie den Relay-Modus, um das Tastenkürzel zu ändern.";
-"relay.settings.resetAlert" = "Aktivierungshinweis erneut anzeigen";
 "relay.settings.plainText" = "Als Klartext einfügen";
 "relay.settings.plainText.desc" = "Formatierung entfernen";
 "relay.settings.allowRepeatCopy" = "Duplikate zulassen";
@@ -512,12 +510,6 @@ Verwenden Sie %@ zum Einfügen.";
 "relay.settings.postPasteKey.left" = "Links";
 "relay.settings.postPasteKey.right" = "Rechts";
 "relay.settings.postPasteKey.space" = "Space";
-"relay.settings.description" = "Im Relay-Modus können Sie mehrere Elemente kopieren und nacheinander einfügen. Ideal zum Kopieren einer Namensliste und zeilenweises Einfügen in Excel.";
-"relay.settings.shortcuts" = "Tastenkürzel";
-"relay.settings.operations" = "Bedienung";
-"relay.settings.op.paste" = "Nächstes Element einfügen";
-"relay.settings.op.skip" = "Aktuelles überspringen";
-"relay.settings.op.previous" = "Zurück zum vorherigen";
 "relay.autoExit.short" = "Auto-Beenden nach Abschluss";
 "relay.loop" = "Schleife";
 "relay.loop.tooltip.on" = "Schleife: An (Nach Ende der Warteschlange von vorn beginnen)";

@@ -479,7 +479,6 @@
 "cmd.automation" = "オートメーション";
 
 "relay.title" = "リレーモード";
-"relay.tab" = "リレー";
 "relay.exit" = "終了";
 "relay.clearAndExit" = "クリアして終了";
 "relay.close" = "閉じる";
@@ -506,7 +505,6 @@
 "relay.settings.pasteKey" = "リレーペーストショートカット";
 "relay.settings.pasteKeyNote" = "一部のアプリ（ターミナル、Emacs）が同じショートカットを使用する場合があります。競合する場合はカスタマイズしてください。";
 "relay.settings.pauseToChange" = "ショートカットを変更するにはリレーモードを一時停止または終了してください。";
-"relay.settings.resetAlert" = "起動時のヒントを再表示";
 "relay.settings.plainText" = "プレーンテキストで貼り付け";
 "relay.settings.plainText.desc" = "リッチテキスト書式を削除";
 "relay.settings.allowRepeatCopy" = "重複コピーを許可";
@@ -532,12 +530,6 @@
 "relay.settings.postPasteKey.left" = "左";
 "relay.settings.postPasteKey.right" = "右";
 "relay.settings.postPasteKey.space" = "スペース";
-"relay.settings.description" = "リレーモードでは複数のアイテムをコピーして順番に1つずつペーストできます。Webページから名前のリストをコピーして Excel に行ごとにペーストするのに最適です。";
-"relay.settings.shortcuts" = "ショートカット";
-"relay.settings.operations" = "操作説明";
-"relay.settings.op.paste" = "次のアイテムをペースト";
-"relay.settings.op.skip" = "現在のアイテムをスキップ";
-"relay.settings.op.previous" = "1つ前に戻る";
 "relay.autoExit.short" = "完了後に自動終了";
 "relay.loop" = "ループ";
 "relay.loop.tooltip.on" = "ループ：オン（キュー完了後に先頭から再開）";

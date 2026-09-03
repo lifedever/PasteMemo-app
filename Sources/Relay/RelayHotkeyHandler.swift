@@ -31,8 +31,18 @@ private nonisolated func relayHotkeyEventHandler(
     guard hotKeyID.signature == RELAY_HOTKEY_SIGNATURE else {
         return OSStatus(eventNotHandledErr)
     }
+    let isRelease = GetEventKind(event) == UInt32(kEventHotKeyReleased)
+    // 粘贴类动作等热键「释放」时才执行，跳过 / 回退用「按下」保持即按即响应。
+    // 原因（issue #87）：粘贴要合成 ⌘V，而接力热键默认 ⌃V 与之共用 V 键。按下时触发的话，
+    // 合成 ⌘V 时物理 V 往往还压着，系统丢弃这个重复的 V keyDown，目标 App 收不到粘贴，
+    // 但队列已经 advance——表现为「进度在走、内容没粘上」。补发合成 keyUp 无效：物理键
+    // 真按着时 keyState 依然为 true（实测四次尝试全失败）。改在释放时执行，按键必然已抬起。
+    // 快速点按时松手只差几十毫秒，比原先固定等 100ms 更快；按住不放则只粘一次，
+    // 顺带修掉「按住会以自动重复的速度刷空整个队列」。
+    let id = hotKeyID.id
+    guard isRelease == (id == 1 || id == 4) else { return noErr }
     Task { @MainActor in
-        switch hotKeyID.id {
+        switch id {
         case 1: RelayHotkeyHandler.current?.onPaste?()
         case 2: RelayHotkeyHandler.current?.onSkip?()
         case 3: RelayHotkeyHandler.current?.onPrevious?()
@@ -103,16 +113,18 @@ final class RelayHotkeyHandler {
     // MARK: - Carbon Hotkey
 
     private func installEventHandler() {
-        var eventType = EventTypeSpec(
-            eventClass: OSType(kEventClassKeyboard),
-            eventKind: UInt32(kEventHotKeyPressed)
-        )
+        // 同时订阅按下与释放：粘贴类热键走释放（见 relayHotkeyEventHandler 的说明），
+        // 跳过 / 回退走按下。
+        var eventTypes = [
+            EventTypeSpec(eventClass: OSType(kEventClassKeyboard), eventKind: UInt32(kEventHotKeyPressed)),
+            EventTypeSpec(eventClass: OSType(kEventClassKeyboard), eventKind: UInt32(kEventHotKeyReleased)),
+        ]
 
         InstallEventHandler(
             GetApplicationEventTarget(),
             relayHotkeyEventHandler,
-            1,
-            &eventType,
+            eventTypes.count,
+            &eventTypes,
             nil,
             &eventHandler
         )

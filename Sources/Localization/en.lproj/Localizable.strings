@@ -715,7 +715,6 @@
 "cmd.andNewLine" = " + New Line";
 
 "relay.title" = "Relay Mode";
-"relay.tab" = "Relay";
 "relay.exit" = "Exit";
 "relay.clearAndExit" = "Clear & Exit";
 "relay.close" = "Close";
@@ -740,7 +739,6 @@
 "relay.settings.pasteKey" = "Relay Paste Shortcut";
 "relay.settings.pasteKeyNote" = "Some apps (Terminal, Emacs) may use the same shortcut. Customize if there's a conflict.";
 "relay.settings.pauseToChange" = "Pause or exit Relay Mode to change the shortcut.";
-"relay.settings.resetAlert" = "Show activation tip again";
 "relay.settings.plainText" = "Paste as Plain Text";
 "relay.settings.plainText.desc" = "Strip rich formatting";
 "relay.settings.allowRepeatCopy" = "Allow duplicate copies";
@@ -766,12 +764,6 @@
 "relay.settings.postPasteKey.left" = "Left";
 "relay.settings.postPasteKey.right" = "Right";
 "relay.settings.postPasteKey.space" = "Space";
-"relay.settings.description" = "Relay Mode lets you copy multiple items and paste them one by one in order. Ideal for copying a list of names from a webpage and pasting them row by row into Excel.";
-"relay.settings.shortcuts" = "Shortcuts";
-"relay.settings.operations" = "Operations";
-"relay.settings.op.paste" = "Paste next item";
-"relay.settings.op.skip" = "Skip current item";
-"relay.settings.op.previous" = "Go back one item";
 "relay.autoExit.short" = "Auto exit when done";
 "relay.loop" = "Loop";
 "relay.loop.tooltip.on" = "Loop: On (Restart from top when queue ends)";

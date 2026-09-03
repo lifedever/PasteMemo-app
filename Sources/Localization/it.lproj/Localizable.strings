@@ -554,7 +554,6 @@
 "cmd.automation" = "Automazione";
 
 "relay.title" = "Modalità Staffetta";
-"relay.tab" = "Staffetta";
 "relay.exit" = "Esci";
 "relay.clearAndExit" = "Svuota ed esci";
 "relay.close" = "Chiudi";
@@ -581,7 +580,6 @@ Usa %@ per incollare uno per uno.";
 "relay.settings.pasteKey" = "Scorciatoia incolla staffetta";
 "relay.settings.pasteKeyNote" = "Alcune app (Terminale, Emacs) potrebbero usare la stessa scorciatoia.";
 "relay.settings.pauseToChange" = "Metti in pausa o esci dalla staffetta per modificare la scorciatoia.";
-"relay.settings.resetAlert" = "Mostra di nuovo il suggerimento";
 "relay.settings.plainText" = "Incolla come testo semplice";
 "relay.settings.plainText.desc" = "Rimuovi formattazione";
 "relay.settings.allowRepeatCopy" = "Consenti duplicati";
@@ -607,12 +605,6 @@ Usa %@ per incollare uno per uno.";
 "relay.settings.postPasteKey.left" = "Sinistra";
 "relay.settings.postPasteKey.right" = "Destra";
 "relay.settings.postPasteKey.space" = "Space";
-"relay.settings.description" = "La modalità staffetta permette di copiare più elementi e incollarli uno per uno. Ideale per copiare una lista di nomi e incollarli riga per riga in Excel.";
-"relay.settings.shortcuts" = "Scorciatoie";
-"relay.settings.operations" = "Operazioni";
-"relay.settings.op.paste" = "Incolla prossimo";
-"relay.settings.op.skip" = "Salta attuale";
-"relay.settings.op.previous" = "Torna al precedente";
 "relay.autoExit.short" = "Uscita auto a fine";
 "relay.loop" = "Ciclo";
 "relay.loop.tooltip.on" = "Ciclo: Attivo (Riparti dall'inizio alla fine della coda)";

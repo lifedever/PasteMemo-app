@@ -21,9 +21,9 @@ enum RelayPaster {
         pasteboard.markAsPasteMemoWrite()
         monitor.skipNextChange()
         try? await Task.sleep(for: burst ? BURST_PASTE_DELAY : PASTE_DELAY)
-        simulateCommandV()
+        await simulateCommandV()
         try? await Task.sleep(for: burst ? BURST_POST_PASTE_DELAY : POST_PASTE_DELAY)
-        simulatePostPasteKey()
+        await simulatePostPasteKey()
     }
 
     /// Write image data to system pasteboard and simulate Cmd+V.
@@ -39,9 +39,9 @@ enum RelayPaster {
         pasteboard.markAsPasteMemoWrite()
         monitor.skipNextChange()
         try? await Task.sleep(for: burst ? BURST_PASTE_DELAY : PASTE_DELAY)
-        simulateCommandV()
+        await simulateCommandV()
         try? await Task.sleep(for: burst ? BURST_POST_PASTE_DELAY : POST_PASTE_DELAY)
-        simulatePostPasteKey()
+        await simulatePostPasteKey()
     }
 
     /// Write file URLs to system pasteboard and simulate Cmd+V. When `imageData` is provided
@@ -69,9 +69,9 @@ enum RelayPaster {
         pasteboard.markAsPasteMemoWrite()
         monitor.skipNextChange()
         try? await Task.sleep(for: burst ? BURST_PASTE_DELAY : PASTE_DELAY)
-        simulateCommandV()
+        await simulateCommandV()
         try? await Task.sleep(for: burst ? BURST_POST_PASTE_DELAY : POST_PASTE_DELAY)
-        simulatePostPasteKey()
+        await simulatePostPasteKey()
     }
 
     /// Replay a captured pasteboard snapshot verbatim, then simulate ⌘V.
@@ -84,12 +84,12 @@ enum RelayPaster {
         pasteboard.markAsPasteMemoWrite()
         monitor.skipNextChange()
         try? await Task.sleep(for: burst ? BURST_PASTE_DELAY : PASTE_DELAY)
-        simulateCommandV()
+        await simulateCommandV()
         try? await Task.sleep(for: burst ? BURST_POST_PASTE_DELAY : POST_PASTE_DELAY)
-        simulatePostPasteKey()
+        await simulatePostPasteKey()
     }
 
-    private static func simulateCommandV() {
+    private static func simulateCommandV() async {
         // privateState：合成事件的修饰位完全由我们指定，不会并入用户此刻按住的物理键
         // （典型：Ctrl 触发接力粘贴时 Ctrl 还压着）。否则合成的 ⌘V 会带上 Ctrl 位，
         // 目标 App 看到 Ctrl+⌘V —— Word 里是「选择性粘贴」、多数编辑器无绑定（静默失败）。
@@ -117,7 +117,7 @@ enum RelayPaster {
         cmdUp.post(tap: .cghidEventTap)
     }
 
-    private static func simulatePostPasteKey() {
+    private static func simulatePostPasteKey() async {
         guard let keyCode = RelayPostPasteKey.current.keyCode else { return }
         // Use privateState source so the event doesn't inherit currently-held
         // physical modifiers (e.g. user holding Ctrl during Ctrl+V relay paste).

@@ -459,7 +459,6 @@
 "cmd.automation" = "Automatización";
 
 "relay.title" = "Modo Relevo";
-"relay.tab" = "Relevo";
 "relay.exit" = "Salir";
 "relay.clearAndExit" = "Vaciar y salir";
 "relay.close" = "Cerrar";
@@ -486,7 +485,6 @@ Usa %@ para pegar uno por uno.";
 "relay.settings.pasteKey" = "Atajo de pegado relevo";
 "relay.settings.pasteKeyNote" = "Algunas apps (Terminal, Emacs) pueden usar el mismo atajo.";
 "relay.settings.pauseToChange" = "Pausa o sal del modo relevo para cambiar el atajo.";
-"relay.settings.resetAlert" = "Mostrar consejo de activación de nuevo";
 "relay.settings.plainText" = "Pegar como texto sin formato";
 "relay.settings.plainText.desc" = "Eliminar formato enriquecido";
 "relay.settings.allowRepeatCopy" = "Permitir duplicados";
@@ -512,12 +510,6 @@ Usa %@ para pegar uno por uno.";
 "relay.settings.postPasteKey.left" = "Izquierda";
 "relay.settings.postPasteKey.right" = "Derecha";
 "relay.settings.postPasteKey.space" = "Space";
-"relay.settings.description" = "El modo relevo permite copiar varios elementos y pegarlos uno por uno. Ideal para copiar una lista de nombres y pegarlos fila por fila en Excel.";
-"relay.settings.shortcuts" = "Atajos";
-"relay.settings.operations" = "Operaciones";
-"relay.settings.op.paste" = "Pegar siguiente";
-"relay.settings.op.skip" = "Omitir actual";
-"relay.settings.op.previous" = "Volver al anterior";
 "relay.autoExit.short" = "Salir auto al terminar";
 "relay.loop" = "Bucle";
 "relay.loop.tooltip.on" = "Bucle: Activado (Reiniciar desde el principio al terminar la cola)";

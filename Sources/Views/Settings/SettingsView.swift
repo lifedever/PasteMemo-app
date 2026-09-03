@@ -48,7 +48,6 @@ struct SettingsView: View {
         case .quickPanel: QuickPanelPane()
         case .preview: PreviewPane()
         case .shortcuts: ShortcutsTab()
-        case .relay: RelayTab()
         case .privacy: PrivacyTab()
         case .aiAgents: AIAgentIntegrationView()
         case .automation: AutomationTab()
@@ -63,15 +62,15 @@ struct SettingsView: View {
 
 enum SettingsCategory: String, CaseIterable, Identifiable, Hashable {
     case general, appearance, quickPanel, preview
-    case shortcuts, relay, privacy, aiAgents, automation, data
+    case shortcuts, privacy, aiAgents, automation, data
     case sponsor, about
 
     var id: String { rawValue }
 
-    /// 功能设置：基础(通用/外观) → 快捷面板(快捷键/面板/预览与识别) → 进阶(接力/AI/自动化)。
+    /// 功能设置：基础(通用/外观) → 快捷面板(快捷键/面板/预览与识别) → 进阶(AI/自动化)。
     static let functionGroup: [SettingsCategory] =
         [.general, .appearance, .shortcuts, .quickPanel, .preview,
-         .relay, .aiAgents, .automation]
+         .aiAgents, .automation]
 
     /// 数据与隐私。
     static let dataPrivacyGroup: [SettingsCategory] = [.privacy, .data]
@@ -86,7 +85,6 @@ enum SettingsCategory: String, CaseIterable, Identifiable, Hashable {
         case .quickPanel: return "settings.quickPanel"
         case .preview: return "settings.previewRecognition"
         case .shortcuts: return "settings.shortcuts"
-        case .relay: return "relay.tab"
         case .privacy: return "settings.privacy"
         case .aiAgents: return "settings.tab.aiAgents"
         case .automation: return "settings.automation"
@@ -103,7 +101,6 @@ enum SettingsCategory: String, CaseIterable, Identifiable, Hashable {
         case .quickPanel: return "list.bullet.rectangle"
         case .preview: return "text.viewfinder"
         case .shortcuts: return "keyboard"
-        case .relay: return "arrow.forward"
         case .privacy: return "lock.shield"
         case .aiAgents: return "sparkles.rectangle.stack"
         case .automation: return "gearshape.2"
@@ -409,6 +406,7 @@ struct DataTab: View {
 
 struct ShortcutsTab: View {
     @ObservedObject private var hotkeyManager = HotkeyManager.shared
+    private var relayManager: RelayManager { RelayManager.shared }
     @AppStorage("hotkeyKeyCode") private var hotkeyKeyCode = 0x09
     @AppStorage("hotkeyModifiers") private var hotkeyModifiers = cmdKey | shiftKey
     @AppStorage("managerHotkeyKeyCode") private var managerKeyCode = -1
@@ -416,6 +414,8 @@ struct ShortcutsTab: View {
     @AppStorage("managerHotkeyGlobalEnabled") private var managerHotkeyGlobalEnabled = true
     @AppStorage("relayHotkeyKeyCode") private var relayKeyCode = -1
     @AppStorage("relayHotkeyModifiers") private var relayModifiers = -1
+    @AppStorage("relayPasteKeyCode") private var relayPasteKeyCode = 0x09
+    @AppStorage("relayPasteModifiers") private var relayPasteModifiers = controlKey
     @AppStorage("doubleTapEnabled") private var doubleTapEnabled = false
     @AppStorage("doubleTapModifier") private var doubleTapModifier = 0
 
@@ -504,6 +504,21 @@ struct ShortcutsTab: View {
                     .buttonStyle(.plain)
                     .pointerCursor()
                 }
+
+                // 接力粘贴快捷键（接力浮窗内逐条粘贴用，默认 ⌃V）。RelayHotkeyHandler 在
+                // 每次 start() 时重读 UserDefaults，所以接力运行中不允许改，暂停/退出后生效。
+                HStack {
+                    Text(L10n.tr("relay.settings.pasteKey"))
+                    Spacer()
+                    ShortcutRecorder(keyCode: $relayPasteKeyCode, modifiers: $relayPasteModifiers)
+                        .frame(width: 140, height: 24)
+                        .disabled(relayManager.isActive && !relayManager.isPaused)
+                }
+                Text(relayManager.isActive && !relayManager.isPaused
+                    ? L10n.tr("relay.settings.pauseToChange")
+                    : L10n.tr("relay.settings.pasteKeyNote"))
+                    .font(.callout)
+                    .foregroundStyle(.tertiary)
 
                 Toggle(L10n.tr("settings.doubleTap"), isOn: $doubleTapEnabled)
                     .onChange(of: doubleTapEnabled) {
@@ -885,64 +900,6 @@ struct OCRSettingsSection: View {
                     .foregroundStyle(.tertiary)
             }
         }
-    }
-}
-
-// MARK: - Relay Tab
-
-struct RelayTab: View {
-    @AppStorage("relayPasteKeyCode") private var relayPasteKeyCode = 0x09
-    @AppStorage("relayPasteModifiers") private var relayPasteModifiers = controlKey
-    @AppStorage("relayAlertDismissed") private var relayAlertDismissed = false
-
-    private var pasteShortcut: String {
-        shortcutDisplayString(keyCode: relayPasteKeyCode, modifiers: relayPasteModifiers)
-    }
-
-    var body: some View {
-        Form {
-            Section {
-                Text(L10n.tr("relay.settings.description"))
-                    .font(.system(size: 12))
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-
-            Section(L10n.tr("relay.settings.shortcuts")) {
-                HStack {
-                    Text(L10n.tr("relay.settings.pasteKey"))
-                    Spacer()
-                    ShortcutRecorder(keyCode: $relayPasteKeyCode, modifiers: $relayPasteModifiers)
-                        .frame(width: 140, height: 24)
-                        .disabled(RelayManager.shared.isActive && !RelayManager.shared.isPaused)
-                }
-                Text(RelayManager.shared.isActive && !RelayManager.shared.isPaused
-                    ? L10n.tr("relay.settings.pauseToChange")
-                    : L10n.tr("relay.settings.pasteKeyNote"))
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-
-            Section(L10n.tr("relay.settings.operations")) {
-                HStack {
-                    Text(L10n.tr("relay.settings.op.paste"))
-                    Spacer()
-                    Text(pasteShortcut)
-                        .foregroundStyle(.secondary)
-                        .font(.system(.body, design: .monospaced))
-                }
-            }
-
-            Section {
-                if relayAlertDismissed {
-                    Button(L10n.tr("relay.settings.resetAlert")) {
-                        relayAlertDismissed = false
-                    }
-                }
-            }
-        }
-        .formStyle(.grouped)
-        .scrollDisabled(true)
     }
 }
 

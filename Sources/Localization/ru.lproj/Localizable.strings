@@ -588,7 +588,6 @@
 "relay.alert.dontShowAgain" = "Больше не показывать";
 "relay.settings.pasteKey" = "Горячая клавиша вставки";
 "relay.settings.pasteKeyNote" = "Некоторые приложения (Терминал, Emacs) могут использовать ту же клавишу.";
-"relay.settings.resetAlert" = "Показать подсказку снова";
 "relay.settings.plainText" = "Вставить как обычный текст";
 "relay.settings.plainText.desc" = "Удалить форматирование";
 "relay.settings.allowRepeatCopy" = "Разрешить повторы";
@@ -614,12 +613,6 @@
 "relay.settings.postPasteKey.left" = "Влево";
 "relay.settings.postPasteKey.right" = "Вправо";
 "relay.settings.postPasteKey.space" = "Пробел";
-"relay.settings.description" = "Режим эстафеты позволяет копировать несколько элементов и вставлять их по одному. Идеально для копирования списка имён и построчной вставки в Excel.";
-"relay.settings.shortcuts" = "Горячие клавиши";
-"relay.settings.operations" = "Операции";
-"relay.settings.op.paste" = "Вставить следующий";
-"relay.settings.op.skip" = "Пропустить текущий";
-"relay.settings.op.previous" = "Вернуться к предыдущему";
 "relay.settings.pauseToChange" = "Приостановите или выйдите из режима эстафеты для изменения клавиши.";
 "onboarding.relay.title" = "Режим Эстафеты";
 "onboarding.relay.desc" = "Скопируйте несколько элементов и вставляйте их по одному — идеально для массового ввода данных.";
@@ -696,7 +689,6 @@
 "cmd.automation" = "Автоматизация";
 
 /* Missing Keys - Relay */
-"relay.tab" = "Эстафета";
 
 /* Missing Keys - Automation Manager Window */
 "automation.window.title" = "Правила автоматизации";

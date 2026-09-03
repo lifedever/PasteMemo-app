@@ -588,7 +588,6 @@ Gunakan %@ untuk menempel satu per satu.";
 "relay.alert.dontShowAgain" = "Jangan tampilkan lagi";
 "relay.settings.pasteKey" = "Pintasan tempel relay";
 "relay.settings.pasteKeyNote" = "Beberapa aplikasi (Terminal, Emacs) mungkin menggunakan pintasan yang sama.";
-"relay.settings.resetAlert" = "Tampilkan tip aktivasi lagi";
 "relay.settings.plainText" = "Tempel sebagai Teks Polos";
 "relay.settings.plainText.desc" = "Hapus format rich text";
 "relay.settings.allowRepeatCopy" = "Izinkan duplikat";
@@ -614,12 +613,6 @@ Gunakan %@ untuk menempel satu per satu.";
 "relay.settings.postPasteKey.left" = "Kiri";
 "relay.settings.postPasteKey.right" = "Kanan";
 "relay.settings.postPasteKey.space" = "Space";
-"relay.settings.description" = "Mode relay memungkinkan Anda menyalin beberapa item dan menempelkannya satu per satu. Ideal untuk menyalin daftar nama dari halaman web dan menempelkannya baris per baris di Excel.";
-"relay.settings.shortcuts" = "Pintasan";
-"relay.settings.operations" = "Operasi";
-"relay.settings.op.paste" = "Tempel item berikutnya";
-"relay.settings.op.skip" = "Lewati item saat ini";
-"relay.settings.op.previous" = "Kembali ke sebelumnya";
 "relay.settings.pauseToChange" = "Jeda atau keluar dari mode relay untuk mengubah pintasan.";
 "onboarding.relay.title" = "Mode Relay";
 "onboarding.relay.desc" = "Salin beberapa item, lalu tempel satu per satu secara berurutan — cocok untuk entri data massal.";
@@ -696,7 +689,6 @@ Gunakan %@ untuk menempel satu per satu.";
 "cmd.automation" = "Otomatisasi";
 
 /* Missing Keys - Relay */
-"relay.tab" = "Relay";
 
 /* Missing Keys - Automation Manager Window */
 "automation.window.title" = "Aturan Otomatisasi";
