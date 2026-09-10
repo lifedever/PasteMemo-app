@@ -160,6 +160,8 @@
 "settings.quickPanelSecondaryRow" = "Unter der Schnellpanel-Suche anzeigen";
 "settings.quickPanelSecondaryRow.types" = "Typen";
 "settings.quickPanelSecondaryRow.groups" = "Gruppen";
+"settings.quickPanelTabTypes" = "Kategorien in der Tab-Leiste";
+"settings.quickPanelTabTypes.hint" = "Deaktivieren, um eine Kategorie in der Schnellansicht-Tableiste auszublenden. Die Seitenleiste des Hauptfensters bleibt unverändert.";
 "settings.history" = "Verlauf";
 "settings.retentionDays" = "Verlauf behalten";
 "settings.retentionDays.forever" = "Für immer";

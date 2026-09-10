@@ -142,6 +142,8 @@
 "settings.quickPanelSecondaryRow" = "Show below Quick Panel search";
 "settings.quickPanelSecondaryRow.types" = "Types";
 "settings.quickPanelSecondaryRow.groups" = "Groups";
+"settings.quickPanelTabTypes" = "Tab bar categories";
+"settings.quickPanelTabTypes.hint" = "Uncheck to hide a category from the Quick Panel tab bar. The main window sidebar is unaffected.";
 "settings.history" = "History";
 "settings.retentionDays" = "Keep History";
 "settings.retentionDays.forever" = "Forever";

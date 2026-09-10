@@ -131,6 +131,8 @@
 "settings.quickPanelSecondaryRow" = "快捷面板搜尋框下方顯示";
 "settings.quickPanelSecondaryRow.types" = "類型";
 "settings.quickPanelSecondaryRow.groups" = "分組";
+"settings.quickPanelTabTypes" = "標籤列顯示的分類";
+"settings.quickPanelTabTypes.hint" = "取消勾選可在快捷面板隱藏該分類，主視窗側邊欄不受影響。";
 "settings.history" = "歷史記錄";
 "settings.retentionDays" = "保留時長";
 "settings.retentionDays.forever" = "永久";

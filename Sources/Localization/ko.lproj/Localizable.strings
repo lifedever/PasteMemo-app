@@ -160,6 +160,8 @@
 "settings.quickPanelSecondaryRow" = "빠른 패널 검색 아래에 표시";
 "settings.quickPanelSecondaryRow.types" = "유형";
 "settings.quickPanelSecondaryRow.groups" = "그룹";
+"settings.quickPanelTabTypes" = "탭 바에 표시할 분류";
+"settings.quickPanelTabTypes.hint" = "선택을 해제하면 빠른 패널 탭 바에서 숨겨집니다. 메인 창 사이드바에는 영향을 주지 않습니다.";
 "settings.history" = "기록";
 "settings.retentionDays" = "기록 보관";
 "settings.retentionDays.forever" = "영구";

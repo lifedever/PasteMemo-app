@@ -132,6 +132,8 @@
 "settings.quickPanelSecondaryRow" = "Mostra sotto la ricerca del pannello rapido";
 "settings.quickPanelSecondaryRow.types" = "Tipi";
 "settings.quickPanelSecondaryRow.groups" = "Gruppi";
+"settings.quickPanelTabTypes" = "Categorie nella barra schede";
+"settings.quickPanelTabTypes.hint" = "Deseleziona per nascondere una categoria dalla barra schede del pannello rapido. La barra laterale della finestra principale non è interessata.";
 "settings.history" = "Cronologia";
 "settings.retentionDays" = "Conserva cronologia";
 "settings.retentionDays.forever" = "Per sempre";

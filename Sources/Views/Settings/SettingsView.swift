@@ -569,6 +569,7 @@ struct QuickPanelPane: View {
     @AppStorage(QuickPanelSettings.secondaryRowKey) private var quickPanelSecondaryRow = QuickPanelSecondaryRow.types.rawValue
     @AppStorage(QuickPanelSettings.rememberLastFilterKey) private var quickPanelRememberLastFilter = false
     @AppStorage(QuickPanelSettings.imageLayoutKey) private var quickPanelImageLayout = QuickPanelImageLayout.list.rawValue
+    @AppStorage(QuickPanelSettings.hiddenTabTypesKey) private var quickPanelHiddenTabTypes = ""
     @AppStorage(QuickPanelSettings.imageGridDensityKey) private var quickPanelImageGridDensity = QuickPanelImageGridDensity.medium.rawValue
     @AppStorage(QuickPanelPositionSettings.modeKey) private var quickPanelPositionMode = QuickPanelPositionMode.screenCenter.rawValue
     @AppStorage(QuickPanelPositionSettings.screenTargetKey) private var quickPanelScreenTarget = QuickPanelScreenTarget.active.rawValue
@@ -660,6 +661,23 @@ struct QuickPanelPane: View {
                     .menuStyle(.borderlessButton)
                     .fixedSize()
                 }
+
+            }
+
+            // 独立 Section 而不是 DisclosureGroup：后者把十几个 Toggle 挤成一坨、
+            // 行高和缩进都跟其它设置项对不齐。Section 的 header/footer 是 Form 的
+            // 标准结构，跟这一页其它分节自然一致。
+            Section {
+                ForEach(ClipContentType.visibleCases, id: \.self) { type in
+                    Toggle(isOn: tabTypeVisibleBinding(type)) {
+                        Label(type.label, systemImage: type.icon)
+                    }
+                    .padding(.vertical, 2)
+                }
+            } header: {
+                Text(L10n.tr("settings.quickPanelTabTypes"))
+            } footer: {
+                Text(L10n.tr("settings.quickPanelTabTypes.hint"))
             }
 
             Section(L10n.tr("settings.behavior")) {
@@ -707,6 +725,30 @@ struct QuickPanelPane: View {
                 return "\(L10n.tr(QuickPanelPositionMode.screenCenter.titleKey)) (\(screenName))"
             }
         }
+    }
+
+    /// 存的是「隐藏集合」而不是「显示集合」：这样新增内容类型时默认可见，
+    /// 老用户的配置不会把它挡在外面（同 typeOrder 里 missing 自动追加的取舍）。
+    private func tabTypeVisibleBinding(_ type: ClipContentType) -> Binding<Bool> {
+        Binding(
+            get: {
+                let hidden = quickPanelHiddenTabTypes.split(separator: ",").map(String.init)
+                return !hidden.contains(type.rawValue)
+            },
+            set: { visible in
+                var hidden = Set(quickPanelHiddenTabTypes.split(separator: ",").map(String.init))
+                if visible {
+                    hidden.remove(type.rawValue)
+                } else {
+                    hidden.insert(type.rawValue)
+                }
+                // 按 visibleCases 的顺序落盘，便于人肉核对 defaults
+                quickPanelHiddenTabTypes = ClipContentType.visibleCases
+                    .map(\.rawValue)
+                    .filter { hidden.contains($0) }
+                    .joined(separator: ",")
+            }
+        )
     }
 
     @ViewBuilder

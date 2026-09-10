@@ -132,6 +132,8 @@
 "settings.quickPanelSecondaryRow" = "Показывать под поиском быстрой панели";
 "settings.quickPanelSecondaryRow.types" = "Типы";
 "settings.quickPanelSecondaryRow.groups" = "Группы";
+"settings.quickPanelTabTypes" = "Категории на панели вкладок";
+"settings.quickPanelTabTypes.hint" = "Снимите флажок, чтобы скрыть категорию на панели вкладок быстрой панели. Боковая панель главного окна не затрагивается.";
 "settings.history" = "История";
 "settings.retentionDays" = "Хранить историю";
 "settings.retentionDays.forever" = "Навсегда";

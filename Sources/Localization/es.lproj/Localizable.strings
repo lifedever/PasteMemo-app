@@ -160,6 +160,8 @@
 "settings.quickPanelSecondaryRow" = "Mostrar debajo de la búsqueda del panel rápido";
 "settings.quickPanelSecondaryRow.types" = "Tipos";
 "settings.quickPanelSecondaryRow.groups" = "Grupos";
+"settings.quickPanelTabTypes" = "Categorías de la barra de pestañas";
+"settings.quickPanelTabTypes.hint" = "Desmarca para ocultar una categoría en la barra de pestañas del panel rápido. La barra lateral de la ventana principal no se ve afectada.";
 "settings.history" = "Historial";
 "settings.retentionDays" = "Conservar historial";
 "settings.retentionDays.forever" = "Para siempre";

@@ -142,6 +142,7 @@ struct QuickPanelView: View {
     @AppStorage(QuickPanelSettings.rememberLastFilterKey) private var rememberLastFilter = false
     @AppStorage(QuickPanelSettings.lastFilterKey) private var lastFilterStorage = "all"
     @AppStorage(QuickPanelSettings.imageLayoutKey) private var imageLayoutRaw = QuickPanelImageLayout.list.rawValue
+    @AppStorage(QuickPanelSettings.hiddenTabTypesKey) private var hiddenTabTypesRaw = ""
     @AppStorage(QuickPanelSettings.imageGridDensityKey) private var imageGridDensityRaw = QuickPanelImageGridDensity.medium.rawValue
 
     private var secondaryRow: QuickPanelSecondaryRow {
@@ -1925,7 +1926,13 @@ struct QuickPanelView: View {
         22: 6, 26: 7, 28: 8, 25: 9,
     ]
 
-    private var availableContentTypes: [ClipContentType] { store.availableTypes }
+    /// 标签栏里实际显示的类型：在「有内容 + 有权限」的基础上，再去掉用户在设置里
+    /// 隐藏的。用 @AppStorage 读是为了配置一改标签栏立刻重算，不用另铺通知。
+    private var availableContentTypes: [ClipContentType] {
+        guard !hiddenTabTypesRaw.isEmpty else { return store.availableTypes }
+        let hidden = Set(hiddenTabTypesRaw.split(separator: ",").map(String.init))
+        return store.availableTypes.filter { !hidden.contains($0.rawValue) }
+    }
 
     private func switchType(_ delta: Int) {
         if secondaryRow == .types {

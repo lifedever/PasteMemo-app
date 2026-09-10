@@ -160,6 +160,8 @@
 "settings.quickPanelSecondaryRow" = "Afficher sous la recherche du panneau rapide";
 "settings.quickPanelSecondaryRow.types" = "Types";
 "settings.quickPanelSecondaryRow.groups" = "Groupes";
+"settings.quickPanelTabTypes" = "Catégories de la barre d’onglets";
+"settings.quickPanelTabTypes.hint" = "Décochez pour masquer une catégorie dans la barre d’onglets du panneau rapide. La barre latérale de la fenêtre principale n’est pas affectée.";
 "settings.history" = "Historique";
 "settings.retentionDays" = "Conserver l'historique";
 "settings.retentionDays.forever" = "Toujours";
