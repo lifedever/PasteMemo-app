@@ -16,6 +16,21 @@ private let DEFAULT_WIDTH: CGFloat = 750
 private let DEFAULT_HEIGHT: CGFloat = 510
 private let MIN_WIDTH: CGFloat = 360
 private let MIN_HEIGHT: CGFloat = 420
+private let PANEL_CORNER_RADIUS: CGFloat = 16
+
+/// Liquid Glass 面板那层亮度锁定底色的不透明度。玻璃从剩下的 (1 - a) 里透出色调
+/// 和边缘特征——调低更通透，但外观与背后内容明暗错配时列表文字会开始发灰（这正是
+/// ed71b8b 回退掉的那种糊）。改这个值前先在浅色外观叠深色终端的组合上验一遍。
+private let GLASS_CONTRAST_ALPHA: CGFloat = 0.5
+
+/// 把对比层底色朝黑压一档，两种外观都要压、系数不同。注意光降 GLASS_CONTRAST_ALPHA
+/// 治不了发白——那只是让背后内容透得更多，背后是白的结果还是白。
+///
+/// 浅色：windowBackgroundColor 本身接近白，面板叠在浅色内容前会整个发白。
+/// 深色：windowBackgroundColor 停在中灰（约 #323232），浮起元素（tab 滑块、底栏
+/// 胶囊）跟它拉不开明度差，整片糊在一起；压到接近 #262626 后层次才出来。
+private let GLASS_LIGHT_DARKEN: CGFloat = 0.10
+private let GLASS_DARK_DARKEN: CGFloat = 0.25
 
 /// Below this width the preview pane is hidden and the list fills the full width.
 let QUICK_PANEL_PREVIEW_BREAKPOINT: CGFloat = 620
@@ -49,6 +64,24 @@ private class KeyablePanel: NSPanel {
         clamped.size.width = max(clamped.size.width, minSize.width)
         clamped.size.height = max(clamped.size.height, minSize.height)
         super.setFrame(clamped, display: flag)
+    }
+}
+
+/// Liquid Glass 面板的亮度锁定层：铺在 NSGlassEffectView 之上、内容之下，用标准
+/// alpha 合成把面板底色钉在 windowBackgroundColor 附近，使其跟随外观而非背后内容。
+/// 走 updateLayer 而不是一次性写 layer.backgroundColor —— CGColor 是解析过的静态
+/// 颜色，不会自己跟随深浅色切换，直接设一次会把面板永久留在切换前的底色上。
+private class GlassContrastView: NSView {
+    override var wantsUpdateLayer: Bool { true }
+
+    override func updateLayer() {
+        effectiveAppearance.performAsCurrentDrawingAppearance {
+            let isDark = effectiveAppearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua
+            let base = NSColor.windowBackgroundColor
+            let darken = isDark ? GLASS_DARK_DARKEN : GLASS_LIGHT_DARKEN
+            let tuned = base.blended(withFraction: darken, of: .black) ?? base
+            layer?.backgroundColor = tuned.withAlphaComponent(GLASS_CONTRAST_ALPHA).cgColor
+        }
     }
 }
 
@@ -402,30 +435,67 @@ final class QuickPanelWindowController {
         let hostingView = hosting.view
         hostingView.translatesAutoresizingMaskIntoConstraints = false
 
-        // Raycast 同款方案：外观锁定的系统材质（浅色外观=浅底、深色=深底，亮度
-        // 不随背后内容漂移），而非 NSGlassEffectView——玻璃的最终亮度由背后内容
-        // 主导且 tintColor 压不住（探针实锤：浅色外观叠黑背景，tint 1.0 仍是中灰，
-        // 黑字直接糊掉），大面积文字面板在外观与背景明暗错配时必然发灰。Liquid
-        // Glass 只用在系统原生支持的场景（设置窗口侧边栏、popover 材质背景）。
-        let container = NSView(frame: NSRect(x: 0, y: 0, width: panelWidth, height: panelHeight))
-        container.wantsLayer = true
-        container.layer?.cornerRadius = 16
-        container.layer?.masksToBounds = true
+        // macOS 26 走 Liquid Glass，但玻璃只负责边缘折射/高光/形态，亮度另有一层
+        // 锁死。166c650 那版把 hostingView 直接设成 glass.contentView，亮度全靠
+        // tintColor——而 tint 是「染色」（跟背景混合、保留背景亮度），不是 alpha
+        // 合成，所以探针里 tint 1.0 叠黑背景仍是中灰、黑字糊掉，ed71b8b 才整体回退。
+        // 这里改成 glass 在下、GlassContrastView 在上的分层：contrast 层是标准
+        // alpha 合成（result = a*windowBackground + (1-a)*glass），亮度可预测且
+        // 跟随外观而非背后内容，玻璃则从剩下的 (1-a) 里透出色调与边缘特征。
+        let panelFrame = NSRect(x: 0, y: 0, width: panelWidth, height: panelHeight)
+        let container: NSView
+        if #available(macOS 26.0, *) {
+            // 对比层做玻璃的「兄弟」而不是 glass.contentView：兄弟层是普通 alpha
+            // 合成（result = a*windowBackground + (1-a)*玻璃），亮度可预测、跟随
+            // 外观而非背后内容，这正是 ed71b8b 里 tintColor 给不了的东西——tint 是
+            // 染色，保留背景亮度，所以 tint 1.0 叠黑背景仍是中灰。
+            // （contentView 路径是否也能承载纯色底未验证；兄弟结构语义更直白，
+            // 且不依赖 NSGlassEffectView 对 contentView 的内部合成行为。）
+            let glassHost = NSView(frame: panelFrame)
+            glassHost.wantsLayer = true
+            glassHost.layer?.cornerRadius = PANEL_CORNER_RADIUS
+            glassHost.layer?.masksToBounds = true
 
-        let visualEffect = NSVisualEffectView(frame: container.bounds)
-        visualEffect.material = .headerView
-        visualEffect.blendingMode = .behindWindow
-        visualEffect.state = .active
-        visualEffect.autoresizingMask = [.width, .height]
-        container.addSubview(visualEffect)
+            let glass = NSGlassEffectView(frame: panelFrame)
+            glass.cornerRadius = PANEL_CORNER_RADIUS
+            glass.autoresizingMask = [.width, .height]
+            glassHost.addSubview(glass)
 
-        container.addSubview(hostingView)
-        NSLayoutConstraint.activate([
-            hostingView.topAnchor.constraint(equalTo: container.topAnchor),
-            hostingView.bottomAnchor.constraint(equalTo: container.bottomAnchor),
-            hostingView.leadingAnchor.constraint(equalTo: container.leadingAnchor),
-            hostingView.trailingAnchor.constraint(equalTo: container.trailingAnchor),
-        ])
+            let backdrop = GlassContrastView(frame: panelFrame)
+            backdrop.wantsLayer = true
+            backdrop.autoresizingMask = [.width, .height]
+            glassHost.addSubview(backdrop)
+
+            glassHost.addSubview(hostingView)
+            NSLayoutConstraint.activate([
+                hostingView.topAnchor.constraint(equalTo: glassHost.topAnchor),
+                hostingView.bottomAnchor.constraint(equalTo: glassHost.bottomAnchor),
+                hostingView.leadingAnchor.constraint(equalTo: glassHost.leadingAnchor),
+                hostingView.trailingAnchor.constraint(equalTo: glassHost.trailingAnchor),
+            ])
+            container = glassHost
+        } else {
+            let legacy = NSView(frame: panelFrame)
+            legacy.wantsLayer = true
+            legacy.layer?.cornerRadius = PANEL_CORNER_RADIUS
+            legacy.layer?.masksToBounds = true
+
+            let visualEffect = NSVisualEffectView(frame: legacy.bounds)
+            visualEffect.material = .headerView
+            visualEffect.blendingMode = .behindWindow
+            visualEffect.state = .active
+            visualEffect.autoresizingMask = [.width, .height]
+            legacy.addSubview(visualEffect)
+
+            legacy.addSubview(hostingView)
+            NSLayoutConstraint.activate([
+                hostingView.topAnchor.constraint(equalTo: legacy.topAnchor),
+                hostingView.bottomAnchor.constraint(equalTo: legacy.bottomAnchor),
+                hostingView.leadingAnchor.constraint(equalTo: legacy.leadingAnchor),
+                hostingView.trailingAnchor.constraint(equalTo: legacy.trailingAnchor),
+            ])
+            container = legacy
+        }
         container.layoutSubtreeIfNeeded()
 
         panel.contentView = container

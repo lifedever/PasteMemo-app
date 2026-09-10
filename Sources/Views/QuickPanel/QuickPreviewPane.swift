@@ -105,8 +105,8 @@ struct QuickPreviewPane: View {
                     quickContentArea
                 }
             }
-            .background(Color.primary.opacity(0.04))
-
+            // 不铺底色：面板整体是一块 Liquid Glass，这里再压一层 4% 暗色会让预览区
+            // 比搜索框/标签区暗一档，看着像两块拼起来的背景。
             Divider().opacity(0.3)
 
             propertiesSection
