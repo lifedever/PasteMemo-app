@@ -76,6 +76,11 @@ struct QuickPanelView: View {
     @State private var userTypedSlash = false
     @State private var selectedItemIDs: Set<PersistentIdentifier> = []
     @State private var selectedFilter: QuickFilter = .all
+    /// 筛选标签玻璃的命名空间：选中块靠它在标签之间 morph。
+    @Namespace private var tabGlassNS
+    /// 选中滑块的 tint 要按外观反向取：深色提亮、浅色压暗，才能从同为 .regular
+    /// 的容器里分出来。
+    @Environment(\.colorScheme) private var colorScheme
     @State private var keyMonitor: Any?
     @State private var flagsMonitor: Any?
     @FocusState private var isSearchFocused: Bool
@@ -301,7 +306,6 @@ struct QuickPanelView: View {
                     }
                 }
             }
-            Divider().opacity(0.3)
             footerBar
         }
         .frame(minWidth: 360, minHeight: 420)
@@ -861,80 +865,126 @@ struct QuickPanelView: View {
 
     // MARK: - Tabs
 
+    @ViewBuilder
     private var tabBar: some View {
-        // ScrollViewReader + onChange：窄窗口下标签溢出时，无论切换来源
-        // （Tab 键、方向键、鼠标点击、`/` 命令）都让选中标签滚入可见区。
-        ScrollViewReader { proxy in
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 6) {
-                    badge(L10n.tr("filter.pinned"), isActive: selectedFilter == .pinned) {
-                        selectedFilter = selectedFilter == .pinned ? .all : .pinned
-                        isSearchFocused = true
-                    }
-                    .id(QuickFilter.pinned)
-                    badge(L10n.tr("filter.all"), isActive: selectedFilter == .all) {
-                        selectedFilter = .all
-                        isSearchFocused = true
-                    }
-                    .id(QuickFilter.all)
-                    if secondaryRow == .types {
-                        ForEach(availableContentTypes, id: \.self) { type in
-                            badge(type.label, isActive: selectedFilter == .type(type)) {
-                                selectedFilter = selectedFilter == .type(type) ? .all : .type(type)
-                                isSearchFocused = true
+        // macOS 26 用 Liquid Glass 的自定义控件 API。注意：`.pickerStyle(.segmented)`
+        // 在这里**不会**自动变成 Liquid Glass——系统只对它自己拥有的容器（toolbar /
+        // sidebar / sheet）自动升级，而快捷面板是 borderless panel、没有 toolbar，
+        // 内容区里的原生分段控件拿到的仍是老的扁平样式。
+        if #available(macOS 26.0, *) {
+            // ScrollViewReader + onChange：窄窗口下标签溢出时，无论切换来源
+            // （Tab 键、方向键、鼠标点击、`/` 命令）都让选中标签滚入可见区。
+            ScrollViewReader { proxy in
+                ScrollView(.horizontal, showsIndicators: false) {
+                    GlassEffectContainer(spacing: 6) {
+                        HStack(spacing: 2) {
+                            ForEach(filterItems, id: \.filter) { item in
+                                glassTab(item.label, filter: item.filter)
+                                    .id(item.filter)
                             }
-                            .id(QuickFilter.type(type))
                         }
-                    } else {
-                        ForEach(availableGroupsForTab, id: \.name) { group in
-                            badge(group.name, isActive: selectedFilter == .group(group.name)) {
-                                selectedFilter = selectedFilter == .group(group.name) ? .all : .group(group.name)
-                                isSearchFocused = true
-                            }
-                            .id(QuickFilter.group(group.name))
-                        }
+                        .padding(3)
+                        // 整排再套一层玻璃做容器：未选中项是 .identity（不渲染玻璃），
+                        // 少了这层整排就只剩文字浮在面板上、跟背景糊成一片。两层玻璃都在
+                        // 同一个 GlassEffectContainer 里，系统会正确处理嵌套与融合。
+                        // 和底栏胶囊统一用 .regular，否则两处玻璃档位不同、深色下
+                        // 一眼能看出色差。滑块靠 tint 跟容器拉开，不靠降容器档位。
+                        .glassEffect(.regular, in: .capsule)
                     }
-                    if store.sidebarCounts.aiAgent > 0 {
-                        badge(L10n.tr("filter.aiAgent"), isActive: selectedFilter == .aiAgent) {
-                            selectedFilter = selectedFilter == .aiAgent ? .all : .aiAgent
-                            isSearchFocused = true
-                        }
-                        .id(QuickFilter.aiAgent)
+                    .padding(.horizontal, 18)
+                    .padding(.bottom, 8)
+                    // 放得下时撑到可视宽度并居中；放不下时 minWidth 不起作用，
+                    // 内容保持实际宽度、恢复可滚动。少了这句就永远贴左，右边空一片。
+                    .frame(minWidth: layoutState.width, alignment: .center)
+                }
+                .onChange(of: selectedFilter) {
+                    withAnimation(.easeOut(duration: 0.15)) {
+                        proxy.scrollTo(selectedFilter, anchor: nil)
                     }
                 }
-                .padding(.horizontal, 18)
-                .padding(.bottom, 8)
-            }
-            .onChange(of: selectedFilter) {
-                withAnimation(.easeOut(duration: 0.15)) {
+                .onAppear {
+                    // 面板重开恢复上次筛选时，选中标签可能已在可视区外，进场先对齐一次
                     proxy.scrollTo(selectedFilter, anchor: nil)
                 }
             }
-            .onAppear {
-                // 面板重开恢复上次筛选时，选中标签可能已在可视区外，进场先对齐一次
-                proxy.scrollTo(selectedFilter, anchor: nil)
+        } else {
+            Picker(L10n.tr("filter.types"), selection: $selectedFilter) {
+                ForEach(filterItems, id: \.filter) { item in
+                    Text(item.label).tag(item.filter)
+                }
             }
+            .pickerStyle(.segmented)
+            .labelsHidden()
+            .padding(.horizontal, 18)
+            .padding(.bottom, 8)
         }
+    }
+
+    /// 单个筛选标签。只有选中项挂 `.glassEffect`，配合 `.glassEffectID` 让那块玻璃
+    /// 在切换时于两个标签之间 liquid morph——形变和折射都是系统算的，这里只声明
+    /// 形状和归属。未选中项不挂玻璃，整排才不会变成 14 颗胶囊。
+    @available(macOS 26.0, *)
+    @ViewBuilder
+    private func glassTab(_ label: String, filter: QuickFilter) -> some View {
+        let isActive = selectedFilter == filter
+        Button {
+            withAnimation(.snappy(duration: 0.28)) {
+                selectedFilter = isActive ? .all : filter
+                isSearchFocused = true
+            }
+        } label: {
+            Text(label)
+                .font(.system(size: 11, weight: isActive ? .medium : .regular))
+                .foregroundStyle(isActive ? Color.primary : Color(nsColor: .secondaryLabelColor))
+                .padding(.horizontal, 12)
+                .padding(.vertical, 5)
+                // .plain 的 hit test 只覆盖 label 的不透明内容，Text 的 padding 是
+                // 透明的——不补这句就只有文字本身可点，边上一圈全是死区。
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        // 未选中必须是 .identity（完全不应用玻璃），不能是 .clear——.clear 是
+        // 「清玻璃」，照样渲染，写成它等于 14 个标签每个都在渲染玻璃。
+        // .interactive() 让选中那块玻璃跟着按压形变，是 Liquid Glass 的手感来源。
+        // tint 按外观反向取：容器和滑块同为 .regular，不加 tint 在深色下会被渲染成
+        // 相近亮度、滑块直接消失在容器里。
+        .glassEffect(
+            isActive
+                ? .regular.tint(sliderTint).interactive()
+                : .identity,
+            in: .capsule
+        )
+        .glassEffectID(filter, in: tabGlassNS)
     }
 
     private var availableGroupsForTab: [(name: String, icon: String, count: Int, preservesItems: Bool)] {
         store.sidebarCounts.byGroup.filter { $0.count > 0 }
     }
 
-    private func badge(_ label: String, isActive: Bool, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Text(label)
-                .font(.system(size: 11, weight: isActive ? .medium : .regular))
-                .padding(.horizontal, 10)
-                .padding(.vertical, 4)
-                .foregroundStyle(isActive ? .white : Color(nsColor: .secondaryLabelColor))
-                .background(
-                    isActive ? Color.accentColor : Color.primary.opacity(0.06),
-                    in: Capsule()
-                )
-        }
-        .buttonStyle(.plain)
+    /// 选中滑块相对容器的提亮/压暗量。深色外观往白走、浅色外观往黑走——两边都是
+    /// 「离容器更远一档」，所以同一个 .regular 容器上滑块都能显出来。
+    private var sliderTint: Color {
+        colorScheme == .dark ? Color.white.opacity(0.14) : Color.black.opacity(0.07)
     }
+
+    /// tabBar 的全部分段项，按显示顺序拍平成一个数组。分隔线要判断相邻关系
+    /// （选中项两侧不画线），散成 5 个独立调用点就拿不到「下一项是谁」。
+    private var filterItems: [(filter: QuickFilter, label: String)] {
+        var items: [(filter: QuickFilter, label: String)] = [
+            (.pinned, L10n.tr("filter.pinned")),
+            (.all, L10n.tr("filter.all")),
+        ]
+        if secondaryRow == .types {
+            items += availableContentTypes.map { (QuickFilter.type($0), $0.label) }
+        } else {
+            items += availableGroupsForTab.map { (QuickFilter.group($0.name), $0.name) }
+        }
+        if store.sidebarCounts.aiAgent > 0 {
+            items.append((.aiAgent, L10n.tr("filter.aiAgent")))
+        }
+        return items
+    }
+
 
     // MARK: - List
 
@@ -1102,8 +1152,59 @@ struct QuickPanelView: View {
 
     // MARK: - Footer
 
+    /// 底栏动作组的浮起胶囊，直接落在面板玻璃上（底栏本身没有背景条和分隔线）。
+    /// 刻意用「跟随外观的实底 + 强阴影」而不是 glassEffect：玻璃取周围颜色，在
+    /// 浅色玻璃面板上会跟底色糊成一片、完全立不起来。controlBackgroundColor 比
+    /// windowBackgroundColor 亮一档，浅色下接近纯白、深色下是深灰，两种外观都能
+    /// 从面板里浮出来。
+    /// 胶囊内图标按钮的 hover 高亮。刻意只给真正可点的按钮加——footerKey 是纯
+    /// 展示的键位提示，给它加 hover 态会让用户以为能点。
+    private struct HoverHighlight: ViewModifier {
+        @State private var isHovering = false
+
+        func body(content: Content) -> some View {
+            content
+                .background(
+                    RoundedRectangle(cornerRadius: 6)
+                        .fill(Color.primary.opacity(isHovering ? 0.09 : 0))
+                )
+                .animation(.easeOut(duration: 0.12), value: isHovering)
+                .onHover { isHovering = $0 }
+        }
+    }
+
+    /// 玻璃表面。macOS 26 用官方 `.glassEffect()`，旧系统降级到 material + 描边。
+    /// 刻意不再手绘「实底 + 阴影」去模拟玻璃——那套只是长得像，系统一升级就漂移，
+    /// 深浅色和外观切换还全得自己维护。
+    private struct GlassSurface<S: Shape>: ViewModifier {
+        let shape: S
+
+        func body(content: Content) -> some View {
+            if #available(macOS 26.0, *) {
+                content.glassEffect(.regular, in: shape)
+            } else {
+                content
+                    .background(.regularMaterial, in: shape)
+                    .overlay(shape.stroke(.separator, lineWidth: 0.5))
+            }
+        }
+    }
+
+    /// 把 footer 里所有玻璃元素装进同一个 `GlassEffectContainer`。官方要求多个玻璃
+    /// 元素共享容器才会正确融合——靠近时 liquid 合并、展开/收起时 morph。之前裸用
+    /// `.glassEffect()` 觉得「立不起来」，缺的就是这一层，不是该退回手绘实底。
+    private struct FooterGlassContainer: ViewModifier {
+        func body(content: Content) -> some View {
+            if #available(macOS 26.0, *) {
+                GlassEffectContainer(spacing: 12) { content }
+            } else {
+                content
+            }
+        }
+    }
+
     private var footerBar: some View {
-        VStack(spacing: 0) {
+        VStack(spacing: 8) {
             // Expandable shortcuts panel
             if showAllShortcuts {
                 WrappingHStack(spacing: 12, lineSpacing: 6, alignment: .trailing) {
@@ -1122,10 +1223,14 @@ struct QuickPanelView: View {
                     }
                     footerKey("⌘⌫", L10n.tr("quick.delete"))
                 }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 6)
-                .frame(maxWidth: .infinity)
-                .background(Color.primary.opacity(0.02))
+                // frame 放在玻璃之后：WrappingHStack 本来就会收到 VStack 传下来的
+                // 可用宽度提案、该换行时自然换行，这里再套 maxWidth: .infinity 只会
+                // 强制它通栏，玻璃跟着铺满、和下面贴合内容的主胶囊左右对不齐。
+                // 先让玻璃贴合内容，最后整体推到右边，两块玻璃右边缘才成一组。
+                .padding(.horizontal, 14)
+                .padding(.vertical, 8)
+                .modifier(GlassSurface(shape: RoundedRectangle(cornerRadius: 18)))
+                .frame(maxWidth: .infinity, alignment: .trailing)
             }
 
             // Main footer bar
@@ -1152,67 +1257,77 @@ struct QuickPanelView: View {
                         .foregroundStyle(.quaternary)
                 }
                 Spacer()
-                HStack(spacing: 12) {
-                    let compact = !layoutState.shouldShowPreview
-                    if isMultiSelected {
-                        footerKey("↵", quickPanelAutoPaste ? (isTargetFinder ? L10n.tr("quick.saveToFolder") : L10n.tr("quick.batchPaste")) : L10n.tr("action.copy"))
-                        if !compact, quickPanelAutoPaste, !isTargetFinder {
-                            footerKey("⇧↵", L10n.tr("quick.pasteNewLine"))
-                        }
-                        if !compact {
-                            footerKey("⌘↵", quickPanelAutoPaste ? L10n.tr("action.pasteAsPlainText") : L10n.tr("cmd.copyAsPlainText"))
-                        }
-                    } else {
-                        if let cur = currentItem {
-                            footerKey("↵", primaryFooterLabel(for: cur))
-                            if !compact, quickPanelAutoPaste {
-                                if !(cur.pasteableImageData != nil && canPasteToFinderFolder), !canSaveTextToFolder {
-                                    footerKey("⇧↵", L10n.tr("quick.pasteNewLine"))
+                HStack(spacing: 10) {
+                    // 底栏动作全部收进一颗玻璃胶囊，直接落在面板玻璃上——底栏本身
+                    // 没有背景条和分隔线。
+                    HStack(spacing: 10) {
+                        let compact = !layoutState.shouldShowPreview
+                        if isMultiSelected {
+                            footerKey("↵", quickPanelAutoPaste ? (isTargetFinder ? L10n.tr("quick.saveToFolder") : L10n.tr("quick.batchPaste")) : L10n.tr("action.copy"))
+                            if !compact, quickPanelAutoPaste, !isTargetFinder {
+                                footerKey("⇧↵", L10n.tr("quick.pasteNewLine"))
+                            }
+                            if !compact {
+                                footerKey("⌘↵", quickPanelAutoPaste ? L10n.tr("action.pasteAsPlainText") : L10n.tr("cmd.copyAsPlainText"))
+                            }
+                        } else {
+                            if let cur = currentItem {
+                                footerKey("↵", primaryFooterLabel(for: cur))
+                                if !compact, quickPanelAutoPaste {
+                                    if !(cur.pasteableImageData != nil && canPasteToFinderFolder), !canSaveTextToFolder {
+                                        footerKey("⇧↵", L10n.tr("quick.pasteNewLine"))
+                                    }
+                                }
+                                if !compact, let cmdEnterLabel = cmdEnterFooterLabel(for: cur) {
+                                    footerKey("⌘↵", cmdEnterLabel)
                                 }
                             }
-                            if !compact, let cmdEnterLabel = cmdEnterFooterLabel(for: cur) {
-                                footerKey("⌘↵", cmdEnterLabel)
+                        }
+                        if !compact, let cur = currentItem, cur.isSensitive, !isMultiSelected {
+                            footerKey("⌥", L10n.tr("sensitive.peek"))
+                        }
+                        if !compact {
+                            footerKey("⌘K", L10n.tr("cmd.title"))
+                        }
+                        footerKey("esc", L10n.tr("quick.close"))
+
+                        Button {
+                            withAnimation(.easeInOut(duration: 0.15)) {
+                                showAllShortcuts.toggle()
                             }
+                        } label: {
+                            Image(systemName: showAllShortcuts ? "keyboard.chevron.compact.down" : "keyboard")
+                                .font(.system(size: 12))
+                                .foregroundStyle(.tertiary)
+                                .frame(width: 22, height: 22)
                         }
-                    }
-                    if !compact, let cur = currentItem, cur.isSensitive, !isMultiSelected {
-                        footerKey("⌥", L10n.tr("sensitive.peek"))
-                    }
-                    if !compact {
-                        footerKey("⌘K", L10n.tr("cmd.title"))
-                    }
-                    footerKey("esc", L10n.tr("quick.close"))
+                        .buttonStyle(.plain)
+                        .modifier(HoverHighlight())
+                        .pointerCursor()
 
-                    Button {
-                        withAnimation(.easeInOut(duration: 0.15)) {
-                            showAllShortcuts.toggle()
+                        Button {
+                            handleDismiss()
+                            AppAction.shared.openSettings?()
+                        } label: {
+                            Image(systemName: "gearshape")
+                                .font(.system(size: 12))
+                                .foregroundStyle(.tertiary)
+                                .frame(width: 22, height: 22)
                         }
-                    } label: {
-                        Image(systemName: showAllShortcuts ? "keyboard.chevron.compact.down" : "keyboard")
-                            .font(.system(size: 12))
-                            .foregroundStyle(.tertiary)
-                            .frame(width: 20, height: 20)
+                        .buttonStyle(.plain)
+                        .modifier(HoverHighlight())
+                        .pointerCursor()
                     }
-                    .buttonStyle(.plain)
-                    .pointerCursor()
-
-                    Button {
-                        handleDismiss()
-                        AppAction.shared.openSettings?()
-                    } label: {
-                        Image(systemName: "gearshape")
-                            .font(.system(size: 12))
-                            .foregroundStyle(.tertiary)
-                            .frame(width: 20, height: 20)
-                    }
-                    .buttonStyle(.plain)
-                    .pointerCursor()
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .modifier(GlassSurface(shape: Capsule()))
                 }
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 10)
-            .background(Color.primary.opacity(0.03))
         }
+        // 水平 padding 提到 VStack 上，展开区和主动作条才会左右对齐
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
+        .modifier(FooterGlassContainer())
     }
 
     private func primaryFooterLabel(for item: ClipItem) -> String {
