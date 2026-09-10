@@ -56,6 +56,34 @@ private enum PillSelection: Equatable {
 private let PANEL_WIDTH: CGFloat = 750
 private let PANEL_HEIGHT: CGFloat = 510
 private let LIST_WIDTH: CGFloat = 340
+/// ⌘K 命令面板浮层宽度。约占面板宽度的 45%，跟 Raycast 的 actions 面板一个比例；
+/// 280 那种窄条撑不住带图标 + 快捷键徽章的两端对齐布局。
+private let PALETTE_WIDTH: CGFloat = 340
+/// 浮层高度上限。放宽到 460 是为了尽量「一屏望全」——动作项十几条时滚动条一出现，
+/// 扫一眼直接按快捷键的用法就废了。仍保留上限是防止面板拖得很高时菜单跟着长满屏。
+private let PALETTE_MAX_HEIGHT: CGFloat = 460
+/// 面板本地坐标系名。列表要把自己的 frame 报到这个空间里，浮层才能算出
+/// 「选中行在面板中的绝对位置」。
+private let PANEL_COORD_SPACE = "quickPanel"
+
+/// 列表区域在面板坐标系中的 frame
+private struct ListFramePreferenceKey: PreferenceKey {
+    static let defaultValue: CGRect = .zero
+    static func reduce(value: inout CGRect, nextValue: () -> CGRect) {
+        let next = nextValue()
+        if next != .zero { value = next }
+    }
+}
+
+/// ⌘K 浮层的实际高度。必须按实测值定位，不能拿 PALETTE_MAX_HEIGHT 当高度——
+/// 那是上限，用它 clamp 会把「选中行靠下」的情况一路推到面板中上部。
+private struct PaletteHeightPreferenceKey: PreferenceKey {
+    static let defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        let next = nextValue()
+        if next > 0 { value = next }
+    }
+}
 
 struct QuickPanelView: View {
     @EnvironmentObject var clipboardManager: ClipboardManager
@@ -330,6 +358,8 @@ struct QuickPanelView: View {
             .allowsHitTesting(true)
         }
         } // ZStack
+        // 切换选中行不用单独监听：onFocusedRowFrame 每轮都会上报，那里已经会同步。
+        .onChange(of: showCommandPalette) { syncCommandPalettePanel() }
         .onAppear {
             store.configure(modelContext: modelContext)
             rebuildGroupedItems()
@@ -1001,7 +1031,9 @@ struct QuickPanelView: View {
             selectedItemIDs: selectedItemIDs,
             focusedItemID: lastNavigatedID ?? selectedItemIDs.first,
             scrollTargetID: lastNavigatedID,
-            showCommandPalette: showCommandPalette,
+            // 恒 false：palette 已改由 QuickPanelView 的右下角浮层承担，
+            // 让列表/网格继续以为它开着会多触发一轮可见行重建。
+            showCommandPalette: false,
             allowMultipleSelection: true,
             scrollAlignment: .nearest,
             itemRowHeight: isCompactList ? 40 : 48,
@@ -1044,15 +1076,16 @@ struct QuickPanelView: View {
             contextMenu: { item in
                 historyItemContextMenu(item: item)
             },
-            commandPaletteContent: { item in
-                CommandPaletteContent(
-                    item: item,
-                    isMultiSelected: isMultiSelected,
-                    manualRules: manualRulesForPalette(item: item),
-                    preservedGroupNames: SmartGroupRetention.preservedGroupNames(in: modelContext),
-                    onAction: { handleCommandAction($0) },
-                    onDismiss: { showCommandPalette = false; isSearchFocused = true }
-                )
+            // palette 现在由 QuickPanelView 自己画浮层，列表不再挂 popover。
+            // 传 EmptyView 而不是删参数：NativeClipHistoryList 还被主窗口用着，
+            // 那边仍走 popover 路径，接口不动免得波及。
+            commandPaletteContent: { _ in EmptyView() },
+            onFocusedRowFrame: { row, list in
+                // 锚点存在 CommandPalettePanel（引用类型）里，不走 @State：
+                // @State 赋值不会在同一个调用栈里生效，而「上报」和「⌘K 打开」
+                // 两条路径会在同一轮里先后定位，必有一条读到旧坐标并覆盖掉另一条。
+                CommandPalettePanel.shared.updateAnchor(row: row, list: list)
+                if showCommandPalette { syncCommandPalettePanel() }
             }
         )
         // 过滤条件切换时需要整棵列表重建，避免旧的 NSTableView 选择/滚动状态残留。
@@ -1070,7 +1103,9 @@ struct QuickPanelView: View {
             // 选中状态本身保留——回车仍能直接粘贴当前选中项。
             selectedItemIDs: isGridFocused ? selectedItemIDs : [],
             focusedItemID: isGridFocused ? (lastNavigatedID ?? selectedItemIDs.first) : nil,
-            showCommandPalette: showCommandPalette,
+            // 恒 false：palette 已改由 QuickPanelView 的右下角浮层承担，
+            // 让列表/网格继续以为它开着会多触发一轮可见行重建。
+            showCommandPalette: false,
             onTap: { id in handleItemClick(id) },
             onCommandPaletteDismiss: {
                 showCommandPalette = false
@@ -1148,6 +1183,59 @@ struct QuickPanelView: View {
                 .foregroundStyle(.tertiary)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    // MARK: - Command Palette Overlay
+    /// 把 ⌘K 菜单交给独立浮窗显示。放在窗口内做不到「左边缘不压住条目」——窄窗口
+    /// 没有预览区、菜单必然整个落在窗口外，宽窗口下菜单也可能比预览区宽。
+    private func syncCommandPalettePanel() {
+        guard showCommandPalette,
+              let item = currentItem,
+              let window = QuickPanelWindowController.shared.panelWindow,
+              CommandPalettePanel.shared.anchorRow != .zero else {
+            CommandPalettePanel.shared.hide()
+            return
+        }
+        CommandPalettePanel.shared.show(
+            content: paletteCard(for: item),
+            width: PALETTE_WIDTH,
+            maxHeight: PALETTE_MAX_HEIGHT,
+            parent: window,
+            onDismiss: {
+                showCommandPalette = false
+                isSearchFocused = true
+            }
+        )
+    }
+
+    /// 菜单卡片本体。投影交给 NSPanel（hasShadow）——独立窗口的投影由窗口服务器
+    /// 绘制，比在 SwiftUI 里叠 .shadow 更干净，也不会被窗口边界裁掉。
+    @ViewBuilder
+    private func paletteCard(for item: ClipItem) -> some View {
+        // ScrollView 已挪进 CommandPaletteContent（要和 selectedIndex 同处一个 view
+        // 才能让键盘焦点带着滚动条走），这里只负责限宽限高。
+        let card = CommandPaletteContent(
+            item: item,
+            isMultiSelected: isMultiSelected,
+            manualRules: manualRulesForPalette(item: item),
+            preservedGroupNames: SmartGroupRetention.preservedGroupNames(in: modelContext),
+            onAction: { handleCommandAction($0) },
+            onDismiss: { showCommandPalette = false; isSearchFocused = true },
+            embedded: true
+        )
+        .frame(width: PALETTE_WIDTH)
+        .frame(maxHeight: PALETTE_MAX_HEIGHT)
+        .fixedSize(horizontal: false, vertical: true)
+
+        // 仍然是官方 glassEffect（不是实色白——那样就丢了玻璃质感），只是加一层
+        // 跟随外观的 tint 把它压向「白」：菜单浮在独立窗口里，背后是桌面/别的 App，
+        // 裸玻璃取到的颜色跟面板内完全不同、看着发灰。tint 用 controlBackgroundColor
+        // 跟底栏胶囊同色系，浅色近白、深色深灰。
+        // 不描边：立体感交给投影，一圈灰边会把边缘压平、反而像贴在背景上。
+        // 直接复用底栏胶囊的 GlassSurface：同一个 modifier，背景色/边框/光晕不可能
+        // 走样。此前手搓的那套（不透明对比层 + 渐变描边模拟高光）是为了压住独立
+        // 窗口背后透上来的深色，但结果就是盖掉真高光再画一圈假的，越描越偏。
+        card.modifier(GlassSurface(shape: RoundedRectangle(cornerRadius: 16)))
     }
 
     // MARK: - Footer
@@ -1302,7 +1390,17 @@ struct QuickPanelView: View {
                             footerKey("⌥", L10n.tr("sensitive.peek"))
                         }
                         if !compact {
-                            footerKey("⌘K", L10n.tr("cmd.title"))
+                            // 唯一可点的 footerKey：点一下等同按 ⌘K。其余 footerKey
+                            // 仍是纯展示，所以 hover 高亮也只给这一个。
+                            Button {
+                                showCommandPalette.toggle()
+                                if showCommandPalette { isSearchFocused = false }
+                            } label: {
+                                footerKey("⌘K", L10n.tr("cmd.title"))
+                            }
+                            .buttonStyle(.plain)
+                            .modifier(HoverHighlight())
+                            .pointerCursor()
                         }
                         footerKey("esc", L10n.tr("quick.close"))
 

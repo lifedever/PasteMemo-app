@@ -150,6 +150,24 @@ enum CommandAction: Hashable {
 /// （含指向箭头）裁剪，不会破坏气泡形状。旧系统保持系统默认材质。
 /// 注：完整 glassEffect 需要自定义形状、盖不住系统画的指向箭头，popover 形态下
 /// ultraThinMaterial 是能做到的最大通透度。
+/// popover 形态才需要固定宽度和 presentationBackground。嵌入玻璃浮层时两样都要
+/// 去掉：presentationBackground 脱离 popover 上下文根本不生效（面板会没有底），
+/// 而内层再钉一个 200pt 宽度会让外层容器和内容宽度对不上、两边空一圈。
+private struct PaletteChrome: ViewModifier {
+    let embedded: Bool
+
+    func body(content: Content) -> some View {
+        if embedded {
+            content
+        } else {
+            content
+                // 行内尺寸整体放大后 200 装不下「图标 + 文字 + 快捷键徽章」
+                .frame(width: 260)
+                .modifier(PaletteGlassBackground())
+        }
+    }
+}
+
 private struct PaletteGlassBackground: ViewModifier {
     func body(content: Content) -> some View {
         if #available(macOS 26.0, *) {
@@ -173,6 +191,10 @@ struct CommandPaletteContent: View {
     var preservedGroupNames: Set<String> = []
     let onAction: (CommandAction) -> Void
     let onDismiss: () -> Void
+    /// true：不自带宽度和背景，交给外部容器（快捷面板右下角的玻璃浮层）。
+    /// false：保持 popover 形态需要的固定宽度 + presentationBackground——主窗口
+    /// 仍走 popover，那条路径不能动。
+    var embedded: Bool = false
 
     @State private var selectedIndex = 0
     @State private var keyMonitor: Any?
@@ -279,8 +301,42 @@ struct CommandPaletteContent: View {
         QuickLookHelper.shared.canOpenInPreview(item: item)
     }
 
-    var body: some View {
+    /// 浮层形态才套 ScrollView，且 ScrollViewReader 必须和 selectedIndex 在同一个
+    /// view 里——键盘上下移动焦点时要把焦点项滚进可见区，否则一旦超出一屏，按方向键
+    /// 就等于在盲选。popover 形态高度由系统撑开，不需要滚动。
+    @ViewBuilder
+    private var paletteBody: some View {
+        if embedded {
+            ScrollViewReader { proxy in
+                ScrollView(.vertical, showsIndicators: false) {
+                    rowsStack.padding(8)
+                }
+                .onChange(of: selectedIndex) { _, newValue in
+                    withAnimation(.easeOut(duration: 0.12)) {
+                        proxy.scrollTo(newValue, anchor: .center)
+                    }
+                }
+            }
+        } else {
+            rowsStack.padding(8)
+        }
+    }
+
+    private var rowsStack: some View {
         VStack(spacing: 1) {
+            // 标题行：告诉用户这一菜单在对哪个对象操作（Raycast 同款）。只在浮层
+            // 形态显示——popover 有指向箭头指明来源，不需要再重复一次。
+            if embedded {
+                Text(paletteTitle)
+                    .font(.system(size: 11))
+                    .foregroundStyle(.tertiary)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 10)
+                    .padding(.top, 2)
+                    .padding(.bottom, 6)
+            }
             ForEach(Array(actions.enumerated()), id: \.element) { index, action in
                 if index > 0, actions[index - 1].group != action.group {
                     Divider()
@@ -290,12 +346,16 @@ struct CommandPaletteContent: View {
                 commandRow(action: action, isSelected: selectedIndex == index, index: index)
                     .onTapGesture { execute(action) }
                     .onHover { if $0 { selectedIndex = index } }
+                    // scrollTo 的锚点
+                    .id(index)
             }
         }
-        .padding(5)
-        .frame(width: 200)
-        .modifier(PaletteGlassBackground())
-        .onAppear {
+    }
+
+    var body: some View {
+        paletteBody
+            .modifier(PaletteChrome(embedded: embedded))
+            .onAppear {
             installKeyMonitor()
             installFlagsMonitor()
         }
@@ -303,6 +363,13 @@ struct CommandPaletteContent: View {
             removeKeyMonitor()
             removeFlagsMonitor()
         }
+    }
+
+    /// 浮层顶部的标题：多选时报条数，单选时用条目标题，都拿不到就退回通用标题。
+    private var paletteTitle: String {
+        if isMultiSelected { return L10n.tr("cmd.title") }
+        if let title = item?.displayTitle, !title.isEmpty { return title }
+        return L10n.tr("cmd.title")
     }
 
     private func displayLabel(for action: CommandAction) -> String {
@@ -319,32 +386,43 @@ struct CommandPaletteContent: View {
             return false
         }()
         let ruleDigit = digitForAction(at: index)
-        return HStack(spacing: 8) {
+        // 尺寸整体对齐 Raycast 的 actions 菜单：原来的 11/12/18 三档太局促，
+        // 图标和快捷键徽章挤成一团，视觉上「小气」。
+        return HStack(spacing: 9) {
             Image(systemName: action.icon)
-                .font(.system(size: 11))
-                .frame(width: 16)
+                .font(.system(size: 13))
+                .frame(width: 18)
                 .foregroundStyle(
                     action.isDestructive ? .red : (isRuleRow ? .purple : .secondary)
                 )
             Text(displayLabel(for: action))
-                .font(.system(size: 12))
+                .font(.system(size: 13))
                 .foregroundStyle(action.isDestructive ? .red : .primary)
                 .lineLimit(1)
                 .truncationMode(.tail)
-            Spacer()
+            Spacer(minLength: 12)
             if let key = action.shortcutKey ?? ruleDigit {
+                // 独立圆角小方块 + 细描边，而不是一块糊上去的浅灰底
                 Text(key)
-                    .font(.system(size: 9, weight: .medium, design: .monospaced))
+                    .font(.system(size: 11, weight: .medium, design: .rounded))
                     .foregroundStyle(.secondary)
-                    .frame(width: 18, height: 18)
-                    .background(Color.primary.opacity(0.08), in: RoundedRectangle(cornerRadius: 4))
+                    .frame(width: 22, height: 22)
+                    .background(Color.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: 6))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 6)
+                            .stroke(Color.primary.opacity(0.10), lineWidth: 0.5)
+                    )
             }
         }
-        .padding(.horizontal, 8)
+        .padding(.horizontal, 10)
+        // 5 而不是 8：动作项十几条，行高每多 3pt 就多占 40pt，直接决定「一屏能不能
+        // 望全」——望不全就得滚动，用户就没法扫一眼直接按快捷键。
         .padding(.vertical, 5)
         .background(
-            RoundedRectangle(cornerRadius: 5)
-                .fill(isSelected ? Color.accentColor.opacity(0.12) : .clear)
+            RoundedRectangle(cornerRadius: 8)
+                // 中性灰而非 accentColor：面板整体是柔和玻璃，一颗饱和蓝是全场
+                // 唯一的高饱和色，必然跳出来。
+                .fill(isSelected ? Color.primary.opacity(0.09) : .clear)
         )
         .contentShape(Rectangle())
     }

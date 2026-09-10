@@ -95,6 +95,11 @@ struct NativeClipHistoryList<RowContent: View, HeaderContent: View, ContextMenuC
     let headerContent: (TimeGroup) -> HeaderContent
     let contextMenu: (ClipItem) -> ContextMenuContent
     let commandPaletteContent: (ClipItem) -> PaletteContent
+    /// 焦点行在**屏幕坐标系**中的 frame，外加列表自身的屏幕 frame，供调用方把
+    /// 独立浮窗对齐到选中行。行由 NSTableView 绘制、滚动偏移只有 AppKit 侧知道；
+    /// 用屏幕坐标是因为浮窗要能超出主面板边界，面板内坐标不够用。
+    /// 可选：主窗口走 popover、不需要，传 nil 即可。
+    var onFocusedRowFrame: ((_ rowOnScreen: CGRect, _ listOnScreen: CGRect) -> Void)? = nil
 
     func makeCoordinator() -> Coordinator {
         Coordinator(parent: self)
@@ -150,6 +155,10 @@ struct NativeClipHistoryList<RowContent: View, HeaderContent: View, ContextMenuC
             // 增量插入/删除不重建既有 cell，选中态变化仍要按差集手动刷新。
             context.coordinator.updateVisibleRowsIfNeeded()
         }
+        // 每轮都上报焦点行位置。只挂在「滚动」和「焦点变化」上不够：面板刚打开时
+        // 焦点在初始化阶段就已定好，focusChanged 为 false，那条回调一次都不会跑，
+        // 跟随浮层就会拿着 .zero 去定位、贴到列表顶部。
+        context.coordinator.reportFocusedRowFrame()
     }
 
     static func dismantleNSView(_ nsView: NSScrollView, coordinator: Coordinator) {
@@ -169,6 +178,7 @@ struct NativeClipHistoryList<RowContent: View, HeaderContent: View, ContextMenuC
         private var lastSelectedItemIDs: Set<PersistentIdentifier> = []
         private var lastFocusedItemID: PersistentIdentifier?
         private var lastShowCommandPalette = false
+        private var quickPanelShowObserver: NSObjectProtocol?
         // 行高（紧凑 ↔ 舒适切换）记录，用来检测窗口跨过预览断点时是否需要动画过渡。
         private var lastItemRowHeight: CGFloat?
         private var lastHeaderRowHeight: CGFloat?
@@ -182,13 +192,66 @@ struct NativeClipHistoryList<RowContent: View, HeaderContent: View, ContextMenuC
             self.tableView = tableView
             tableView.onBoundsChanged = { [weak self] in
                 self?.maybeTriggerLoadMore()
+                // 滚动时焦点行的屏幕位置在变，跟随浮层要同步挪
+                self?.reportFocusedRowFrame()
             }
+            tableView.onDidMoveToWindow = { [weak self] in
+                self?.reportFocusedRowFrame()
+            }
+            // 面板显示后必须重新上报：viewDidMoveToWindow 那次跑在窗口还停在默认
+            // (0,0) 的时候，warmUp 之后还要挪到离屏、show 时才落到最终位置，那份
+            // 屏幕坐标早就过期了。不补这一次，跟随浮窗永远按开机那一刻的位置定位。
+            if quickPanelShowObserver == nil {
+                quickPanelShowObserver = NotificationCenter.default.addObserver(
+                    forName: .quickPanelDidShow,
+                    object: nil,
+                    queue: .main
+                ) { [weak self] _ in
+                    MainActor.assumeIsolated { self?.reportFocusedRowFrame() }
+                }
+            }
+        }
+
+        /// 把焦点行和列表自身的屏幕坐标回传给调用方。行超出可见区时（滚动到看不见）
+        /// 不上报，避免浮窗跑到列表外面去。
+        func reportFocusedRowFrame() {
+            guard let report = parent.onFocusedRowFrame,
+                  let tableView, let scrollView,
+                  let window = tableView.window else { return }
+
+            // 优先用 NSTableView 自己的选中行：SwiftUI 传下来的 focusedItemID 会
+            // 滞后于实际点击（探针实测点底部条目时它仍停在第 2 行），而
+            // selectedRowIndexes 是 applySelection 同步过的真实状态。
+            let row: Int
+            if let last = tableView.selectedRowIndexes.last, last >= 0 {
+                row = last
+            } else if let focusedID = parent.focusedItemID,
+                      let mapped = parent.rowIndexByItemID[focusedID] {
+                row = mapped
+            } else {
+                return
+            }
+            guard row >= 0, row < tableView.numberOfRows else { return }
+
+            let rowRect = tableView.rect(ofRow: row)
+            // 行滚出可见区时保持上一次位置，不要把浮窗甩到列表外
+            guard tableView.visibleRect.intersects(rowRect) else { return }
+
+            report(
+                window.convertToScreen(tableView.convert(rowRect, to: nil)),
+                window.convertToScreen(scrollView.convert(scrollView.bounds, to: nil))
+            )
         }
 
         func teardown() {
             tableView?.delegate = nil
             tableView?.dataSource = nil
             tableView?.onBoundsChanged = nil
+            tableView?.onDidMoveToWindow = nil
+            if let quickPanelShowObserver {
+                NotificationCenter.default.removeObserver(quickPanelShowObserver)
+                self.quickPanelShowObserver = nil
+            }
         }
 
         func numberOfRows(in tableView: NSTableView) -> Int {
@@ -342,6 +405,7 @@ struct NativeClipHistoryList<RowContent: View, HeaderContent: View, ContextMenuC
             lastFocusedItemID = parent.focusedItemID
             lastShowCommandPalette = parent.showCommandPalette
             refreshVisibleRows(limitedTo: affected)
+            if focusChanged { reportFocusedRowFrame() }
         }
 
         /// Detects a row-height change (the compact ↔ comfortable flip when the
@@ -480,7 +544,17 @@ struct NativeClipHistoryList<RowContent: View, HeaderContent: View, ContextMenuC
 
 private final class NativeClipHistoryTableView: NSTableView {
     var onBoundsChanged: (@MainActor () -> Void)?
+    /// 表格挂进窗口时回调。快捷面板是离屏 warmUp 构建的，那几轮 updateNSView 跑
+    /// 在 window 还是 nil 的时候，任何依赖窗口/屏幕坐标的上报都拿不到值，之后又
+    /// 未必还有 update 来补——所以这里补一次。
+    var onDidMoveToWindow: (@MainActor () -> Void)?
     private var observingClipView = false
+
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        guard window != nil else { return }
+        MainActor.assumeIsolated { onDidMoveToWindow?() }
+    }
 
     override func viewDidMoveToSuperview() {
         super.viewDidMoveToSuperview()

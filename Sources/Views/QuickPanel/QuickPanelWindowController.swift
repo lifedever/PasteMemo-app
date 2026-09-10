@@ -99,6 +99,8 @@ final class QuickPanelWindowController {
     static let shared = QuickPanelWindowController()
 
     private var panel: NSPanel?
+    /// ⌘K 菜单浮窗要挂成它的子窗口（跟随移动），所以需要对外暴露。
+    var panelWindow: NSWindow? { panel }
     private var layoutState: QuickPanelLayoutState?
     private var clickOutsideMonitor: Any?
     private var deactivationObserver: Any?
