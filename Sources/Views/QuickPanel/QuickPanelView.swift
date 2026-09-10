@@ -1157,8 +1157,23 @@ struct QuickPanelView: View {
     /// 浅色玻璃面板上会跟底色糊成一片、完全立不起来。controlBackgroundColor 比
     /// windowBackgroundColor 亮一档，浅色下接近纯白、深色下是深灰，两种外观都能
     /// 从面板里浮出来。
-    /// 胶囊内图标按钮的 hover 高亮。刻意只给真正可点的按钮加——footerKey 是纯
-    /// 展示的键位提示，给它加 hover 态会让用户以为能点。
+    /// 底栏图标按钮。macOS 26 用原生 `.buttonStyle(.glass)`——玻璃外形、hover 与
+    /// 按压态全由系统给，不用自己维护。旧系统降级到 plain + 手写 hover 高亮。
+    private struct GlassIconButton: ViewModifier {
+        func body(content: Content) -> some View {
+            if #available(macOS 26.0, *) {
+                content.buttonStyle(.glass)
+            } else {
+                content
+                    .buttonStyle(.plain)
+                    .modifier(HoverHighlight())
+            }
+        }
+    }
+
+    /// macOS 14/15 下图标按钮的 hover 高亮（26 上走 .buttonStyle(.glass)）。
+    /// 刻意只给真正可点的按钮加——footerKey 是纯展示的键位提示，给它加 hover 态
+    /// 会让用户以为能点。
     private struct HoverHighlight: ViewModifier {
         @State private var isHovering = false
 
@@ -1298,11 +1313,9 @@ struct QuickPanelView: View {
                         } label: {
                             Image(systemName: showAllShortcuts ? "keyboard.chevron.compact.down" : "keyboard")
                                 .font(.system(size: 12))
-                                .foregroundStyle(.tertiary)
-                                .frame(width: 22, height: 22)
+                                .foregroundStyle(.secondary)
                         }
-                        .buttonStyle(.plain)
-                        .modifier(HoverHighlight())
+                        .modifier(GlassIconButton())
                         .pointerCursor()
 
                         Button {
@@ -1311,11 +1324,9 @@ struct QuickPanelView: View {
                         } label: {
                             Image(systemName: "gearshape")
                                 .font(.system(size: 12))
-                                .foregroundStyle(.tertiary)
-                                .frame(width: 22, height: 22)
+                                .foregroundStyle(.secondary)
                         }
-                        .buttonStyle(.plain)
-                        .modifier(HoverHighlight())
+                        .modifier(GlassIconButton())
                         .pointerCursor()
                     }
                     .padding(.horizontal, 12)
