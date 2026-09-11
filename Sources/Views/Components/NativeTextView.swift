@@ -30,6 +30,10 @@ struct NativeTextView: NSViewRepresentable {
     /// starts being perceptible.
     static let highlightSizeLimit = 200_000
 
+    /// 可渲染性检查扫描的可见字符上限。足够判定整段是不是坏数据，又不会在
+    /// 几十万字的长文档上白跑一遍。
+    static let renderabilityScanLimit = 4_000
+
     /// Measured plain-text render heights keyed by (text, width, fontSize).
     /// Tiny bounded cache — OCR cards re-evaluate body often but only ever show
     /// a handful of texts at a time.
@@ -151,8 +155,13 @@ struct NativeTextView: NSViewRepresentable {
         }
 
         // Show the plain string immediately so the viewport isn't blank while we decode.
+        // 用完整的 attributed 覆盖而不是只写 `.string`：后者保留上一条富文本留下的
+        // 字体/颜色（同 plain 分支的注释），而这里也是解码被否决时的最终画面。
         if textView.string.isEmpty || dataChanged {
-            textView.string = text
+            textView.textStorage?.setAttributedString(NSAttributedString(string: text, attributes: [
+                .font: NSFont.systemFont(ofSize: fontSize),
+                .foregroundColor: textColor,
+            ]))
         }
         context.coordinator.lastRichTextData = rtfData
         context.coordinator.lastLayoutWidth = currentWidth
@@ -201,9 +210,39 @@ struct NativeTextView: NSViewRepresentable {
         default:
             raw = NSAttributedString(rtf: data, documentAttributes: nil)
         }
-        guard let raw else { return nil }
+        // 解不出来、或者解出来是一整段没有任何字体能显示的码点时返回 nil，
+        // 调用方保留已经铺好的纯文本渲染。
+        guard let raw, isRenderable(raw) else { return nil }
         let adapted = adaptColorsForAppearance(raw, isDark: isDark)
         return scaleAttachmentsToFit(adapted, maxWidth: maxImageWidth)
+    }
+
+    /// 解码结果是否值得拿来替换纯文本渲染。
+    ///
+    /// 某些来源给出的富文本会把整段正文解成私用区 / 未分配码点，系统里没有任何
+    /// 字体覆盖它们，渲染出来是一排 LastResort 的 "?" 方框——比纯文本还不可读
+    /// （#88：VS Code 复制的代码在"文本"模式下整段变方框，而同一条在列表里
+    /// 显示正常）。这种时候宁可放弃格式，保住内容可读。
+    ///
+    /// 判据是"过半可见字符不可渲染"而不是"存在即否决"：从终端复制的 Powerline /
+    /// Nerd Font 图标本身就是私用区字符，那些条目只是夹带少量，富文本照常渲染。
+    nonisolated static func isRenderable(_ attributed: NSAttributedString) -> Bool {
+        var visible = 0
+        var unrenderable = 0
+        for scalar in attributed.string.unicodeScalars {
+            // 空白、控制字符、图片占位符不参与判断
+            if scalar.value < 0x20 || scalar.value == 0xFFFC || scalar.properties.isWhitespace { continue }
+            visible += 1
+            switch scalar.properties.generalCategory {
+            case .privateUse, .unassigned:
+                unrenderable += 1
+            default:
+                break
+            }
+            if visible >= renderabilityScanLimit { break }
+        }
+        guard visible > 0 else { return true }
+        return unrenderable * 2 < visible
     }
 
     /// Responsive images: shrink attachments whose intrinsic width exceeds the text container.
