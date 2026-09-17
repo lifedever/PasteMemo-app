@@ -457,6 +457,8 @@
 "cmd.toggleSensitive" = "Alternar sensible";
 "cmd.delete" = "Eliminar";
 "cmd.openLink" = "Abrir enlace";
+"cmd.openEntity" = "Abrir %@";
+"cmd.pasteEntity" = "Pegar %@";
 "cmd.pasteAsFile" = "Pegar como archivo";
 "cmd.pastePath" = "Pegar ruta";
 "cmd.andNewLine" = " + nueva línea";

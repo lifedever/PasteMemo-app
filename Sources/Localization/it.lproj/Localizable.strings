@@ -552,6 +552,8 @@
 "cmd.toggleSensitive" = "Attiva/disattiva sensibile";
 "cmd.delete" = "Elimina";
 "cmd.openLink" = "Apri link";
+"cmd.openEntity" = "Apri %@";
+"cmd.pasteEntity" = "Incolla %@";
 "cmd.pasteAsFile" = "Incolla come file";
 "cmd.pastePath" = "Incolla percorso";
 "cmd.andNewLine" = " + a capo";

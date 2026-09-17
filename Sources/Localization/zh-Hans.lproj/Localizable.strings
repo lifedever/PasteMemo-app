@@ -713,6 +713,8 @@
 "cmd.toggleSensitive" = "标记 / 取消敏感";
 "cmd.delete" = "删除";
 "cmd.openLink" = "打开链接";
+"cmd.openEntity" = "打开 %@";
+"cmd.pasteEntity" = "粘贴 %@";
 "cmd.pasteAsFile" = "粘贴为文件";
 "cmd.pastePath" = "粘贴路径";
 "cmd.openInPreview" = "用“预览”打开";

@@ -687,6 +687,8 @@ Gunakan %@ untuk menempel satu per satu.";
 "cmd.toggleSensitive" = "Alihkan Sensitif";
 "cmd.delete" = "Hapus";
 "cmd.openLink" = "Buka Tautan";
+"cmd.openEntity" = "Buka %@";
+"cmd.pasteEntity" = "Tempel %@";
 "cmd.pasteAsFile" = "Tempel sebagai File";
 "cmd.pastePath" = "Tempel Path";
 "cmd.andNewLine" = " + Baris Baru";

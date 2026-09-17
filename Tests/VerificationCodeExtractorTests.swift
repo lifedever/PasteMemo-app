@@ -73,6 +73,10 @@ struct VerificationCodeExtractorTests {
         ("83nfkq2v 是你重置密码的验证码。请勿回复此短信。[PIN]", "83nfkq2v"),
         // URL fragment must not shadow the real code
         ("【测试】您的验证码为 995511，详情见 https://e.example.com/a/5m4899vD", "995511"),
+        // 网盘提取码（issue #89）。同一段文案里 URL 的 ?pwd= 参数带着同一个码，
+        // 靠 BEFORE_REJECT 的 `=` 把它排除，独立那处「提取码: 」才是命中点。
+        ("通过网盘分享的文件：Untitled.txt\n链接: https://pan.example.com/s/1x2nCtyV32iXtoEj9Sx5aNA?pwd=nx32 提取码: nx32", "nx32"),
+        ("链接：https://pan.example.com/s/1AbCdEfGhIjK 提取码：8w4q 复制这段内容打开网盘App", "8w4q"),
 
         // ---- zh-Hant ----
         ("【中華電信】您的驗證碼為 224466，請於5分鐘內輸入。", "224466"),

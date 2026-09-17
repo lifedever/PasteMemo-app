@@ -1655,10 +1655,6 @@ struct QuickPanelView: View {
     }
 
     private func cmdEnterFooterLabel(for item: ClipItem) -> String? {
-        if item.contentType == .link {
-            return L10n.tr("cmd.openLink")
-        }
-
         if isFileBasedItem(item) {
             return quickPanelAutoPaste ? L10n.tr("quick.pastePath") : L10n.tr("quick.copyPath")
         }
@@ -1667,7 +1663,7 @@ struct QuickPanelView: View {
             return L10n.tr("quick.saveToFolder")
         }
 
-        if [.text, .code, .color, .email, .phone].contains(item.contentType) {
+        if [.text, .code, .color, .email, .phone, .link].contains(item.contentType) {
             return quickPanelAutoPaste ? L10n.tr("action.pasteAsPlainText") : L10n.tr("cmd.copyAsPlainText")
         }
 
@@ -1678,10 +1674,8 @@ struct QuickPanelView: View {
         // 这里只服务 ⌘K 面板里的“次级动作”标签与执行，保持和面板文案一致，
         // 不复用 footer 文案，避免被 quickPanelAutoPaste 的复制/粘贴分支影响。
         switch item.contentType {
-        case .text, .code, .color, .email, .phone, .mixed:
+        case .text, .code, .color, .email, .phone, .mixed, .link:
             return L10n.tr("cmd.pasteAsPlainText")
-        case .link:
-            return L10n.tr("cmd.openLink")
         case .image, .file, .document, .archive, .application, .video, .audio:
             return L10n.tr("cmd.pastePath")
         }
@@ -1892,8 +1886,19 @@ struct QuickPanelView: View {
                     isSearchFocused = true
                     return nil
                 case 35 where !hasControl:
+                    // 和面板里那行保持一致：有链接可开时 `P` 是「打开链接」，
+                    // 判定同样来自 TextEntityExtractor.openableLink
+                    if let item = currentItem,
+                       let link = TextEntityExtractor.openableLink(for: item) {
+                        handleCommandAction(.openLink(
+                            url: link.url, display: link.display, primary: true
+                        ))
+                        return nil
+                    }
                     if let item = currentItem, item.contentType != .color {
-                        handleCommandAction(.cmdEnter(label: cmdEnterPaletteLabel(for: item)))
+                        handleCommandAction(.cmdEnter(
+                            label: cmdEnterPaletteLabel(for: item), hasKey: true
+                        ))
                         return nil
                     }
                     return event
@@ -2212,6 +2217,15 @@ struct QuickPanelView: View {
         case .copy:
             let items = isMultiSelected ? currentItems : (currentItem.map { [$0] } ?? [])
             if !items.isEmpty { copyItemsFullFidelity(items, dismissAfterCopy: true, playSound: true) }
+        case .openLink(let url, _, _):
+            if let target = URL.fromLinkString(url) {
+                QuickPanelWindowController.shared.dismiss()
+                NSWorkspace.shared.open(target)
+            }
+        case .pasteEntityCode(let code):
+            if let item = currentItem {
+                pasteExtractedString(code, from: item)
+            }
         case .retryOCR:
             if let item = currentItem, item.contentType == .image, item.imageData != nil {
                 OCRTaskCoordinator.shared.retry(itemID: item.itemID)
@@ -2825,14 +2839,11 @@ struct QuickPanelView: View {
     private func handleCmdEnter(respectAutoPaste: Bool = true) {
         guard let item = currentItem else { return }
         QuickPanelWindowController.shared.refreshTargetFocusIfPinned()
-        // Link → open in browser
-        if item.contentType == .link,
-           let url = item.resolvedURL {
-            QuickPanelWindowController.shared.dismiss()
-            NSWorkspace.shared.open(url)
-        }
+        // ⌘↩ 在所有条目上是同一件事：纯文本粘贴（文件类是粘贴路径），任何条目都不
+        // 开链接——链接条目整条就是 URL，粘纯文本和富文本去格式是同一个语义。开链接
+        // 是 ⌘K 里 `P` 那行和 ⌘O 的事。
         // File-based (including file images) → paste path
-        else if isFileBasedItem(item) {
+        if isFileBasedItem(item) {
             if !respectAutoPaste || quickPanelAutoPaste {
                 handlePastePath()
             } else {
@@ -2844,7 +2855,7 @@ struct QuickPanelView: View {
             handlePasteTextToFolder()
         }
         // Text-like types → paste as plain text
-        else if [.text, .code, .color, .email, .phone, .mixed].contains(item.contentType) {
+        else if [.text, .code, .color, .email, .phone, .mixed, .link].contains(item.contentType) {
             if !respectAutoPaste || quickPanelAutoPaste {
                 handlePlainTextPaste(item)
             } else {
@@ -2893,22 +2904,13 @@ struct QuickPanelView: View {
     /// immediately, then recognize on demand while the target app refocuses
     /// concurrently, and paste.
     private func pasteOCRText(for item: ClipItem) {
-        let appToRestore = QuickPanelWindowController.shared.previousApp
-        markItemUsed(item)
-
         if let cached = item.ocrText, !cached.isEmpty {
-            writeStringToPasteboard(cached)
-            SoundManager.playPaste()
-            QuickPanelWindowController.shared.dismiss()
-            if let app = appToRestore {
-                app.activate()
-                clipboardManager.simulatePaste(targetApp: app)
-            } else {
-                ToastCenter.shared.show(ToastDescriptor(message: L10n.tr("action.copied"), icon: .success))
-            }
+            pasteExtractedString(cached, from: item)
             return
         }
 
+        let appToRestore = QuickPanelWindowController.shared.previousApp
+        markItemUsed(item)
         let id = item.itemID
         QuickPanelWindowController.shared.dismiss()
         appToRestore?.activate()   // refocus overlaps the on-demand OCR below
@@ -2923,6 +2925,23 @@ struct QuickPanelView: View {
                 return
             }
             clipboardManager.pasteAsPlainText(text, targetApp: appToRestore)
+        }
+    }
+
+    /// 粘贴一段「来自这个条目、但不是条目全文」的文本：OCR 识别结果、内容里认出来的
+    /// 提取码。时序和普通回车粘贴（`dismissAndPaste`）一致——收面板、激活目标 App、
+    /// ⌘V 在同一拍里走完；没有目标 App（在主窗口里操作）就只写剪贴板。
+    private func pasteExtractedString(_ text: String, from item: ClipItem) {
+        let appToRestore = QuickPanelWindowController.shared.previousApp
+        markItemUsed(item)
+        writeStringToPasteboard(text)
+        SoundManager.playPaste()
+        QuickPanelWindowController.shared.dismiss()
+        if let app = appToRestore {
+            app.activate()
+            clipboardManager.simulatePaste(targetApp: app)
+        } else {
+            ToastCenter.shared.show(ToastDescriptor(message: L10n.tr("action.copied"), icon: .success))
         }
     }
 

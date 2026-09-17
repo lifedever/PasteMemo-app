@@ -896,15 +896,11 @@ struct MainWindowView: View {
                 }
             }
         case .cmdEnter:
-            if item.contentType == .link,
-               let url = item.resolvedURL {
-                NSWorkspace.shared.open(url)
-            } else {
-                let pasteboard = NSPasteboard.general
-                pasteboard.clearContents()
-                pasteboard.setString(item.content, forType: .string)
-                ToastCenter.shared.show(ToastDescriptor(message: L10n.tr("action.copied"), icon: .success))
-            }
+            // 和快捷面板一致：⌘↩ 只做纯文本，任何条目都不在这里开链接
+            let pasteboard = NSPasteboard.general
+            pasteboard.clearContents()
+            pasteboard.setString(item.content, forType: .string)
+            ToastCenter.shared.show(ToastDescriptor(message: L10n.tr("action.copied"), icon: .success))
         case .copy:
             if selectedItems.count > 1 {
                 copySelectedToClipboard()
@@ -937,6 +933,16 @@ struct MainWindowView: View {
                     }
                 }
             }
+        case .openLink(let url, _, _):
+            if let target = URL.fromLinkString(url) {
+                NSWorkspace.shared.open(target)
+            }
+        case .pasteEntityCode(let code):
+            // 主窗口里没有粘贴目标，和 copyColorFormat 一样落到剪贴板。
+            let pasteboard = NSPasteboard.general
+            pasteboard.clearContents()
+            pasteboard.setString(code, forType: .string)
+            ToastCenter.shared.show(ToastDescriptor(message: L10n.tr("action.copied"), icon: .success))
         case .openInPreview:
             QuickLookHelper.shared.present(item: item)
         case .addToRelay:

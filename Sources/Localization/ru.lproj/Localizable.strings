@@ -687,6 +687,8 @@
 "cmd.toggleSensitive" = "Переключить конфиденциальность";
 "cmd.delete" = "Удалить";
 "cmd.openLink" = "Открыть ссылку";
+"cmd.openEntity" = "Открыть %@";
+"cmd.pasteEntity" = "Вставить %@";
 "cmd.pasteAsFile" = "Вставить как файл";
 "cmd.pastePath" = "Вставить путь";
 "cmd.andNewLine" = " + новая строка";

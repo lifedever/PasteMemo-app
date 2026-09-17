@@ -474,6 +474,8 @@
 "cmd.toggleSensitive" = "機密の切り替え";
 "cmd.delete" = "削除";
 "cmd.openLink" = "リンクを開く";
+"cmd.openEntity" = "%@ を開く";
+"cmd.pasteEntity" = "%@ をペースト";
 "cmd.pasteAsFile" = "ファイルとしてペースト";
 "cmd.pastePath" = "パスをペースト";
 "cmd.retryOCR" = "OCRを再試行";

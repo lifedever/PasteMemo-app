@@ -552,6 +552,8 @@
 "cmd.toggleSensitive" = "標記 / 取消敏感";
 "cmd.delete" = "刪除";
 "cmd.openLink" = "開啟連結";
+"cmd.openEntity" = "開啟 %@";
+"cmd.pasteEntity" = "貼上 %@";
 "cmd.pasteAsFile" = "貼上為檔案";
 "cmd.pastePath" = "貼上路徑";
 "cmd.andNewLine" = "並換行";

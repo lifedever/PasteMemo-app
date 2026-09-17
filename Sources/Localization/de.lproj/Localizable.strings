@@ -457,6 +457,8 @@
 "cmd.toggleSensitive" = "Sensibel umschalten";
 "cmd.delete" = "Löschen";
 "cmd.openLink" = "Link öffnen";
+"cmd.openEntity" = "%@ öffnen";
+"cmd.pasteEntity" = "%@ einfügen";
 "cmd.pasteAsFile" = "Als Datei einfügen";
 "cmd.pastePath" = "Pfad einfügen";
 "cmd.andNewLine" = " + Zeilenumbruch";

@@ -8,8 +8,18 @@ enum CommandAction: Hashable {
     /// leave no trace after use. Suppressed for pinned / favourited items and
     /// for clips in a group flagged `preservesItems`.
     case pasteAndDestroy
-    case cmdEnter(label: String)
+    /// ⌘↩ 的镜像：纯文本粘贴 / 粘贴路径，永远不开链接。`hasKey` 为 false 时让出
+    /// 字母键 `P`——那一行有链接可开时 `P` 归 `openLink`，⌘↩ 和底栏提示不受影响。
+    case cmdEnter(label: String, hasKey: Bool)
     case copyColorFormat(format: String, label: String)
+    /// 打开链接。条目本身就是链接时 `display` 为 nil（标签用通用的「打开链接」），
+    /// 混合文本里解析出来的片段则带上 host。⌘↩ 一律是纯文本粘贴，开链接只走这里
+    /// 和 ⌘O——两种条目在这件事上没有区别。
+    /// `primary` 标记拿 `P` 的那行：多个链接时后面几行挂同一个键，徽章会显示一个
+    /// 永远按不到的字母。
+    case openLink(url: String, display: String?, primary: Bool)
+    /// Paste an access / verification code found inside a mixed-text clip.
+    case pasteEntityCode(code: String)
     case retryOCR
     /// Paste the item's recognized OCR text into the frontmost app (runs OCR on
     /// demand first when the text isn't cached). Falls back to clipboard when
@@ -38,6 +48,8 @@ enum CommandAction: Hashable {
         case .pasteAndDestroy: "flame"
         case .cmdEnter: "textformat"
         case .copyColorFormat: "paintpalette"
+        case .openLink: "link"
+        case .pasteEntityCode: "key"
         case .retryOCR: "text.viewfinder"
         case .pasteOCR: "doc.text"
         case .openInPreview(let usesPreviewApp): usesPreviewApp ? "photo.on.rectangle.angled" : "eye"
@@ -57,8 +69,11 @@ enum CommandAction: Hashable {
         switch self {
         case .paste: L10n.tr("cmd.paste")
         case .pasteAndDestroy: L10n.tr("cmd.pasteAndDestroy")
-        case .cmdEnter(let label): label
+        case .cmdEnter(let label, _): label
         case .copyColorFormat(_, let label): label
+        case .openLink(_, let display, _):
+            display.map { L10n.tr("cmd.openEntity", $0) } ?? L10n.tr("cmd.openLink")
+        case .pasteEntityCode(let code): L10n.tr("cmd.pasteEntity", code)
         case .retryOCR: L10n.tr("cmd.retryOCR")
         case .pasteOCR: L10n.tr("cmd.pasteOCR")
         case .openInPreview(let usesPreviewApp):
@@ -79,8 +94,10 @@ enum CommandAction: Hashable {
         switch self {
         case .paste: "V"
         case .pasteAndDestroy: "B"
-        case .cmdEnter: "P"
+        case .cmdEnter(_, let hasKey): hasKey ? "P" : nil
         case .copyColorFormat: "P"
+        case .openLink(_, _, let primary): primary ? "P" : nil
+        case .pasteEntityCode: "K"
         case .retryOCR: "Y"
         case .pasteOCR: "G"
         case .openInPreview: "L"
@@ -100,8 +117,10 @@ enum CommandAction: Hashable {
         switch self {
         case .paste: 9       // V
         case .pasteAndDestroy: 11 // B
-        case .cmdEnter: 35   // P
+        case .cmdEnter(_, let hasKey): hasKey ? 35 : nil // P
         case .copyColorFormat: 35 // P
+        case .openLink(_, _, let primary): primary ? 35 : nil // P
+        case .pasteEntityCode: 40 // K
         case .retryOCR: 16   // Y
         case .pasteOCR: 5     // G
         case .openInPreview: 37 // L
@@ -130,7 +149,8 @@ enum CommandAction: Hashable {
     var group: Int {
         switch self {
         case .paste, .pasteAndDestroy, .cmdEnter, .copyColorFormat: 0
-        case .retryOCR, .pasteOCR, .openInPreview, .showInFinder: 1
+        case .openLink, .pasteEntityCode,
+             .retryOCR, .pasteOCR, .openInPreview, .showInFinder: 1
         case .copy, .addToRelay, .splitAndRelay: 2
         case .pin, .toggleSensitive, .delete: 3
         case .transform, .runRule: 4
@@ -143,7 +163,8 @@ enum CommandAction: Hashable {
     /// and the close stalls for a beat (the lag vs. a direct Enter paste).
     var dismissesQuickPanel: Bool {
         switch self {
-        case .paste, .pasteAndDestroy, .cmdEnter, .copy, .pasteOCR, .showInFinder: true
+        case .paste, .pasteAndDestroy, .cmdEnter, .copy, .pasteOCR, .showInFinder,
+             .openLink, .pasteEntityCode: true
         default: false
         }
     }
@@ -204,6 +225,9 @@ struct CommandPaletteContent: View {
     @State private var keyMonitor: Any?
     @State private var flagsMonitor: Any?
     @State private var isOptionPressed = false
+    /// 内容里认出来的链接 / 提取码。算一次存下来，不放进 `actions` 现算——键盘上下
+    /// 移动焦点会反复求值 body，每次重跑一遍关键词扫描是白扔的开销。
+    @State private var entities: [TextEntityExtractor.Entity] = []
 
     // keyCodes for digits 1..5 on an ANSI keyboard
     private static let digitKeyCodes: [Int] = [18, 19, 20, 21, 23]
@@ -222,6 +246,13 @@ struct CommandPaletteContent: View {
         return true
     }
 
+    /// ⌘K 里 `P` 该开的链接。判定和执行都由 `TextEntityExtractor.openableLink`
+    /// 给，快捷面板的键监听走同一个函数，不会和这里说的不一样。
+    private var openableLink: (url: String, display: String?)? {
+        guard !isMultiSelected, let item else { return nil }
+        return TextEntityExtractor.openableLink(for: item)
+    }
+
     private var actions: [CommandAction] {
         var list: [CommandAction] = [.paste]
         if canPasteAndDestroy {
@@ -235,7 +266,25 @@ struct CommandPaletteContent: View {
                 label: L10n.tr("cmd.copyAs", alt.rawValue)
             ))
         } else if let item, item.contentType != .color {
-            list.append(.cmdEnter(label: cmdEnterLabel(for: item)))
+            // 有链接可开时让出 `P`（见下面的 openLink），⌘↩ 和底栏提示照常
+            list.append(.cmdEnter(
+                label: cmdEnterLabel(for: item),
+                hasKey: openableLink == nil
+            ))
+        }
+        // 打开链接：条目整条是链接、或者内容里解析出了链接，都走这一行，`P` 键。
+        // ⌘↩ 不参与——它是纯文本粘贴，见上面的 cmdEnter。
+        if let openableLink {
+            list.append(.openLink(
+                url: openableLink.url, display: openableLink.display, primary: true
+            ))
+        }
+        // 多出来的片段链接不给字母键，方向键可达
+        for link in entities.filter({ $0.kind == .link }).dropFirst() {
+            list.append(.openLink(url: link.value, display: link.display, primary: false))
+        }
+        if let code = entities.first(where: { $0.kind == .code }) {
+            list.append(.pasteEntityCode(code: code.value))
         }
         if !isMultiSelected,
            let item,
@@ -292,10 +341,11 @@ struct CommandPaletteContent: View {
     }
 
     private func cmdEnterLabel(for item: ClipItem) -> String {
+        // ⌘↩ 在所有条目上是同一件事：纯文本粘贴（文件类是粘贴路径）。链接条目也不
+        // 例外——它整条就是 URL，粘纯文本和富文本去格式是同一个语义。
         switch item.contentType {
-        case .text, .code, .color, .email, .phone, .mixed:
+        case .text, .code, .color, .email, .phone, .mixed, .link:
             L10n.tr("cmd.pasteAsPlainText")
-        case .link: L10n.tr("cmd.openLink")
         case .image, .file, .document, .archive, .application, .video, .audio:
             L10n.tr("cmd.pastePath")
         }
@@ -358,7 +408,11 @@ struct CommandPaletteContent: View {
             .onAppear {
             installKeyMonitor()
             installFlagsMonitor()
+            loadEntities()
         }
+        // 面板不关而换了条目（父视图带着新 item 重建）时 @State 不会重置，
+        // 不重算就会拿上一条的链接 / 码去执行。
+        .onChange(of: item?.itemID) { _, _ in loadEntities() }
         .onDisappear {
             removeKeyMonitor()
             removeFlagsMonitor()
@@ -487,6 +541,16 @@ struct CommandPaletteContent: View {
 
     private func removeKeyMonitor() {
         if let m = keyMonitor { NSEvent.removeMonitor(m); keyMonitor = nil }
+    }
+
+    /// 该扫哪些条目由 `TextEntityExtractor.entities(for:)` 判定（含敏感条目遮蔽），
+    /// 这里只管多选时不扫。
+    private func loadEntities() {
+        guard !isMultiSelected, let item else {
+            entities = []
+            return
+        }
+        entities = TextEntityExtractor.entities(for: item)
     }
 
     private func installFlagsMonitor() {

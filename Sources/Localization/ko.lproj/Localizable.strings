@@ -457,6 +457,8 @@
 "cmd.toggleSensitive" = "민감 표시 전환";
 "cmd.delete" = "삭제";
 "cmd.openLink" = "링크 열기";
+"cmd.openEntity" = "%@ 열기";
+"cmd.pasteEntity" = "%@ 붙여넣기";
 "cmd.pasteAsFile" = "파일로 붙여넣기";
 "cmd.pastePath" = "경로 붙여넣기";
 "cmd.andNewLine" = " + 줄바꿈";

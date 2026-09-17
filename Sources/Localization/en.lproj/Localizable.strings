@@ -712,6 +712,8 @@
 "cmd.toggleSensitive" = "Toggle Sensitive";
 "cmd.delete" = "Delete";
 "cmd.openLink" = "Open Link";
+"cmd.openEntity" = "Open %@";
+"cmd.pasteEntity" = "Paste %@";
 "cmd.pasteAsFile" = "Paste as File";
 "cmd.pastePath" = "Paste Path";
 "cmd.openInPreview" = "Open in Preview";
