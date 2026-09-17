@@ -36,6 +36,7 @@
 "filter.favorites" = "お気に入り";
 "filter.pinned" = "ピン留め";
 "filter.aiAgent" = "AI Agent";
+"filter.sms" = "SMS";
 
 /* Time */
 "time.now" = "たった今";
@@ -45,6 +46,8 @@
 
 /* Settings */
 "settings.general" = "一般";
+"settings.nav.back" = "戻る";
+"settings.nav.forward" = "進む";
 "settings.update" = "アップデート";
 "settings.about" = "このアプリについて";
 "settings.appearance" = "外観";

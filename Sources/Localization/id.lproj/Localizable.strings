@@ -62,6 +62,7 @@
 "filter.favorites" = "Favorit";
 "filter.pinned" = "Disematkan";
 "filter.aiAgent" = "AI Agent";
+"filter.sms" = "SMS";
 
 /* Time */
 "time.now" = "baru saja";
@@ -80,6 +81,8 @@
 
 /* Settings */
 "settings.general" = "Umum";
+"settings.nav.back" = "Kembali";
+"settings.nav.forward" = "Maju";
 "settings.update" = "Pembaruan";
 "settings.about" = "Tentang";
 "settings.appearance" = "Tampilan";

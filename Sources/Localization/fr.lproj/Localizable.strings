@@ -36,6 +36,7 @@
 "filter.favorites" = "Favoris";
 "filter.pinned" = "Épinglés";
 "filter.aiAgent" = "AI Agent";
+"filter.sms" = "SMS";
 
 /* Time */
 "time.now" = "maintenant";
@@ -45,6 +46,8 @@
 
 /* Settings */
 "settings.general" = "Général";
+"settings.nav.back" = "Retour";
+"settings.nav.forward" = "Suivant";
 "settings.update" = "Mise à jour";
 "settings.about" = "À propos";
 "settings.appearance" = "Apparence";

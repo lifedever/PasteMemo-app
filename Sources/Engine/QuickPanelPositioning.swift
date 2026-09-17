@@ -67,6 +67,7 @@ enum QuickPanelSettings {
 
     static let pinnedTabID = "pinned"
     static let allTabID = "all"
+    static let smsTabID = "sms"
 
     /// 被隐藏的类型集合
     static func hiddenTabTypes() -> Set<ClipContentType> {
@@ -83,13 +84,15 @@ enum QuickPanelSettings {
     ///
     /// 不含「置顶」——它固定在标签栏第一位，不参与排序（但仍可整个关掉）。
     static var defaultTabOrderIDs: [String] {
-        [allTabID] + ClipContentType.visibleCases.map(\.rawValue)
+        // 短信放末尾：它是小众维度（要开短信转发才有），排在内容类型前面会挤掉高频标签。
+        // 也和「存过顺序的老用户那里它被补在末尾」保持一致。
+        [allTabID] + ClipContentType.visibleCases.map(\.rawValue) + [smsTabID]
     }
 
     /// 把存下来的顺序修正成一份完整、无重复、无未知项的列表。
     ///
-    /// 两头都要兜：存过的顺序里可能有已经下线的 id（跳过），也可能缺了后来新增的类型
-    /// （补到末尾）——新类型默认可见是既定取舍，不能因为老用户存过顺序就永远看不到。
+    /// 两头都要兜：存过的顺序里可能有已经下线的 id（跳过），也可能缺了后来新增的分类
+    /// （补到末尾）——新分类默认可见是既定取舍，不能因为老用户存过顺序就永远看不到。
     static func resolvedTabOrderIDs(from raw: String) -> [String] {
         let fallback = defaultTabOrderIDs
         let saved = raw.split(separator: ",").map(String.init).filter { !$0.isEmpty }
@@ -114,6 +117,9 @@ enum QuickPanelSettings {
 enum QuickPanelTabItem: Hashable, Identifiable {
     case pinned
     case all
+    /// 短信验证码。不是内容类型（那些条目本身是 `.text`），和 AI Agent 一样是一条
+    /// 独立的筛选维度——只在真有短信条目时才出现在标签栏。
+    case sms
     case type(ClipContentType)
 
     var id: String { storageID }
@@ -122,6 +128,7 @@ enum QuickPanelTabItem: Hashable, Identifiable {
         switch self {
         case .pinned: QuickPanelSettings.pinnedTabID
         case .all: QuickPanelSettings.allTabID
+        case .sms: QuickPanelSettings.smsTabID
         case .type(let type): type.rawValue
         }
     }
@@ -130,6 +137,7 @@ enum QuickPanelTabItem: Hashable, Identifiable {
         switch raw {
         // 刻意不认 `pinned`：它不参与排序，老配置里存过也要被丢掉
         case QuickPanelSettings.allTabID: return .all
+        case QuickPanelSettings.smsTabID: return .sms
         default:
             guard let type = ClipContentType(rawValue: raw),
                   ClipContentType.defaultVisibleCases.contains(type) else { return nil }
@@ -141,6 +149,7 @@ enum QuickPanelTabItem: Hashable, Identifiable {
         switch self {
         case .pinned: "pin"
         case .all: "tray.full"
+        case .sms: "message"
         case .type(let type): type.icon
         }
     }
@@ -150,6 +159,7 @@ enum QuickPanelTabItem: Hashable, Identifiable {
         switch self {
         case .pinned: L10n.tr("filter.pinned")
         case .all: L10n.tr("filter.all")
+        case .sms: L10n.tr("filter.sms")
         case .type(let type): type.label
         }
     }

@@ -63,6 +63,9 @@ final class ClipItemStore {
     var pinnedOnly: Bool = false
     var sensitiveOnly: Bool = false
     var aiAgentOnly: Bool = false
+    /// 只看短信验证码条目。判定用 `smsMessageText` 非空——短信条目的 contentType
+    /// 仍是 `.text`，不新增内容类型就不用动数据结构。
+    var smsOnly: Bool = false
     var sourceApp: FilteredApp? = nil
     var groupName: String? = nil
 
@@ -78,6 +81,7 @@ final class ClipItemStore {
         pinnedOnly: Bool? = nil,
         sensitiveOnly: Bool? = nil,
         aiAgentOnly: Bool? = nil,
+        smsOnly: Bool? = nil,
         sourceApp: QueryValue<FilteredApp?> = .unchanged,
         groupName: QueryValue<String?> = .unchanged
     ) {
@@ -96,6 +100,7 @@ final class ClipItemStore {
         let nextPinnedOnly = pinnedOnly ?? self.pinnedOnly
         let nextSensitiveOnly = sensitiveOnly ?? self.sensitiveOnly
         let nextAIAgentOnly = aiAgentOnly ?? self.aiAgentOnly
+        let nextSMSOnly = smsOnly ?? self.smsOnly
         let nextSourceApp: FilteredApp? = switch sourceApp {
         case .unchanged: self.sourceApp
         case .set(let value): value
@@ -111,6 +116,7 @@ final class ClipItemStore {
             nextPinnedOnly != self.pinnedOnly ||
             nextSensitiveOnly != self.sensitiveOnly ||
             nextAIAgentOnly != self.aiAgentOnly ||
+            nextSMSOnly != self.smsOnly ||
             nextSourceApp != self.sourceApp ||
             nextGroupName != self.groupName
 
@@ -119,6 +125,7 @@ final class ClipItemStore {
         self.pinnedOnly = nextPinnedOnly
         self.sensitiveOnly = nextSensitiveOnly
         self.aiAgentOnly = nextAIAgentOnly
+        self.smsOnly = nextSMSOnly
         self.sourceApp = nextSourceApp
         self.groupName = nextGroupName
 
@@ -219,6 +226,7 @@ final class ClipItemStore {
         pinnedOnly = false
         sensitiveOnly = false
         aiAgentOnly = false
+        smsOnly = false
         sourceApp = nil
         groupName = nil
         searchText = ""
@@ -345,6 +353,7 @@ final class ClipItemStore {
         if pinnedOnly { conditions.append("ZISPINNED = 1") }
         if sensitiveOnly { conditions.append("ZISSENSITIVE = 1") }
         if aiAgentOnly { conditions.append("ZAGENTSOURCE IS NOT NULL") }
+        if smsOnly { conditions.append("ZSMSMESSAGETEXT IS NOT NULL") }
         if let app = sourceApp {
             switch app {
             case .named(let name):
@@ -436,6 +445,7 @@ final class ClipItemStore {
         var pinned = 0
         var sensitive = 0
         var aiAgent = 0
+        var sms = 0
         var byType: [ClipContentType: Int] = [:]
         var byApp: [String?: Int] = [:]  // nil key = unknown app
         var byGroup: [(name: String, icon: String, count: Int, preservesItems: Bool)] = []
@@ -449,15 +459,17 @@ final class ClipItemStore {
             SELECT COUNT(*),
                    COALESCE(SUM(CASE WHEN ZISPINNED = 1 THEN 1 ELSE 0 END), 0),
                    COALESCE(SUM(CASE WHEN ZISSENSITIVE = 1 THEN 1 ELSE 0 END), 0),
-                   COALESCE(SUM(CASE WHEN ZAGENTSOURCE IS NOT NULL THEN 1 ELSE 0 END), 0)
+                   COALESCE(SUM(CASE WHEN ZAGENTSOURCE IS NOT NULL THEN 1 ELSE 0 END), 0),
+                   COALESCE(SUM(CASE WHEN ZSMSMESSAGETEXT IS NOT NULL THEN 1 ELSE 0 END), 0)
             FROM ZCLIPITEM
             """,
-            columnCount: 4
+            columnCount: 5
         )
         counts.all = summary[0]
         counts.pinned = summary[1]
         counts.sensitive = summary[2]
         counts.aiAgent = summary[3]
+        counts.sms = summary[4]
         let visibleTypes = Set(ClipContentType.visibleCases)
         for (rawType, count) in db.queryStringIntPairs(
             "SELECT ZCONTENTTYPERAW, COUNT(*) FROM ZCLIPITEM GROUP BY ZCONTENTTYPERAW"

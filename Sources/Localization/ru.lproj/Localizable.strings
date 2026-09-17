@@ -62,6 +62,7 @@
 "filter.favorites" = "Избранное";
 "filter.pinned" = "Закреплённые";
 "filter.aiAgent" = "AI Agent";
+"filter.sms" = "SMS";
 
 /* Time */
 "time.now" = "сейчас";
@@ -80,6 +81,8 @@
 
 /* Settings */
 "settings.general" = "Основные";
+"settings.nav.back" = "Назад";
+"settings.nav.forward" = "Вперёд";
 "settings.update" = "Обновление";
 "settings.about" = "О программе";
 "settings.appearance" = "Внешний вид";

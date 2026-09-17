@@ -36,6 +36,7 @@
 "filter.favorites" = "즐겨찾기";
 "filter.pinned" = "고정됨";
 "filter.aiAgent" = "AI Agent";
+"filter.sms" = "문자";
 
 /* Time */
 "time.now" = "방금";
@@ -45,6 +46,8 @@
 
 /* Settings */
 "settings.general" = "일반";
+"settings.nav.back" = "뒤로";
+"settings.nav.forward" = "앞으로";
 "settings.update" = "업데이트";
 "settings.about" = "정보";
 "settings.appearance" = "모양";

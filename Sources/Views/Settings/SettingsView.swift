@@ -3,66 +3,79 @@ import SwiftData
 import ServiceManagement
 import Carbon
 
-struct SettingsView: View {
-    @State private var selection: SettingsCategory? = .general
+/// 设置窗口侧边栏。窗口骨架是 AppKit 的 `SettingsSplitViewController`，
+/// 这里只负责这一栏的内容；宽度和分隔线由那边管。
+struct SettingsSidebar: View {
+    @EnvironmentObject private var nav: SettingsNavigationModel
 
     var body: some View {
-        // 和系统设置同一套组件：NavigationSplitView 侧边栏 + Form(.grouped) 详情。
-        // 窗口固定尺寸、面板内滚动（Form(.grouped) 自带滚动）。
-        NavigationSplitView {
-            List(selection: $selection) {
-                Section {
-                    ForEach(SettingsCategory.functionGroup.filter(isVisible)) { sidebarRow($0) }
-                }
-                Section {
-                    ForEach(SettingsCategory.dataPrivacyGroup) { sidebarRow($0) }
-                }
-                Section {
-                    ForEach(SettingsCategory.aboutGroup) { sidebarRow($0) }
-                }
+        ScrollView {
+            VStack(alignment: .leading, spacing: 2) {
+                group(SettingsCategory.functionGroup.filter(isVisible))
+                group(SettingsCategory.dataPrivacyGroup)
+                group(SettingsCategory.aboutGroup)
             }
-            .navigationSplitViewColumnWidth(min: 200, ideal: 215, max: 260)
-            // 系统设置没有侧栏折叠按钮
-            .toolbar(removing: .sidebarToggle)
-        } detail: {
-            detailView(for: selection ?? .general)
-                // 去掉标题栏底色和那条分隔线，内容直接从顶部开始，同系统设置
-                .toolbarBackground(.hidden, for: .windowToolbar)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 8)
         }
-        .frame(minWidth: 700, minHeight: 460)
-        .localized()
-        // 标题栏显示当前页名（系统设置的做法），而不是固定的「设置」。首次在
-        // onAppear 里延后一拍：视图首次求值时 WindowManager 还没登记这个窗口。
-        .onChange(of: selection) { syncWindowTitle() }
-        .onAppear { DispatchQueue.main.async { syncWindowTitle() } }
+        .scrollContentBackground(.hidden)
     }
 
-    private func syncWindowTitle() {
-        WindowManager.shared.setTitle(L10n.tr((selection ?? .general).titleKey), for: "settings")
+    @ViewBuilder
+    private func group(_ categories: [SettingsCategory]) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            ForEach(categories) { sidebarRow($0) }
+        }
+        .padding(.bottom, 10)
     }
 
-    /// 侧边栏一行：彩色圆角图标块 + 页名，尺寸对齐系统设置（26pt 图标块、
-    /// 行高约 34pt）。选中态由 List 负责。
+    /// 侧边栏一行：彩色圆角图标块 + 页名，尺寸照系统设置。
+    ///
+    /// 不用 `List`：它底层是 NSTableView，首次填充时行带着插入动画从下往上滑进来，
+    /// 打开窗口能明显看见图标「噗」一下窜上去（实测 AppKit 那层的 frame / insets
+    /// 全程不动，动的就是这个行插入动画），SwiftUI 侧的 `.transaction` 压不住它。
+    /// 侧边栏统共十来行固定项，不需要虚拟化，自绘反而把留白和行高抓得更准。
     private func sidebarRow(_ category: SettingsCategory) -> some View {
-        HStack(spacing: 8) {
-            RoundedRectangle(cornerRadius: 7, style: .continuous)
+        let isSelected = nav.selection == category
+        return HStack(spacing: 8) {
+            RoundedRectangle(cornerRadius: 6, style: .continuous)
                 .fill(category.tileColor.gradient)
-                .frame(width: 26, height: 26)
+                .frame(width: 22, height: 22)
                 .overlay(
                     Image(systemName: category.icon)
-                        .font(.system(size: 13, weight: .semibold))
+                        .font(.system(size: 11.5, weight: .semibold))
                         .foregroundStyle(.white)
                 )
             Text(L10n.tr(category.titleKey))
                 .font(.system(size: 13))
+                .foregroundStyle(isSelected ? Color.white : Color.primary)
+            Spacer(minLength: 0)
         }
-        .padding(.vertical, 3)
-        .tag(category)
+        .padding(.horizontal, 6)
+        .padding(.vertical, 5)
+        .background(
+            RoundedRectangle(cornerRadius: 6, style: .continuous)
+                .fill(isSelected ? Color.accentColor : Color.clear)
+        )
+        .contentShape(Rectangle())
+        .onTapGesture { nav.selection = category }
+        .pointerCursor()
     }
 
     /// 自动化条目仅在启用时出现。
     private func isVisible(_ category: SettingsCategory) -> Bool {
         category != .automation || ProManager.AUTOMATION_ENABLED
+    }
+}
+
+/// 设置窗口详情区。标题栏那对前进/后退箭头也挂在这里（经 hosting controller 桥接）。
+struct SettingsDetail: View {
+    @EnvironmentObject private var nav: SettingsNavigationModel
+
+    var body: some View {
+        detailView(for: nav.selection)
+            // 去掉标题栏底色和那条分隔线，内容直接从顶部开始，同系统设置
+            .toolbarBackground(.hidden, for: .windowToolbar)
     }
 
     @ViewBuilder

@@ -7,6 +7,8 @@ enum SidebarFilter: Equatable {
     case pinned
     case sensitive
     case aiAgent
+    /// 短信验证码。同 `.aiAgent`，是一条独立筛选维度而不是内容类型。
+    case sms
     case type(ClipContentType)
     case app(String)
     case group(String)
@@ -18,6 +20,7 @@ enum SidebarFilter: Equatable {
         case .pinned: return L10n.tr("filter.pinned")
         case .sensitive: return L10n.tr("filter.sensitive")
         case .aiAgent: return L10n.tr("filter.aiAgent")
+        case .sms: return L10n.tr("filter.sms")
         case .type(let t): return t.label
         case .app(let name): return name.isEmpty ? L10n.tr("filter.other") : name
         case .group(let name): return name
@@ -319,6 +322,7 @@ struct MainWindowView: View {
         store.pinnedOnly = false
         store.sensitiveOnly = false
         store.aiAgentOnly = false
+        store.smsOnly = false
         store.filterType = nil
         store.sourceApp = nil
         store.groupName = nil
@@ -327,6 +331,7 @@ struct MainWindowView: View {
         case .pinned: store.pinnedOnly = true
         case .sensitive: store.sensitiveOnly = true
         case .aiAgent: store.aiAgentOnly = true
+        case .sms: store.smsOnly = true
         case .type(let t): store.filterType = t
         case .app(let name):
             store.sourceApp = name.isEmpty ? .unknown : .named(name)
@@ -354,6 +359,13 @@ struct MainWindowView: View {
                 if aiAgentCount > 0 {
                     sidebarRow(L10n.tr("filter.aiAgent"), icon: "sparkles", badge: aiAgentCount, isActive: selectedFilter == .aiAgent) {
                         selectedFilter = .aiAgent
+                    }
+                }
+
+                let smsCount = store.sidebarCounts.sms
+                if smsCount > 0 {
+                    sidebarRow(L10n.tr("filter.sms"), icon: "message", badge: smsCount, isActive: selectedFilter == .sms) {
+                        selectedFilter = .sms
                     }
                 }
 
@@ -1214,7 +1226,7 @@ struct MainWindowView: View {
                     predicate: #Predicate { !$0.isPinned && $0.sourceApp == appName }
                 )
             }
-        case .all, .pinned, .sensitive, .aiAgent:
+        case .all, .pinned, .sensitive, .aiAgent, .sms:
             return
         }
 

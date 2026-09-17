@@ -70,6 +70,7 @@
 "filter.favorites" = "Favorites";
 "filter.pinned" = "Pinned";
 "filter.aiAgent" = "AI Agent";
+"filter.sms" = "SMS";
 
 /* Time */
 "time.now" = "now";
@@ -88,6 +89,8 @@
 
 /* Settings */
 "settings.general" = "General";
+"settings.nav.back" = "Back";
+"settings.nav.forward" = "Forward";
 "settings.update" = "Update";
 "settings.about" = "About";
 "settings.appearance" = "Appearance";

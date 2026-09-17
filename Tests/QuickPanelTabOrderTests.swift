@@ -45,4 +45,16 @@ struct QuickPanelTabOrderTests {
         #expect(QuickPanelSettings.hiddenTabIDs(from: "pinned,all") == ["pinned", "all"])
         #expect(QuickPanelSettings.hiddenTabIDs(from: "").isEmpty)
     }
+
+    @Test("短信是独立筛选项，参与排序和显隐")
+    func smsIsASortableTab() {
+        #expect(QuickPanelTabItem.parse("sms") == .sms)
+        #expect(QuickPanelSettings.defaultTabOrderIDs.contains("sms"))
+        // 短信排末尾：小众维度，不该挤掉高频标签。老用户存过的顺序里没有它，
+        // 补进来时同样落在末尾，新老用户看到的位置一致。
+        #expect(QuickPanelSettings.defaultTabOrderIDs.last == "sms")
+        let resolved = QuickPanelSettings.resolvedTabOrderIDs(from: "all,text,image")
+        #expect(resolved.prefix(3) == ["all", "text", "image"])
+        #expect(resolved.last == "sms")
+    }
 }

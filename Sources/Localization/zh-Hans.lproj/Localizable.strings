@@ -70,6 +70,7 @@
 "filter.favorites" = "收藏";
 "filter.pinned" = "置顶";
 "filter.aiAgent" = "AI Agent";
+"filter.sms" = "短信";
 
 /* Time */
 "time.now" = "刚刚";
@@ -88,6 +89,8 @@
 
 /* Settings */
 "settings.general" = "通用";
+"settings.nav.back" = "后退";
+"settings.nav.forward" = "前进";
 "settings.update" = "更新";
 "settings.about" = "关于";
 "settings.appearance" = "外观";

@@ -17,6 +17,9 @@ final class WindowManager {
         bridgeToolbar: Bool = false,
         autoResizesToContent: Bool = false,
         content: @escaping () -> Content,
+        /// 窗口已建好、但还没显示时调用。要在这里做的是「会改变初始外观」的事——
+        /// 放到显示之后做，用户会先看见一帧旧样子再跳变。
+        beforeShow: ((NSWindow) -> Void)? = nil,
         onClose: (() -> Void)? = nil
     ) {
         if let existing = windows[id], existing.isVisible {
@@ -98,6 +101,11 @@ final class WindowManager {
         }
 
         windows[id] = window
+        if let beforeShow {
+            // SwiftUI 的视图层级要 layout 过才建得出来，否则这会儿还找不到 split view
+            window.contentView?.layoutSubtreeIfNeeded()
+            beforeShow(window)
+        }
         window.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
     }
@@ -105,6 +113,98 @@ final class WindowManager {
     /// 改已打开窗口的标题（设置窗口切页时标题跟着页名走，和系统设置一致）。
     func setTitle(_ title: String, for id: String) {
         windows[id]?.title = title
+    }
+
+    func window(for id: String) -> NSWindow? { windows[id] }
+
+    /// 用现成的 `NSViewController` 当窗口内容——设置窗口走这条：它的骨架是
+    /// AppKit 的 `NSSplitViewController`，不是 SwiftUI 视图（见
+    /// `SettingsSplitViewController` 里那段原委）。
+    func showController(
+        id: String,
+        title: String = "",
+        size: NSSize,
+        styleMask: NSWindow.StyleMask = [.titled, .closable],
+        frameAutosaveName: String? = nil,
+        controller: NSViewController,
+        /// 窗口建好、还没显示时调用。会影响 safe area 的事（挂 toolbar）必须在这里做，
+        /// 放到显示之后会让内容当着用户的面挪一次位置。
+        beforeShow: ((NSWindow) -> Void)? = nil,
+        onClose: (() -> Void)? = nil
+    ) {
+        if let existing = windows[id], existing.isVisible {
+            existing.makeKeyAndOrderFront(nil)
+            NSApp.activate(ignoringOtherApps: true)
+            return
+        }
+
+        let window = CallbackWindow(
+            contentRect: NSRect(origin: .zero, size: size),
+            styleMask: styleMask,
+            backing: .buffered,
+            defer: false
+        )
+        window.title = title
+        window.identifier = NSUserInterfaceItemIdentifier(id)
+        window.contentViewController = controller
+        window.setContentSize(size)
+        // 侧边栏要通顶到标题栏下（同 bridgeToolbar 那条路径的理由）
+        window.styleMask.insert(.fullSizeContentView)
+        window.toolbarStyle = .unified
+        window.isReleasedWhenClosed = false
+        if let frameAutosaveName {
+            window.setFrameAutosaveName(frameAutosaveName)
+            if !window.setFrameUsingName(frameAutosaveName) { window.center() }
+        } else {
+            window.center()
+        }
+        window.onCloseCallback = { [weak self] in
+            self?.windows.removeValue(forKey: id)
+            onClose?()
+        }
+        windows[id] = window
+        window.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
+    }
+
+    /// 把 NavigationSplitView 的侧边栏钉成固定宽度、不可拖。
+    ///
+    /// SwiftUI 的 `.navigationSplitViewColumnWidth` 在 AppKit 托管的窗口里不生效
+    /// （本机实测：设了 240，实际还是按自己那套算出来的宽度），只能下到底层的
+    /// `NSSplitViewController` 上，把 min/max 厚度设成同一个值——AppKit 自己就会
+    /// 锁住分隔线，顺带也不会再把宽度写进「NSSplitView Subview Frames …」。
+    ///
+    /// 视图层级要等 SwiftUI 建完才有，所以延后一拍再找。
+    func pinSidebarWidth(_ width: CGFloat, in window: NSWindow) {
+        // 先同步试一次：窗口还没显示时就钉好，避免先按 SwiftUI 算的宽度画一帧再跳。
+        if applySidebarWidth(width, in: window) { return }
+        // 层级还没建出来就延后一拍兜底（会闪一下，但总比宽度不对强）
+        DispatchQueue.main.async { [weak self] in
+            _ = self?.applySidebarWidth(width, in: window)
+        }
+    }
+
+    @discardableResult
+    private func applySidebarWidth(_ width: CGFloat, in window: NSWindow) -> Bool {
+        guard let controller = Self.findSplitViewController(in: window.contentView),
+              let sidebar = controller.splitViewItems.first else { return false }
+        sidebar.minimumThickness = width
+        sidebar.maximumThickness = width
+        sidebar.canCollapse = false
+        controller.splitView.setPosition(width, ofDividerAt: 0)
+        return true
+    }
+
+    private static func findSplitViewController(in view: NSView?) -> NSSplitViewController? {
+        guard let view else { return nil }
+        if let splitView = view as? NSSplitView,
+           let controller = splitView.delegate as? NSSplitViewController {
+            return controller
+        }
+        for subview in view.subviews {
+            if let found = findSplitViewController(in: subview) { return found }
+        }
+        return nil
     }
 
     func close(id: String) {

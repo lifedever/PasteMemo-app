@@ -62,6 +62,7 @@
 "filter.favorites" = "Preferiti";
 "filter.pinned" = "Fissati";
 "filter.aiAgent" = "AI Agent";
+"filter.sms" = "SMS";
 
 /* Time */
 "time.now" = "ora";
@@ -80,6 +81,8 @@
 
 /* Settings */
 "settings.general" = "Generali";
+"settings.nav.back" = "Indietro";
+"settings.nav.forward" = "Avanti";
 "settings.update" = "Aggiornamento";
 "settings.about" = "Informazioni";
 "settings.appearance" = "Aspetto";

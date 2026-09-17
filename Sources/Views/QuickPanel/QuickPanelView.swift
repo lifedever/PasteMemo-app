@@ -7,6 +7,7 @@ private enum QuickFilter: Equatable, Hashable {
     case all
     case pinned
     case aiAgent
+    case sms
     case type(ClipContentType)
     case group(String)
 
@@ -16,6 +17,7 @@ private enum QuickFilter: Equatable, Hashable {
         case .all: return "all"
         case .pinned: return "pinned"
         case .aiAgent: return "aiAgent"
+        case .sms: return "sms"
         case .type(let t): return "type:\(t.rawValue)"
         case .group(let name): return "group:\(name)"
         }
@@ -28,6 +30,7 @@ private enum QuickFilter: Equatable, Hashable {
         case "all": self = .all
         case "pinned": self = .pinned
         case "aiAgent": self = .aiAgent
+        case "sms": self = .sms
         default:
             guard let colon = storageString.firstIndex(of: ":") else { return nil }
             let prefix = String(storageString[..<colon])
@@ -840,6 +843,7 @@ struct QuickPanelView: View {
     private func applyFilters(primary: QuickFilter, pill: PillSelection?) {
         store.pinnedOnly = false
         store.aiAgentOnly = false
+        store.smsOnly = false
         store.filterType = nil
         store.groupName = nil
         store.sourceApp = nil
@@ -848,6 +852,7 @@ struct QuickPanelView: View {
         case .all: break
         case .pinned: store.pinnedOnly = true
         case .aiAgent: store.aiAgentOnly = true
+        case .sms: store.smsOnly = true
         case .type(let t): store.filterType = t
         case .group(let name): store.groupName = name
         }
@@ -878,6 +883,8 @@ struct QuickPanelView: View {
             return isTabVisible(.pinned) ? .pinned : fallbackTabFilter
         case .aiAgent:
             return store.sidebarCounts.aiAgent > 0 ? .aiAgent : fallbackTabFilter
+        case .sms:
+            return (isTabVisible(.sms) && store.sidebarCounts.sms > 0) ? .sms : fallbackTabFilter
         case .type(let t):
             return (secondaryRow == .types && availableContentTypes.contains(t)) ? .type(t) : fallbackTabFilter
         case .group(let name):
@@ -1243,6 +1250,9 @@ struct QuickPanelView: View {
             switch tab {
             case .pinned: break  // 上面已处理
             case .all: items.append((.all, tab.label))
+            case .sms:
+                // 没开短信转发的用户一条都没有，标签不该占位
+                if store.sidebarCounts.sms > 0 { items.append((.sms, tab.label)) }
             case .type(let type):
                 if secondaryRow == .types, availableContentTypes.contains(type) {
                     items.append((.type(type), type.label))
