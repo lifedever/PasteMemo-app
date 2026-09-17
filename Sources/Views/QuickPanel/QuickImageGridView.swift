@@ -155,6 +155,7 @@ struct QuickImageGridView<Menu: View, Palette: View>: View {
                 .padding(.horizontal, Self.hPad)
                 .padding(.vertical, 14)
             }
+            .hideScrollerTrack()
             .onChange(of: focusedItemID) { _, id in
                 guard let id else { return }
                 // 不用 anchor: .center —— 那会让「点击已可见的图」也被强制滚到正中，

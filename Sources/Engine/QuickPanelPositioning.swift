@@ -49,19 +49,107 @@ enum QuickPanelSettings {
     static let imageLayoutKey = "quickPanelImageLayout"
     /// 瀑布流密度（疏 / 中 / 密 → 目标列宽），默认中
     static let imageGridDensityKey = "quickPanelImageGridDensity"
-    /// 在快捷面板标签栏里隐藏的内容类型（逗号分隔的 rawValue）。
+    /// 在快捷面板标签栏里隐藏的项（逗号分隔的 id：`pinned` / `all` / 内容类型 rawValue）。
     ///
-    /// 刻意不复用 `typeOrder`：那个键的语义是**排序**，且 `visibleCases` 会把不在
-    /// 其中的类型自动追加到末尾——新增类型不该悄悄消失，这个行为是对的，不能为了
-    /// 实现隐藏去破坏它。所以隐藏用独立的键，两者正交。
+    /// 刻意不复用 `typeOrder`：那个键是**主窗口侧边栏**的类型排序，而且 `visibleCases`
+    /// 会把不在其中的类型自动追加到末尾——新增类型不该悄悄消失，这个行为是对的，不能
+    /// 为了实现隐藏去破坏它。所以隐藏用独立的键，两者正交。
     ///
     /// 只作用于快捷面板：主窗口侧边栏保持全量，隐藏之后还能从那儿找回内容。
     static let hiddenTabTypesKey = "quickPanelHiddenTabTypes"
+
+    /// 快捷面板标签栏里可排序那部分的顺序（逗号分隔的 id）。空 = 默认顺序。
+    ///
+    /// 同样和 `typeOrder` 分开：快捷面板可以把「图片」提到最前，主窗口侧边栏不受影响。
+    static let tabOrderKey = "quickPanelTabOrder"
+
+    static let pinnedTabID = "pinned"
+    static let allTabID = "all"
 
     /// 被隐藏的类型集合
     static func hiddenTabTypes() -> Set<ClipContentType> {
         let raw = UserDefaults.standard.string(forKey: hiddenTabTypesKey) ?? ""
         return Set(raw.split(separator: ",").compactMap { ClipContentType(rawValue: String($0)) })
+    }
+
+    /// 被隐藏的项 id 集合（含 `pinned` / `all`）
+    static func hiddenTabIDs(from raw: String) -> Set<String> {
+        Set(raw.split(separator: ",").map(String.init).filter { !$0.isEmpty })
+    }
+
+    /// 可排序项的默认顺序：全部，然后跟着主窗口侧边栏的类型顺序走。
+    ///
+    /// 不含「置顶」——它固定在标签栏第一位，不参与排序（但仍可整个关掉）。
+    static var defaultTabOrderIDs: [String] {
+        [allTabID] + ClipContentType.visibleCases.map(\.rawValue)
+    }
+
+    /// 把存下来的顺序修正成一份完整、无重复、无未知项的列表。
+    ///
+    /// 两头都要兜：存过的顺序里可能有已经下线的 id（跳过），也可能缺了后来新增的类型
+    /// （补到末尾）——新类型默认可见是既定取舍，不能因为老用户存过顺序就永远看不到。
+    static func resolvedTabOrderIDs(from raw: String) -> [String] {
+        let fallback = defaultTabOrderIDs
+        let saved = raw.split(separator: ",").map(String.init).filter { !$0.isEmpty }
+        guard !saved.isEmpty else { return fallback }
+
+        let known = Set(fallback)
+        var seen = Set<String>()
+        var result = saved.filter { known.contains($0) && seen.insert($0).inserted }
+        result += fallback.filter { seen.insert($0).inserted }
+        return result
+    }
+
+    static func resolvedTabItems(from raw: String) -> [QuickPanelTabItem] {
+        resolvedTabOrderIDs(from: raw).compactMap(QuickPanelTabItem.parse)
+    }
+}
+
+/// 快捷面板标签栏里的一项。
+///
+/// `.pinned` 只用于设置页那个开关和显隐判断，不进 `tabOrder`：它固定在第一位。
+/// 分组标签压根不在其中——它们随用户建的分组动态增减，没法预先排。
+enum QuickPanelTabItem: Hashable, Identifiable {
+    case pinned
+    case all
+    case type(ClipContentType)
+
+    var id: String { storageID }
+
+    var storageID: String {
+        switch self {
+        case .pinned: QuickPanelSettings.pinnedTabID
+        case .all: QuickPanelSettings.allTabID
+        case .type(let type): type.rawValue
+        }
+    }
+
+    static func parse(_ raw: String) -> QuickPanelTabItem? {
+        switch raw {
+        // 刻意不认 `pinned`：它不参与排序，老配置里存过也要被丢掉
+        case QuickPanelSettings.allTabID: return .all
+        default:
+            guard let type = ClipContentType(rawValue: raw),
+                  ClipContentType.defaultVisibleCases.contains(type) else { return nil }
+            return .type(type)
+        }
+    }
+
+    var icon: String {
+        switch self {
+        case .pinned: "pin"
+        case .all: "tray.full"
+        case .type(let type): type.icon
+        }
+    }
+
+    @MainActor
+    var label: String {
+        switch self {
+        case .pinned: L10n.tr("filter.pinned")
+        case .all: L10n.tr("filter.all")
+        case .type(let type): type.label
+        }
     }
 }
 

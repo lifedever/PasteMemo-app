@@ -22,6 +22,8 @@ struct NativeTextView: NSViewRepresentable {
     /// quick panel's OCR card passes a smaller secondary style instead.
     var fontSize: CGFloat = 13
     var textColor: NSColor = .labelColor
+    /// 快捷面板预览区去掉滚动条槽轨，只留滑块。
+    var hidesScrollerTrack: Bool = false
     var onTextChange: ((String) -> Void)?
     var onEscape: (() -> Void)?
 
@@ -84,6 +86,9 @@ struct NativeTextView: NSViewRepresentable {
         textView.isHorizontallyResizable = false
         scrollView.drawsBackground = false
         scrollView.hasVerticalScroller = true
+        if hidesScrollerTrack {
+            TracklessScroller.install(on: scrollView)
+        }
         scrollView.hasHorizontalScroller = false
         scrollView.autohidesScrollers = true
         if autoFocus {

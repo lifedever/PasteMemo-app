@@ -169,7 +169,8 @@
 "settings.quickPanelSecondaryRow.types" = "タイプ";
 "settings.quickPanelSecondaryRow.groups" = "グループ";
 "settings.quickPanelTabTypes" = "タブバーに表示するカテゴリ";
-"settings.quickPanelTabTypes.hint" = "チェックを外すとクイックパネルのタブバーから非表示になります。メインウインドウのサイドバーには影響しません。";
+"settings.quickPanelTabTypes.hint" = "ドラッグで並び替え。チェックを外すとクイックパネルで非表示になります（サイドバーはそのまま）。";
+"settings.quickPanelTabTypes.reset" = "デフォルトに戻す";
 "settings.history" = "履歴";
 "settings.retentionDays" = "履歴の保持";
 "settings.retentionDays.forever" = "永久";
@@ -654,7 +655,7 @@
 "menu.openMain" = "メインウィンドウを開く";
 "menu.pause" = "クリップボード監視を一時停止";
 "menu.quickPanel" = "クイックペースト";
-"menu.quit" = "%@ を終了";
+"menu.quit" = "終了";
 "menu.accessibility.grant" = "⚠ アクセシビリティ権限を許可";
 "menu.resume" = "クリップボード監視を再開";
 "menu.settings" = "設定";

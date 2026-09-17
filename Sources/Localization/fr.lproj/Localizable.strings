@@ -161,7 +161,8 @@
 "settings.quickPanelSecondaryRow.types" = "Types";
 "settings.quickPanelSecondaryRow.groups" = "Groupes";
 "settings.quickPanelTabTypes" = "Catégories de la barre d’onglets";
-"settings.quickPanelTabTypes.hint" = "Décochez pour masquer une catégorie dans la barre d’onglets du panneau rapide. La barre latérale de la fenêtre principale n’est pas affectée.";
+"settings.quickPanelTabTypes.hint" = "Glissez pour réordonner. Décocher masque l'onglet dans le panneau rapide ; la barre latérale reste inchangée.";
+"settings.quickPanelTabTypes.reset" = "Réinitialiser";
 "settings.history" = "Historique";
 "settings.retentionDays" = "Conserver l'historique";
 "settings.retentionDays.forever" = "Toujours";
@@ -633,7 +634,7 @@ Utilisez %@ pour coller un par un.";
 "menu.openMain" = "Ouvrir la fenêtre principale";
 "menu.pause" = "Suspendre la surveillance du presse-papiers";
 "menu.quickPanel" = "Collage rapide";
-"menu.quit" = "Quitter %@";
+"menu.quit" = "Quitter";
 "menu.accessibility.grant" = "⚠ Autoriser l'accessibilité";
 "menu.resume" = "Reprendre la surveillance du presse-papiers";
 "menu.settings" = "Réglages";

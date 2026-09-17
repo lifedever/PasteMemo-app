@@ -144,11 +144,20 @@ enum AppMenuActions {
 
     static func showEditGroupAlert(group: SmartGroup, context: ModelContext) {
         guard let result = GroupEditorPanel.show(name: group.name, icon: group.icon, preservesItems: group.preservesItems) else { return }
+        let oldName = group.name
         group.name = result.name
         group.icon = result.icon
         group.preservesItems = result.preservesItems
-        try? context.save()
-        NotificationCenter.default.post(name: ClipItemStore.itemDidUpdateNotification, object: nil)
+        // 条目是按 groupName 字符串挂在分组上的（同 deleteGroup 里的清空逻辑），
+        // 改完名不把条目迁过去，它们就挂在一个不存在的分组名下——侧边栏点新名字
+        // 空空如也，旧名字又没有入口，等于整组条目失踪。
+        if result.name != oldName {
+            let descriptor = FetchDescriptor<ClipItem>(predicate: #Predicate { $0.groupName == oldName })
+            if let items = try? context.fetch(descriptor) {
+                for item in items { item.groupName = result.name }
+            }
+        }
+        ClipItemStore.saveAndNotify(context)
     }
 
     static func deleteGroup(name: String, context: ModelContext) {

@@ -133,7 +133,8 @@
 "settings.quickPanelSecondaryRow.types" = "Tipe";
 "settings.quickPanelSecondaryRow.groups" = "Grup";
 "settings.quickPanelTabTypes" = "Kategori di bilah tab";
-"settings.quickPanelTabTypes.hint" = "Hapus centang untuk menyembunyikan kategori dari bilah tab panel cepat. Bilah sisi jendela utama tidak terpengaruh.";
+"settings.quickPanelTabTypes.hint" = "Seret untuk mengurutkan. Hapus centang untuk menyembunyikan tab di panel cepat; bilah sisi tidak berubah.";
+"settings.quickPanelTabTypes.reset" = "Atur ulang";
 "settings.history" = "Riwayat";
 "settings.retentionDays" = "Simpan Riwayat";
 "settings.retentionDays.forever" = "Selamanya";
@@ -264,7 +265,7 @@
 "menu.pause" = "Jeda Pemantauan Papan Klip";
 "menu.resume" = "Lanjutkan Pemantauan Papan Klip";
 "menu.settings" = "Pengaturan";
-"menu.quit" = "Keluar %@";
+"menu.quit" = "Keluar";
 "menu.accessibility.grant" = "⚠ Berikan Izin Aksesibilitas";
 
 /* Quick Panel */

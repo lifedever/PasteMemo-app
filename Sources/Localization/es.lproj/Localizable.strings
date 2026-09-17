@@ -161,7 +161,8 @@
 "settings.quickPanelSecondaryRow.types" = "Tipos";
 "settings.quickPanelSecondaryRow.groups" = "Grupos";
 "settings.quickPanelTabTypes" = "Categorías de la barra de pestañas";
-"settings.quickPanelTabTypes.hint" = "Desmarca para ocultar una categoría en la barra de pestañas del panel rápido. La barra lateral de la ventana principal no se ve afectada.";
+"settings.quickPanelTabTypes.hint" = "Arrastra para reordenar. Desmarcar oculta la pestaña en el panel rápido; la barra lateral no cambia.";
+"settings.quickPanelTabTypes.reset" = "Restablecer";
 "settings.history" = "Historial";
 "settings.retentionDays" = "Conservar historial";
 "settings.retentionDays.forever" = "Para siempre";
@@ -633,7 +634,7 @@ Usa %@ para pegar uno por uno.";
 "menu.openMain" = "Abrir ventana principal";
 "menu.pause" = "Pausar monitoreo del portapapeles";
 "menu.quickPanel" = "Pegado rápido";
-"menu.quit" = "Salir de %@";
+"menu.quit" = "Salir";
 "menu.accessibility.grant" = "⚠ Conceder permiso de accesibilidad";
 "menu.resume" = "Reanudar monitoreo del portapapeles";
 "menu.settings" = "Ajustes";

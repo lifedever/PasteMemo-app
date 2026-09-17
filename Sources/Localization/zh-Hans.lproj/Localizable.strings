@@ -143,7 +143,8 @@
 "settings.quickPanelSecondaryRow.types" = "类型";
 "settings.quickPanelSecondaryRow.groups" = "分组";
 "settings.quickPanelTabTypes" = "标签栏显示的分类";
-"settings.quickPanelTabTypes.hint" = "取消勾选可在快捷面板隐藏该分类，主窗口侧边栏不受影响。";
+"settings.quickPanelTabTypes.hint" = "拖拽调整顺序，置顶和全部也能排。取消勾选可在快捷面板隐藏该分类，主窗口侧边栏不受影响。";
+"settings.quickPanelTabTypes.reset" = "恢复默认";
 "settings.history" = "历史记录";
 "settings.retentionDays" = "保留时长";
 "settings.retentionDays.forever" = "永久";
@@ -291,7 +292,7 @@
 "menu.pause" = "暂停剪贴板监听";
 "menu.resume" = "恢复剪贴板监听";
 "menu.settings" = "设置";
-"menu.quit" = "退出 %@";
+"menu.quit" = "退出";
 "menu.accessibility.grant" = "⚠ 授权辅助功能权限";
 
 /* Quick Panel */

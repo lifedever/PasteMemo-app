@@ -139,6 +139,9 @@ struct QuickPanelView: View {
     @FocusState private var isSearchFocused: Bool
     @State private var lastClickedID: PersistentIdentifier?
     @State private var lastClickTime: Date = .distantPast
+    /// 输入法正在组字。此时拼音只存在于 field editor 的 marked text 里，SwiftUI 的
+    /// `searchText` 还是空的，自定义 placeholder 会照常画出来、糊在拼音上。
+    @State private var isIMEComposing = false
     @State private var lastNavigatedID: PersistentIdentifier?
     @State private var selectionAnchor: PersistentIdentifier?
     @State private var showAllShortcuts = false
@@ -166,6 +169,7 @@ struct QuickPanelView: View {
     @AppStorage(QuickPanelSettings.secondaryRowKey) private var quickPanelSecondaryRowRaw = QuickPanelSecondaryRow.types.rawValue
     @AppStorage(QuickPanelSettings.rememberLastFilterKey) private var rememberLastFilter = false
     @AppStorage(QuickPanelSettings.lastFilterKey) private var lastFilterStorage = "all"
+    @AppStorage(QuickPanelSettings.tabOrderKey) private var tabOrderRaw = ""
     @AppStorage(QuickPanelSettings.imageLayoutKey) private var imageLayoutRaw = QuickPanelImageLayout.list.rawValue
     @AppStorage(QuickPanelSettings.hiddenTabTypesKey) private var hiddenTabTypesRaw = ""
     @AppStorage(QuickPanelSettings.imageGridDensityKey) private var imageGridDensityRaw = QuickPanelImageGridDensity.medium.rawValue
@@ -268,6 +272,11 @@ struct QuickPanelView: View {
         return item
     }
 
+    private func refreshIMEComposing() {
+        let composing = (NSApp.keyWindow?.firstResponder as? NSTextView)?.hasMarkedText() ?? false
+        if composing != isIMEComposing { isIMEComposing = composing }
+    }
+
     private func selectItem(_ id: PersistentIdentifier) {
         selectedItemIDs = [id]
         lastNavigatedID = id
@@ -340,7 +349,9 @@ struct QuickPanelView: View {
         VStack(spacing: 0) {
             searchBar
             // 标签条排除背景拖拽：否则点分类标签时窗口跟着微拖「晃动」
-            NonDraggableArea { tabBar }
+            if shouldShowTabBar {
+                NonDraggableArea { tabBar }
+            }
             if filteredItems.isEmpty {
                 emptyStateView
             } else if isImageGridActive {
@@ -414,6 +425,7 @@ struct QuickPanelView: View {
             showCommandPalette = false
             suggestionsArmed = false
             userTypedSlash = false
+            isIMEComposing = false
         }
         .onReceive(NotificationCenter.default.publisher(for: .quickPanelPinnedResignKey)) { _ in
             // Pinned + user clicked another app: release search focus so the text field
@@ -483,7 +495,21 @@ struct QuickPanelView: View {
             targetApp = QuickPanelWindowController.shared.previousApp
             isSearchFocused = true
         }
+        // marked text 的变化不走 SwiftUI 绑定，只能听 field editor 自己的通知
+        .onReceive(NotificationCenter.default.publisher(for: NSText.didChangeNotification)) { _ in
+            refreshIMEComposing()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSTextView.didChangeSelectionNotification)) { _ in
+            refreshIMEComposing()
+        }
         .onChange(of: searchText) {
+            // 组字确认后 searchText 才会拿到值，此时 marked text 已清，直接收状态；
+            // 退格删空了则要回头问一次 field editor（可能又在组新的字）。
+            if !searchText.isEmpty {
+                isIMEComposing = false
+            } else {
+                refreshIMEComposing()
+            }
             if pill != nil {
                 // Pill is active — search text is just keyword within the pill's scope
                 store.searchText = searchText
@@ -703,6 +729,7 @@ struct QuickPanelView: View {
                         }
                     )
                 }
+                .hideScrollerTrack()
                 .frame(height: min(suggestionsContentHeight, Self.suggestionsMaxHeight))
                 .onPreferenceChange(SuggestionsHeightKey.self) { suggestionsContentHeight = $0 }
                 .onChange(of: groupSuggestionIndex) {
@@ -841,16 +868,20 @@ struct QuickPanelView: View {
     /// 用缓存的 sidebarCounts 校验（命中常见的"上次开/关之间数据没变"场景）；
     /// 若数据在关闭期间变了导致缓存过期，由调用方的 `totalCount == 0` 兜底再退回 `.all`。
     private func restoredFilterOnShow() -> QuickFilter {
-        guard rememberLastFilter, let stored = QuickFilter(storageString: lastFilterStorage) else { return .all }
+        guard rememberLastFilter, let stored = QuickFilter(storageString: lastFilterStorage) else {
+            return fallbackTabFilter
+        }
         switch stored {
-        case .all, .pinned:
-            return stored
+        case .all:
+            return fallbackTabFilter
+        case .pinned:
+            return isTabVisible(.pinned) ? .pinned : fallbackTabFilter
         case .aiAgent:
-            return store.sidebarCounts.aiAgent > 0 ? .aiAgent : .all
+            return store.sidebarCounts.aiAgent > 0 ? .aiAgent : fallbackTabFilter
         case .type(let t):
-            return (secondaryRow == .types && availableContentTypes.contains(t)) ? .type(t) : .all
+            return (secondaryRow == .types && availableContentTypes.contains(t)) ? .type(t) : fallbackTabFilter
         case .group(let name):
-            return (secondaryRow == .groups && availableGroupsForTab.contains { $0.name == name }) ? .group(name) : .all
+            return (secondaryRow == .groups && availableGroupsForTab.contains { $0.name == name }) ? .group(name) : fallbackTabFilter
         }
     }
 
@@ -874,7 +905,7 @@ struct QuickPanelView: View {
                 .font(.system(size: 16))
                 .focused($isSearchFocused)
                 .overlay(alignment: .leading) {
-                    if searchText.isEmpty {
+                    if searchText.isEmpty, !isIMEComposing {
                         Text(L10n.tr("quick.search"))
                             .font(.system(size: 16))
                             .foregroundStyle(Color(nsColor: .placeholderTextColor))
@@ -1202,19 +1233,45 @@ struct QuickPanelView: View {
     /// tabBar 的全部分段项，按显示顺序拍平成一个数组。分隔线要判断相邻关系
     /// （选中项两侧不画线），散成 5 个独立调用点就拿不到「下一项是谁」。
     private var filterItems: [(filter: QuickFilter, label: String)] {
-        var items: [(filter: QuickFilter, label: String)] = [
-            (.pinned, L10n.tr("filter.pinned")),
-            (.all, L10n.tr("filter.all")),
-        ]
-        if secondaryRow == .types {
-            items += availableContentTypes.map { (QuickFilter.type($0), $0.label) }
-        } else {
+        var items: [(filter: QuickFilter, label: String)] = []
+        // 置顶固定第一位，不参与排序；关掉它只是整项消失，不会挪位置
+        if isTabVisible(.pinned) {
+            items.append((.pinned, L10n.tr("filter.pinned")))
+        }
+        // 全部 / 各内容类型：顺序和显隐都来自设置
+        for tab in QuickPanelSettings.resolvedTabItems(from: tabOrderRaw) where isTabVisible(tab) {
+            switch tab {
+            case .pinned: break  // 上面已处理
+            case .all: items.append((.all, tab.label))
+            case .type(let type):
+                if secondaryRow == .types, availableContentTypes.contains(type) {
+                    items.append((.type(type), type.label))
+                }
+            }
+        }
+        // 分组和 AI 不参与自定义排序：分组随用户建删动态增减，没法预先排。
+        if secondaryRow == .groups {
             items += availableGroupsForTab.map { (QuickFilter.group($0.name), $0.name) }
         }
         if store.sidebarCounts.aiAgent > 0 {
             items.append((.aiAgent, L10n.tr("filter.aiAgent")))
         }
         return items
+    }
+
+    private func isTabVisible(_ tab: QuickPanelTabItem) -> Bool {
+        !QuickPanelSettings.hiddenTabIDs(from: hiddenTabTypesRaw).contains(tab.storageID)
+    }
+
+    /// 标签栏一项都不剩时整排卸掉，别留一条空白占着高度。
+    private var shouldShowTabBar: Bool { !filterItems.isEmpty }
+
+    /// 面板打开时的兜底筛选：默认就是「全部」，只有它被用户关掉了才退到第一个可见标签。
+    ///
+    /// 不能直接取 `filterItems.first`——默认顺序第一个是「置顶」，那样每次打开面板都
+    /// 落在置顶上，等于悄悄换掉了默认视图。
+    private var fallbackTabFilter: QuickFilter {
+        isTabVisible(.all) ? .all : (filterItems.first?.filter ?? .all)
     }
 
 
@@ -1288,7 +1345,8 @@ struct QuickPanelView: View {
                 // 两条路径会在同一轮里先后定位，必有一条读到旧坐标并覆盖掉另一条。
                 CommandPalettePanel.shared.updateAnchor(row: row, list: list)
                 if showCommandPalette { syncCommandPalettePanel() }
-            }
+            },
+            hidesScrollerTrack: true
         )
         // 过滤条件切换时需要整棵列表重建，避免旧的 NSTableView 选择/滚动状态残留。
         .id(scrollResetToken)
@@ -2150,32 +2208,19 @@ struct QuickPanelView: View {
         }
     }
 
-    private func switchTypeFilter(_ delta: Int) {
-        let types = availableContentTypes
-        var allFilters: [QuickFilter] = [.pinned, .all]
-        allFilters.append(contentsOf: types.map { .type($0) })
-        if store.sidebarCounts.aiAgent > 0 { allFilters.append(.aiAgent) }
+    /// ⌃Tab 切换筛选。两个模式都直接跟着 `filterItems` 走——它就是标签栏画出来的
+    /// 顺序（含用户自定义排序和隐藏），另拼一份迟早和视觉对不上。
+    private func switchTypeFilter(_ delta: Int) { cycleTabFilter(delta) }
 
-        if let idx = allFilters.firstIndex(of: selectedFilter) {
-            let newIdx = (idx + delta + allFilters.count) % allFilters.count
-            selectedFilter = allFilters[newIdx]
-        } else {
-            selectedFilter = delta > 0 ? allFilters.first! : allFilters.last!
-        }
-    }
+    private func switchGroupFilter(_ delta: Int) { cycleTabFilter(delta) }
 
-    private func switchGroupFilter(_ delta: Int) {
-        let groups = availableGroupsForTab
-        // tabBar 顺序：[.pinned, .all, .group(g1), .group(g2), ..., .aiAgent?]
-        var all: [QuickFilter] = [.pinned, .all]
-        all.append(contentsOf: groups.map { .group($0.name) })
-        if store.sidebarCounts.aiAgent > 0 { all.append(.aiAgent) }
-
+    private func cycleTabFilter(_ delta: Int) {
+        let all = filterItems.map(\.filter)
+        guard !all.isEmpty else { return }
         if let idx = all.firstIndex(of: selectedFilter) {
-            let newIdx = (idx + delta + all.count) % all.count
-            selectedFilter = all[newIdx]
+            selectedFilter = all[(idx + delta + all.count) % all.count]
         } else {
-            selectedFilter = delta > 0 ? all.first! : all.last!
+            selectedFilter = delta > 0 ? all[0] : all[all.count - 1]
         }
     }
 

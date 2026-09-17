@@ -167,8 +167,7 @@ final class StatusBarController: NSObject {
         menu.addItem(.separator())
 
         // 退出
-        let appName = Bundle.main.object(forInfoDictionaryKey: "CFBundleName") as? String ?? "PasteMemo"
-        menu.addItem(makeItem(L10n.tr("menu.quit", appName), action: #selector(quitApp)))
+        menu.addItem(makeItem(L10n.tr("menu.quit"), action: #selector(quitApp)))
 
         return menu
     }

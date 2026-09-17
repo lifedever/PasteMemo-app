@@ -133,7 +133,8 @@
 "settings.quickPanelSecondaryRow.types" = "Типы";
 "settings.quickPanelSecondaryRow.groups" = "Группы";
 "settings.quickPanelTabTypes" = "Категории на панели вкладок";
-"settings.quickPanelTabTypes.hint" = "Снимите флажок, чтобы скрыть категорию на панели вкладок быстрой панели. Боковая панель главного окна не затрагивается.";
+"settings.quickPanelTabTypes.hint" = "Перетащите, чтобы изменить порядок. Снятие галочки скрывает вкладку в быстрой панели; боковая панель не меняется.";
+"settings.quickPanelTabTypes.reset" = "Сбросить";
 "settings.history" = "История";
 "settings.retentionDays" = "Хранить историю";
 "settings.retentionDays.forever" = "Навсегда";
@@ -264,7 +265,7 @@
 "menu.pause" = "Приостановить мониторинг буфера обмена";
 "menu.resume" = "Возобновить мониторинг буфера обмена";
 "menu.settings" = "Настройки";
-"menu.quit" = "Завершить %@";
+"menu.quit" = "Завершить";
 "menu.accessibility.grant" = "⚠ Предоставить разрешение на универсальный доступ";
 
 /* Quick Panel */

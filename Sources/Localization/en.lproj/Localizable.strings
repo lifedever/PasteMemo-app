@@ -143,7 +143,8 @@
 "settings.quickPanelSecondaryRow.types" = "Types";
 "settings.quickPanelSecondaryRow.groups" = "Groups";
 "settings.quickPanelTabTypes" = "Tab bar categories";
-"settings.quickPanelTabTypes.hint" = "Uncheck to hide a category from the Quick Panel tab bar. The main window sidebar is unaffected.";
+"settings.quickPanelTabTypes.hint" = "Drag to reorder. Unchecking hides the tab in the Quick Panel; the main window sidebar is unaffected.";
+"settings.quickPanelTabTypes.reset" = "Reset";
 "settings.history" = "History";
 "settings.retentionDays" = "Keep History";
 "settings.retentionDays.forever" = "Forever";
@@ -291,7 +292,7 @@
 "menu.pause" = "Pause Clipboard Monitoring";
 "menu.resume" = "Resume Clipboard Monitoring";
 "menu.settings" = "Settings";
-"menu.quit" = "Quit %@";
+"menu.quit" = "Quit";
 "menu.accessibility.grant" = "⚠ Grant Accessibility Permission";
 
 /* Quick Panel */

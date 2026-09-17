@@ -595,6 +595,13 @@ struct QuickPanelPane: View {
     @AppStorage(QuickPanelSettings.rememberLastFilterKey) private var quickPanelRememberLastFilter = false
     @AppStorage(QuickPanelSettings.imageLayoutKey) private var quickPanelImageLayout = QuickPanelImageLayout.list.rawValue
     @AppStorage(QuickPanelSettings.hiddenTabTypesKey) private var quickPanelHiddenTabTypes = ""
+    @AppStorage(QuickPanelSettings.tabOrderKey) private var quickPanelTabOrder = ""
+    /// 拖拽期间的临时顺序。直接绑 @AppStorage 会让每次 dropEntered 都写一遍
+    /// UserDefaults，拖一趟下来几十次写盘。
+    @State private var tabOrder: [QuickPanelTabItem] = QuickPanelSettings.resolvedTabItems(
+        from: UserDefaults.standard.string(forKey: QuickPanelSettings.tabOrderKey) ?? ""
+    )
+    @State private var draggingTab: QuickPanelTabItem?
     @AppStorage(QuickPanelSettings.imageGridDensityKey) private var quickPanelImageGridDensity = QuickPanelImageGridDensity.medium.rawValue
     @AppStorage(QuickPanelPositionSettings.modeKey) private var quickPanelPositionMode = QuickPanelPositionMode.screenCenter.rawValue
     @AppStorage(QuickPanelPositionSettings.screenTargetKey) private var quickPanelScreenTarget = QuickPanelScreenTarget.active.rawValue
@@ -693,14 +700,24 @@ struct QuickPanelPane: View {
             // 行高和缩进都跟其它设置项对不齐。Section 的 header/footer 是 Form 的
             // 标准结构，跟这一页其它分节自然一致。
             Section {
-                ForEach(ClipContentType.visibleCases, id: \.self) { type in
-                    Toggle(isOn: tabTypeVisibleBinding(type)) {
-                        Label(type.label, systemImage: type.icon)
-                    }
-                    .padding(.vertical, 2)
+                // 置顶固定第一位、不参与排序：它是「哪些条目」而不是「哪一类内容」，
+                // 和下面按内容类型分的标签不是一回事。只留开关，允许整项关掉。
+                pinnedTabRow
+                ForEach(tabOrder) { item in
+                    tabItemRow(item)
                 }
             } header: {
-                Text(L10n.tr("settings.quickPanelTabTypes"))
+                HStack {
+                    Text(L10n.tr("settings.quickPanelTabTypes"))
+                    Spacer()
+                    if tabOrder.map(\.storageID) != QuickPanelSettings.defaultTabOrderIDs {
+                        Button(L10n.tr("settings.quickPanelTabTypes.reset")) {
+                            tabOrder = QuickPanelSettings.resolvedTabItems(from: "")
+                        }
+                        .buttonStyle(.link)
+                        .font(.system(size: 11))
+                    }
+                }
             } footer: {
                 Text(L10n.tr("settings.quickPanelTabTypes.hint"))
             }
@@ -715,6 +732,13 @@ struct QuickPanelPane: View {
         .formStyle(.grouped)
         .onAppear {
             ensureSpecifiedScreenSelection()
+            tabOrder = QuickPanelSettings.resolvedTabItems(from: quickPanelTabOrder)
+        }
+        // 落盘挂在顺序变化上，不挂 performDrop：松手位置只要没落在某一行上
+        // （行间缝隙、Section 边距），那个回调就不触发，顺序会只改了内存没进 defaults。
+        .onChange(of: tabOrder) { _, newValue in
+            let encoded = newValue.map(\.storageID).joined(separator: ",")
+            if encoded != quickPanelTabOrder { quickPanelTabOrder = encoded }
         }
         .onChange(of: quickPanelPositionMode) {
             ensureSpecifiedScreenSelection()
@@ -754,22 +778,65 @@ struct QuickPanelPane: View {
 
     /// 存的是「隐藏集合」而不是「显示集合」：这样新增内容类型时默认可见，
     /// 老用户的配置不会把它挡在外面（同 typeOrder 里 missing 自动追加的取舍）。
-    private func tabTypeVisibleBinding(_ type: ClipContentType) -> Binding<Bool> {
+    private var pinnedTabRow: some View {
+        HStack(spacing: 10) {
+            // 占住和可拖行同宽的位置，标题才对得齐
+            Color.clear.frame(width: 14, height: 1)
+            Label(QuickPanelTabItem.pinned.label, systemImage: QuickPanelTabItem.pinned.icon)
+            Spacer(minLength: 0)
+            Toggle("", isOn: tabItemVisibleBinding(.pinned))
+                .labelsHidden()
+                .toggleStyle(.switch)
+                .controlSize(.small)
+        }
+        .padding(.vertical, 2)
+    }
+
+    @ViewBuilder
+    private func tabItemRow(_ item: QuickPanelTabItem) -> some View {
+        HStack(spacing: 10) {
+            // 把手只是提示「这行能拖」，整行都是拖拽源——只让 6pt 宽的图标可拖太难点中
+            Image(systemName: "line.3.horizontal")
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(.tertiary)
+                .frame(width: 14)
+            Label(item.label, systemImage: item.icon)
+            Spacer(minLength: 0)
+            Toggle("", isOn: tabItemVisibleBinding(item))
+                .labelsHidden()
+                .toggleStyle(.switch)
+                .controlSize(.small)
+        }
+        .padding(.vertical, 2)
+        .contentShape(Rectangle())
+        .onDrag {
+            draggingTab = item
+            return NSItemProvider(object: item.storageID as NSString)
+        }
+        .onDrop(of: [.text], delegate: TabItemDropDelegate(
+            target: item,
+            dragging: $draggingTab,
+            items: $tabOrder
+        ))
+        .pointerCursor()
+    }
+
+    /// 存的是「隐藏集合」而不是「显示集合」：这样新增分类时默认可见，
+    /// 老用户的配置不会把它挡在外面（同 typeOrder 里 missing 自动追加的取舍）。
+    private func tabItemVisibleBinding(_ item: QuickPanelTabItem) -> Binding<Bool> {
         Binding(
             get: {
-                let hidden = quickPanelHiddenTabTypes.split(separator: ",").map(String.init)
-                return !hidden.contains(type.rawValue)
+                !QuickPanelSettings.hiddenTabIDs(from: quickPanelHiddenTabTypes).contains(item.storageID)
             },
             set: { visible in
-                var hidden = Set(quickPanelHiddenTabTypes.split(separator: ",").map(String.init))
+                var hidden = QuickPanelSettings.hiddenTabIDs(from: quickPanelHiddenTabTypes)
                 if visible {
-                    hidden.remove(type.rawValue)
+                    hidden.remove(item.storageID)
                 } else {
-                    hidden.insert(type.rawValue)
+                    hidden.insert(item.storageID)
                 }
-                // 按 visibleCases 的顺序落盘，便于人肉核对 defaults
-                quickPanelHiddenTabTypes = ClipContentType.visibleCases
-                    .map(\.rawValue)
+                // 按默认顺序落盘，便于人肉核对 defaults
+                quickPanelHiddenTabTypes = QuickPanelSettings.defaultTabOrderIDs
                     .filter { hidden.contains($0) }
                     .joined(separator: ",")
             }
@@ -800,6 +867,35 @@ struct QuickPanelPane: View {
                 quickPanelSpecifiedScreenID = screenID ?? screenOptions.first?.id ?? ""
             }
         }
+    }
+}
+
+/// 拖拽重排：只动内存里的顺序，落盘交给外层对 `items` 的 onChange——
+/// 松手不一定落在某一行上，`performDrop` 未必会触发。
+private struct TabItemDropDelegate: DropDelegate {
+    let target: QuickPanelTabItem
+    @Binding var dragging: QuickPanelTabItem?
+    @Binding var items: [QuickPanelTabItem]
+
+    func dropEntered(info: DropInfo) {
+        guard let source = dragging, source != target,
+              let from = items.firstIndex(of: source),
+              let to = items.firstIndex(of: target)
+        else { return }
+        withAnimation(.easeInOut(duration: 0.18)) {
+            items.move(fromOffsets: IndexSet(integer: from), toOffset: to > from ? to + 1 : to)
+        }
+    }
+
+    func dropUpdated(info: DropInfo) -> DropProposal? {
+        DropProposal(operation: .move)
+    }
+
+    func validateDrop(info: DropInfo) -> Bool { dragging != nil }
+
+    func performDrop(info: DropInfo) -> Bool {
+        dragging = nil
+        return true
     }
 }
 

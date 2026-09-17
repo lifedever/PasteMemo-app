@@ -7,6 +7,8 @@ struct CodePreviewView: NSViewRepresentable {
     var insets: NSSize = NSSize(width: 14, height: 14)
     var deferredHighlightDelayMs: Int? = nil
     var maximumHighlightedCharacters: Int? = nil
+    /// 快捷面板预览区去掉滚动条槽轨，只留滑块。
+    var hidesScrollerTrack: Bool = false
 
     func makeNSView(context: Context) -> NSScrollView {
         let scrollView = NSTextView.scrollableTextView()
@@ -18,6 +20,9 @@ struct CodePreviewView: NSViewRepresentable {
         textView.textContainerInset = insets
         scrollView.drawsBackground = false
         scrollView.hasVerticalScroller = true
+        if hidesScrollerTrack {
+            TracklessScroller.install(on: scrollView)
+        }
         scrollView.hasHorizontalScroller = false
         scrollView.autohidesScrollers = true
         context.coordinator.lastKey = viewKey(appearance: NSApp.effectiveAppearance.name.rawValue)
