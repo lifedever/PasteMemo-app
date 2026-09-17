@@ -936,6 +936,8 @@ Usa %@ para pegar uno por uno.";
 "settings.imageGridDensity.sparse" = "Dispersa";
 "settings.imageGridDensity.medium" = "Media";
 "settings.imageGridDensity.dense" = "Densa";
+"settings.previewFontSize" = "Tamaño de fuente de la vista previa";
+"settings.previewFontSize.points" = "%d pt";
 
 "settings.ocr.memoryHint" = "Cuando está activado, PasteMemo reconoce el texto de las imágenes en segundo plano con Vision, lo que puede aumentar el uso de memoria.";
 

@@ -103,6 +103,8 @@ struct NativeTextView: NSViewRepresentable {
     func updateNSView(_ scrollView: NSScrollView, context: Context) {
         let textView = scrollView.documentView as! NSTextView
         textView.isEditable = isEditable
+        textView.font = .systemFont(ofSize: fontSize)
+        textView.textColor = textColor
         context.coordinator.onTextChange = onTextChange
         context.coordinator.onEscape = onEscape
 
@@ -112,16 +114,19 @@ struct NativeTextView: NSViewRepresentable {
         // Fast path: rich render disabled OR no rich data — render plain string only, skip all decoding.
         guard allowRichRender, let rtfData = richTextData else {
             let wasRich = context.coordinator.lastRichTextData != nil
+            let fontChanged = abs(context.coordinator.lastFontSize - fontSize) > 0.1
             context.coordinator.lastRichTextData = nil
             context.coordinator.lastLayoutWidth = 0
+            context.coordinator.lastFontSize = fontSize
             var textWasReplaced = false
-            if wasRich {
+            if wasRich || fontChanged {
                 // Switching from rich → plain on the same view: setting
                 // `.string` only replaces the characters and keeps the prior
                 // attributed run's typing attributes (bold/colors/font), so
                 // the visual still looks formatted. Force a fully attributed
                 // overwrite with the default plain attrs to clear all
                 // inherited formatting.
+                // fontChanged 同理：已有 run 的 .font 不会跟着 textView.font 变。
                 let plain = NSAttributedString(string: text, attributes: [
                     .font: NSFont.systemFont(ofSize: fontSize),
                     .foregroundColor: textColor,
@@ -130,6 +135,8 @@ struct NativeTextView: NSViewRepresentable {
                 textWasReplaced = true
             } else if textView.string != text {
                 textView.string = text
+                textView.font = .systemFont(ofSize: fontSize)
+                textView.textColor = textColor
                 textWasReplaced = true
             }
             let searchChanged = context.coordinator.lastSearchText != searchText
@@ -371,6 +378,7 @@ struct NativeTextView: NSViewRepresentable {
         var lastRichTextData: Data?
         var lastLayoutWidth: CGFloat = 0
         var lastSearchText: String = ""
+        var lastFontSize: CGFloat = 0
         private var decodeToken: Int = 0
         private var highlightTask: Task<Void, Never>?
 

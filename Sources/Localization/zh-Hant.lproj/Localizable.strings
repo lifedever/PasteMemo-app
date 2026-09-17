@@ -892,6 +892,8 @@
 "settings.imageGridDensity.sparse" = "疏";
 "settings.imageGridDensity.medium" = "中";
 "settings.imageGridDensity.dense" = "密";
+"settings.previewFontSize" = "預覽字體大小";
+"settings.previewFontSize.points" = "%d pt";
 
 "settings.ocr.memoryHint" = "開啟後會在背景用 Vision 辨識圖片中的文字，可能增加記憶體佔用。";
 

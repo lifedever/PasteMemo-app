@@ -918,6 +918,8 @@ Verwenden Sie %@ zum Einfügen.";
 "settings.imageGridDensity.sparse" = "Locker";
 "settings.imageGridDensity.medium" = "Mittel";
 "settings.imageGridDensity.dense" = "Dicht";
+"settings.previewFontSize" = "Schriftgröße der Vorschau";
+"settings.previewFontSize.points" = "%d pt";
 
 "settings.ocr.memoryHint" = "Wenn aktiviert, erkennt PasteMemo Text in Bildern im Hintergrund mit Vision, was den Speicherverbrauch erhöhen kann.";
 

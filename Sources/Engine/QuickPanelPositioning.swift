@@ -57,6 +57,8 @@ enum QuickPanelSettings {
     ///
     /// 只作用于快捷面板：主窗口侧边栏保持全量，隐藏之后还能从那儿找回内容。
     static let hiddenTabTypesKey = "quickPanelHiddenTabTypes"
+    /// 快捷面板右侧预览区正文（文本 / 代码 / 短信原文等）的字号。
+    static let previewFontSizeKey = "quickPanelPreviewFontSize"
 
     /// 快捷面板标签栏里可排序那部分的顺序（逗号分隔的 id）。空 = 默认顺序。
     ///
@@ -187,6 +189,20 @@ enum QuickPanelImageGridDensity: String, CaseIterable {
         case .medium: "settings.imageGridDensity.medium"
         case .dense: "settings.imageGridDensity.dense"
         }
+    }
+}
+
+/// 快捷面板预览正文的字号。存的就是 pt，默认 13，与改之前的硬编码一致。
+enum QuickPanelPreviewFontSize {
+    static let defaultPoints = 13
+    static let options = [11, 12, 13, 14, 15, 16, 18, 20]
+
+    static func resolved(_ stored: Int) -> Int {
+        options.contains(stored) ? stored : defaultPoints
+    }
+
+    static func resolvedPoints(_ stored: Int) -> CGFloat {
+        CGFloat(resolved(stored))
     }
 }
 

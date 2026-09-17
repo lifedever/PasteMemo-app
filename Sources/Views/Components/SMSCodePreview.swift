@@ -7,6 +7,7 @@ import SwiftUI
 struct SMSCodePreview: View {
     let code: String
     let message: String
+    var messageFontSize: CGFloat = 13
 
     var body: some View {
         ScrollView {
@@ -20,7 +21,7 @@ struct SMSCodePreview: View {
                         .font(.system(size: 11, weight: .medium))
                         .foregroundStyle(.secondary)
                     Text(message)
-                        .font(.system(size: 13))
+                        .font(.system(size: messageFontSize))
                         .foregroundStyle(.primary.opacity(0.85))
                         .lineSpacing(3)
                         .textSelection(.enabled)
