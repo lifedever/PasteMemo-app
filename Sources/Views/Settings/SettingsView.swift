@@ -791,11 +791,22 @@ struct QuickPanelPane: View {
 
     /// 存的是「隐藏集合」而不是「显示集合」：这样新增内容类型时默认可见，
     /// 老用户的配置不会把它挡在外面（同 typeOrder 里 missing 自动追加的取舍）。
+    /// 不用 `Label`：SF Symbols 宽窄不一（`</>` 比 `pin` 宽一截），Label 不钉图标宽度，
+    /// 一列下来文字左边缘参差。自己给图标一个固定宽度再排文字。
+    private func tabItemLabel(_ item: QuickPanelTabItem) -> some View {
+        HStack(spacing: 6) {
+            Image(systemName: item.icon)
+                .frame(width: 18, alignment: .center)
+                .foregroundStyle(.secondary)
+            Text(item.label)
+        }
+    }
+
     private var pinnedTabRow: some View {
         HStack(spacing: 10) {
             // 占住和可拖行同宽的位置，标题才对得齐
             Color.clear.frame(width: 14, height: 1)
-            Label(QuickPanelTabItem.pinned.label, systemImage: QuickPanelTabItem.pinned.icon)
+            tabItemLabel(.pinned)
             Spacer(minLength: 0)
             Toggle("", isOn: tabItemVisibleBinding(.pinned))
                 .labelsHidden()
@@ -813,7 +824,7 @@ struct QuickPanelPane: View {
                 .font(.system(size: 11, weight: .semibold))
                 .foregroundStyle(.tertiary)
                 .frame(width: 14)
-            Label(item.label, systemImage: item.icon)
+            tabItemLabel(item)
             Spacer(minLength: 0)
             Toggle("", isOn: tabItemVisibleBinding(item))
                 .labelsHidden()
