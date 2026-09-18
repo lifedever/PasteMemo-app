@@ -935,7 +935,7 @@ struct MainWindowView: View {
                 // Auto-OCR may be off / not run yet: recognize on demand, then copy.
                 let id = item.itemID
                 Task {
-                    if let text = await OCRTaskCoordinator.shared.recognizeOnDemand(itemID: id), !text.isEmpty {
+                    if let text = await OCRTaskCoordinator.shared.recognizeOnDemandWithProgress(itemID: id), !text.isEmpty {
                         let pasteboard = NSPasteboard.general
                         pasteboard.clearContents()
                         pasteboard.setString(text, forType: .string)

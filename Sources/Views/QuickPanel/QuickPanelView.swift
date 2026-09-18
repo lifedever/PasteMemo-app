@@ -2970,18 +2970,33 @@ struct QuickPanelView: View {
         QuickPanelWindowController.shared.dismiss()
         appToRestore?.activate()   // refocus overlaps the on-demand OCR below
         Task { @MainActor in
-            guard let text = await OCRTaskCoordinator.shared.recognizeOnDemand(itemID: id), !text.isEmpty else {
+            let startedAt = Date()
+            guard let text = await OCRTaskCoordinator.shared.recognizeOnDemandWithProgress(itemID: id),
+                  !text.isEmpty else {
                 ToastCenter.shared.show(ToastDescriptor(message: L10n.tr("detail.ocr.empty"), icon: .info))
                 return
             }
-            guard appToRestore != nil else {
+            // 慢到用户已经切走时不能再盲目粘贴，判定规则见 `onDemandPasteRoute`。
+            let route = OCRTaskCoordinator.onDemandPasteRoute(
+                elapsed: Date().timeIntervalSince(startedAt),
+                grace: Self.ocrPasteGracePeriod,
+                hasTarget: appToRestore != nil,
+                targetIsFrontmost: appToRestore.map {
+                    NSWorkspace.shared.frontmostApplication?.processIdentifier == $0.processIdentifier
+                } ?? false
+            )
+            guard route == .paste, let app = appToRestore else {
                 writeStringToPasteboard(text)
                 ToastCenter.shared.show(ToastDescriptor(message: L10n.tr("action.copied"), icon: .success))
                 return
             }
-            clipboardManager.pasteAsPlainText(text, targetApp: appToRestore)
+            clipboardManager.pasteAsPlainText(text, targetApp: app)
         }
     }
+
+    /// 现场 OCR 快到这个时限内完成时，直接粘进当初记下的目标 App——用户不可能在这点
+    /// 时间里切走，也不必让 `frontmostApplication` 的异步更新有机会误判成「切走了」。
+    private static let ocrPasteGracePeriod: TimeInterval = 1.0
 
     /// 粘贴一段「来自这个条目、但不是条目全文」的文本：OCR 识别结果、内容里认出来的
     /// 提取码。时序和普通回车粘贴（`dismissAndPaste`）一致——收面板、激活目标 App、
