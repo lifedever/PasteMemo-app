@@ -42,10 +42,21 @@ private func clearLegacySettingsSidebarWidth() {
     defaults.set(true, forKey: flag)
 }
 
+/// The live settings navigation model, so other windows can jump to a page.
+@MainActor private weak var currentSettingsNavigation: SettingsNavigationModel?
+
+/// Open Settings on `category` (rule editor's "去设置" link, etc).
+@MainActor
+func openSettings(category: SettingsCategory) {
+    AppAction.shared.openSettings?()
+    currentSettingsNavigation?.selection = category
+}
+
 @MainActor
 func showSettingsWindowAppKit() {
     clearLegacySettingsSidebarWidth()
     let model = SettingsNavigationModel()
+    currentSettingsNavigation = model
     model.onSelectionChange = { category in
         WindowManager.shared.setTitle(L10n.tr(category.titleKey), for: "settings")
     }
@@ -80,6 +91,13 @@ func showAutomationManagerWindow() {
     ) {
         AutomationManagerView()
             .modelContainer(PasteMemoApp.sharedModelContainer)
+    }
+    // The sidebar toggle needs the toolbar, the title text doesn't earn its space:
+    // the rule name sits right below as the page heading.
+    if let window = WindowManager.shared.window(for: "automationManager") {
+        window.titleVisibility = .hidden
+        window.titlebarAppearsTransparent = true
+        window.toolbar?.showsBaselineSeparator = false
     }
 }
 

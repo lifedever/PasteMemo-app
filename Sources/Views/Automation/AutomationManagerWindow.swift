@@ -5,6 +5,32 @@ extension Notification.Name {
     static let automationEnterEdit = Notification.Name("automationEnterEdit")
 }
 
+/// Lets the sidebar ask the editor "anything unsaved?" before switching rules, and
+/// save or discard on the user's behalf.
+@MainActor
+final class RuleEditorSession: ObservableObject {
+    @Published var isDirty = false
+    var save: () -> Void = {}
+    var discard: () -> Void = {}
+
+    /// Standard document-style prompt. Returns false when the user cancels.
+    func confirmLeaving() -> Bool {
+        guard isDirty else { return true }
+        let alert = NSAlert()
+        alert.messageText = L10n.tr("automation.editor.unsaved")
+        alert.informativeText = L10n.tr("automation.editor.unsavedMessage")
+        alert.alertStyle = .warning
+        alert.addButton(withTitle: L10n.tr("automation.editor.save"))
+        alert.addButton(withTitle: L10n.tr("automation.editor.dontSave"))
+        alert.addButton(withTitle: L10n.tr("automation.editor.cancel"))
+        switch alert.runModal() {
+        case .alertFirstButtonReturn: save(); return true
+        case .alertSecondButtonReturn: discard(); return true
+        default: return false
+        }
+    }
+}
+
 enum AutomationManagerWindow {
     @MainActor
     static func show() {
@@ -16,6 +42,12 @@ struct AutomationManagerView: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \AutomationRule.sortOrder) private var rules: [AutomationRule]
     @State private var selectedRuleID: String?
+    @StateObject private var session = RuleEditorSession()
+
+    /// What the sidebar highlights. Kept apart from `selectedRuleID` so a cancelled
+    /// switch can snap the highlight back (assigning the same value to a binding
+    /// doesn't make the List re-sync).
+    @State private var listSelection: String?
 
     private var builtInRules: [AutomationRule] { rules.filter(\.isBuiltIn) }
     private var customRules: [AutomationRule] { rules.filter { !$0.isBuiltIn } }
@@ -38,13 +70,25 @@ struct AutomationManagerView: View {
         }
         .onAppear {
             if selectedRuleID == nil { selectedRuleID = rules.first?.ruleID }
+            listSelection = selectedRuleID
+        }
+        .onChange(of: listSelection) { _, newValue in
+            guard newValue != selectedRuleID else { return }
+            if session.confirmLeaving() {
+                selectedRuleID = newValue
+            } else {
+                listSelection = selectedRuleID
+            }
+        }
+        .onChange(of: selectedRuleID) { _, newValue in
+            if listSelection != newValue { listSelection = newValue }
         }
     }
 
     // MARK: - Sidebar
 
     private var sidebar: some View {
-        List(selection: $selectedRuleID) {
+        List(selection: $listSelection) {
             Section(L10n.tr("automation.section.builtIn")) {
                 ForEach(builtInRules) { rule in
                     ruleRow(rule)
@@ -90,16 +134,23 @@ struct AutomationManagerView: View {
                 .buttonStyle(.borderless)
 
                 Button {
-                    if let rule = selectedRule, !rule.isBuiltIn {
+                    if let rule = selectedRule {
                         deleteRule(rule)
                     }
                 } label: {
                     Image(systemName: "minus")
                 }
                 .buttonStyle(.borderless)
-                .disabled(selectedRule?.isBuiltIn ?? true)
+                .disabled(selectedRule == nil)
 
                 Spacer()
+
+                NativePullDownButton(title: "", symbolName: "ellipsis.circle", bordered: false) {
+                    [.item(L10n.tr("automation.builtIn.restore"), symbol: "arrow.counterclockwise", enabled: !BuiltInRules.deletedNames.isEmpty) {
+                        BuiltInRules.restoreDeleted(context: modelContext)
+                    }]
+                }
+                .fixedSize()
             }
             .padding(.horizontal, 10)
             .padding(.vertical, 6)
@@ -114,22 +165,21 @@ struct AutomationManagerView: View {
             Text(rule.isBuiltIn ? L10n.tr(rule.name) : rule.name)
                 .lineLimit(1)
         }
+        // Stretch to the row's full width so the right-click overlay covers the whole
+        // row, not just the dot and the text.
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .contentShape(Rectangle())
         .tag(rule.ruleID)
-        .contextMenu {
-            if !rule.isBuiltIn {
-                Button(L10n.tr("automation.editor.edit")) {
-                    selectedRuleID = rule.ruleID
-                    NotificationCenter.default.post(name: .automationEnterEdit, object: nil)
-                }
-            }
-            Button(L10n.tr("action.mergeCopy")) {
-                duplicateRule(rule)
-            }
-            if !rule.isBuiltIn {
-                Button(L10n.tr("action.delete"), role: .destructive) {
-                    deleteRule(rule)
-                }
-            }
+        .nativeContextMenu(onSelect: { listSelection = rule.ruleID }) {
+            var items: [NativeMenuItem] = []
+            items.append(.item(L10n.tr("automation.editor.edit"), symbol: "pencil") {
+                selectedRuleID = rule.ruleID
+                NotificationCenter.default.post(name: .automationEnterEdit, object: nil)
+            })
+            items.append(.item(L10n.tr("action.mergeCopy"), symbol: "doc.on.doc") { duplicateRule(rule) })
+            items.append(.separator)
+            items.append(.item(L10n.tr("action.delete"), symbol: "trash", destructive: true) { deleteRule(rule) })
+            return items
         }
     }
 
@@ -143,6 +193,8 @@ struct AutomationManagerView: View {
         guard alert.runModal() == .alertFirstButtonReturn else { return }
 
         let id = rule.ruleID
+        if id == selectedRuleID { session.discard() }
+        if rule.isBuiltIn { BuiltInRules.markDeleted(rule.name) }
         modelContext.delete(rule)
         try? modelContext.save()
         if selectedRuleID == id {
@@ -151,6 +203,7 @@ struct AutomationManagerView: View {
     }
 
     private func duplicateRule(_ rule: AutomationRule) {
+        guard session.confirmLeaving() else { return }
         let nextOrder = (rules.map(\.sortOrder).max() ?? 0) + 1
         let copy = AutomationRule(
             name: rule.isBuiltIn ? L10n.tr(rule.name) + " - Copy" : rule.name + " - Copy",
@@ -171,7 +224,7 @@ struct AutomationManagerView: View {
     private var detailView: some View {
         Group {
             if let rule = selectedRule {
-                AutomationRuleEditorView(rule: rule)
+                AutomationRuleEditorView(rule: rule, session: session)
             } else {
                 ContentUnavailableView(
                     L10n.tr("automation.editor.selectRule"),
@@ -184,6 +237,7 @@ struct AutomationManagerView: View {
     // MARK: - Actions
 
     private func addRule() {
+        guard session.confirmLeaving() else { return }
         let nextOrder = (rules.map(\.sortOrder).max() ?? 0) + 1
         let rule = AutomationRule(
             name: L10n.tr("automation.rule.newName"),

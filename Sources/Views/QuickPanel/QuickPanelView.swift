@@ -1343,7 +1343,7 @@ struct QuickPanelView: View {
                     .padding(.bottom, 2)
             },
             contextMenu: { item in
-                historyItemContextMenu(item: item)
+                historyItemMenuItems(item: item)
             },
             // palette 现在由 QuickPanelView 自己画浮层，列表不再挂 popover。
             // 传 EmptyView 而不是删参数：NativeClipHistoryList 还被主窗口用着，
@@ -1382,7 +1382,7 @@ struct QuickPanelView: View {
                 isSearchFocused = true
             },
             onLoadMore: { store.loadMore() },
-            contextMenu: { item in historyItemContextMenu(item: item) },
+            contextMenu: { item in historyItemMenuItems(item: item) },
             commandPalette: { item in
                 CommandPaletteContent(
                     item: item,
@@ -1773,98 +1773,78 @@ struct QuickPanelView: View {
     }
 
     @ViewBuilder
-    private func historyItemContextMenu(item: ClipItem) -> some View {
+    /// Right-click menu for a history row (AppKit `NSMenu`, see `NativeMenu.swift`).
+    private func historyItemMenuItems(item: ClipItem) -> [NativeMenuItem] {
         let itemID = item.persistentModelID
+        var menu: [NativeMenuItem] = []
 
         if isMultiSelected, selectedItemIDs.contains(itemID) {
             let items = currentItems
             // 复制置顶，与主窗口右键菜单一致
-            Button(L10n.tr("action.mergeCopy")) {
-                copyItemsToClipboard(items)
-            }
+            menu.append(.item(L10n.tr("action.mergeCopy")) { copyItemsToClipboard(items) })
             let hasPinned = items.contains(where: \.isPinned)
-            Button(hasPinned ? L10n.tr("action.unpin") : L10n.tr("action.pin")) {
-                let newValue = !hasPinned
-                for i in items { i.isPinned = newValue }
-                ClipItemStore.saveAndNotify(modelContext)
-            }
+            menu.append(.item(hasPinned ? L10n.tr("action.unpin") : L10n.tr("action.pin")) {
+                ActionExecutor.applyMetadata([hasPinned ? .unpin : .pin], to: items, context: modelContext)
+            })
             let hasSensitive = items.contains(where: \.isSensitive)
-            Button(hasSensitive ? L10n.tr("sensitive.unmarkSensitive") : L10n.tr("sensitive.markSensitive")) {
-                let newValue = !hasSensitive
-                for i in items { i.isSensitive = newValue }
-                ClipItemStore.saveAndNotify(modelContext)
-            }
-            Divider()
-            quickPanelGroupMenu(items: items)
+            menu.append(.item(hasSensitive ? L10n.tr("sensitive.unmarkSensitive") : L10n.tr("sensitive.markSensitive")) {
+                ActionExecutor.applyMetadata([hasSensitive ? .unmarkSensitive : .markSensitive], to: items, context: modelContext)
+            })
+            menu.append(.separator)
+            menu.append(groupMenuItem(items: items))
             if items.contains(where: { $0.groupName != nil }) {
-                Button(L10n.tr("action.removeFromGroup")) {
-                    removeFromGroup(items: items)
-                }
+                menu.append(.item(L10n.tr("action.removeFromGroup")) { removeFromGroup(items: items) })
             }
-            Divider()
-            Button(L10n.tr("relay.addToQueue")) {
-                RelayManager.shared.addToQueue(clipItems: items)
-            }
-            Divider()
-            Button(L10n.tr("action.delete"), role: .destructive) {
-                handleDeleteSelected()
-            }
-        } else {
-            // 复制置顶，与主窗口右键菜单一致
-            Button(L10n.tr("action.mergeCopy")) {
-                copyItemsToClipboard([item])
-                selectItem(itemID)
-            }
-            Button(item.isPinned ? L10n.tr("action.unpin") : L10n.tr("action.pin")) {
-                item.isPinned.toggle()
-                ClipItemStore.saveAndNotify(modelContext)
-                selectItem(itemID)
-            }
-            Button(item.isSensitive ? L10n.tr("sensitive.unmarkSensitive") : L10n.tr("sensitive.markSensitive")) {
-                item.isSensitive.toggle()
-                ClipItemStore.saveAndNotify(modelContext)
-                selectItem(itemID)
-            }
-            if ProManager.AUTOMATION_ENABLED {
-                let manualRules = fetchEnabledRules()
-                    .filter { $0.triggerMode == .manual && $0.matches(item: item) }
-                if !manualRules.isEmpty {
-                    Divider()
-                    Menu(L10n.tr("cmd.automation")) {
-                        ForEach(manualRules) { rule in
-                            Button(rule.isBuiltIn ? L10n.tr(rule.name) : rule.name) {
-                                applyRule(rule, to: item)
-                            }
-                        }
+            menu.append(.separator)
+            menu.append(.item(L10n.tr("relay.addToQueue")) { RelayManager.shared.addToQueue(clipItems: items) })
+            menu.append(.separator)
+            menu.append(.item(L10n.tr("action.delete"), destructive: true) { handleDeleteSelected() })
+            return menu
+        }
+
+        // 复制置顶，与主窗口右键菜单一致
+        menu.append(.item(L10n.tr("action.mergeCopy")) {
+            copyItemsToClipboard([item])
+            selectItem(itemID)
+        })
+        menu.append(.item(item.isPinned ? L10n.tr("action.unpin") : L10n.tr("action.pin")) {
+            ActionExecutor.applyMetadata([item.isPinned ? .unpin : .pin], to: [item], context: modelContext)
+            selectItem(itemID)
+        })
+        menu.append(.item(item.isSensitive ? L10n.tr("sensitive.unmarkSensitive") : L10n.tr("sensitive.markSensitive")) {
+            ActionExecutor.applyMetadata([item.isSensitive ? .unmarkSensitive : .markSensitive], to: [item], context: modelContext)
+            selectItem(itemID)
+        })
+        if ProManager.AUTOMATION_ENABLED {
+            let manualRules = fetchEnabledRules()
+                .filter { $0.triggerMode == .manual && $0.matches(item: item) }
+            if !manualRules.isEmpty {
+                menu.append(.separator)
+                menu.append(.submenu(L10n.tr("cmd.automation"), manualRules.map { rule in
+                    .item(rule.isBuiltIn ? L10n.tr(rule.name) : rule.name) {
+                        ActionExecutor.apply(rule, to: [item], host: QuickPanelWindowController.shared, context: modelContext)
                     }
-                }
-            }
-            Divider()
-            quickPanelGroupMenu(items: [item])
-            if item.groupName != nil {
-                Button(L10n.tr("action.removeFromGroup")) {
-                    removeFromGroup(items: [item])
-                    selectItem(itemID)
-                }
-            }
-            Divider()
-            if !item.content.isEmpty || item.imageData != nil {
-                Button(L10n.tr("relay.addToQueue")) {
-                    RelayManager.shared.addToQueue(clipItems: [item])
-                }
-                Button(L10n.tr("relay.splitAndRelay")) {
-                    relaySplitText = item.content
-                }
-            }
-            Divider()
-            Button(L10n.tr("action.copyDebugInfo")) {
-                copyDebugInfo(for: item)
-            }
-            Divider()
-            Button(L10n.tr("action.delete"), role: .destructive) {
-                deleteItem(item)
+                }))
             }
         }
+        menu.append(.separator)
+        menu.append(groupMenuItem(items: [item]))
+        if item.groupName != nil {
+            menu.append(.item(L10n.tr("action.removeFromGroup")) {
+                removeFromGroup(items: [item])
+                selectItem(itemID)
+            })
+        }
+        menu.append(.separator)
+        if !item.content.isEmpty || item.imageData != nil {
+            menu.append(.item(L10n.tr("relay.addToQueue")) { RelayManager.shared.addToQueue(clipItems: [item]) })
+            menu.append(.item(L10n.tr("relay.splitAndRelay")) { relaySplitText = item.content })
+        }
+        menu.append(.separator)
+        menu.append(.item(L10n.tr("action.copyDebugInfo")) { copyDebugInfo(for: item) })
+        menu.append(.separator)
+        menu.append(.item(L10n.tr("action.delete"), destructive: true) { deleteItem(item) })
+        return menu
     }
 
     // MARK: - Actions
@@ -2301,23 +2281,14 @@ struct QuickPanelView: View {
                 relaySplitText = item.content
             }
         case .pin:
-            if isMultiSelected {
-                let items = currentItems
-                let shouldPin = !items.contains(where: \.isPinned)
-                for i in items { i.isPinned = shouldPin }
-            } else {
-                currentItem?.isPinned.toggle()
-            }
-            ClipItemStore.saveAndNotify(modelContext)
+            // Toggle lives here in the row; the action itself is a plain set/unset.
+            let items = isMultiSelected ? currentItems : (currentItem.map { [$0] } ?? [])
+            let shouldPin = !items.contains(where: \.isPinned)
+            ActionExecutor.applyMetadata([shouldPin ? .pin : .unpin], to: items, context: modelContext)
         case .toggleSensitive:
-            if isMultiSelected {
-                let items = currentItems
-                let hasSensitive = items.contains(where: \.isSensitive)
-                for i in items { i.isSensitive = !hasSensitive }
-            } else {
-                currentItem?.isSensitive.toggle()
-            }
-            ClipItemStore.saveAndNotify(modelContext)
+            let items = isMultiSelected ? currentItems : (currentItem.map { [$0] } ?? [])
+            let shouldMark = !items.contains(where: \.isSensitive)
+            ActionExecutor.applyMetadata([shouldMark ? .markSensitive : .unmarkSensitive], to: items, context: modelContext)
         case .copyColorFormat(let format, _):
             let pasteboard = NSPasteboard.general
             pasteboard.clearContents()
@@ -2336,26 +2307,16 @@ struct QuickPanelView: View {
                     dismissAndRevealInFinder(path)
                 }
             }
-        case .transform(let ruleAction):
-            if let item = currentItem {
-                let processed = AutomationEngine.shared.applyAction(ruleAction, to: item.content)
-                item.content = processed
-                item.displayTitle = ClipItem.buildTitle(content: processed, contentType: item.contentType)
-                if ruleAction == .stripRichText {
-                    item.richTextData = nil
-                    item.richTextType = nil
-                }
-                ClipItemStore.saveAndNotify(modelContext)
-            }
         case .delete:
             handleDeleteSelected()
         case .runRule(let ruleID, _):
-            guard let item = currentItem else { return }
+            let items = isMultiSelected ? currentItems : (currentItem.map { [$0] } ?? [])
+            guard !items.isEmpty else { return }
             let descriptor = FetchDescriptor<AutomationRule>(
                 predicate: #Predicate { $0.ruleID == ruleID }
             )
             if let rule = try? modelContext.fetch(descriptor).first {
-                applyRule(rule, to: item)
+                ActionExecutor.apply(rule, to: items, host: QuickPanelWindowController.shared, context: modelContext)
             }
         }
     }
@@ -2406,29 +2367,17 @@ struct QuickPanelView: View {
     }
 
     @ViewBuilder
-    private func quickPanelGroupMenu(items: [ClipItem]) -> some View {
+    private func groupMenuItem(items: [ClipItem]) -> NativeMenuItem {
         let groupNames = Set(items.compactMap(\.groupName))
         let currentGroup = groupNames.count == 1 ? groupNames.first : nil
-        Menu(L10n.tr("action.assignGroup")) {
-            ForEach(store.sidebarCounts.byGroup, id: \.name) { group in
-                if group.name == currentGroup {
-                    Button {} label: {
-                        Label(group.name, systemImage: "checkmark")
-                    }
-                    .disabled(true)
-                } else {
-                    Button(group.name) {
-                        assignToGroup(items: items, name: group.name)
-                    }
-                }
-            }
-            if !store.sidebarCounts.byGroup.isEmpty {
-                Divider()
-            }
-            Button(L10n.tr("action.newGroup")) {
-                showNewGroupAlert(for: items)
+        var children: [NativeMenuItem] = store.sidebarCounts.byGroup.map { group in
+            .item(group.name, checked: group.name == currentGroup, enabled: group.name != currentGroup) {
+                assignToGroup(items: items, name: group.name)
             }
         }
+        if !children.isEmpty { children.append(.separator) }
+        children.append(.item(L10n.tr("action.newGroup")) { showNewGroupAlert(for: items) })
+        return .submenu(L10n.tr("action.assignGroup"), children)
     }
 
     private func isFileBasedItem(_ item: ClipItem) -> Bool {
@@ -2687,89 +2636,12 @@ struct QuickPanelView: View {
         assignToGroup(items: items, name: result.name)
     }
 
-    private func applyTransform(_ action: RuleAction, to item: ClipItem) {
-        let processed = AutomationEngine.shared.applyAction(action, to: item.content)
-        let contentChanged = processed != item.content
-        item.content = processed
-        item.displayTitle = ClipItem.buildTitle(content: processed, contentType: item.contentType)
-        // Clear rich text whenever content changed (or user explicitly asked).
-        if contentChanged || action == .stripRichText {
-            item.richTextData = nil
-            item.richTextType = nil
-        }
-        ClipItemStore.saveAndNotify(modelContext)
-    }
-
     private func fetchEnabledRules() -> [AutomationRule] {
         let descriptor = FetchDescriptor<AutomationRule>(
             predicate: #Predicate { $0.enabled },
             sortBy: [SortDescriptor(\.sortOrder)]
         )
         return (try? modelContext.fetch(descriptor)) ?? []
-    }
-
-    private func applyRule(_ rule: AutomationRule, to item: ClipItem) {
-        let actions = rule.actions
-        guard !actions.isEmpty else { return }
-
-        // If the rule contains runShortcut, take the async path: transform
-        // through text actions first, then invoke the shortcut, and write the
-        // shortcut's output to NSPasteboard so it shows up as a new clip.
-        if actions.contains(where: { if case .runShortcut = $0 { return true }; return false }) {
-            Task { @MainActor in
-                await runRuleViaShortcut(rule, on: item)
-            }
-            return
-        }
-
-        let processed = AutomationEngine.executeActions(actions, on: item.content)
-        let contentChanged = processed != item.content
-        // Include metadata actions (move to group / pin / mark sensitive): a rule that
-        // only moves the clip to a group leaves the text unchanged, so guarding on
-        // contentChanged alone made such rules silently no-op here. (issue #71)
-        guard contentChanged || AutomationEngine.containsSpecialAction(actions) else { return }
-        item.content = processed
-        item.displayTitle = ClipItem.buildTitle(content: processed, contentType: item.contentType)
-        // Clear rich text if content changed — otherwise stale rich formatting
-        // shows through in the preview pane even though content has been updated.
-        if contentChanged || actions.contains(.stripRichText) {
-            item.richTextData = nil
-            item.richTextType = nil
-        }
-        // markSensitive / pin / move-to-group — shared with the capture & main-window paths.
-        ClipboardManager.shared.applyMetadataActions(actions, to: item, context: modelContext)
-        ClipItemStore.saveAndNotify(modelContext)
-    }
-
-    @MainActor
-    private func runRuleViaShortcut(_ rule: AutomationRule, on item: ClipItem) async {
-        // PasteMemo pipes the clip in and triggers the Shortcut. The Shortcut
-        // itself handles output (Copy to Clipboard, Post webhook, Show
-        // Notification, etc). We never mutate NSPasteboard here.
-        var currentContent = item.content
-        // Verbatim original (not the thumbnail) — the Shortcut may save/process the image.
-        let currentImageData = item.imageBytesForExport()
-        let currentContentType = item.contentType
-
-        for action in rule.actions {
-            if case .runShortcut(let name) = action {
-                do {
-                    _ = try await ShortcutRunner.run(
-                        name: name,
-                        content: currentContent,
-                        imageData: currentImageData,
-                        contentType: currentContentType
-                    )
-                } catch {
-                    ShortcutNotifier.showFailure(ruleName: name, error: error)
-                    return
-                }
-            } else {
-                currentContent = action.execute(on: currentContent)
-            }
-        }
-        let displayName = rule.isBuiltIn ? L10n.tr(rule.name) : rule.name
-        ShortcutNotifier.showSuccess(ruleName: displayName)
     }
 
     private func deleteItems(_ itemsToDelete: [ClipItem]) {

@@ -5,11 +5,11 @@ enum KeychainHelper {
 
     private static let SERVICE = "com.lifedever.pastememo.backup"
 
-    static func save(password: String, account: String) throws {
+    static func save(password: String, account: String, service: String = SERVICE) throws {
         let data = Data(password.utf8)
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: SERVICE,
+            kSecAttrService as String: service,
             kSecAttrAccount as String: account,
         ]
 
@@ -23,10 +23,10 @@ enum KeychainHelper {
         }
     }
 
-    static func load(account: String) -> String? {
+    static func load(account: String, service: String = SERVICE) -> String? {
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: SERVICE,
+            kSecAttrService as String: service,
             kSecAttrAccount as String: account,
             kSecReturnData as String: true,
             kSecMatchLimit as String: kSecMatchLimitOne,
@@ -38,10 +38,10 @@ enum KeychainHelper {
         return String(data: data, encoding: .utf8)
     }
 
-    static func delete(account: String) {
+    static func delete(account: String, service: String = SERVICE) {
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: SERVICE,
+            kSecAttrService as String: service,
             kSecAttrAccount as String: account,
         ]
         SecItemDelete(query as CFDictionary)

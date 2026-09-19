@@ -1002,3 +1002,11 @@ extension NSScreen {
         return screens.first { $0.frame.contains(mouseLocation) }
     }
 }
+
+// MARK: - ActionHost
+
+extension QuickPanelWindowController: ActionHost {
+    var source: ExecutionSource { .quickPanel }
+    var targetApp: NSRunningApplication? { previousApp }
+    func dismissPanel() { dismiss() }
+}

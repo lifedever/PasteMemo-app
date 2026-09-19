@@ -74,7 +74,7 @@ enum ClipHistoryPaginationHelper {
     }
 }
 
-struct NativeClipHistoryList<RowContent: View, HeaderContent: View, ContextMenuContent: View, PaletteContent: View>: NSViewRepresentable {
+struct NativeClipHistoryList<RowContent: View, HeaderContent: View, PaletteContent: View>: NSViewRepresentable {
     let rows: [ClipHistoryListBuilder.Row]
     let rowIndexByItemID: [PersistentIdentifier: Int]
     let itemsByID: [PersistentIdentifier: ClipItem]
@@ -93,7 +93,7 @@ struct NativeClipHistoryList<RowContent: View, HeaderContent: View, ContextMenuC
     let onLoadMore: () -> Void
     let rowContent: (ClipItem, Bool) -> RowContent
     let headerContent: (TimeGroup) -> HeaderContent
-    let contextMenu: (ClipItem) -> ContextMenuContent
+    let contextMenu: (ClipItem) -> [NativeMenuItem]
     let commandPaletteContent: (ClipItem) -> PaletteContent
     /// 焦点行在**屏幕坐标系**中的 frame，外加列表自身的屏幕 frame，供调用方把
     /// 独立浮窗对齐到选中行。行由 NSTableView 绘制、滚动偏移只有 AppKit 侧知道；
@@ -490,7 +490,7 @@ struct NativeClipHistoryList<RowContent: View, HeaderContent: View, ContextMenuC
                         ) {
                             self.parent.commandPaletteContent(item)
                         }
-                        .contextMenu {
+                        .nativeContextMenuMonitor { [self] in
                             self.parent.contextMenu(item)
                         }
                         .onTapGesture { [self] in

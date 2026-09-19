@@ -88,6 +88,7 @@ struct SettingsDetail: View {
         case .shortcuts: ShortcutsTab()
         case .privacy: PrivacyTab()
         case .aiAgents: AIAgentIntegrationView()
+        case .aiService: AIServicePane()
         case .automation: AutomationTab()
         case .data: DataTab()
         case .sponsor: SponsorTab()
@@ -100,7 +101,7 @@ struct SettingsDetail: View {
 
 enum SettingsCategory: String, CaseIterable, Identifiable, Hashable {
     case general, appearance, quickPanel, preview
-    case shortcuts, privacy, aiAgents, automation, data
+    case shortcuts, privacy, aiAgents, aiService, automation, data
     case sponsor, about
 
     var id: String { rawValue }
@@ -108,7 +109,7 @@ enum SettingsCategory: String, CaseIterable, Identifiable, Hashable {
     /// 功能设置：基础(通用/外观) → 快捷面板(快捷键/面板/预览与识别) → 进阶(AI/自动化)。
     static let functionGroup: [SettingsCategory] =
         [.general, .appearance, .shortcuts, .quickPanel, .preview,
-         .aiAgents, .automation]
+         .aiAgents, .aiService, .automation]
 
     /// 数据与隐私。
     static let dataPrivacyGroup: [SettingsCategory] = [.privacy, .data]
@@ -125,6 +126,7 @@ enum SettingsCategory: String, CaseIterable, Identifiable, Hashable {
         case .shortcuts: return "settings.shortcuts"
         case .privacy: return "settings.privacy"
         case .aiAgents: return "settings.tab.aiAgents"
+        case .aiService: return "settings.aiService"
         case .automation: return "settings.automation"
         case .data: return "dataPorter.section"
         case .sponsor: return "settings.sponsor"
@@ -141,6 +143,7 @@ enum SettingsCategory: String, CaseIterable, Identifiable, Hashable {
         case .shortcuts: return "keyboard"
         case .privacy: return "lock.shield"
         case .aiAgents: return "sparkles.rectangle.stack"
+        case .aiService: return "brain"
         case .automation: return "gearshape.2"
         case .data: return "externaldrive"
         case .sponsor: return "heart"
@@ -159,6 +162,7 @@ extension SettingsCategory {
         case .quickPanel: return .blue
         case .preview: return .teal
         case .aiAgents: return .orange
+        case .aiService: return .mint
         case .automation: return .purple
         case .privacy: return .blue
         case .data: return .green

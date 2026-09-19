@@ -33,6 +33,14 @@ enum RelayRuleResolver {
             contentType: contentType,
             sourceApp: item.sourceAppBundleID
         )
-        return ok ? rule.actions : []
+        // Relay transforms text at paste time, synchronously: only content transforms
+        // apply here. Async actions (Shortcuts) and metadata / flow actions would be
+        // silent no-ops and are dropped.
+        return ok ? rule.actions.filter { $0.kind == .transform } : []
+    }
+
+    /// Rules the Relay picker offers: enabled ones that are purely synchronous.
+    static func isEligible(_ rule: AutomationRule) -> Bool {
+        !rule.actions.contains(where: \.isAsync)
     }
 }

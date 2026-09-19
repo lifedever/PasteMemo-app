@@ -48,7 +48,7 @@ struct RelaySettingsPopover: View {
             ) {
                 Picker("", selection: $automationRuleId) {
                     Text(L10n.tr("relay.settings.automation.none")).tag("")
-                    ForEach(enabledRules) { rule in
+                    ForEach(enabledRules.filter(RelayRuleResolver.isEligible)) { rule in
                         Text(ruleDisplayName(rule)).tag(rule.ruleID)
                     }
                 }

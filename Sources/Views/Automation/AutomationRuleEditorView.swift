@@ -2,317 +2,972 @@ import SwiftUI
 import SwiftData
 import UserNotifications
 
+/// The rule as a vertical flow: 当 (trigger) → 如果 (conditions) → 就 (actions) → 然后 (output),
+/// one rail down the left, a node card per step. View mode shows it read-only with the
+/// enabled switch in the title row; edit mode swaps controls into the same cards and
+/// shows Cancel / Save at the bottom. Edits collect in drafts until Save.
 struct AutomationRuleEditorView: View {
     @Bindable var rule: AutomationRule
+    @ObservedObject var session: RuleEditorSession
     @Environment(\.modelContext) private var modelContext
-    @State private var isEditing = false
     @State private var draftName = ""
-    @State private var draftConditions: [IdentifiedCondition] = []
-    @State private var draftActions: [IdentifiedAction] = []
-    @State private var draftConditionLogic: ConditionLogic = .all
+    @State private var draftTrigger: TriggerMode = .automatic
+    @State private var draftLogic: ConditionLogic = .all
+    @State private var draftOutput: RuleOutputMode = .replaceItem
+    @State private var draftNotifyBefore = false
+    @State private var draftNotifyOn = false
+    @State private var conditions: [IdentifiedCondition] = []
+    @State private var actions: [IdentifiedAction] = []
     @State private var shortcutPickerIndex: Int? = nil
+    @State private var expandedOverrides: Set<UUID> = []
+    @State private var previewInput = ""
+    @State private var isEditing = false
+    @FocusState private var nameFocused: Bool
 
-    private var isBuiltIn: Bool { rule.isBuiltIn }
+    /// Built-in names are L10n keys; the field shows the translation.
+    private var displayName: String { rule.isBuiltIn ? L10n.tr(rule.name) : rule.name }
 
-    /// Run-Shortcut actions are async and only run on the manual path; the automatic
-    /// capture path treats them as no-ops. So a rule containing one is locked to manual
-    /// triggering to keep it from silently never firing. (issue #71 review)
-    private var ruleHasRunShortcut: Bool {
-        rule.actions.contains { if case .runShortcut = $0 { return true }; return false }
+    /// Async actions (Run Shortcut, AI rewrite) and panel-bound ones (Close Quick Panel)
+    /// can't run on the capture path — it would silently no-op. Such rules are locked to
+    /// manual triggering. (issue #71 review)
+    private var ruleRequiresManual: Bool {
+        actions.contains { $0.value.requiresManualTrigger }
     }
+
+    private var isDirty: Bool {
+        draftName != displayName
+            || draftTrigger != rule.triggerMode
+            || draftLogic != rule.conditionLogic
+            || draftOutput != rule.outputMode
+            || draftNotifyBefore != rule.notifyBeforeApply
+            || draftNotifyOn != rule.notifyOnTrigger
+            || conditions.map(\.value) != rule.conditions
+            || actions.map(\.value) != rule.actions
+    }
+
+    // MARK: - Body
 
     var body: some View {
-        VStack(spacing: 0) {
-            Form {
-                if isEditing {
-                    editNameSection
-                    editConditionsSection
-                    editActionsSection
-                    editButtonsSection
-                } else {
-                    enabledHeaderSection
-                    viewConditionsSection
-                    viewActionsSection
-                    settingsSection
-                }
+        ScrollView {
+            VStack(alignment: .leading, spacing: 24) {
+                titleRow
+                timeline
+                previewCard
             }
-            .formStyle(.grouped)
+            .padding(.horizontal, 28)
+            .padding(.top, 4)
+            .padding(.bottom, 24)
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .onChange(of: rule.ruleID) {
-            isEditing = false
+        .safeAreaInset(edge: .bottom) {
+            if isEditing { saveBar } else { viewBar }
+        }
+        .onAppear {
+            load()
+            session.save = { save() }
+            session.discard = { load() }
+        }
+        .onChange(of: rule.ruleID) { load() }
+        .onChange(of: isDirty) { _, dirty in session.isDirty = isEditing && dirty }
+        .onChange(of: isEditing) { _, editing in session.isDirty = editing && isDirty }
+        .onChange(of: actions.map(\.value)) { _, _ in
+            // Never leave a manual-only rule on "automatic" where it would silently never fire.
+            if ruleRequiresManual { draftTrigger = .manual }
         }
         .onReceive(NotificationCenter.default.publisher(for: .automationEnterEdit)) { _ in
-            if !isBuiltIn { enterEditMode() }
+            beginEditing()
         }
     }
 
-    // MARK: - View Mode
+    // MARK: - Title row
 
-    /// Rule-level on/off stays at the top of the editor so it's the first
-    /// thing you see. The subtitle shows both state and trigger mode so a
-    /// glance tells you "on + manual only" vs "on + auto" vs "off".
-    private var enabledHeaderSection: some View {
-        Section {
-            Toggle(isOn: Binding(
-                get: { rule.enabled },
-                set: { newValue in
-                    if newValue {
-                        guard validateRule() else { return }
-                    }
-                    rule.enabled = newValue
-                    saveSettings()
-                }
-            )) {
-                HStack(spacing: 8) {
-                    Image(systemName: rule.enabled
-                          ? "checkmark.circle.fill"
-                          : "circle")
-                        .foregroundStyle(rule.enabled ? .green : .secondary)
-                    VStack(alignment: .leading, spacing: 1) {
-                        Text(L10n.tr("automation.rule.enabled"))
-                        Text(enabledStatusSubtitle)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                }
-            }
-            .toggleStyle(.switch)
-        }
-    }
-
-    private var enabledStatusSubtitle: String {
-        guard rule.enabled else {
-            return L10n.tr("automation.rule.status.inactive")
-        }
-        let triggerLabel: String
-        switch rule.triggerMode {
-        case .automatic: triggerLabel = L10n.tr("automation.rule.triggerMode.automatic")
-        case .manual: triggerLabel = L10n.tr("automation.rule.triggerMode.manual")
-        }
-        return L10n.tr("automation.rule.status.active") + " · " + triggerLabel
-    }
-
-    private var viewConditionsSection: some View {
-        Section {
-            if rule.conditions.isEmpty {
-                Text(L10n.tr("automation.condition.empty")).foregroundStyle(.tertiary)
+    private var titleRow: some View {
+        HStack(alignment: .center, spacing: 12) {
+            if isEditing {
+                TextField(L10n.tr("automation.rule.name"), text: $draftName)
+                    .textFieldStyle(.roundedBorder)
+                    .font(.title3)
+                    .focused($nameFocused)
             } else {
-                ForEach(Array(rule.conditions.enumerated()), id: \.offset) { _, c in
-                    conditionLabel(c)
-                }
-            }
-        } header: {
-            conditionSectionHeader
-        }
-    }
-
-    private var conditionSectionHeader: some View {
-        HStack(spacing: 4) {
-            Text(L10n.tr("automation.condition.title.prefix"))
-            Picker("", selection: Binding(
-                get: { rule.conditionLogic },
-                set: { rule.conditionLogic = $0; saveSettings() }
-            )) {
-                Text(L10n.tr("automation.condition.logic.all")).tag(ConditionLogic.all)
-                Text(L10n.tr("automation.condition.logic.any")).tag(ConditionLogic.any)
-            }
-            .pickerStyle(.menu)
-            .fixedSize()
-            .disabled(isBuiltIn || !isEditing)
-            Text(L10n.tr("automation.condition.title.suffix"))
-        }
-    }
-
-    private var viewActionsSection: some View {
-        Section(L10n.tr("automation.action.title")) {
-            if rule.actions.isEmpty {
-                Text(L10n.tr("automation.action.empty")).foregroundStyle(.tertiary)
-            } else {
-                ForEach(Array(rule.actions.enumerated()), id: \.offset) { _, a in
-                    actionLabel(a)
-                }
-            }
-        }
-    }
-
-    private var settingsSection: some View {
-        Section(L10n.tr("automation.editor.triggerAndNotification")) {
-            Picker(L10n.tr("automation.rule.triggerMode"), selection: Binding(
-                get: { rule.triggerMode },
-                set: { rule.triggerMode = $0; saveSettings() }
-            )) {
-                Text(L10n.tr("automation.rule.triggerMode.automatic")).tag(TriggerMode.automatic)
-                Text(L10n.tr("automation.rule.triggerMode.manual")).tag(TriggerMode.manual)
-            }
-            .disabled(isBuiltIn || ruleHasRunShortcut)
-
-            if ruleHasRunShortcut {
-                Text(L10n.tr("automation.rule.triggerMode.shortcutManualOnly"))
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-
-            if rule.triggerMode != .manual {
-                Toggle(isOn: Binding(
-                    get: { rule.writeBackToPasteboard },
-                    set: { rule.writeBackToPasteboard = $0; saveSettings() }
-                )) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(L10n.tr("automation.rule.writeBackToPasteboard"))
-                        Text(L10n.tr("automation.rule.writeBackToPasteboard.help"))
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+                Text(displayName)
+                    .font(.title2.weight(.semibold))
+                    .lineLimit(1)
+                statusBadge
+                Spacer()
+                Toggle("", isOn: Binding(
+                    get: { rule.enabled },
+                    set: { newValue in
+                        if newValue {
+                            guard validateRule() else { return }
+                        }
+                        rule.enabled = newValue
+                        rule.updatedAt = Date()
+                        try? modelContext.save()
                     }
-                }
-                Toggle(L10n.tr("automation.rule.notifyBeforeApply"), isOn: Binding(
-                    get: { rule.notifyBeforeApply },
-                    set: { rule.notifyBeforeApply = $0; saveSettings() }
                 ))
+                .toggleStyle(.switch)
+                .labelsHidden()
+                .help(L10n.tr("automation.rule.enabled"))
             }
+        }
+    }
 
-            Toggle(L10n.tr("automation.rule.notifyOnTrigger"), isOn: Binding(
-                get: { rule.notifyOnTrigger },
-                set: { newValue in
-                    rule.notifyOnTrigger = newValue
-                    saveSettings()
-                    if newValue {
-                        requestNotificationPermission { granted in
-                            guard !granted else { return }
-                            Task { @MainActor in
-                                rule.notifyOnTrigger = false
-                                saveSettings()
+    private var statusBadge: some View {
+        let on = rule.enabled
+        let text = on
+            ? L10n.tr("automation.rule.status.active") + " · " + (rule.triggerMode == .automatic
+                ? L10n.tr("automation.rule.triggerMode.automatic") : L10n.tr("automation.rule.triggerMode.manual"))
+            : L10n.tr("automation.rule.status.inactive")
+        return Text(text)
+            .font(.caption.weight(.medium))
+            .padding(.horizontal, 8)
+            .padding(.vertical, 3)
+            .background(Capsule().fill(on ? Color.green.opacity(0.18) : Color.secondary.opacity(0.15)))
+            .foregroundStyle(on ? Color.green : Color.secondary)
+    }
+
+    // MARK: - Timeline
+
+    private var timeline: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            flowNode(symbol: "bolt.fill", label: L10n.tr("automation.flow.when"), detail: nil, isLast: false) {
+                triggerCard
+            }
+            flowNode(symbol: "line.3.horizontal.decrease", label: L10n.tr("automation.flow.if"),
+                     detail: conditionsDetail, isLast: false) {
+                conditionsCard
+            }
+            flowNode(symbol: "play.fill", label: L10n.tr("automation.flow.then"),
+                     detail: L10n.tr("automation.flow.inOrder"), isLast: false) {
+                actionsCard
+            }
+            flowNode(symbol: "arrow.down.to.line", label: L10n.tr("automation.flow.finally"), detail: nil, isLast: true) {
+                resultCard
+            }
+        }
+    }
+
+    /// One step: icon circle + rail on the left, a small label and the card on the right.
+    private func flowNode<Content: View>(symbol: String, label: String, detail: String?, isLast: Bool,
+                                         @ViewBuilder content: () -> Content) -> some View {
+        HStack(alignment: .top, spacing: 14) {
+            VStack(spacing: 0) {
+                ZStack {
+                    Circle()
+                        .fill(Color(nsColor: .controlBackgroundColor))
+                        .overlay(Circle().strokeBorder(Color.primary.opacity(0.12)))
+                    Image(systemName: symbol)
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(.secondary)
+                }
+                .frame(width: 28, height: 28)
+                if !isLast {
+                    Rectangle()
+                        .fill(Color.primary.opacity(0.12))
+                        .frame(width: 2)
+                        .frame(maxHeight: .infinity)
+                }
+            }
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(spacing: 6) {
+                    Text(label)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                    if let detail {
+                        Text("·").foregroundStyle(.quaternary)
+                        Text(detail)
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .frame(height: 28)
+                content()
+                    .padding(.bottom, isLast ? 0 : 20)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .fixedSize(horizontal: false, vertical: true)
+    }
+
+    /// Card chrome shared by every node.
+    private func card<Content: View>(@ViewBuilder content: () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: 0) { content() }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(RoundedRectangle(cornerRadius: 10).fill(Color.primary.opacity(0.045)))
+            .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(Color.primary.opacity(0.08)))
+    }
+
+    private func cardRow<Content: View>(@ViewBuilder content: () -> Content) -> some View {
+        HStack(spacing: 10) { content() }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 10)
+    }
+
+    private var rowDivider: some View {
+        Divider().padding(.leading, 14)
+    }
+
+    private var conditionsDetail: String {
+        let logic = isEditing ? draftLogic : rule.conditionLogic
+        return L10n.tr(logic == .all ? "automation.flow.allConditions" : "automation.flow.anyCondition")
+    }
+
+    // MARK: - Node 1: trigger
+
+    private var triggerCard: some View {
+        card {
+            if isEditing {
+                cardRow {
+                    Picker("", selection: $draftTrigger) {
+                        Text(L10n.tr("automation.rule.triggerMode.automatic")).tag(TriggerMode.automatic)
+                        Text(L10n.tr("automation.rule.triggerMode.manual")).tag(TriggerMode.manual)
+                    }
+                    .pickerStyle(.segmented)
+                    .labelsHidden()
+                    .disabled(ruleRequiresManual)
+                    .fixedSize()
+                    Spacer()
+                }
+                cardRow {
+                    Text(triggerHelp)
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                }
+                if draftTrigger == .automatic {
+                    rowDivider
+                    cardRow {
+                        Toggle(L10n.tr("automation.rule.notifyBeforeApply"), isOn: $draftNotifyBefore)
+                            .toggleStyle(.switch)
+                            .controlSize(.small)
+                    }
+                }
+            } else {
+                cardRow {
+                    Text(rule.triggerMode == .automatic
+                         ? L10n.tr("automation.rule.triggerMode.automatic.help")
+                         : L10n.tr("automation.rule.triggerMode.manual.help"))
+                }
+                if rule.triggerMode == .automatic, rule.notifyBeforeApply {
+                    rowDivider
+                    cardRow {
+                        Text(L10n.tr("automation.rule.notifyBeforeApply"))
+                        Spacer()
+                        Text(onOff(true)).foregroundStyle(.secondary)
+                    }
+                }
+            }
+        }
+    }
+
+    private var triggerHelp: String {
+        if ruleRequiresManual { return L10n.tr("automation.rule.triggerMode.shortcutManualOnly") }
+        return draftTrigger == .automatic
+            ? L10n.tr("automation.rule.triggerMode.automatic.help")
+            : L10n.tr("automation.rule.triggerMode.manual.help")
+    }
+
+    // MARK: - Node 2: conditions
+
+    private var conditionsCard: some View {
+        card {
+            if isEditing {
+                cardRow {
+                    Text(L10n.tr("automation.condition.title.prefix"))
+                    Picker("", selection: $draftLogic) {
+                        Text(L10n.tr("automation.condition.logic.all")).tag(ConditionLogic.all)
+                        Text(L10n.tr("automation.condition.logic.any")).tag(ConditionLogic.any)
+                    }
+                    .pickerStyle(.menu)
+                    .labelsHidden()
+                    .fixedSize()
+                    Text(L10n.tr("automation.condition.title.suffix"))
+                    Spacer()
+                }
+                rowDivider
+                if conditions.isEmpty {
+                    cardRow { Text(L10n.tr("automation.condition.empty")).foregroundStyle(.tertiary) }
+                }
+                ForEach(Array(conditions.enumerated()), id: \.element.id) { index, item in
+                    if index > 0 { rowDivider }
+                    cardRow { conditionRow(item.value, at: index) }
+                }
+                rowDivider
+                cardRow { addConditionMenu }
+            } else {
+                if rule.conditions.isEmpty {
+                    cardRow { Text(L10n.tr("automation.condition.empty")).foregroundStyle(.tertiary) }
+                }
+                ForEach(Array(rule.conditions.enumerated()), id: \.offset) { index, condition in
+                    if index > 0 { rowDivider }
+                    cardRow { readOnlyCondition(condition) }
+                }
+            }
+        }
+    }
+
+    // MARK: - Node 3: actions
+
+    private var actionsCard: some View {
+        card {
+            if isEditing {
+                if actions.isEmpty {
+                    cardRow { Text(L10n.tr("automation.action.empty")).foregroundStyle(.tertiary) }
+                }
+                ForEach(Array(actions.enumerated()), id: \.element.id) { index, item in
+                    if index > 0 { rowDivider }
+                    cardRow { actionRow(item.value, at: index, editable: true) }
+                }
+                rowDivider
+                cardRow { addActionMenu }
+            } else {
+                if rule.actions.isEmpty {
+                    cardRow { Text(L10n.tr("automation.action.empty")).foregroundStyle(.tertiary) }
+                }
+                ForEach(Array(rule.actions.enumerated()), id: \.offset) { index, action in
+                    if index > 0 { rowDivider }
+                    cardRow { actionRow(action, at: index, editable: false) }
+                }
+            }
+        }
+    }
+
+    /// Numbered action row; the number says "in order" better than a caption could.
+    private func actionRow(_ action: RuleAction, at index: Int, editable: Bool) -> some View {
+        let icon = Self.icon(for: action)
+        return HStack(alignment: .top, spacing: 10) {
+            Text("\(index + 1)")
+                .font(.caption.weight(.semibold).monospacedDigit())
+                .foregroundStyle(icon.tint)
+                .frame(width: 20, height: 20)
+                .background(Circle().fill(icon.tint.opacity(0.15)))
+                .padding(.top, 1)
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(spacing: 8) {
+                    Image(systemName: icon.name)
+                        .foregroundStyle(icon.tint)
+                        .frame(width: 16)
+                    Text(Self.title(for: action))
+                        .fontWeight(.medium)
+                    Spacer()
+                    if editable {
+                        Button { actions.move(fromOffsets: [index], toOffset: index - 1) } label: {
+                            Image(systemName: "chevron.up")
+                        }
+                        .buttonStyle(.borderless)
+                        .disabled(index == 0)
+                        Button { actions.move(fromOffsets: [index], toOffset: index + 2) } label: {
+                            Image(systemName: "chevron.down")
+                        }
+                        .buttonStyle(.borderless)
+                        .disabled(index == actions.count - 1)
+                        removeButton { actions.remove(at: index) }
+                    }
+                }
+                if editable {
+                    actionParameters(action, at: index)
+                } else {
+                    readOnlyParameters(action)
+                }
+            }
+        }
+    }
+
+    // MARK: - Node 4: result
+
+    private var resultCard: some View {
+        card {
+            if isEditing {
+                cardRow {
+                    Picker(L10n.tr("automation.rule.outputMode"), selection: $draftOutput) {
+                        ForEach(RuleOutputMode.allCases, id: \.self) { mode in
+                            Text(L10n.tr("automation.rule.outputMode.\(mode.rawValue)")).tag(mode)
+                        }
+                    }
+                    .fixedSize()
+                    Spacer()
+                }
+                if draftTrigger == .automatic, draftOutput.mirrorsToPasteboardOnCapture {
+                    cardRow {
+                        Text(L10n.tr("automation.rule.outputMode.help"))
+                            .font(.callout)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                rowDivider
+                cardRow {
+                    Toggle(L10n.tr("automation.rule.notifyOnTrigger"), isOn: $draftNotifyOn)
+                        .toggleStyle(.switch)
+                        .controlSize(.small)
+                }
+            } else {
+                cardRow {
+                    Text(L10n.tr("automation.rule.outputMode.\(rule.outputMode.rawValue)"))
+                }
+                rowDivider
+                cardRow {
+                    Text(L10n.tr("automation.rule.notifyOnTrigger"))
+                    Spacer()
+                    Text(onOff(rule.notifyOnTrigger)).foregroundStyle(.secondary)
+                }
+            }
+        }
+    }
+
+    // MARK: - Preview
+
+    private var previewCard: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(L10n.tr("automation.preview"))
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(.secondary)
+            card {
+                cardRow {
+                    TextField("", text: $previewInput, prompt: Text(L10n.tr("automation.preview.input")), axis: .vertical)
+                        .labelsHidden()
+                        .textFieldStyle(.plain)
+                        .lineLimit(2...6)
+                }
+                rowDivider
+                cardRow {
+                    Button(L10n.tr("automation.preview.useClipboard")) {
+                        previewInput = NSPasteboard.general.string(forType: .string) ?? ""
+                    }
+                    .controlSize(.small)
+                    Spacer()
+                }
+                if !previewInput.isEmpty {
+                    rowDivider
+                    cardRow {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(L10n.tr("automation.preview.output"))
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                            Text(previewOutput)
+                                .textSelection(.enabled)
+                            if actions.contains(where: { $0.value.isAsync }) {
+                                Text(L10n.tr("automation.preview.asyncSkipped"))
+                                    .font(.caption)
+                                    .foregroundStyle(.tertiary)
                             }
                         }
                     }
                 }
-            ))
-        }
-    }
-
-    // MARK: - Edit Mode
-
-    private var editNameSection: some View {
-        Section {
-            LabeledContent(L10n.tr("automation.rule.name")) {
-                TextField("", text: $draftName)
             }
         }
     }
 
-    private var editButtonsSection: some View {
-        Section {
-        } footer: {
-            HStack(spacing: 12) {
-                Spacer()
-                Button(L10n.tr("automation.editor.cancel")) { cancelEdit() }
-                    .buttonStyle(.bordered)
-                Button(L10n.tr("automation.editor.save")) { saveEdit() }
-                    .buttonStyle(.borderedProminent)
-                Spacer()
-            }
-        }
+    // MARK: - Bars
+
+    private func beginEditing() {
+        load()
+        isEditing = true
+        DispatchQueue.main.async { nameFocused = true }
     }
 
-    private var editConditionSectionHeader: some View {
-        HStack(spacing: 4) {
-            Text(L10n.tr("automation.condition.title.prefix"))
-            Picker("", selection: $draftConditionLogic) {
-                Text(L10n.tr("automation.condition.logic.all")).tag(ConditionLogic.all)
-                Text(L10n.tr("automation.condition.logic.any")).tag(ConditionLogic.any)
-            }
-            .pickerStyle(.menu)
-            .fixedSize()
-            Text(L10n.tr("automation.condition.title.suffix"))
+    private var viewBar: some View {
+        HStack {
+            Spacer()
+            Button(L10n.tr("automation.editor.edit")) { beginEditing() }
+                .keyboardShortcut("e", modifiers: .command)
         }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 10)
+        .background(.bar)
+        .overlay(alignment: .top) { Divider() }
     }
 
-    private var editConditionsSection: some View {
-        Section {
-            ForEach(draftConditions) { item in
-                if let index = draftConditions.firstIndex(where: { $0.id == item.id }) {
-                    editConditionRow(item.value, at: index)
+    private var saveBar: some View {
+        HStack(spacing: 12) {
+            if isDirty {
+                Text(L10n.tr("automation.editor.unsaved"))
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+            }
+            Spacer()
+            Button(L10n.tr("automation.editor.cancel")) { load() }
+                .keyboardShortcut(.cancelAction)
+            Button(L10n.tr("automation.editor.save")) { save() }
+                .buttonStyle(.borderedProminent)
+                .keyboardShortcut("s", modifiers: .command)
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 10)
+        .background(.bar)
+        .overlay(alignment: .top) { Divider() }
+    }
+
+    // MARK: - Load / save
+
+    private func load() {
+        draftName = displayName
+        draftTrigger = rule.triggerMode
+        draftLogic = rule.conditionLogic
+        draftOutput = rule.outputMode
+        draftNotifyBefore = rule.notifyBeforeApply
+        draftNotifyOn = rule.notifyOnTrigger
+        conditions = rule.conditions.map { IdentifiedCondition(value: $0) }
+        actions = rule.actions.map { IdentifiedAction(value: $0) }
+        previewInput = ""
+        isEditing = false
+        session.isDirty = false
+    }
+
+    /// Commit every draft field. Turning notifications on asks for permission and backs
+    /// the toggle out if it's refused.
+    private func save() {
+        let wantsNotification = draftNotifyOn && !rule.notifyOnTrigger
+        if rule.isBuiltIn {
+            // Renaming a built-in makes it the user's own rule; remember the original key
+            // so seeding doesn't bring the stock copy back next to it.
+            if draftName != displayName {
+                BuiltInRules.markDeleted(rule.name)
+                rule.isBuiltIn = false
+                rule.name = draftName
+            }
+        } else {
+            rule.name = draftName
+        }
+        rule.conditionLogic = draftLogic
+        rule.conditions = conditions.map(\.value)
+        rule.actions = actions.map(\.value)
+        rule.triggerMode = ruleRequiresManual ? .manual : draftTrigger
+        draftTrigger = rule.triggerMode
+        rule.outputMode = draftOutput
+        rule.notifyBeforeApply = draftNotifyBefore
+        rule.notifyOnTrigger = draftNotifyOn
+        rule.updatedAt = Date()
+        try? modelContext.save()
+        isEditing = false
+        if wantsNotification {
+            requestNotificationPermission { granted in
+                guard !granted else { return }
+                Task { @MainActor in
+                    rule.notifyOnTrigger = false
+                    draftNotifyOn = false
+                    try? modelContext.save()
                 }
             }
-            .onMove { draftConditions.move(fromOffsets: $0, toOffset: $1) }
-        } header: {
-            editConditionSectionHeader
-        } footer: {
-            addConditionMenu
         }
     }
 
-    private var editActionsSection: some View {
-        Section {
-            ForEach(draftActions) { item in
-                if let index = draftActions.firstIndex(where: { $0.id == item.id }) {
-                    editActionRow(item.value, at: index)
-                }
-            }
-            .onMove { draftActions.move(fromOffsets: $0, toOffset: $1) }
-        } header: {
-            Text(L10n.tr("automation.action.title"))
-        } footer: {
-            addActionMenu
-        }
-    }
-
-    // MARK: - Add Menus (inside card)
+    // MARK: - Row pieces (shared by both modes)
 
     private var addConditionMenu: some View {
         HStack {
-            Menu(L10n.tr("automation.condition.add")) {
-                Button(L10n.tr("automation.condition.contentType")) { draftConditions.append(IdentifiedCondition(value: .contentType(.text))) }
-                Button(L10n.tr("automation.condition.anyText")) { draftConditions.append(IdentifiedCondition(value: .anyText)) }
-                Button(L10n.tr("automation.condition.regexMatch")) { draftConditions.append(IdentifiedCondition(value: .regexMatch(pattern: ""))) }
-                Button(L10n.tr("automation.condition.containsText")) { draftConditions.append(IdentifiedCondition(value: .containsText(text: ""))) }
-                Button(L10n.tr("automation.condition.sourceApp")) { draftConditions.append(IdentifiedCondition(value: .sourceApp(bundleIDs: []))) }
+            NativePullDownButton(title: L10n.tr("automation.condition.add")) {
+                [
+                    .item(L10n.tr("automation.condition.anyText"), symbol: "text.alignleft") { conditions.append(IdentifiedCondition(value: .anyText)) },
+                    .item(L10n.tr("automation.condition.contentType"), symbol: "doc") { conditions.append(IdentifiedCondition(value: .contentType(.text))) },
+                    .item(L10n.tr("automation.condition.containsText"), symbol: "magnifyingglass") { conditions.append(IdentifiedCondition(value: .containsText(text: ""))) },
+                    .item(L10n.tr("automation.condition.regexMatch"), symbol: "asterisk") { conditions.append(IdentifiedCondition(value: .regexMatch(pattern: ""))) },
+                    .item(L10n.tr("automation.condition.sourceApp"), symbol: "app") { conditions.append(IdentifiedCondition(value: .sourceApp(bundleIDs: []))) },
+                ]
             }
             .fixedSize()
             Spacer()
         }
     }
-
-    private var addActionMenu: some View {
-        HStack {
-        Menu(L10n.tr("automation.action.add")) {
-            Section(L10n.tr("automation.action.section.external")) {
-                Button(L10n.tr("automation.action.runShortcut")) {
-                    draftActions.append(IdentifiedAction(value: .runShortcut(name: "")))
+    @ViewBuilder
+    private func conditionRow(_ condition: RuleCondition, at index: Int) -> some View {
+        if case .sourceApp(let bundleIDs) = condition {
+            sourceAppRow(bundleIDs: bundleIDs, at: index)
+        } else {
+            HStack {
+                switch condition {
+                case .contentType(let type):
+                    Picker(L10n.tr("automation.condition.contentType"), selection: Binding(
+                        get: { type },
+                        set: { conditions[index].value = .contentType($0) }
+                    )) {
+                        ForEach(ClipContentType.ruleEditorVisibleCases, id: \.self) { t in
+                            Text(t.label).tag(t)
+                        }
+                    }
+                
+                case .anyText:
+                    Text(L10n.tr("automation.condition.anyText"))
+                case .regexMatch(let pattern):
+                    TextField(L10n.tr("automation.condition.regexMatch"), text: Binding(
+                        get: { pattern },
+                        set: { conditions[index].value = .regexMatch(pattern: $0) }
+                    ), prompt: Text(L10n.tr("automation.condition.regexMatch.placeholder")))
+                    .font(.system(.body, design: .monospaced))
+                
+                case .containsText(let text):
+                    TextField(L10n.tr("automation.condition.containsText"), text: Binding(
+                        get: { text },
+                        set: { conditions[index].value = .containsText(text: $0) }
+                    ), prompt: Text(L10n.tr("automation.condition.containsText.placeholder")))
+                
+                default:
+                    EmptyView()
                 }
-            }
-            Section(L10n.tr("automation.action.section.text")) {
-                Button(L10n.tr("automation.action.lowercased")) { draftActions.append(IdentifiedAction(value: .lowercased)) }
-                Button(L10n.tr("automation.action.uppercased")) { draftActions.append(IdentifiedAction(value: .uppercased)) }
-                Button(L10n.tr("automation.action.trimWhitespace")) { draftActions.append(IdentifiedAction(value: .trimWhitespace)) }
-                Button(L10n.tr("automation.action.removeBlankLines")) { draftActions.append(IdentifiedAction(value: .removeBlankLines)) }
-                Button(L10n.tr("automation.action.stripRichText")) { draftActions.append(IdentifiedAction(value: .stripRichText)) }
-            }
-            Section(L10n.tr("automation.action.section.url")) {
-                Button(L10n.tr("automation.action.urlEncode")) { draftActions.append(IdentifiedAction(value: .urlEncode)) }
-                Button(L10n.tr("automation.action.urlDecode")) { draftActions.append(IdentifiedAction(value: .urlDecode)) }
-                Button(L10n.tr("automation.action.removeQueryParams")) { draftActions.append(IdentifiedAction(value: .removeQueryParams(patterns: ["utm_*"]))) }
-            }
-            Section(L10n.tr("automation.action.section.advanced")) {
-                Button(L10n.tr("automation.action.regexReplace")) { draftActions.append(IdentifiedAction(value: .regexReplace(pattern: "", replacement: ""))) }
-                Button(L10n.tr("automation.action.addPrefix")) { draftActions.append(IdentifiedAction(value: .addPrefix(text: ""))) }
-                Button(L10n.tr("automation.action.addSuffix")) { draftActions.append(IdentifiedAction(value: .addSuffix(text: ""))) }
-            }
-            Section(L10n.tr("automation.action.section.clipboard")) {
-                Button(L10n.tr("automation.action.markSensitive")) { draftActions.append(IdentifiedAction(value: .markSensitive)) }
-                Button(L10n.tr("automation.action.pin")) { draftActions.append(IdentifiedAction(value: .pin)) }
-                Button(L10n.tr("automation.action.skipCapture")) { draftActions.append(IdentifiedAction(value: .skipCapture)) }
-                Button(L10n.tr("automation.action.assignGroup")) { draftActions.append(IdentifiedAction(value: .assignGroup(name: ""))) }
+                Spacer(minLength: 8)
+                removeButton { conditions.remove(at: index) }
+            
             }
         }
-        .fixedSize()
+    }
+    @ViewBuilder
+    private func sourceAppRow(bundleIDs: [String], at index: Int) -> some View {
+        VStack(alignment: .leading, spacing: bundleIDs.isEmpty ? 6 : 10) {
+            HStack {
+                Text(L10n.tr("automation.condition.sourceApp"))
+                Spacer()
+                removeButton { conditions.remove(at: index) }
+            }
+            if bundleIDs.isEmpty {
+                Text(L10n.tr("automation.condition.sourceApp.empty"))
+                    .font(.callout)
+                    .foregroundStyle(.tertiary)
+            }
+            ForEach(bundleIDs, id: \.self) { bid in
+                HStack(spacing: 6) {
+                    appIcon(for: bid)
+                    Text(appName(for: bid))
+                    Spacer()
+                    Button {
+                        var ids = bundleIDs
+                        ids.removeAll { $0 == bid }
+                        conditions[index].value = .sourceApp(bundleIDs: ids)
+                    } label: {
+                        Image(systemName: "minus.circle.fill").foregroundStyle(.secondary.opacity(0.5))
+                    }
+                    .buttonStyle(.borderless)
+                
+                }
+            }
+            Button(L10n.tr("automation.condition.sourceApp.add")) {
+                browseForApp(at: index, existing: bundleIDs)
+            }
+            .buttonStyle(.bordered)
+            .controlSize(.regular)
+        
+        }
+    }
+    /// Grouped submenus: the flat five-section list ran out of room once the
+    /// action count passed twenty.
+    private var addActionMenu: some View {
+        HStack {
+            NativePullDownButton(title: L10n.tr("automation.action.add")) {
+                [
+                    .submenu(L10n.tr("automation.action.section.text"), symbol: "textformat", [
+                        actionItem(.lowercased), actionItem(.uppercased), actionItem(.trimWhitespace),
+                        actionItem(.removeBlankLines), actionItem(.stripRichText),
+                    ]),
+                    .submenu(L10n.tr("automation.action.section.url"), symbol: "link", [
+                        actionItem(.urlEncode), actionItem(.urlDecode), actionItem(.removeQueryParams(patterns: ["utm_*"])),
+                    ]),
+                    .submenu(L10n.tr("automation.action.section.advanced"), symbol: "slider.horizontal.3", [
+                        actionItem(.regexReplace(pattern: "", replacement: "")), actionItem(.addPrefix(text: "")), actionItem(.addSuffix(text: "")),
+                    ]),
+                    .submenu(L10n.tr("automation.action.section.external"), symbol: "sparkles", [
+                        actionItem(.aiTransform(prompt: "", thinking: nil, temperature: nil, timeoutSeconds: nil)), actionItem(.runShortcut(name: "")),
+                    ]),
+                    .submenu(L10n.tr("automation.action.section.clipboard"), symbol: "tag", [
+                        actionItem(.pin), actionItem(.unpin), actionItem(.markSensitive), actionItem(.unmarkSensitive),
+                        actionItem(.assignGroup(name: "")), actionItem(.skipCapture),
+                    ]),
+                    .submenu(L10n.tr("automation.action.section.flow"), symbol: "flag", [
+                        actionItem(.stopProcessing), actionItem(.closeQuickPanel),
+                    ]),
+                ]
+            }
+            .fixedSize()
             Spacer()
         }
     }
-
-    // MARK: - Condition Label (view mode)
-
+    private func actionItem(_ action: RuleAction) -> NativeMenuItem {
+        .item(Self.title(for: action)) { actions.append(IdentifiedAction(value: action)) }
+    }
+    /// Menu / card title: the action name without its parameter.
+    private static func title(for action: RuleAction) -> String {
+        switch action {
+        case .assignGroup: L10n.tr("automation.action.assignGroup")
+        case .runShortcut: L10n.tr("automation.action.runShortcut")
+        default: action.displayLabel
+        }
+    }
+    private static func icon(for action: RuleAction) -> (name: String, tint: Color) {
+        switch action {
+        case .aiTransform: ("sparkles", .purple)
+        case .runShortcut: ("square.stack.3d.up.fill", .purple)
+        default:
+            switch action.kind {
+            case .transform: ("textformat", .blue)
+            case .metadata: ("tag", .orange)
+            case .sideEffect: ("flag", .gray)
+            case .external: ("arrow.up.forward.app", .purple)
+            }
+        }
+    }
     @ViewBuilder
-    private func conditionLabel(_ condition: RuleCondition) -> some View {
+    private func actionParameters(_ action: RuleAction, at index: Int) -> some View {
+        switch action {
+        case .aiTransform(let prompt, let thinking, let temperature, let timeout):
+            promptEditor(text: Binding(
+                get: { prompt },
+                set: { actions[index].value = .aiTransform(prompt: $0, thinking: thinking, temperature: temperature, timeoutSeconds: timeout) }
+            ))
+            aiOverrides(index: index, id: actions[index].id, prompt: prompt, thinking: thinking, temperature: temperature, timeout: timeout)
+        
+            if !AIProviderSettings.isConfigured {
+                HStack(spacing: 6) {
+                    Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange)
+                    Text(L10n.tr("automation.ai.notConfigured"))
+                    Button(L10n.tr("automation.ai.openSettings")) {
+                        openSettings(category: .aiService)
+                    }
+                    .buttonStyle(.link)
+                }
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            }
+
+        case .regexReplace(let pattern, let replacement):
+            TextField(L10n.tr("automation.action.regexReplace.pattern"), text: Binding(
+                get: { pattern },
+                set: { actions[index].value = .regexReplace(pattern: $0, replacement: replacement) }
+            ), prompt: Text(L10n.tr("automation.action.regexReplace.placeholder")))
+            .font(.system(.body, design: .monospaced))
+            TextField(L10n.tr("automation.action.regexReplace.to"), text: Binding(
+                get: { replacement },
+                set: { actions[index].value = .regexReplace(pattern: pattern, replacement: $0) }
+            ), prompt: Text(L10n.tr("automation.action.regexReplace.to.placeholder")))
+            .font(.system(.body, design: .monospaced))
+        
+
+        case .removeQueryParams(let patterns):
+            TextField("", text: Binding(
+                get: { patterns.joined(separator: ", ") },
+                set: { actions[index].value = .removeQueryParams(patterns: $0.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }) }
+            ), prompt: Text(L10n.tr("automation.action.removeQueryParams.placeholder")))
+            .labelsHidden()
+            .font(.system(.body, design: .monospaced))
+        
+
+        case .addPrefix(let text):
+            parameterField(text: text, placeholder: "automation.action.addPrefix.placeholder") {
+                actions[index].value = .addPrefix(text: $0)
+            }
+
+        case .addSuffix(let text):
+            parameterField(text: text, placeholder: "automation.action.addSuffix.placeholder") {
+                actions[index].value = .addSuffix(text: $0)
+            }
+
+        case .assignGroup(let name):
+            // No `.fixedSize()` here: an empty-label Picker with it sizes itself to its
+            // whole inlined option list and blows up the row. (issue #71 review)
+            Picker("", selection: Binding(
+                get: { name },
+                set: { actions[index].value = .assignGroup(name: $0) }
+            )) {
+                let groups = (try? modelContext.fetch(FetchDescriptor<SmartGroup>(sortBy: [SortDescriptor(\.sortOrder)]))) ?? []
+                Text(L10n.tr("automation.action.assignGroup.placeholder")).tag("")
+                ForEach(groups, id: \.name) { group in
+                    Label(group.name, systemImage: group.icon).tag(group.name)
+                }
+            }
+            .labelsHidden()
+        
+
+        case .runShortcut(let name):
+            HStack {
+                TextField("", text: Binding(
+                    get: { name },
+                    set: { actions[index].value = .runShortcut(name: $0) }
+                ), prompt: Text(L10n.tr("automation.action.runShortcut.placeholder")))
+                .labelsHidden()
+                Button {
+                    shortcutPickerIndex = index
+                } label: {
+                    Image(systemName: "list.bullet")
+                }
+                .buttonStyle(.borderless)
+                .help(L10n.tr("automation.action.runShortcut.pick"))
+                .popover(isPresented: Binding(
+                    get: { shortcutPickerIndex == index },
+                    set: { if !$0 { shortcutPickerIndex = nil } }
+                )) {
+                    ShortcutPickerPopover { picked in
+                        actions[index].value = .runShortcut(name: picked)
+                        shortcutPickerIndex = nil
+                    }
+                }
+                Button {
+                    ShortcutRunner.openShortcutInApp(name: name)
+                } label: {
+                    Image(systemName: "arrow.up.forward.app")
+                }
+                .buttonStyle(.borderless)
+                .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty)
+                .help(L10n.tr("automation.action.runShortcut.openInApp"))
+            }
+        
+
+        default:
+            EmptyView()
+        }
+    }
+    /// Per-action model knobs in a collapsible card. Collapsed, the header line sums up
+    /// what's pinned; each row has a "follow global / custom" picker and shows its
+    /// control only when custom.
+    @ViewBuilder
+    private func aiOverrides(index: Int, id: UUID, prompt: String, thinking: AIThinkingMode?, temperature: Double?, timeout: Double?) -> some View {
+        let set: (AIThinkingMode?, Double?, Double?) -> Void = { th, te, to in
+            actions[index].value = .aiTransform(prompt: prompt, thinking: th, temperature: te, timeoutSeconds: to)
+        }
+        let expanded = expandedOverrides.contains(id)
+        VStack(alignment: .leading, spacing: 0) {
+            Button {
+                withAnimation(.easeInOut(duration: 0.15)) {
+                    if expanded { expandedOverrides.remove(id) } else { expandedOverrides.insert(id) }
+                }
+            } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: "chevron.right")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                        .rotationEffect(.degrees(expanded ? 90 : 0))
+                    Text(L10n.tr("automation.action.aiTransform.overrides"))
+                        .font(.callout.weight(.medium))
+                    Spacer()
+                    Text(overrideSummary(thinking: thinking, temperature: temperature, timeout: timeout))
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 7)
+
+            if expanded {
+                Divider()
+                VStack(spacing: 0) {
+                    overrideRow(L10n.tr("settings.aiService.thinking")) {
+                        Picker("", selection: Binding(
+                            get: { thinking?.rawValue ?? "" },
+                            set: { set(AIThinkingMode(rawValue: $0), temperature, timeout) }
+                        )) {
+                            Text(L10n.tr("automation.action.aiTransform.followGlobal")).tag("")
+                            Divider()
+                            Text(L10n.tr("settings.aiService.thinking.auto")).tag(AIThinkingMode.auto.rawValue)
+                            Text(L10n.tr("settings.aiService.thinking.off")).tag(AIThinkingMode.off.rawValue)
+                            Text(L10n.tr("settings.aiService.thinking.on")).tag(AIThinkingMode.on.rawValue)
+                        }
+                        .labelsHidden()
+                        .fixedSize()
+                    }
+                    Divider().padding(.leading, 10)
+                    overrideRow(L10n.tr("settings.aiService.temperature")) {
+                        if let temperature {
+                            Slider(value: Binding(get: { temperature }, set: { set(thinking, $0, timeout) }), in: 0...1, step: 0.1)
+                                .frame(width: 120)
+                            Text(String(format: "%.1f", temperature))
+                                .monospacedDigit()
+                                .frame(width: 26, alignment: .trailing)
+                        }
+                        followPicker(isCustom: temperature != nil) { custom in
+                            set(thinking, custom ? AIProviderSettings.temperature : nil, timeout)
+                        }
+                    }
+                    Divider().padding(.leading, 10)
+                    overrideRow(L10n.tr("settings.aiService.timeout")) {
+                        if let timeout {
+                            TextField("", value: Binding(
+                                get: { Int(timeout) },
+                                set: { set(thinking, temperature, Double(min(max($0, 5), 600))) }
+                            ), format: .number)
+                            .labelsHidden()
+                            .multilineTextAlignment(.trailing)
+                            .frame(width: 48)
+                            Text(L10n.tr("settings.aiService.timeout.unit"))
+                                .foregroundStyle(.secondary)
+                        }
+                        followPicker(isCustom: timeout != nil) { custom in
+                            set(thinking, temperature, custom ? AIProviderSettings.timeoutSeconds : nil)
+                        }
+                    }
+                }
+                .font(.callout)
+            }
+        }
+        .background(RoundedRectangle(cornerRadius: 7).fill(Color(nsColor: .quaternarySystemFill)))
+        .overlay(RoundedRectangle(cornerRadius: 7).strokeBorder(Color(nsColor: .separatorColor).opacity(0.6)))
+    }
+    private func overrideRow<Trailing: View>(_ label: String, @ViewBuilder trailing: () -> Trailing) -> some View {
+        HStack(spacing: 8) {
+            Text(label)
+            Spacer()
+            trailing()
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 6)
+    }
+    private func followPicker(isCustom: Bool, onChange: @escaping (Bool) -> Void) -> some View {
+        Picker("", selection: Binding(get: { isCustom }, set: onChange)) {
+            Text(L10n.tr("automation.action.aiTransform.followGlobal")).tag(false)
+            Text(L10n.tr("settings.aiService.preset.custom")).tag(true)
+        }
+        .labelsHidden()
+        .fixedSize()
+    }
+    private func overrideSummary(thinking: AIThinkingMode?, temperature: Double?, timeout: Double?) -> String {
+        var parts: [String] = []
+        if let thinking {
+            parts.append(L10n.tr("settings.aiService.thinking") + " " + L10n.tr("settings.aiService.thinking.\(thinking.rawValue)"))
+        }
+        if let temperature { parts.append(L10n.tr("settings.aiService.temperature") + " " + String(format: "%.1f", temperature)) }
+        if let timeout { parts.append(L10n.tr("settings.aiService.timeout") + " " + L10n.tr("settings.aiService.timeout.seconds", Int(timeout))) }
+        return parts.isEmpty ? L10n.tr("automation.action.aiTransform.followGlobal") : parts.joined(separator: " · ")
+    }
+    @ViewBuilder
+    private func parameterField(text: String, placeholder: String, set: @escaping (String) -> Void) -> some View {
+        TextField("", text: Binding(get: { text }, set: set), prompt: Text(L10n.tr(placeholder)))
+            .labelsHidden()
+    
+    }
+    /// Multi-line prompt box. A one-line field made writing an instruction miserable.
+    private func promptEditor(text: Binding<String>) -> some View {
+        ZStack(alignment: .topLeading) {
+            TextEditor(text: text)
+                .font(.body)
+                .scrollContentBackground(.hidden)
+                .padding(.horizontal, 4)
+                .padding(.vertical, 6)
+                .frame(minHeight: 84)
+            if text.wrappedValue.isEmpty {
+                Text(L10n.tr("automation.action.aiTransform.placeholder"))
+                    .foregroundStyle(.tertiary)
+                    .padding(.horizontal, 9)
+                    .padding(.vertical, 6)
+                    .allowsHitTesting(false)
+            }
+        }
+        .background(
+            RoundedRectangle(cornerRadius: 6)
+                .fill(Color(nsColor: .textBackgroundColor))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 6)
+                .strokeBorder(Color(nsColor: .separatorColor))
+        )
+    }
+    private func removeButton(_ action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: "trash").foregroundStyle(.secondary)
+        }
+        .buttonStyle(.borderless)
+    }
+    private func onOff(_ value: Bool) -> String {
+        L10n.tr(value ? "automation.editor.on" : "automation.editor.off")
+    }
+    @ViewBuilder
+    private func readOnlyCondition(_ condition: RuleCondition) -> some View {
         switch condition {
         case .contentType(let type):
             LabeledContent(L10n.tr("automation.condition.contentType")) { Text(type.label) }
@@ -320,8 +975,7 @@ struct AutomationRuleEditorView: View {
             Text(L10n.tr("automation.condition.anyText"))
         case .regexMatch(let pattern):
             LabeledContent(L10n.tr("automation.condition.regexMatch")) {
-                Text(pattern).textFieldStyle(.plain)
-                    .font(.system(.body, design: .monospaced))
+                Text(pattern).font(.system(.body, design: .monospaced))
             }
         case .containsText(let text):
             LabeledContent(L10n.tr("automation.condition.containsText")) { Text(text) }
@@ -337,262 +991,63 @@ struct AutomationRuleEditorView: View {
             }
         }
     }
-
-    // MARK: - Action Label (view mode)
-
     @ViewBuilder
-    private func actionLabel(_ action: RuleAction) -> some View {
+    private func readOnlyParameters(_ action: RuleAction) -> some View {
         switch action {
-        case .lowercased: Text(L10n.tr("automation.action.lowercased"))
-        case .uppercased: Text(L10n.tr("automation.action.uppercased"))
-        case .trimWhitespace: Text(L10n.tr("automation.action.trimWhitespace"))
-        case .removeBlankLines: Text(L10n.tr("automation.action.removeBlankLines"))
-        case .stripRichText: Text(L10n.tr("automation.action.stripRichText"))
-        case .urlEncode: Text(L10n.tr("automation.action.urlEncode"))
-        case .urlDecode: Text(L10n.tr("automation.action.urlDecode"))
-        case .removeQueryParams(let p):
-            LabeledContent(L10n.tr("automation.action.removeQueryParams")) {
-                Text(p.joined(separator: ", ")).font(.system(.caption, design: .monospaced))
+        case .aiTransform(let prompt, let thinking, let temperature, let timeout):
+            Text(prompt.isEmpty ? L10n.tr("automation.action.aiTransform.placeholder") : prompt)
+                .font(.callout)
+                .foregroundStyle(prompt.isEmpty ? .tertiary : .secondary)
+                .textSelection(.enabled)
+            if thinking != nil || temperature != nil || timeout != nil {
+                Text(L10n.tr("automation.action.aiTransform.overrides") + "：" + overrideSummary(thinking: thinking, temperature: temperature, timeout: timeout))
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
             }
-        case .regexReplace(let p, let r):
-            LabeledContent(L10n.tr("automation.action.regexReplace")) {
-                Text("\(p) → \(r)").font(.system(.caption, design: .monospaced))
+            if !AIProviderSettings.isConfigured {
+                HStack(spacing: 6) {
+                    Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange)
+                    Text(L10n.tr("automation.ai.notConfigured"))
+                    Button(L10n.tr("automation.ai.openSettings")) { openSettings(category: .aiService) }
+                        .buttonStyle(.link)
+                }
+                .font(.caption)
+                .foregroundStyle(.secondary)
             }
-        case .addPrefix(let t):
-            LabeledContent(L10n.tr("automation.action.addPrefix")) { Text(t) }
-        case .addSuffix(let t):
-            LabeledContent(L10n.tr("automation.action.addSuffix")) { Text(t) }
+        case .regexReplace(let pattern, let replacement):
+            Text("\(pattern) → \(replacement)")
+                .font(.system(.callout, design: .monospaced))
+                .foregroundStyle(.secondary)
+        case .removeQueryParams(let patterns):
+            Text(patterns.joined(separator: ", "))
+                .font(.system(.callout, design: .monospaced))
+                .foregroundStyle(.secondary)
+        case .addPrefix(let text), .addSuffix(let text):
+            Text(text).font(.callout).foregroundStyle(.secondary)
         case .assignGroup(let name):
-            LabeledContent(L10n.tr("automation.action.assignGroup")) {
-                let group = (try? modelContext.fetch(FetchDescriptor<SmartGroup>(predicate: #Predicate { $0.name == name })))?.first
-                Label(name, systemImage: group?.icon ?? "folder")
-            }
-        case .markSensitive:
-            Text(L10n.tr("automation.action.markSensitive"))
-        case .pin:
-            Text(L10n.tr("automation.action.pin"))
-        case .skipCapture:
-            Text(L10n.tr("automation.action.skipCapture"))
+            let group = (try? modelContext.fetch(FetchDescriptor<SmartGroup>(predicate: #Predicate { $0.name == name })))?.first
+            Label(name, systemImage: group?.icon ?? "folder").font(.callout).foregroundStyle(.secondary)
         case .runShortcut(let name):
-            LabeledContent(L10n.tr("automation.action.runShortcut")) {
-                HStack(spacing: 6) {
-                    Image(systemName: "sparkles")
-                        .foregroundStyle(.purple)
-                    Text(name.isEmpty ? L10n.tr("automation.action.runShortcut.empty") : name)
-                        .foregroundStyle(name.isEmpty ? .tertiary : .primary)
-                }
-            }
+            Text(name.isEmpty ? L10n.tr("automation.action.runShortcut.empty") : name)
+                .font(.callout)
+                .foregroundStyle(name.isEmpty ? .tertiary : .secondary)
+        default:
+            EmptyView()
         }
     }
-
-    // MARK: - Edit Condition Row
-
-    @ViewBuilder
-    private func editConditionRow(_ condition: RuleCondition, at index: Int) -> some View {
-        if case .sourceApp(let bundleIDs) = condition {
-            editSourceAppRow(bundleIDs: bundleIDs, at: index)
-        } else {
-            HStack {
-                switch condition {
-                case .contentType(let type):
-                    Picker(L10n.tr("automation.condition.contentType"), selection: Binding(
-                        get: { type },
-                        set: { draftConditions[index].value = .contentType($0) }
-                    )) {
-                        ForEach(ClipContentType.ruleEditorVisibleCases, id: \.self) { t in
-                            Text(t.label).tag(t)
-                        }
-                    }
-                case .anyText:
-                    Text(L10n.tr("automation.condition.anyText"))
-                        .foregroundStyle(.secondary)
-                case .regexMatch(let pattern):
-                    TextField(L10n.tr("automation.condition.regexMatch"), text: Binding(
-                        get: { pattern },
-                        set: { draftConditions[index].value = .regexMatch(pattern: $0) }
-                    ), prompt: Text(L10n.tr("automation.condition.regexMatch.placeholder")))
-                    .font(.system(.body, design: .monospaced))
-                case .containsText(let text):
-                    TextField(L10n.tr("automation.condition.containsText"), text: Binding(
-                        get: { text },
-                        set: { draftConditions[index].value = .containsText(text: $0) }
-                    ), prompt: Text(L10n.tr("automation.condition.containsText.placeholder")))
-                default:
-                    EmptyView()
-                }
-                Spacer()
-                Button { draftConditions.remove(at: index) } label: {
-                    Image(systemName: "trash").foregroundStyle(.secondary)
-                }
-                .buttonStyle(.borderless)
-            }
-        }
+    /// Synchronous transforms only. Source-app conditions are skipped — typed text has
+    /// no source app, and failing on that would only ever say "not matched".
+    private var previewOutput: String {
+        let type = ClipboardManager.shared.detectContentType(previewInput).type
+        let checked = conditions.map(\.value).filter { if case .sourceApp = $0 { return false }; return true }
+        let matched = checked.isEmpty || AutomationEngine.matchesConditions(
+            checked, logic: draftLogic, content: previewInput, contentType: type, sourceApp: nil
+        )
+        guard matched else { return L10n.tr("automation.preview.notMatched") }
+        let sync = actions.map(\.value).filter { $0.kind == .transform && !$0.isAsync }
+        return AutomationEngine.executeActions(sync, on: previewInput)
     }
-
-    @ViewBuilder
-    private func editSourceAppRow(bundleIDs: [String], at index: Int) -> some View {
-        VStack(alignment: .leading, spacing: bundleIDs.isEmpty ? 6 : 12) {
-            HStack {
-                Text(L10n.tr("automation.condition.sourceApp"))
-                    .foregroundStyle(.secondary)
-                Spacer()
-                Button { draftConditions.remove(at: index) } label: {
-                    Image(systemName: "trash").foregroundStyle(.secondary)
-                }
-                .buttonStyle(.borderless)
-            }
-            VStack(alignment: .leading, spacing: 6) {
-            ForEach(bundleIDs, id: \.self) { bid in
-                HStack(spacing: 6) {
-                    appIcon(for: bid)
-                    Text(appName(for: bid))
-                    Spacer()
-                    Button {
-                        var ids = bundleIDs
-                        ids.removeAll { $0 == bid }
-                        draftConditions[index].value = .sourceApp(bundleIDs: ids)
-                    } label: {
-                        Image(systemName: "minus.circle.fill").foregroundStyle(.secondary.opacity(0.5))
-                    }
-                    .buttonStyle(.borderless)
-                }
-            }
-            }
-            Button(L10n.tr("automation.condition.sourceApp.add")) {
-                browseForApp(at: index, existing: bundleIDs)
-            }
-            .buttonStyle(.bordered)
-            .controlSize(.regular)
-        }
-    }
-
-    // MARK: - Edit Action Row
-
-    @ViewBuilder
-    private func editActionRow(_ action: RuleAction, at index: Int) -> some View {
-        HStack {
-            switch action {
-            case .lowercased: Text(L10n.tr("automation.action.lowercased"))
-            case .uppercased: Text(L10n.tr("automation.action.uppercased"))
-            case .trimWhitespace: Text(L10n.tr("automation.action.trimWhitespace"))
-            case .removeBlankLines: Text(L10n.tr("automation.action.removeBlankLines"))
-            case .stripRichText: Text(L10n.tr("automation.action.stripRichText"))
-            case .urlEncode: Text(L10n.tr("automation.action.urlEncode"))
-            case .urlDecode: Text(L10n.tr("automation.action.urlDecode"))
-            case .removeQueryParams(let patterns):
-                TextField(L10n.tr("automation.action.removeQueryParams"), text: Binding(
-                    get: { patterns.joined(separator: ", ") },
-                    set: { draftActions[index].value = .removeQueryParams(patterns: $0.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }) }
-                ), prompt: Text(L10n.tr("automation.action.removeQueryParams.placeholder")))
-                .font(.system(.body, design: .monospaced))
-            case .regexReplace(let pattern, let replacement):
-                TextField(L10n.tr("automation.action.regexReplace"), text: Binding(
-                    get: { pattern },
-                    set: { draftActions[index].value = .regexReplace(pattern: $0, replacement: replacement) }
-                ), prompt: Text(L10n.tr("automation.action.regexReplace.placeholder")))
-                .font(.system(.body, design: .monospaced))
-                TextField(L10n.tr("automation.action.regexReplace.to"), text: Binding(
-                    get: { replacement },
-                    set: { draftActions[index].value = .regexReplace(pattern: pattern, replacement: $0) }
-                ), prompt: Text(L10n.tr("automation.action.regexReplace.to.placeholder")))
-                .font(.system(.body, design: .monospaced))
-            case .addPrefix(let text):
-                TextField(L10n.tr("automation.action.addPrefix"), text: Binding(
-                    get: { text },
-                    set: { draftActions[index].value = .addPrefix(text: $0) }
-                ), prompt: Text(L10n.tr("automation.action.addPrefix.placeholder")))
-            case .addSuffix(let text):
-                TextField(L10n.tr("automation.action.addSuffix"), text: Binding(
-                    get: { text },
-                    set: { draftActions[index].value = .addSuffix(text: $0) }
-                ), prompt: Text(L10n.tr("automation.action.addSuffix.placeholder")))
-            case .assignGroup(let name):
-                // Mirror the (normal-height) content-type condition picker exactly: label
-                // as the Picker's own argument, no separate Text/Spacer, no `.fixedSize()`.
-                // The previous empty-label `Picker("")` + `.fixedSize()` sized itself to its
-                // full inlined option list — that blew up the row height and shoved the
-                // "移入分组" label out of the visible card. (issue #71 review)
-                Picker(L10n.tr("automation.action.assignGroup"), selection: Binding(
-                    get: { name },
-                    set: { draftActions[index].value = .assignGroup(name: $0) }
-                )) {
-                    let groups = (try? modelContext.fetch(FetchDescriptor<SmartGroup>(sortBy: [SortDescriptor(\.sortOrder)]))) ?? []
-                    ForEach(groups, id: \.name) { group in
-                        Text(group.name).tag(group.name)
-                    }
-                }
-            case .markSensitive:
-                Text(L10n.tr("automation.action.markSensitive"))
-            case .pin:
-                Text(L10n.tr("automation.action.pin"))
-            case .skipCapture:
-                Text(L10n.tr("automation.action.skipCapture"))
-            case .runShortcut(let name):
-                TextField(L10n.tr("automation.action.runShortcut"), text: Binding(
-                    get: { name },
-                    set: { draftActions[index].value = .runShortcut(name: $0) }
-                ), prompt: Text(L10n.tr("automation.action.runShortcut.placeholder")))
-                Button {
-                    shortcutPickerIndex = index
-                } label: {
-                    Image(systemName: "list.bullet")
-                        .foregroundStyle(.secondary)
-                }
-                .buttonStyle(.borderless)
-                .help(L10n.tr("automation.action.runShortcut.pick"))
-                .popover(isPresented: Binding(
-                    get: { shortcutPickerIndex == index },
-                    set: { if !$0 { shortcutPickerIndex = nil } }
-                )) {
-                    ShortcutPickerPopover { picked in
-                        draftActions[index].value = .runShortcut(name: picked)
-                        shortcutPickerIndex = nil
-                    }
-                }
-                Button {
-                    ShortcutRunner.openShortcutInApp(name: name)
-                } label: {
-                    Image(systemName: "arrow.up.forward.app")
-                        .foregroundStyle(.secondary)
-                }
-                .buttonStyle(.borderless)
-                .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty)
-                .help(L10n.tr("automation.action.runShortcut.openInApp"))
-            }
-            Spacer()
-            Button { draftActions.remove(at: index) } label: {
-                Image(systemName: "trash").foregroundStyle(.secondary)
-            }
-            .buttonStyle(.borderless)
-        }
-    }
-
-    // MARK: - Actions
-
-    private func enterEditMode() {
-        draftName = rule.name
-        draftConditions = rule.conditions.map { IdentifiedCondition(value: $0) }
-        draftActions = rule.actions.map { IdentifiedAction(value: $0) }
-        draftConditionLogic = rule.conditionLogic
-        isEditing = true
-    }
-
-    private func cancelEdit() { isEditing = false }
-
-    private func saveEdit() {
-        rule.name = draftName
-        rule.conditions = draftConditions.map(\.value)
-        rule.actions = draftActions.map(\.value)
-        rule.conditionLogic = draftConditionLogic
-        // Run-Shortcut is manual-only — never leave such a rule on "automatic" where it
-        // would silently never fire. (issue #71 review)
-        if ruleHasRunShortcut {
-            rule.triggerMode = .manual
-        }
-        rule.updatedAt = Date()
-        try? modelContext.save()
-        isEditing = false
-    }
+    // MARK: - Helpers
 
     private func requestNotificationPermission(completion: @Sendable @escaping (Bool) -> Void) {
         guard Bundle.main.bundleIdentifier != nil else {
@@ -617,7 +1072,7 @@ struct AutomationRuleEditorView: View {
     }
 
     private func validateRule() -> Bool {
-        guard !rule.conditions.isEmpty, !rule.actions.isEmpty else {
+        guard !conditions.isEmpty, !actions.isEmpty else {
             let alert = NSAlert()
             alert.messageText = L10n.tr("automation.validation.incomplete")
             alert.informativeText = L10n.tr("automation.validation.incompleteMessage")
@@ -626,13 +1081,6 @@ struct AutomationRuleEditorView: View {
         }
         return true
     }
-
-    private func saveSettings() {
-        rule.updatedAt = Date()
-        try? modelContext.save()
-    }
-
-    // MARK: - App Helpers
 
     private func appIcon(for bundleID: String) -> some View {
         let icon: NSImage = {
@@ -665,7 +1113,7 @@ struct AutomationRuleEditorView: View {
                 ids.append(bid)
             }
         }
-        draftConditions[index].value = .sourceApp(bundleIDs: ids)
+        conditions[index].value = .sourceApp(bundleIDs: ids)
     }
 }
 

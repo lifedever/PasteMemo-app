@@ -3,10 +3,46 @@ import SwiftData
 
 enum BuiltInRules {
     private static let SEEDED_KEY = "builtInRulesSeeded_v2"
+    /// Names of built-ins the user deleted. `seedMissing` skips these so a deleted
+    /// rule doesn't come back at the next launch; "恢复内置规则" clears the list.
+    private static let DELETED_KEY = "builtInRulesDeleted"
+
+    static var deletedNames: Set<String> {
+        get { Set(UserDefaults.standard.stringArray(forKey: DELETED_KEY) ?? []) }
+        set { UserDefaults.standard.set(Array(newValue).sorted(), forKey: DELETED_KEY) }
+    }
+
+    /// Built-ins that shipped in an earlier build and were replaced. Removed on launch
+    /// if still present and untouched (still `isBuiltIn`).
+    private static let retiredNames: Set<String> = [
+        "automation.builtIn.aiTranslateEn", "automation.builtIn.aiTranslateZh", "automation.builtIn.aiPolish",
+    ]
+
+    /// Earlier prompts of built-ins we've since reworded. A rule still carrying one of
+    /// these verbatim (the user never touched it) is refreshed to the current definition.
+    private static let supersededActions: [String: [[RuleAction]]] = [
+        "automation.builtIn.aiTidy": [[.aiTransform(prompt: "Tidy up this messy text (for example OCR output): fix broken line breaks, spacing and obvious recognition errors, restore paragraphs and lists. Keep the original language and every piece of information; do not summarise, add or drop anything.")]],
+    ]
+
+    static func markDeleted(_ name: String) {
+        var names = deletedNames
+        names.insert(name)
+        deletedNames = names
+    }
+
+    /// Bring back every deleted built-in (keeps the ones still present untouched).
+    @MainActor
+    static func restoreDeleted(context: ModelContext) {
+        deletedNames = []
+        seedMissing(context: context)
+    }
 
     @MainActor
     static func seedIfNeeded(context: ModelContext) {
-        guard !UserDefaults.standard.bool(forKey: SEEDED_KEY) else { return }
+        guard !UserDefaults.standard.bool(forKey: SEEDED_KEY) else {
+            seedMissing(context: context)
+            return
+        }
 
         // Remove old built-in rules before re-seeding
         let descriptor = FetchDescriptor<AutomationRule>(predicate: #Predicate { $0.isBuiltIn })
@@ -20,7 +56,7 @@ enum BuiltInRules {
                 enabled: definition.enabled,
                 isBuiltIn: true,
                 sortOrder: definition.sortOrder,
-                triggerMode: .automatic,
+                triggerMode: definition.triggerMode,
                 conditions: definition.conditions,
                 actions: definition.actions
             )
@@ -35,10 +71,47 @@ enum BuiltInRules {
         }
     }
 
+    /// Built-ins added after the one-time seed. Matched by name (built-in names are
+    /// L10n keys, so they're stable) and inserted only when absent — bumping
+    /// `SEEDED_KEY` instead would wipe the user's on/off choices for every built-in.
+    @MainActor
+    private static func seedMissing(context: ModelContext) {
+        let descriptor = FetchDescriptor<AutomationRule>(predicate: #Predicate { $0.isBuiltIn })
+        let builtIns = (try? context.fetch(descriptor)) ?? []
+        var inserted = false
+        for rule in builtIns where retiredNames.contains(rule.name) {
+            context.delete(rule)
+            inserted = true
+        }
+        for rule in builtIns {
+            guard let old = supersededActions[rule.name], old.contains(rule.actions),
+                  let current = definitions.first(where: { $0.name == rule.name }) else { continue }
+            rule.actions = current.actions
+            inserted = true
+        }
+        let existing = Set(builtIns.map(\.name))
+        let deleted = deletedNames
+        for definition in definitions where !existing.contains(definition.name) && !deleted.contains(definition.name) {
+            let rule = AutomationRule(
+                name: definition.name,
+                enabled: definition.enabled,
+                isBuiltIn: true,
+                sortOrder: definition.sortOrder,
+                triggerMode: definition.triggerMode,
+                conditions: definition.conditions,
+                actions: definition.actions
+            )
+            context.insert(rule)
+            inserted = true
+        }
+        if inserted { try? context.save() }
+    }
+
     private struct RuleDefinition {
         let name: String
         let enabled: Bool
         let sortOrder: Int
+        var triggerMode: TriggerMode = .automatic
         let conditions: [RuleCondition]
         let actions: [RuleAction]
     }
@@ -67,6 +140,24 @@ enum BuiltInRules {
             sortOrder: 2,
             conditions: [.contentType(.text)],
             actions: [.removeBlankLines]
+        ),
+        // AI presets: manual-only by construction (aiTransform is async + network),
+        // off until the user configures a provider and switches them on.
+        RuleDefinition(
+            name: "automation.builtIn.aiTranslate",
+            enabled: false,
+            sortOrder: 100,
+            triggerMode: .manual,
+            conditions: [.anyText],
+            actions: [.aiTransform(prompt: "If the text is mainly Chinese, translate it into natural, fluent English; otherwise translate it into natural Simplified Chinese. Keep names, code, URLs and formatting as they are.")]
+        ),
+        RuleDefinition(
+            name: "automation.builtIn.aiTidy",
+            enabled: false,
+            sortOrder: 101,
+            triggerMode: .manual,
+            conditions: [.anyText],
+            actions: [.aiTransform(prompt: "Reformat this messy text (for example OCR output or a voice transcript) into clean, well-structured plain text. Restore paragraphs and sentence punctuation; when the text enumerates items or steps, lay them out as a numbered or bulleted list, one item per line; fix broken line breaks, spacing and obvious recognition errors. Keep the original language and every piece of information; do not summarise, add or drop anything, and do not use Markdown symbols like # or **.")]
         ),
     ]
 }

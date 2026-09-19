@@ -89,7 +89,7 @@ struct MasonryLayout {
 
 // MARK: - 网格视图
 
-struct QuickImageGridView<Menu: View, Palette: View>: View {
+struct QuickImageGridView<Palette: View>: View {
     let items: [ClipItem]
     /// 列数与列宽都由父视图按面板宽度 + 密度算好传入。渲染和键盘导航（moveGrid）
     /// 必须用同一对 (columnCount, columnWidth) 建布局——否则最短列打包里那个常量
@@ -106,7 +106,7 @@ struct QuickImageGridView<Menu: View, Palette: View>: View {
     let onCommandPaletteDismiss: () -> Void
     /// 滚动接近底部时分页加载（与列表一致；否则图片多时只看得到第一页）。
     let onLoadMore: () -> Void
-    @ViewBuilder let contextMenu: (ClipItem) -> Menu
+    let contextMenu: (ClipItem) -> [NativeMenuItem]
     @ViewBuilder let commandPalette: (ClipItem) -> Palette
 
     /// 末尾若干项的 id；它们出现时触发分页加载。
@@ -170,7 +170,7 @@ struct QuickImageGridView<Menu: View, Palette: View>: View {
 
 // MARK: - 单元格（hover 局部化，避免鼠标划过时整张网格重算/重渲染，省 CPU）
 
-private struct ImageGridCell<Menu: View, Palette: View>: View {
+private struct ImageGridCell<Palette: View>: View {
     let item: ClipItem
     let width: CGFloat
     let isFocused: Bool
@@ -179,7 +179,7 @@ private struct ImageGridCell<Menu: View, Palette: View>: View {
     let isPaletteTarget: Bool
     let onTap: (PersistentIdentifier) -> Void
     let onCommandPaletteDismiss: () -> Void
-    let contextMenu: (ClipItem) -> Menu
+    let contextMenu: (ClipItem) -> [NativeMenuItem]
     let commandPalette: (ClipItem) -> Palette
 
     @State private var isHovered = false
@@ -249,7 +249,7 @@ private struct ImageGridCell<Menu: View, Palette: View>: View {
         ) {
             commandPalette(item)
         }
-        .contextMenu { contextMenu(item) }
+        .nativeContextMenuMonitor { contextMenu(item) }
     }
 
     private var nameOverlay: some View {

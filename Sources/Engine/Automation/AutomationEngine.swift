@@ -50,7 +50,7 @@ final class AutomationEngine {
             currentContent = processed
             allActions.append(contentsOf: actions)
             lastRuleName = rule.name
-            if rule.writeBackToPasteboard { writeBack = true }
+            if rule.outputMode.mirrorsToPasteboardOnCapture { writeBack = true }
 
             if rule.notifyOnTrigger {
                 let displayName = rule.isBuiltIn ? L10n.tr(rule.name) : rule.name
@@ -60,6 +60,9 @@ final class AutomationEngine {
             if rule.notifyBeforeApply, needsConfirmation == nil {
                 needsConfirmation = (ruleName: rule.name, ruleID: rule.ruleID)
             }
+
+            // Short-circuit: later rules don't get to rewrite this rule's result.
+            if actions.contains(.stopProcessing) { break }
         }
 
         guard !allActions.isEmpty else { return .unchanged }
@@ -68,11 +71,6 @@ final class AutomationEngine {
             return .pendingConfirmation(content: currentContent, ruleName: confirm.ruleName, ruleID: confirm.ruleID, actions: allActions, writeBack: writeBack)
         }
         return .applied(content: currentContent, ruleName: lastRuleName, actions: allActions, writeBack: writeBack)
-    }
-
-    /// Apply a single action to content. Used by command palette / context menu.
-    func applyAction(_ action: RuleAction, to content: String) -> String {
-        action.execute(on: content)
     }
 
     /// Apply a sequence of actions to content. Pure text transformation, no SwiftData needed.
@@ -118,14 +116,10 @@ final class AutomationEngine {
         matchesConditions(conditions, logic: .all, content: content, contentType: contentType, sourceApp: sourceApp)
     }
 
+    /// Anything that isn't a pure text transform counts: such a rule "applies" even
+    /// when the text comes out unchanged.
     nonisolated static func containsSpecialAction(_ actions: [RuleAction]) -> Bool {
-        for action in actions {
-            switch action {
-            case .stripRichText, .assignGroup, .markSensitive, .pin, .skipCapture: return true
-            default: break
-            }
-        }
-        return false
+        actions.contains { $0.kind == .metadata || $0.kind == .sideEffect }
     }
 
     nonisolated static func executeActions(_ actions: [RuleAction], on content: String) -> String {

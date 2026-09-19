@@ -31,7 +31,6 @@ enum CommandAction: Hashable {
     case openInPreview(usesPreviewApp: Bool)
     case showInFinder
     case copy
-    case transform(RuleAction)
     case addToRelay
     case splitAndRelay
     case pin(isPinned: Bool)
@@ -55,7 +54,6 @@ enum CommandAction: Hashable {
         case .openInPreview(let usesPreviewApp): usesPreviewApp ? "photo.on.rectangle.angled" : "eye"
         case .showInFinder: "folder"
         case .copy: "doc.on.doc"
-        case .transform: "wand.and.stars"
         case .addToRelay: "arrow.right.arrow.left"
         case .splitAndRelay: "scissors"
         case .pin(let pinned): pinned ? "pin.slash" : "pin"
@@ -80,7 +78,6 @@ enum CommandAction: Hashable {
             usesPreviewApp ? L10n.tr("cmd.openInPreview") : L10n.tr("cmd.quickLook")
         case .showInFinder: L10n.tr("cmd.showInFinder")
         case .copy: L10n.tr("cmd.copy")
-        case .transform(let action): action.displayLabel
         case .addToRelay: L10n.tr("relay.addToQueue")
         case .splitAndRelay: L10n.tr("relay.splitAndRelay")
         case .pin(let pinned): pinned ? L10n.tr("action.unpin") : L10n.tr("action.pin")
@@ -103,7 +100,6 @@ enum CommandAction: Hashable {
         case .openInPreview: "L"
         case .showInFinder: "O"
         case .copy: "C"
-        case .transform: nil
         case .addToRelay: "R"
         case .splitAndRelay: "S"
         case .pin: "T"
@@ -126,7 +122,6 @@ enum CommandAction: Hashable {
         case .openInPreview: 37 // L
         case .showInFinder: 31 // O
         case .copy: 8        // C
-        case .transform: nil
         case .addToRelay: 15 // R
         case .splitAndRelay: 1 // S
         case .pin: 17        // T
@@ -153,7 +148,7 @@ enum CommandAction: Hashable {
              .retryOCR, .pasteOCR, .openInPreview, .showInFinder: 1
         case .copy, .addToRelay, .splitAndRelay: 2
         case .pin, .toggleSensitive, .delete: 3
-        case .transform, .runRule: 4
+        case .runRule: 4
         }
     }
 

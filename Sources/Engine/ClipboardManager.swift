@@ -1920,18 +1920,22 @@ extension ClipboardManager: ClipboardControllable {
         applyMetadataActions(actions, to: item, context: context)
     }
 
-    /// Apply a rule's metadata-only actions (mark sensitive / pin / move to group) to a
-    /// clip. Shared by the capture path and the manual ⌘K / quick-panel apply paths so
-    /// all three stay in lockstep — text transforms stay per-caller because their
-    /// rich-text rules differ. Content-type agnostic: works on images/files too. (issue #71)
+    /// Metadata actions live in `ActionExecutor`; kept as a forwarder so the capture
+    /// path and existing tests keep one entry point.
     func applyMetadataActions(_ actions: [RuleAction], to item: ClipItem, context: ModelContext) {
-        if actions.contains(.markSensitive) {
-            item.isSensitive = true
-        }
-        if actions.contains(.pin) {
-            item.isPinned = true
-        }
-        applyGroupAction(actions, to: item, context: context)
+        ActionExecutor.applyMetadata(actions, to: item, context: context)
+    }
+
+    /// Write plain text to the pasteboard as a PasteMemo-originated write: the
+    /// capture pollers skip it instead of ingesting it as a fresh copy. Used by the
+    /// `.clipboard` output mode.
+    func writePlainText(_ text: String) {
+        let pasteboard = NSPasteboard.general
+        pasteboard.clearContents()
+        pasteboard.setString(text, forType: .string)
+        pasteboard.markAsPasteMemoWrite()
+        lastChangeCount = pasteboard.changeCount
+        skipRelayMonitorIfActive()
     }
 
     /// When an automatic rule actually changes the text, mirror the processed text
@@ -1949,16 +1953,6 @@ extension ClipboardManager: ClipboardControllable {
         pasteboard.setString(processed, forType: .string)
         pasteboard.markAsPasteMemoWrite()
         lastChangeCount = pasteboard.changeCount
-    }
-
-    private func applyGroupAction(_ actions: [RuleAction], to item: ClipItem, context: ModelContext) {
-        guard let groupAction = actions.first(where: {
-            if case .assignGroup = $0 { return true }
-            return false
-        }), case .assignGroup(let name) = groupAction, !name.isEmpty else { return }
-
-        item.groupName = name
-        upsertSmartGroup(name: name, context: context)
     }
 
     func upsertSmartGroup(name: String, context: ModelContext) {

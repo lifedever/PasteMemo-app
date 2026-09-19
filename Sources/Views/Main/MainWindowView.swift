@@ -384,10 +384,8 @@ struct MainWindowView: View {
                         sidebarRow(type.label, icon: type.icon, badge: count, isActive: selectedFilter == .type(type)) {
                             selectedFilter = .type(type)
                         }
-                        .contextMenu {
-                            Button(L10n.tr("action.clearScope.type"), role: .destructive) {
-                                clearItems(inScope: .type(type))
-                            }
+                        .nativeContextMenuMonitor {
+                            [.item(L10n.tr("action.clearScope.type"), destructive: true) { clearItems(inScope: .type(type)) }]
                         }
                         .onDrag {
                             draggingType = type
@@ -408,32 +406,28 @@ struct MainWindowView: View {
                         sidebarRow(group.name, icon: group.icon, badge: group.count, showsPreservedBadge: group.preservesItems, isActive: selectedFilter == .group(group.name)) {
                             selectedFilter = .group(group.name)
                         }
-                        .contextMenu {
-                            Button(L10n.tr("action.editGroup")) {
-                                editGroup(name: group.name)
-                            }
-                            Button(L10n.tr("action.changeIcon")) {
-                                changeGroupIcon(name: group.name)
-                            }
-                            Divider()
-                            Button(L10n.tr("action.clearScope.group"), role: .destructive) {
-                                clearItems(inScope: .group(group.name))
-                            }
-                            .disabled(group.preservesItems)
-                            .help(group.preservesItems ? L10n.tr("action.clearScope.group.disabledHelp") : "")
-                            Button(L10n.tr("action.deleteGroup"), role: .destructive) {
-                                let alert = NSAlert()
-                                alert.messageText = L10n.tr("action.deleteGroup")
-                                alert.informativeText = L10n.tr("action.deleteGroupConfirm", group.name)
-                                alert.alertStyle = .warning
-                                alert.addButton(withTitle: L10n.tr("action.delete"))
-                                alert.addButton(withTitle: L10n.tr("action.cancel"))
-                                guard alert.runModal() == .alertFirstButtonReturn else { return }
-                                if selectedFilter == .group(group.name) {
-                                    selectedFilter = .all
-                                }
-                                AppMenuActions.deleteGroup(name: group.name, context: modelContext)
-                            }
+                        .nativeContextMenuMonitor {
+                            [
+                                .item(L10n.tr("action.editGroup")) { editGroup(name: group.name) },
+                                .item(L10n.tr("action.changeIcon")) { changeGroupIcon(name: group.name) },
+                                .separator,
+                                .item(L10n.tr("action.clearScope.group"), destructive: true, enabled: !group.preservesItems) {
+                                    clearItems(inScope: .group(group.name))
+                                },
+                                .item(L10n.tr("action.deleteGroup"), destructive: true) {
+                                    let alert = NSAlert()
+                                    alert.messageText = L10n.tr("action.deleteGroup")
+                                    alert.informativeText = L10n.tr("action.deleteGroupConfirm", group.name)
+                                    alert.alertStyle = .warning
+                                    alert.addButton(withTitle: L10n.tr("action.delete"))
+                                    alert.addButton(withTitle: L10n.tr("action.cancel"))
+                                    guard alert.runModal() == .alertFirstButtonReturn else { return }
+                                    if selectedFilter == .group(group.name) {
+                                        selectedFilter = .all
+                                    }
+                                    AppMenuActions.deleteGroup(name: group.name, context: modelContext)
+                                },
+                            ]
                         }
                         .onDrag {
                             draggingGroup = group.name
@@ -457,10 +451,8 @@ struct MainWindowView: View {
                     appSidebarRow(displayName, badge: count, isActive: selectedFilter == .app(appName)) {
                         selectedFilter = .app(appName)
                     }
-                    .contextMenu {
-                        Button(L10n.tr("action.clearScope.app"), role: .destructive) {
-                            clearItems(inScope: .app(appName))
-                        }
+                    .nativeContextMenuMonitor {
+                        [.item(L10n.tr("action.clearScope.app"), destructive: true) { clearItems(inScope: .app(appName)) }]
                     }
                 }
             }
@@ -617,7 +609,7 @@ struct MainWindowView: View {
                     .padding(.bottom, 2)
             },
             contextMenu: { item in
-                mainListContextMenu(item: item)
+                mainListMenuItems(item: item)
             },
             commandPaletteContent: { item in
                 CommandPaletteContent(
@@ -661,102 +653,68 @@ struct MainWindowView: View {
     }
 
     @ViewBuilder
-    private func mainListContextMenu(item: ClipItem) -> some View {
-        if item.isDeleted { EmptyView() } else {
-            Button(L10n.tr("action.mergeCopy")) {
-                if selectedItems.contains(item.persistentModelID), selectedItems.count > 1 {
-                    copySelectedToClipboard()
-                } else {
-                    copyToClipboard(item)
-                }
-            }
-            Button(item.isPinned ? L10n.tr("action.unpin") : L10n.tr("action.pin")) {
-                if selectedItems.contains(item.persistentModelID), selectedItems.count > 1 {
-                    let items = selectedClipItems
-                    let shouldPin = !items.contains(where: \.isPinned)
-                    for i in items { i.isPinned = shouldPin }
-                } else {
-                    item.isPinned.toggle()
-                }
-                ClipItemStore.saveAndNotify(modelContext)
-                selectedItems.removeAll()
-            }
-            Button(item.isSensitive ? L10n.tr("sensitive.unmarkSensitive") : L10n.tr("sensitive.markSensitive")) {
-                if selectedItems.contains(item.persistentModelID), selectedItems.count > 1 {
-                    let items = selectedClipItems
-                    let hasSensitive = items.contains(where: \.isSensitive)
-                    for i in items { i.isSensitive = !hasSensitive }
-                } else {
-                    item.isSensitive.toggle()
-                }
-                ClipItemStore.saveAndNotify(modelContext)
-            }
-            if selectedItems.count > 1, selectedClipItems.allSatisfy({ $0.contentType.isMergeable }) {
-                Button(L10n.tr("action.merge")) { mergeSelectedItems() }
-            }
-            if ProManager.AUTOMATION_ENABLED {
-                let applicableRules = fetchEnabledAutomationRules()
-                    .filter { $0.triggerMode == .manual && $0.matches(item: item) }
-                if !applicableRules.isEmpty {
-                    Divider()
-                    Menu(L10n.tr("cmd.automation")) {
-                        ForEach(applicableRules) { rule in
-                            Button(rule.isBuiltIn ? L10n.tr(rule.name) : rule.name) {
-                                applyAutomationRule(rule, to: item)
-                            }
-                        }
-                    }
-                }
-            }
-            Divider()
-            let targetItems = selectedItems.contains(item.persistentModelID) ? selectedClipItems : [item]
-            let groupNames = Set(targetItems.compactMap(\.groupName))
-            let currentGroup = groupNames.count == 1 ? groupNames.first : nil
-            Menu(L10n.tr("action.assignGroup")) {
-                ForEach(store.sidebarCounts.byGroup, id: \.name) { group in
-                    if group.name == currentGroup {
-                        Button {} label: {
-                            Label(group.name, systemImage: "checkmark")
-                        }
-                    } else {
-                        Button(group.name) {
-                            assignToGroup(items: targetItems, name: group.name)
-                        }
-                    }
-                }
-                if !store.sidebarCounts.byGroup.isEmpty {
-                    Divider()
-                }
-                Button(L10n.tr("action.newGroup")) {
-                    showNewGroupAlert(for: targetItems)
-                }
-            }
-            if targetItems.contains(where: { $0.groupName != nil }) {
-                Button(L10n.tr("action.removeFromGroup")) {
-                    removeFromGroup(items: targetItems)
-                }
-            }
-            Divider()
-            if selectedItems.count > 1 {
-                Button(L10n.tr("relay.addToQueue")) {
-                    RelayManager.shared.addToQueue(clipItems: selectedClipItems)
-                }
-            } else if !item.content.isEmpty || item.imageData != nil {
-                Button(L10n.tr("relay.addToQueue")) {
-                    RelayManager.shared.addToQueue(clipItems: [item])
-                }
-                Button(L10n.tr("relay.splitAndRelay")) {
-                    relaySplitText = item.content
-                }
-            }
-            Divider()
-            Button(L10n.tr("action.delete"), role: .destructive) {
-                if !selectedItems.contains(item.persistentModelID) {
-                    selectedItems = [item.persistentModelID]
-                }
-                deleteSelectedItems()
+    /// Right-click menu for a list row (AppKit `NSMenu`, see `NativeMenu.swift`).
+    private func mainListMenuItems(item: ClipItem) -> [NativeMenuItem] {
+        guard !item.isDeleted else { return [] }
+        let multi = selectedItems.contains(item.persistentModelID) && selectedItems.count > 1
+        let targetItems = multi ? selectedClipItems : [item]
+        var menu: [NativeMenuItem] = []
+        menu.append(.item(L10n.tr("action.mergeCopy")) {
+            if multi { copySelectedToClipboard() } else { copyToClipboard(item) }
+        })
+        let hasPinned = targetItems.contains(where: \.isPinned)
+        menu.append(.item((multi ? hasPinned : item.isPinned) ? L10n.tr("action.unpin") : L10n.tr("action.pin")) {
+            let pin = multi ? !hasPinned : !item.isPinned
+            ActionExecutor.applyMetadata([pin ? .pin : .unpin], to: targetItems, context: modelContext)
+            selectedItems.removeAll()
+        })
+        let hasSensitive = targetItems.contains(where: \.isSensitive)
+        menu.append(.item((multi ? hasSensitive : item.isSensitive) ? L10n.tr("sensitive.unmarkSensitive") : L10n.tr("sensitive.markSensitive")) {
+            let mark = multi ? !hasSensitive : !item.isSensitive
+            ActionExecutor.applyMetadata([mark ? .markSensitive : .unmarkSensitive], to: targetItems, context: modelContext)
+        })
+        if multi, selectedClipItems.allSatisfy({ $0.contentType.isMergeable }) {
+            menu.append(.item(L10n.tr("action.merge")) { mergeSelectedItems() })
+        }
+        if ProManager.AUTOMATION_ENABLED {
+            let applicableRules = fetchEnabledAutomationRules()
+                .filter { $0.triggerMode == .manual && $0.matches(item: item) }
+            if !applicableRules.isEmpty {
+                menu.append(.separator)
+                menu.append(.submenu(L10n.tr("cmd.automation"), applicableRules.map { rule in
+                    .item(rule.isBuiltIn ? L10n.tr(rule.name) : rule.name) { applyAutomationRule(rule, to: item) }
+                }))
             }
         }
+        menu.append(.separator)
+        let groupNames = Set(targetItems.compactMap(\.groupName))
+        let currentGroup = groupNames.count == 1 ? groupNames.first : nil
+        var groupChildren: [NativeMenuItem] = store.sidebarCounts.byGroup.map { group in
+            .item(group.name, checked: group.name == currentGroup, enabled: group.name != currentGroup) {
+                assignToGroup(items: targetItems, name: group.name)
+            }
+        }
+        if !groupChildren.isEmpty { groupChildren.append(.separator) }
+        groupChildren.append(.item(L10n.tr("action.newGroup")) { showNewGroupAlert(for: targetItems) })
+        menu.append(.submenu(L10n.tr("action.assignGroup"), groupChildren))
+        if targetItems.contains(where: { $0.groupName != nil }) {
+            menu.append(.item(L10n.tr("action.removeFromGroup")) { removeFromGroup(items: targetItems) })
+        }
+        menu.append(.separator)
+        if multi {
+            menu.append(.item(L10n.tr("relay.addToQueue")) { RelayManager.shared.addToQueue(clipItems: selectedClipItems) })
+        } else if !item.content.isEmpty || item.imageData != nil {
+            menu.append(.item(L10n.tr("relay.addToQueue")) { RelayManager.shared.addToQueue(clipItems: [item]) })
+            menu.append(.item(L10n.tr("relay.splitAndRelay")) { relaySplitText = item.content })
+        }
+        menu.append(.separator)
+        menu.append(.item(L10n.tr("action.delete"), destructive: true) {
+            if !selectedItems.contains(item.persistentModelID) {
+                selectedItems = [item.persistentModelID]
+            }
+            deleteSelectedItems()
+        })
+        return menu
     }
 
     private func handleRowClick(_ item: ClipItem) {
@@ -963,23 +921,14 @@ struct MainWindowView: View {
         case .splitAndRelay:
             if !item.content.isEmpty { relaySplitText = item.content }
         case .pin:
-            if selectedItems.count > 1 {
-                let items = selectedClipItems
-                let shouldPin = !items.contains(where: \.isPinned)
-                for i in items { i.isPinned = shouldPin }
-            } else {
-                item.isPinned.toggle()
-            }
-            ClipItemStore.saveAndNotify(modelContext)
+            // Toggle lives here in the row; the action itself is a plain set/unset.
+            let items = selectedItems.count > 1 ? selectedClipItems : [item]
+            let shouldPin = !items.contains(where: \.isPinned)
+            ActionExecutor.applyMetadata([shouldPin ? .pin : .unpin], to: items, context: modelContext)
         case .toggleSensitive:
-            if selectedItems.count > 1 {
-                let items = selectedClipItems
-                let hasSensitive = items.contains(where: \.isSensitive)
-                for i in items { i.isSensitive = !hasSensitive }
-            } else {
-                item.isSensitive.toggle()
-            }
-            ClipItemStore.saveAndNotify(modelContext)
+            let items = selectedItems.count > 1 ? selectedClipItems : [item]
+            let shouldMark = !items.contains(where: \.isSensitive)
+            ActionExecutor.applyMetadata([shouldMark ? .markSensitive : .unmarkSensitive], to: items, context: modelContext)
         case .copyColorFormat(let format, _):
             let pasteboard = NSPasteboard.general
             pasteboard.clearContents()
@@ -990,16 +939,6 @@ struct MainWindowView: View {
             if let first = paths.first {
                 NSWorkspace.shared.selectFile(first, inFileViewerRootedAtPath: "")
             }
-        case .transform(let ruleAction):
-            let processed = AutomationEngine.shared.applyAction(ruleAction, to: item.content)
-            let contentChanged = processed != item.content
-            item.content = processed
-            item.displayTitle = ClipItem.buildTitle(content: processed, contentType: item.contentType)
-            if contentChanged || ruleAction == .stripRichText {
-                item.richTextData = nil
-                item.richTextType = nil
-            }
-            ClipItemStore.saveAndNotify(modelContext)
         case .delete:
             deleteSelectedItems()
         case .runRule(let ruleID, _):
@@ -1055,6 +994,7 @@ struct MainWindowView: View {
         return (try? modelContext.fetch(descriptor)) ?? []
     }
 
+    /// Rule applies to the whole selection when `item` is part of a multi-select.
     private func applyAutomationRule(_ rule: AutomationRule, to item: ClipItem) {
         let items: [ClipItem]
         if selectedItems.contains(item.persistentModelID), selectedItems.count > 1 {
@@ -1062,77 +1002,7 @@ struct MainWindowView: View {
         } else {
             items = [item]
         }
-
-        let actions = rule.actions
-        guard !actions.isEmpty else { return }
-
-        // runShortcut is async, targets a single clip, and writes its output to
-        // the pasteboard (so the next capture becomes a new item). It bypasses
-        // the in-place text mutation path entirely.
-        if actions.contains(where: { if case .runShortcut = $0 { return true }; return false }) {
-            Task { @MainActor in
-                await runRuleViaShortcut(rule, on: items.first ?? item)
-            }
-            return
-        }
-
-        let hasSpecialActions = AutomationEngine.containsSpecialAction(actions)
-
-        ClipItemStore.isBulkOperation = true
-        for target in items {
-            let processed = AutomationEngine.executeActions(actions, on: target.content)
-            let contentChanged = processed != target.content
-            guard contentChanged || hasSpecialActions else { continue }
-            target.content = processed
-            target.displayTitle = ClipItem.buildTitle(content: processed, contentType: target.contentType)
-            // Clear rich text if content changed — the stale rich formatting
-            // no longer matches the new plain text and would leak through the
-            // preview pane (which prefers rich content when present).
-            if contentChanged || actions.contains(.stripRichText) {
-                target.richTextData = nil
-                target.richTextType = nil
-            }
-            // markSensitive / pin / move-to-group — shared with the capture & quick-panel paths.
-            ClipboardManager.shared.applyMetadataActions(actions, to: target, context: modelContext)
-            // skipCapture is only meaningful during clipboard capture, not manual apply
-        }
-        ClipItemStore.saveAndNotify(modelContext)
-        ClipItemStore.isBulkOperation = false
-
-        ToastCenter.shared.show(ToastDescriptor(message: L10n.tr("automation.applied"), icon: .success))
-    }
-
-    @MainActor
-    private func runRuleViaShortcut(_ rule: AutomationRule, on item: ClipItem) async {
-        // Run the shortcut (plus any preceding text transforms). The Shortcut
-        // itself is responsible for whatever output handling it wants — copy
-        // to clipboard, post to a webhook, speak, write a file… PasteMemo just
-        // pipes the clip in and triggers. We never touch NSPasteboard here.
-        var currentContent = item.content
-        // Verbatim original (not the thumbnail) — the Shortcut may save/process the image.
-        let currentImageData = item.imageBytesForExport()
-        let currentContentType = item.contentType
-
-        for action in rule.actions {
-            if case .runShortcut(let name) = action {
-                do {
-                    _ = try await ShortcutRunner.run(
-                        name: name,
-                        content: currentContent,
-                        imageData: currentImageData,
-                        contentType: currentContentType
-                    )
-                } catch {
-                    ShortcutErrorNotifier.show(name: name, error: error)
-                    return
-                }
-            } else {
-                currentContent = action.execute(on: currentContent)
-            }
-        }
-
-        let displayName = rule.isBuiltIn ? L10n.tr(rule.name) : rule.name
-        ShortcutNotifier.showSuccess(ruleName: displayName)
+        ActionExecutor.apply(rule, to: items, host: PlainActionHost(source: .mainWindow), context: modelContext)
     }
 
     private func changeGroupIcon(name: String) {

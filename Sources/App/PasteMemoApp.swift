@@ -85,6 +85,10 @@ struct PasteMemoApp: App {
                 }
             }
             CommandGroup(replacing: .newItem) {
+                Button(L10n.tr("menu.manager")) {
+                    AppAction.shared.openMainWindow?()
+                }
+                Divider()
                 Button(L10n.tr("menu.newGroup")) {
                     AppMenuActions.showNewGroupAlert()
                 }
