@@ -65,11 +65,9 @@ struct AIClient: Sendable {
     /// Fixed system prompt. The user's prompt only says *what* to do; this keeps the
     /// model from chatting back, wrapping in quotes, or adding explanations.
     static let systemPrompt = """
-    You are a text transformation tool inside a clipboard manager. The user gives an \
-    instruction and then the text to transform. Apply the instruction to the text and \
-    output ONLY the resulting text: no explanations, no preamble, no quotes, no markdown \
-    code fences. Preserve the original line breaks unless the instruction says otherwise. \
-    If the text is already in the requested form, output it unchanged.
+    你是剪贴板管理器里的文本处理工具。用户会先给出一条指令，再给出要处理的文本。\
+    按指令处理文本，只输出处理后的文本本身：不解释、不加开场白、不加引号、不用 Markdown \
+    代码围栏。除非指令要求，否则保留原有换行。如果文本已经符合指令要求，原样输出。
     """
 
     // MARK: - Public

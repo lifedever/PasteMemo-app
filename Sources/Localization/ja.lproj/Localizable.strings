@@ -793,6 +793,7 @@
 "automation.ai.openSettings" = "設定を開く";
 "automation.ai.processing" = "「%@」を実行中…";
 "automation.ai.busy" = "この項目はまだ処理中です";
+"automation.ai.noChange" = "モデルはテキストを変更しませんでした";
 "automation.ai.error.tooLong" = "%d 文字を超えているため送信しません";
 "automation.ai.error.sensitive" = "機密項目は送信しません";
 "automation.ai.error.blockedApp" = "送信元Appがブロックリストにあるため送信しません";

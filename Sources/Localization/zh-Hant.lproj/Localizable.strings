@@ -734,6 +734,7 @@
 "automation.ai.openSettings" = "去設定";
 "automation.ai.processing" = "正在執行「%@」…";
 "automation.ai.busy" = "這條還在處理中";
+"automation.ai.noChange" = "模型沒有改動這段內容";
 "automation.ai.error.tooLong" = "內容超過 %d 字，不送出";
 "automation.ai.error.sensitive" = "敏感項目不送出";
 "automation.ai.error.blockedApp" = "來源 App 在黑名單裡，不送出";

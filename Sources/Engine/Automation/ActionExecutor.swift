@@ -185,6 +185,11 @@ enum ActionExecutor {
         var outcome = Outcome()
         finish(current, for: item, rule: rule, actions: actions, context: context, outcome: &outcome)
         if showsToast { ToastCenter.shared.dismiss() }
+        if hasAI, outcome.appliedCount == 0 {
+            // The model handed the text back as it was: say so instead of going quiet.
+            toast(L10n.tr("automation.ai.noChange"), icon: .info)
+            return
+        }
         conclude(outcome, rule: rule, actions: actions, host: host, context: context)
     }
 

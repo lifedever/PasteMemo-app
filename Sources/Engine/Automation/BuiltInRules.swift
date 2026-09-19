@@ -21,7 +21,13 @@ enum BuiltInRules {
     /// Earlier prompts of built-ins we've since reworded. A rule still carrying one of
     /// these verbatim (the user never touched it) is refreshed to the current definition.
     private static let supersededActions: [String: [[RuleAction]]] = [
-        "automation.builtIn.aiTidy": [[.aiTransform(prompt: "Tidy up this messy text (for example OCR output): fix broken line breaks, spacing and obvious recognition errors, restore paragraphs and lists. Keep the original language and every piece of information; do not summarise, add or drop anything.")]],
+        "automation.builtIn.aiTranslate": [
+            [.aiTransform(prompt: "If the text is mainly Chinese, translate it into natural, fluent English; otherwise translate it into natural Simplified Chinese. Keep names, code, URLs and formatting as they are.")],
+        ],
+        "automation.builtIn.aiTidy": [
+            [.aiTransform(prompt: "Tidy up this messy text (for example OCR output): fix broken line breaks, spacing and obvious recognition errors, restore paragraphs and lists. Keep the original language and every piece of information; do not summarise, add or drop anything.")],
+            [.aiTransform(prompt: "Reformat this messy text (for example OCR output or a voice transcript) into clean, well-structured plain text. Restore paragraphs and sentence punctuation; when the text enumerates items or steps, lay them out as a numbered or bulleted list, one item per line; fix broken line breaks, spacing and obvious recognition errors. Keep the original language and every piece of information; do not summarise, add or drop anything, and do not use Markdown symbols like # or **.")],
+        ],
     ]
 
     static func markDeleted(_ name: String) {
@@ -149,7 +155,7 @@ enum BuiltInRules {
             sortOrder: 100,
             triggerMode: .manual,
             conditions: [.anyText],
-            actions: [.aiTransform(prompt: "If the text is mainly Chinese, translate it into natural, fluent English; otherwise translate it into natural Simplified Chinese. Keep names, code, URLs and formatting as they are.")]
+            actions: [.aiTransform(prompt: "如果文本主要是中文，翻译成自然流畅的英文；否则翻译成自然的简体中文。人名、代码、链接和排版保持原样。")]
         ),
         RuleDefinition(
             name: "automation.builtIn.aiTidy",
@@ -157,7 +163,7 @@ enum BuiltInRules {
             sortOrder: 101,
             triggerMode: .manual,
             conditions: [.anyText],
-            actions: [.aiTransform(prompt: "Reformat this messy text (for example OCR output or a voice transcript) into clean, well-structured plain text. Restore paragraphs and sentence punctuation; when the text enumerates items or steps, lay them out as a numbered or bulleted list, one item per line; fix broken line breaks, spacing and obvious recognition errors. Keep the original language and every piece of information; do not summarise, add or drop anything, and do not use Markdown symbols like # or **.")]
+            actions: [.aiTransform(prompt: "把这段文字整理成排版规范、结构清楚的纯文本：短标题后面紧跟的简短内容合并成「标题：内容」一行；标题后面是长段落的，标题单独一行，正文另起一段；列举多项或步骤的内容改成编号或项目符号列表，一项一行；把语音转写、OCR 造成的句中断行接回去，统一空格和标点（中文用全角标点），修正明显的识别错误，段落之间只留一个空行。即使原文看起来已经整齐，也按这个格式整理一遍。保留原文语言和全部信息，不概括、不增删，不用 #、*、- 这类 Markdown 符号。")]
         ),
     ]
 }

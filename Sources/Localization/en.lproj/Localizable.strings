@@ -547,6 +547,7 @@
 "automation.ai.openSettings" = "Open settings";
 "automation.ai.processing" = "Running “%@”…";
 "automation.ai.busy" = "This clip is still being processed";
+"automation.ai.noChange" = "The model left the text unchanged";
 "automation.ai.error.tooLong" = "Over %d characters, not sent";
 "automation.ai.error.sensitive" = "Sensitive clip, not sent";
 "automation.ai.error.blockedApp" = "Source app is blocklisted, not sent";

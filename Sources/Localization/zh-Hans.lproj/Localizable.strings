@@ -548,6 +548,7 @@
 "automation.ai.openSettings" = "去设置";
 "automation.ai.processing" = "正在执行「%@」…";
 "automation.ai.busy" = "这条还在处理中";
+"automation.ai.noChange" = "模型没有改动这段内容";
 "automation.ai.error.tooLong" = "内容超过 %d 字，不发送";
 "automation.ai.error.sensitive" = "敏感条目不发送";
 "automation.ai.error.blockedApp" = "来源 App 在黑名单里，不发送";

@@ -773,6 +773,7 @@ Utilisez %@ pour coller un par un.";
 "automation.ai.openSettings" = "Ouvrir les réglages";
 "automation.ai.processing" = "Exécution de « %@ »…";
 "automation.ai.busy" = "Cet élément est encore en traitement";
+"automation.ai.noChange" = "Le modèle n’a rien modifié";
 "automation.ai.error.tooLong" = "Plus de %d caractères, non envoyé";
 "automation.ai.error.sensitive" = "Élément sensible, non envoyé";
 "automation.ai.error.blockedApp" = "App source sur la liste de blocage, non envoyé";

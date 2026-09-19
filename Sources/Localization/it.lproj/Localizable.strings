@@ -737,6 +737,7 @@ Usa %@ per incollare uno per uno.";
 "automation.ai.openSettings" = "Apri impostazioni";
 "automation.ai.processing" = "Esecuzione di «%@»…";
 "automation.ai.busy" = "Questo elemento è ancora in elaborazione";
+"automation.ai.noChange" = "Il modello non ha modificato il testo";
 "automation.ai.error.tooLong" = "Oltre %d caratteri, non inviato";
 "automation.ai.error.sensitive" = "Elemento sensibile, non inviato";
 "automation.ai.error.blockedApp" = "App di origine bloccata, non inviato";

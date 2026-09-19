@@ -748,6 +748,7 @@ Gunakan %@ untuk menempel satu per satu.";
 "automation.ai.openSettings" = "Buka pengaturan";
 "automation.ai.processing" = "Menjalankan “%@”…";
 "automation.ai.busy" = "Item ini masih diproses";
+"automation.ai.noChange" = "Model tidak mengubah teksnya";
 "automation.ai.error.tooLong" = "Lebih dari %d karakter, tidak dikirim";
 "automation.ai.error.sensitive" = "Item sensitif, tidak dikirim";
 "automation.ai.error.blockedApp" = "App sumber ada di daftar blokir, tidak dikirim";

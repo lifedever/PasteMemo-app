@@ -761,6 +761,7 @@ Verwenden Sie %@ zum Einfügen.";
 "automation.ai.openSettings" = "Einstellungen öffnen";
 "automation.ai.processing" = "„%@“ läuft…";
 "automation.ai.busy" = "Dieser Eintrag wird noch verarbeitet";
+"automation.ai.noChange" = "Das Modell hat den Text unverändert gelassen";
 "automation.ai.error.tooLong" = "Über %d Zeichen, nicht gesendet";
 "automation.ai.error.sensitive" = "Sensibler Eintrag, nicht gesendet";
 "automation.ai.error.blockedApp" = "Quell-App steht auf der Sperrliste, nicht gesendet";

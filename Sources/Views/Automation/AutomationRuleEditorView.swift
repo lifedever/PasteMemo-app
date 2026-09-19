@@ -335,41 +335,41 @@ struct AutomationRuleEditorView: View {
     /// Numbered action row; the number says "in order" better than a caption could.
     private func actionRow(_ action: RuleAction, at index: Int, editable: Bool) -> some View {
         let icon = Self.icon(for: action)
-        return HStack(alignment: .top, spacing: 10) {
-            Text("\(index + 1)")
-                .font(.caption.weight(.semibold).monospacedDigit())
-                .foregroundStyle(icon.tint)
-                .frame(width: 20, height: 20)
-                .background(Circle().fill(icon.tint.opacity(0.15)))
-                .padding(.top, 1)
-            VStack(alignment: .leading, spacing: 8) {
-                HStack(spacing: 8) {
-                    Image(systemName: icon.name)
-                        .foregroundStyle(icon.tint)
-                        .frame(width: 16)
-                    Text(Self.title(for: action))
-                        .fontWeight(.medium)
-                    Spacer()
-                    if editable {
-                        Button { actions.move(fromOffsets: [index], toOffset: index - 1) } label: {
-                            Image(systemName: "chevron.up")
-                        }
-                        .buttonStyle(.borderless)
-                        .disabled(index == 0)
-                        Button { actions.move(fromOffsets: [index], toOffset: index + 2) } label: {
-                            Image(systemName: "chevron.down")
-                        }
-                        .buttonStyle(.borderless)
-                        .disabled(index == actions.count - 1)
-                        removeButton { actions.remove(at: index) }
+        return VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 8) {
+                Text("\(index + 1)")
+                    .font(.caption.weight(.semibold).monospacedDigit())
+                    .foregroundStyle(icon.tint)
+                    .frame(width: 20, height: 20)
+                    .background(Circle().fill(icon.tint.opacity(0.15)))
+                Image(systemName: icon.name)
+                    .foregroundStyle(icon.tint)
+                    .frame(width: 16)
+                Text(Self.title(for: action))
+                    .fontWeight(.medium)
+                Spacer()
+                if editable {
+                    Button { actions.move(fromOffsets: [index], toOffset: index - 1) } label: {
+                        Image(systemName: "chevron.up")
                     }
+                    .buttonStyle(.borderless)
+                    .disabled(index == 0)
+                    Button { actions.move(fromOffsets: [index], toOffset: index + 2) } label: {
+                        Image(systemName: "chevron.down")
+                    }
+                    .buttonStyle(.borderless)
+                    .disabled(index == actions.count - 1)
+                    removeButton { actions.remove(at: index) }
                 }
+            }
+            Group {
                 if editable {
                     actionParameters(action, at: index)
                 } else {
                     readOnlyParameters(action)
                 }
             }
+            .padding(.leading, 28)
         }
     }
 

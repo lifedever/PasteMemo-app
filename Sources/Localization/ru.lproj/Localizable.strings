@@ -748,6 +748,7 @@
 "automation.ai.openSettings" = "Открыть настройки";
 "automation.ai.processing" = "Выполняется «%@»…";
 "automation.ai.busy" = "Этот элемент ещё обрабатывается";
+"automation.ai.noChange" = "Модель оставила текст без изменений";
 "automation.ai.error.tooLong" = "Больше %d символов, не отправлено";
 "automation.ai.error.sensitive" = "Конфиденциальный элемент, не отправлено";
 "automation.ai.error.blockedApp" = "Приложение-источник в чёрном списке, не отправлено";

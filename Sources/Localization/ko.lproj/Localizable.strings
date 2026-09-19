@@ -771,6 +771,7 @@
 "automation.ai.openSettings" = "설정 열기";
 "automation.ai.processing" = "“%@” 실행 중…";
 "automation.ai.busy" = "이 항목은 아직 처리 중입니다";
+"automation.ai.noChange" = "모델이 내용을 바꾸지 않았습니다";
 "automation.ai.error.tooLong" = "%d자를 넘어 보내지 않음";
 "automation.ai.error.sensitive" = "민감 항목은 보내지 않음";
 "automation.ai.error.blockedApp" = "출처 앱이 차단 목록에 있어 보내지 않음";
