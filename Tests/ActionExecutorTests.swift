@@ -35,10 +35,11 @@ struct ActionExecutorTests {
 
     // MARK: - Output modes
 
-    @Test("replaceItem rewrites the clip in place and drops stale rich text")
+    @Test("replaceItem rewrites the clip in place and drops stale rich text and the pasteboard snapshot")
     func replaceItem() throws {
         let context = try makeContext()
-        let item = ClipItem(content: "HELLO", contentType: .text, richTextData: Data([1, 2]), richTextType: "rtf")
+        let item = ClipItem(content: "HELLO", contentType: .text, richTextData: Data([1, 2]), richTextType: "rtf",
+                            pasteboardSnapshot: Data([9, 9, 9]))
         context.insert(item)
 
         ActionExecutor.apply(makeRule([.lowercased]), to: [item], host: RecordingHost(), context: context)
@@ -46,6 +47,7 @@ struct ActionExecutorTests {
         #expect(item.content == "hello")
         #expect(item.richTextData == nil)
         #expect(item.richTextType == nil)
+        #expect(item.pasteboardSnapshot == nil)
         #expect(try context.fetch(FetchDescriptor<ClipItem>()).count == 1)
     }
 

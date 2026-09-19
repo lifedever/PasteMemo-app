@@ -1915,6 +1915,8 @@ extension ClipboardManager: ClipboardControllable {
             if actions.contains(.stripRichText) || (writeBack && textChanged) {
                 item.richTextData = nil
                 item.richTextType = nil
+                // Same for the raw pasteboard snapshot: a panel paste replays it verbatim.
+                item.pasteboardSnapshot = nil
             }
         }
         applyMetadataActions(actions, to: item, context: context)

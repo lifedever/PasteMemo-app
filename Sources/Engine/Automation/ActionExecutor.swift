@@ -281,10 +281,12 @@ enum ActionExecutor {
         item.content = processed
         item.displayTitle = ClipItem.buildTitle(content: processed, contentType: item.contentType)
         // Stale rich text would otherwise show through in the preview pane even
-        // though the plain content changed.
+        // though the plain content changed — and the copy-time pasteboard snapshot
+        // would make ⌘V paste the *original* bytes (paste replays it verbatim).
         if contentChanged || actions.contains(.stripRichText) {
             item.richTextData = nil
             item.richTextType = nil
+            item.pasteboardSnapshot = nil
         }
     }
 
