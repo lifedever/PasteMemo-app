@@ -21,6 +21,11 @@ enum AIError: Error, Equatable {
     case timeout
     case network(String)
     case badBaseURL
+    /// Local-CLI backend: the executable isn't on disk anywhere we look.
+    case cliNotFound(String)
+    case cliFailed(exitCode: Int32, message: String)
+    /// The CLI exited cleanly but its stdout wasn't the JSON shape the settings promised.
+    case cliBadOutput(key: String)
 
     /// User-facing text. `L10n` is main-actor bound, so this isn't `LocalizedError`.
     @MainActor var userMessage: String {
@@ -36,6 +41,11 @@ enum AIError: Error, Equatable {
         case .timeout: L10n.tr("automation.ai.error.timeout")
         case .network(let msg): msg
         case .badBaseURL: L10n.tr("automation.ai.error.badBaseURL")
+        case .cliNotFound(let name): L10n.tr("automation.ai.error.cliNotFound", name)
+        case .cliFailed(_, let message):
+            message.isEmpty ? L10n.tr("automation.ai.error.cliFailed")
+                            : L10n.tr("automation.ai.error.cliFailed") + ": " + message
+        case .cliBadOutput(let key): L10n.tr("automation.ai.error.cliBadOutput", key)
         }
     }
 }

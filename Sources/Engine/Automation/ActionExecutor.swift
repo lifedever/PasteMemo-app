@@ -139,13 +139,21 @@ enum ActionExecutor {
             case .aiTransform(let prompt, let thinking, let temperature, let timeout):
                 guard contentType.isMergeable else { continue }
                 do {
-                    var config = aiClientOverride?.config ?? AIProviderSettings.snapshot()
-                    if let thinking { config.thinking = thinking }
-                    if let temperature { config.temperature = temperature }
-                    if let timeout { config.timeout = timeout }
-                    let client = aiClientOverride.map { AIClient(config: config, transport: $0.transport) }
-                        ?? AIClient(config: config)
-                    current = try await client.transform(prompt: prompt, content: current)
+                    if aiClientOverride == nil, AIProviderSettings.mode == .local {
+                        // A CLI takes no thinking/temperature knobs — it was configured
+                        // once, in its own settings, and reads none of ours.
+                        var cli = AIProviderSettings.cliSnapshot()
+                        if let timeout { cli.timeout = timeout }
+                        current = try await AICLIBackend(config: cli).transform(prompt: prompt, content: current)
+                    } else {
+                        var config = aiClientOverride?.config ?? AIProviderSettings.snapshot()
+                        if let thinking { config.thinking = thinking }
+                        if let temperature { config.temperature = temperature }
+                        if let timeout { config.timeout = timeout }
+                        let client = aiClientOverride.map { AIClient(config: config, transport: $0.transport) }
+                            ?? AIClient(config: config)
+                        current = try await client.transform(prompt: prompt, content: current)
+                    }
                 } catch {
                     if showsToast { ToastCenter.shared.dismiss() }
                     toast((error as? AIError)?.userMessage ?? error.localizedDescription, icon: .info)

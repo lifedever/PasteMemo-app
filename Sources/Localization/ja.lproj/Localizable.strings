@@ -802,6 +802,9 @@
 "automation.ai.error.http" = "サービスが %d を返しました";
 "automation.ai.error.timeout" = "リクエストがタイムアウトしました";
 "automation.ai.error.badBaseURL" = "Base URL が有効な http(s) アドレスではありません";
+"automation.ai.error.cliNotFound" = "%@ がこの Mac に見つかりません";
+"automation.ai.error.cliFailed" = "コマンドが失敗しました";
+"automation.ai.error.cliBadOutput" = "出力に %@ フィールドがありません";
 "automation.builtIn.aiTranslate" = "AI：中国語⇄英語 翻訳";
 "automation.builtIn.aiTidy" = "AI：テキスト整理";
 "settings.aiService" = "AIサービス";
@@ -824,6 +827,21 @@
 "settings.aiService.test.failed" = "失敗：%@";
 "settings.aiService.privacyHint" = "「AIで書き換え」を含むルールを手動で実行したときだけ、その1件の内容をプロバイダに送ります。機密としてマークした項目とブロックリストのAppからの項目は送りません。";
 "settings.aiService.usageHint" = "自動化から使います。ルールを作って「AIで書き換え」アクションを追加し、モデルへの指示を書いてください。クイックパネルの ⌘K か項目のコンテキストメニューから実行します。テキスト項目のみ対象で、画像やファイルはモデルに送られません。";
+"settings.aiService.mode.remote" = "API 接続";
+"settings.aiService.mode.local" = "ローカル Agent";
+"settings.aiService.cli.preset" = "Agent";
+"settings.aiService.cli.preset.custom" = "カスタム";
+"settings.aiService.cli.executable" = "コマンド";
+"settings.aiService.cli.arguments" = "引数";
+"settings.aiService.cli.outputKey" = "JSON キー";
+"settings.aiService.cli.outputKey.placeholder" = "空欄なら出力をそのまま使う";
+"settings.aiService.cli.notFound" = "この Mac では見つかりません";
+"settings.aiService.cli.argumentsHint" = "引数の %@ が指示と本文に置き換わります。書かない場合は標準入力から渡します。";
+"settings.aiService.cli.privacyHint" = "本文はこの Mac のコマンドに渡されます。通信するかどうか、どこへ送るかはコマンド次第です。機密扱いの項目とブロックリストのアプリからの項目は送信しません。";
+"settings.aiService.cli.timeoutHint" = "ローカル Agent は API 接続より遅く、1 回の書き換えに数秒かかります。";
+"settings.aiService.cli.missingHint" = "%@ が未インストールか、別の場所にあります。フルパスを下に入力してください。";
+"settings.aiService.mode" = "呼び出し方";
+"settings.aiService.cli.model.placeholder" = "空欄なら Agent 自身の既定モデル";
 "automation.rule.notifyBeforeApply" = "適用前に確認する";
 "automation.rule.newName" = "新しいルール";
 
