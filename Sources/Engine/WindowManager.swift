@@ -163,6 +163,7 @@ final class WindowManager {
             onClose?()
         }
         windows[id] = window
+        beforeShow?(window)
         window.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
     }
