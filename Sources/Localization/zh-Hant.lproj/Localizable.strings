@@ -783,6 +783,7 @@
 "settings.aiService.cli.missingHint" = "本機沒裝 %@，或者裝在了別處——把完整路徑填在下面。";
 "settings.aiService.mode" = "呼叫方式";
 "settings.aiService.cli.model.placeholder" = "留空用 Agent 自己的預設模型";
+"settings.aiService.cli.extraArgs" = "附加參數";
 "automation.rule.notifyBeforeApply" = "觸發時彈窗確認";
 "automation.rule.newName" = "新規則";
 "automation.condition.title" = "當滿足以下條件";

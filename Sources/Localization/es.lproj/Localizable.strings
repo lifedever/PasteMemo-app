@@ -822,6 +822,7 @@ Usa %@ para pegar uno por uno.";
 "settings.aiService.cli.missingHint" = "%@ no está instalado aquí, o está en otro sitio: pon la ruta completa abajo.";
 "settings.aiService.mode" = "Llamada vía";
 "settings.aiService.cli.model.placeholder" = "Vacío: el modelo por defecto del agente";
+"settings.aiService.cli.extraArgs" = "Argumentos extra";
 "automation.rule.notifyBeforeApply" = "Confirmar antes de aplicar";
 "automation.rule.newName" = "Nueva regla";
 

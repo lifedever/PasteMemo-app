@@ -786,6 +786,7 @@ Usa %@ per incollare uno per uno.";
 "settings.aiService.cli.missingHint" = "%@ non è installato qui, o si trova altrove — metti il percorso completo qui sotto.";
 "settings.aiService.mode" = "Chiamata via";
 "settings.aiService.cli.model.placeholder" = "Vuoto: il modello predefinito dell'agente";
+"settings.aiService.cli.extraArgs" = "Argomenti aggiuntivi";
 "automation.rule.notifyBeforeApply" = "Conferma prima di applicare";
 "automation.rule.newName" = "Nuova regola";
 "automation.condition.title" = "Condizioni";

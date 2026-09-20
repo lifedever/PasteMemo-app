@@ -797,6 +797,7 @@
 "settings.aiService.cli.missingHint" = "%@ не установлен здесь или лежит в другом месте — укажите полный путь ниже.";
 "settings.aiService.mode" = "Вызов через";
 "settings.aiService.cli.model.placeholder" = "Пусто — модель агента по умолчанию";
+"settings.aiService.cli.extraArgs" = "Доп. аргументы";
 "automation.rule.notifyBeforeApply" = "Подтверждать перед применением";
 "automation.rule.newName" = "Новое правило";
 "automation.condition.title" = "Условия";

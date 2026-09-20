@@ -252,7 +252,7 @@ struct AICLIBackend: Sendable {
             // The CLIs put diagnostics on stderr and nothing useful on stdout when they
             // fail; fall back to stdout only if stderr was silent.
             let message = result.stderr.isEmpty ? result.stdout : result.stderr
-            throw AIError.cliFailed(exitCode: result.exitCode, message: Self.firstMeaningfulLine(message))
+            throw AIError.cliFailed(exitCode: result.exitCode, message: Self.lastMeaningfulLine(message))
         }
         let answer = try Self.extractAnswer(stdout: result.stdout, jsonKey: config.outputJSONKey)
         guard !answer.isEmpty else { throw AIError.emptyResponse }
@@ -363,7 +363,7 @@ struct AICLIBackend: Sendable {
         // An envelope may report its own failure while the process still exits 0.
         if let isError = json["is_error"] as? Bool, isError {
             let message = (json[key] as? String) ?? (json["error"] as? String) ?? ""
-            throw AIError.cliFailed(exitCode: 0, message: firstMeaningfulLine(message))
+            throw AIError.cliFailed(exitCode: 0, message: lastMeaningfulLine(message))
         }
         guard let value = json[key] else { throw AIError.cliBadOutput(key: key) }
         if let text = value as? String { return text.trimmingCharacters(in: .whitespacesAndNewlines) }
@@ -374,13 +374,17 @@ struct AICLIBackend: Sendable {
         throw AIError.cliBadOutput(key: key)
     }
 
-    /// CLIs are chatty on failure (banners, stack traces). Take the first line that says
-    /// something, capped, so the toast stays one line.
-    static func firstMeaningfulLine(_ text: String, limit: Int = 200) -> String {
+    /// The *last* non-empty line, capped, so the toast stays one line.
+    ///
+    /// Last rather than first because these CLIs narrate before they fail: `codex` opens
+    /// with "Reading additional input from stdin…" and only then says what went wrong, so
+    /// taking the first line reported the progress message as the error and hid the real
+    /// reason ("Not inside a trusted directory…") entirely.
+    static func lastMeaningfulLine(_ text: String, limit: Int = 200) -> String {
         let line = text
             .split(separator: "\n", omittingEmptySubsequences: true)
             .map { $0.trimmingCharacters(in: .whitespaces) }
-            .first { !$0.isEmpty } ?? ""
+            .last { !$0.isEmpty } ?? ""
         return String(line.prefix(limit))
     }
 }

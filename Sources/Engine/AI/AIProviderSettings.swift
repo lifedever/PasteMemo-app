@@ -24,6 +24,7 @@ enum AIProviderSettings {
     static let cliExecutableOverrideKey = "aiServiceCLIExecutableOverride"
     static let cliArgumentsKey = "aiServiceCLIArguments"
     static let cliModelKey = "aiServiceCLIModel"
+    static let cliExtraArgumentsKey = "aiServiceCLIExtraArguments"
     static let cliOutputKeyKey = "aiServiceCLIOutputKey"
     static let cliTimeoutKey = "aiServiceCLITimeoutSeconds"
 
@@ -89,6 +90,13 @@ enum AIProviderSettings {
         set { UserDefaults.standard.set(newValue.trimmingCharacters(in: .whitespacesAndNewlines), forKey: cliModelKey) }
     }
 
+    /// Appended verbatim after the preset's own arguments. Cleared when the preset
+    /// changes: these are one CLI's spelling and mean nothing to another.
+    static var cliExtraArguments: String {
+        get { UserDefaults.standard.string(forKey: cliExtraArgumentsKey) ?? "" }
+        set { UserDefaults.standard.set(newValue.trimmingCharacters(in: .whitespacesAndNewlines), forKey: cliExtraArgumentsKey) }
+    }
+
     static var cliArguments: String {
         get { UserDefaults.standard.string(forKey: cliArgumentsKey) ?? "" }
         set { UserDefaults.standard.set(newValue, forKey: cliArgumentsKey) }
@@ -146,6 +154,9 @@ enum AIProviderSettings {
             let safe = model.replacingOccurrences(of: "'", with: "")
             arguments += " \(preset.modelFlag) '\(safe)'"
         }
+        // Last, so a deliberately repeated flag wins over the preset's own value.
+        let extra = cliExtraArguments
+        if !extra.isEmpty { arguments += " " + extra }
         return AICLIConfig(
             executable: cliExecutableOverride.isEmpty ? preset.executable : cliExecutableOverride,
             arguments: arguments,
@@ -258,14 +269,29 @@ enum AICLIPreset: String, CaseIterable, Identifiable {
         }
     }
 
-    /// `--max-turns 1` / `--sandbox read-only` matter: without them an agentic CLI may go
-    /// off reading files to "research" a clipboard rewrite. `--ephemeral` keeps a
-    /// clipboard transform out of the user's Codex session history.
+    /// These agents can edit files and run commands, and the text they're handed is
+    /// clipboard content — whatever the user last copied, from a web page or a message.
+    /// That makes it untrusted input in the prompt-injection sense, so each preset is
+    /// pinned to the strongest refusal its CLI offers:
+    ///
+    /// - `--permission-prompts none` (Claude): anything needing approval is denied
+    ///   outright. Measured, not assumed — with it, a "create a file" instruction leaves
+    ///   the directory empty; without it the file lands on disk. `--max-turns 1` does
+    ///   *not* cover this: the tool call takes effect first and the turn limit only bites
+    ///   afterwards. Chosen over `--tools ""`, which the CLI silently ignores, and over
+    ///   `--permission-mode plan`, which also blocks writes but skews the reply toward a
+    ///   plan instead of the rewrite.
+    /// - `--sandbox read-only` (Codex): an OS-level sandbox around anything it executes.
+    ///
+    /// `--skip-git-repo-check` is not optional: `codex exec` refuses to start outside a
+    /// Git repository ("Not inside a trusted directory"), and a clipboard rewrite runs
+    /// from the user's home directory, which for almost everybody isn't one.
+    /// `--ephemeral` keeps a clipboard transform out of the user's Codex session history.
     var arguments: String {
         switch self {
         case .custom: ""
-        case .claudeCode: "-p {prompt} --output-format json --max-turns 1"
-        case .codex: "exec {prompt} --sandbox read-only --ephemeral"
+        case .claudeCode: "-p {prompt} --output-format json --max-turns 1 --permission-prompts none"
+        case .codex: "exec {prompt} --sandbox read-only --ephemeral --skip-git-repo-check"
         }
     }
 
@@ -285,6 +311,22 @@ enum AICLIPreset: String, CaseIterable, Identifiable {
         switch self {
         case .custom: ""
         case .claudeCode, .codex: "--model"
+        }
+    }
+
+    /// Placeholder for the extra-arguments field, shown as a worked example.
+    ///
+    /// Reasoning effort is the thing people reach for first (spending a premium model's
+    /// thinking budget on a one-line rewrite is the complaint), and the two CLIs spell it
+    /// differently — a flag here, a config override there — with value sets that keep
+    /// growing (`xhigh` and `max` are recent additions on Claude's side). Rather than
+    /// freeze that into a picker this app would have to ship updates to keep current,
+    /// the knowledge lives in the hint and the field takes anything.
+    var extraArgumentsExample: String {
+        switch self {
+        case .custom: ""
+        case .claudeCode: "--effort low"
+        case .codex: "-c model_reasoning_effort=low"
         }
     }
 

@@ -820,6 +820,7 @@
 "settings.aiService.cli.missingHint" = "%@ 가 설치되지 않았거나 다른 위치에 있습니다. 전체 경로를 아래에 입력하세요.";
 "settings.aiService.mode" = "호출 방식";
 "settings.aiService.cli.model.placeholder" = "비워 두면 Agent 자체 기본 모델";
+"settings.aiService.cli.extraArgs" = "추가 인자";
 "automation.rule.notifyBeforeApply" = "적용 전 확인";
 "automation.rule.newName" = "새 규칙";
 

@@ -16,6 +16,7 @@ struct AIServicePane: View {
     @AppStorage(AIProviderSettings.cliExecutableOverrideKey) private var cliExecutableOverride = ""
     @AppStorage(AIProviderSettings.cliArgumentsKey) private var cliArguments = ""
     @AppStorage(AIProviderSettings.cliModelKey) private var cliModel = ""
+    @AppStorage(AIProviderSettings.cliExtraArgumentsKey) private var cliExtraArgs = ""
     @AppStorage(AIProviderSettings.cliOutputKeyKey) private var cliOutputKey = ""
     @AppStorage(AIProviderSettings.cliTimeoutKey) private var cliTimeout: Double = 120
     @State private var revealKey = false
@@ -198,6 +199,11 @@ struct AIServicePane: View {
                               prompt: Text(L10n.tr("settings.aiService.cli.model.placeholder")))
                         .autocorrectionDisabled()
                         .onChange(of: cliModel) { _, _ in testState = .idle }
+                    TextField(L10n.tr("settings.aiService.cli.extraArgs"), text: $cliExtraArgs,
+                              prompt: Text(cliPreset.extraArgumentsExample))
+                        .autocorrectionDisabled()
+                        .font(.system(.body, design: .monospaced))
+                        .onChange(of: cliExtraArgs) { _, _ in testState = .idle }
                     // The command line for a known agent is ours to get right, so it stays
                     // hidden — except when we can't find the binary, where the only thing
                     // that helps is the user pointing at it.
@@ -294,7 +300,11 @@ struct AIServicePane: View {
     /// preset at call time, so copying it into storage would only risk overwriting a
     /// Custom setup the user comes back to.
     private func applyCLIPreset(_ p: AICLIPreset) {
+        guard p.rawValue != cliPresetRaw else { return }
         cliPresetRaw = p.rawValue
+        // One CLI's flags are meaningless to another, and silently passing Claude's
+        // `--effort` to Codex would just make it fail.
+        cliExtraArgs = ""
         testState = .idle
         refreshCLIPath()
     }

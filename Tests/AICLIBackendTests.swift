@@ -99,11 +99,22 @@ struct AICLIBackendTests {
         }
     }
 
-    @Test("Error text collapses to its first non-empty line")
-    func firstLine() {
-        #expect(AICLIBackend.firstMeaningfulLine("\n\n  boom happened  \nstack frame\n") == "boom happened")
-        #expect(AICLIBackend.firstMeaningfulLine("") == "")
-        #expect(AICLIBackend.firstMeaningfulLine(String(repeating: "x", count: 500)).count == 200)
+    @Test("Error text collapses to its last non-empty line")
+    func lastLine() {
+        #expect(AICLIBackend.lastMeaningfulLine("\n\n  boom happened  \nreal reason\n") == "real reason")
+        #expect(AICLIBackend.lastMeaningfulLine("") == "")
+        #expect(AICLIBackend.lastMeaningfulLine(String(repeating: "x", count: 500)).count == 200)
+    }
+
+    /// Verbatim stderr from `codex exec` outside a Git repository. Taking the first line
+    /// surfaced the progress narration and buried the actual cause.
+    @Test("Progress narration doesn't mask the real failure")
+    func progressLineIsNotTheError() {
+        let stderr = """
+        Reading additional input from stdin...
+        Not inside a trusted directory and --skip-git-repo-check was not specified.
+        """
+        #expect(AICLIBackend.lastMeaningfulLine(stderr).hasPrefix("Not inside a trusted directory"))
     }
 
     // MARK: - Executable lookup
@@ -251,6 +262,7 @@ struct AICLIPresetResolutionTests {
         AIProviderSettings.cliPresetKey, AIProviderSettings.cliExecutableKey,
         AIProviderSettings.cliExecutableOverrideKey, AIProviderSettings.cliArgumentsKey,
         AIProviderSettings.cliOutputKeyKey, AIProviderSettings.cliModelKey,
+        AIProviderSettings.cliExtraArgumentsKey,
     ]
 
     private func withCleanDefaults(_ body: () -> Void) {
@@ -340,6 +352,30 @@ struct AICLIPresetResolutionTests {
         }
     }
 
+    /// `codex exec` refuses to start outside a Git repository, and a clipboard rewrite
+    /// runs from the home directory. Without this flag the preset can't work at all.
+    @Test("The Codex preset opts out of the Git-repository requirement")
+    func codexSkipsGitRepoCheck() {
+        withCleanDefaults {
+            AIProviderSettings.cliPreset = .codex
+            #expect(AIProviderSettings.cliSnapshot().arguments.contains("--skip-git-repo-check"))
+        }
+    }
+
+    /// Clipboard text is untrusted — it can carry an instruction to write a file or run a
+    /// command. Both presets must stay pinned to their CLI's refusal switch. Verified
+    /// against the real CLIs: dropping these lets a "create a file" instruction succeed.
+    @Test("Both presets keep their file-write guard")
+    func presetsRefuseSideEffects() {
+        withCleanDefaults {
+            AIProviderSettings.cliPreset = .claudeCode
+            #expect(AIProviderSettings.cliSnapshot().arguments.contains("--permission-prompts none"))
+
+            AIProviderSettings.cliPreset = .codex
+            #expect(AIProviderSettings.cliSnapshot().arguments.contains("--sandbox read-only"))
+        }
+    }
+
     @Test("A model name stays one argument and can't break out of its quotes")
     func modelIsOneArgument() {
         withCleanDefaults {
@@ -357,6 +393,50 @@ struct AICLIPresetResolutionTests {
             AIProviderSettings.cliPreset = .custom
             AIProviderSettings.cliArguments = "--rewrite {prompt}"
             AIProviderSettings.cliModel = "opus"
+            #expect(AIProviderSettings.cliSnapshot().arguments == "--rewrite {prompt}")
+        }
+    }
+
+    /// How reasoning effort is reached, since the two CLIs spell it differently and
+    /// neither spelling is frozen into the app.
+    @Test("Extra arguments land after the preset's own, so a repeat wins")
+    func extraArgumentsComeLast() {
+        withCleanDefaults {
+            AIProviderSettings.cliPreset = .claudeCode
+            AIProviderSettings.cliExtraArguments = "--effort low"
+            let args = CLIArgumentTokenizer.tokenize(AIProviderSettings.cliSnapshot().arguments)
+            #expect(args.suffix(2) == ["--effort", "low"])
+        }
+    }
+
+    @Test("A Codex-style config override survives tokenizing intact")
+    func extraArgumentsCodexStyle() {
+        withCleanDefaults {
+            AIProviderSettings.cliPreset = .codex
+            AIProviderSettings.cliExtraArguments = "-c model_reasoning_effort=low"
+            let args = CLIArgumentTokenizer.tokenize(AIProviderSettings.cliSnapshot().arguments)
+            #expect(args.suffix(2) == ["-c", "model_reasoning_effort=low"])
+        }
+    }
+
+    @Test("Extra arguments and a model can be combined")
+    func extraArgumentsAlongsideModel() {
+        withCleanDefaults {
+            AIProviderSettings.cliPreset = .claudeCode
+            AIProviderSettings.cliModel = "haiku"
+            AIProviderSettings.cliExtraArguments = "--effort low"
+            let args = CLIArgumentTokenizer.tokenize(AIProviderSettings.cliSnapshot().arguments)
+            #expect(args.contains("haiku"))
+            #expect(args.suffix(2) == ["--effort", "low"])
+        }
+    }
+
+    @Test("Custom ignores the extra-arguments field — its template is already complete")
+    func customIgnoresExtraArguments() {
+        withCleanDefaults {
+            AIProviderSettings.cliPreset = .custom
+            AIProviderSettings.cliArguments = "--rewrite {prompt}"
+            AIProviderSettings.cliExtraArguments = "--effort low"
             #expect(AIProviderSettings.cliSnapshot().arguments == "--rewrite {prompt}")
         }
     }

@@ -822,6 +822,7 @@ Utilisez %@ pour coller un par un.";
 "settings.aiService.cli.missingHint" = "%@ n'est pas installé ici, ou se trouve ailleurs — mets le chemin complet ci-dessous.";
 "settings.aiService.mode" = "Appel via";
 "settings.aiService.cli.model.placeholder" = "Vide : le modèle par défaut de l'agent";
+"settings.aiService.cli.extraArgs" = "Arguments supplémentaires";
 "automation.rule.notifyBeforeApply" = "Confirmer avant d'appliquer";
 "automation.rule.newName" = "Nouvelle règle";
 

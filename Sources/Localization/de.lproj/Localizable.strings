@@ -810,6 +810,7 @@ Verwenden Sie %@ zum Einfügen.";
 "settings.aiService.cli.missingHint" = "%@ ist hier nicht installiert oder liegt woanders — trag den vollen Pfad unten ein.";
 "settings.aiService.mode" = "Aufruf über";
 "settings.aiService.cli.model.placeholder" = "Leer: das Standardmodell des Agents";
+"settings.aiService.cli.extraArgs" = "Zusätzliche Argumente";
 "automation.rule.notifyBeforeApply" = "Vor Anwendung bestätigen";
 "automation.rule.newName" = "Neue Regel";
 "automation.condition.title" = "Bedingungen";

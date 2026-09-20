@@ -842,6 +842,7 @@
 "settings.aiService.cli.missingHint" = "%@ が未インストールか、別の場所にあります。フルパスを下に入力してください。";
 "settings.aiService.mode" = "呼び出し方";
 "settings.aiService.cli.model.placeholder" = "空欄なら Agent 自身の既定モデル";
+"settings.aiService.cli.extraArgs" = "追加引数";
 "automation.rule.notifyBeforeApply" = "適用前に確認する";
 "automation.rule.newName" = "新しいルール";
 

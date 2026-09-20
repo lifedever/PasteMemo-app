@@ -596,6 +596,7 @@
 "settings.aiService.cli.missingHint" = "%@ isn't installed here, or it's somewhere unusual — put the full path below.";
 "settings.aiService.mode" = "Call via";
 "settings.aiService.cli.model.placeholder" = "Empty: the agent's own default";
+"settings.aiService.cli.extraArgs" = "Extra arguments";
 "automation.rule.notifyBeforeApply" = "Confirm before applying";
 "automation.rule.newName" = "New Rule";
 "cmd.transform" = "Transform";

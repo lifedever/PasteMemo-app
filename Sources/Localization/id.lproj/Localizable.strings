@@ -797,6 +797,7 @@ Gunakan %@ untuk menempel satu per satu.";
 "settings.aiService.cli.missingHint" = "%@ belum terpasang di sini, atau ada di tempat lain — isi path lengkapnya di bawah.";
 "settings.aiService.mode" = "Panggil lewat";
 "settings.aiService.cli.model.placeholder" = "Kosong: model bawaan agent";
+"settings.aiService.cli.extraArgs" = "Argumen tambahan";
 "automation.rule.notifyBeforeApply" = "Konfirmasi sebelum menerapkan";
 "automation.rule.newName" = "Aturan Baru";
 "automation.condition.title" = "Kondisi";
