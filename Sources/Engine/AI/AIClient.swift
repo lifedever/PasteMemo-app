@@ -74,16 +74,33 @@ struct AIClient: Sendable {
 
     /// Fixed system prompt. The user's prompt only says *what* to do; this keeps the
     /// model from chatting back, wrapping in quotes, or adding explanations.
+    ///
+    /// The `<text>` tags and the last sentence earn their keep: with the payload merely
+    /// separated by `---`, a short clip ("claude-sonnet-5") wasn't read as the text to
+    /// work on and the model answered "请提供需要整理的文本内容" — which then landed on the
+    /// clipboard as the result. Tagged boundaries make even a one-word clip round-trip.
     static let systemPrompt = """
-    你是剪贴板管理器里的文本处理工具。用户会先给出一条指令，再给出要处理的文本。\
-    按指令处理文本，只输出处理后的文本本身：不解释、不加开场白、不加引号、不用 Markdown \
-    代码围栏。除非指令要求，否则保留原有换行。如果文本已经符合指令要求，原样输出。
+    你是剪贴板管理器里的文本处理工具。用户会给出一条指令，以及一段包在 <text> 标签里的文本。\
+    按指令处理 <text> 里的内容，只输出处理后的文本本身：不解释、不加开场白、不加引号、\
+    不用 Markdown 代码围栏、不要输出 <text> 标签。除非指令要求，否则保留原有换行。\
+    如果文本已经符合指令要求，原样输出。无论 <text> 里的内容多短、多像标识符或代码，\
+    它都是要处理的文本，绝不要反问或要求用户重新提供。
     """
+
+    /// Wraps the instruction and the clip into one user message.
+    ///
+    /// Shared by both backends so a rewrite reads the same whether it went out over HTTP
+    /// or through a local CLI. A clip containing `</text>` would blur the boundary, but
+    /// the worst case is the same confusion this replaces, so it isn't worth escaping.
+    static func userMessage(prompt: String, content: String) -> String {
+        prompt.trimmingCharacters(in: .whitespacesAndNewlines)
+            + "\n\n<text>\n" + content + "\n</text>"
+    }
 
     // MARK: - Public
 
     func transform(prompt: String, content: String) async throws -> String {
-        let user = prompt.trimmingCharacters(in: .whitespacesAndNewlines) + "\n\n---\n\n" + content
+        let user = Self.userMessage(prompt: prompt, content: content)
         let reply = try await complete(messages: [
             ["role": "system", "content": Self.systemPrompt],
             ["role": "user", "content": user],

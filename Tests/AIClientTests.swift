@@ -60,7 +60,18 @@ struct AIClientTests {
         #expect(messages.count == 2)
         #expect(messages[0]["role"] == "system")
         #expect(messages[1]["content"]?.hasPrefix("Translate to English") == true)
-        #expect(messages[1]["content"]?.hasSuffix("你好") == true)
+        // The clip is delimited by tags, not just separated — see `AIClient.userMessage`.
+        #expect(messages[1]["content"]?.contains("<text>\n你好\n</text>") == true)
+        #expect(messages[1]["content"]?.hasSuffix("</text>") == true)
+    }
+
+    /// A one-word clip used to come back as "请提供需要整理的文本内容" — the model didn't read
+    /// the payload as the text to work on. The tags are what fixed it, so they're pinned.
+    @Test("Even a very short clip is wrapped in text tags")
+    func shortClipIsDelimited() {
+        let message = AIClient.userMessage(prompt: "整理一下", content: "claude-sonnet-5")
+        #expect(message == "整理一下\n\n<text>\nclaude-sonnet-5\n</text>")
+        #expect(AIClient.systemPrompt.contains("<text>"))
     }
 
     @Test("no Authorization header when the key is empty (local servers)")

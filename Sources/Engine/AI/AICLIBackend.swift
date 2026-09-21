@@ -221,8 +221,10 @@ struct AICLIBackend: Sendable {
     // MARK: - Public
 
     func transform(prompt: String, content: String) async throws -> String {
-        let full = AIClient.systemPrompt + "\n\n"
-            + prompt.trimmingCharacters(in: .whitespacesAndNewlines) + "\n\n---\n\n" + content
+        // No role separation here — a CLI takes one prompt string — so the system prompt
+        // rides along at the front. Verified against the real `claude` binary: what makes
+        // a one-word clip survive is the `<text>` boundary, not the role split.
+        let full = AIClient.systemPrompt + "\n\n" + AIClient.userMessage(prompt: prompt, content: content)
         let reply = try await run(prompt: full)
         return AIClient.stripFences(AIClient.stripThinking(reply).trimmingCharacters(in: .whitespacesAndNewlines))
     }
