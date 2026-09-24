@@ -210,6 +210,7 @@
 "detail.fileCount" = "檔案數";
 "detail.fileStatus" = "狀態";
 "file.unavailable.missing" = "檔案已不存在";
+"finder.notResponding" = "Finder 沒有回應";
 "file.unavailable.denied" = "無存取權限";
 "detail.host" = "網域";
 "detail.url" = "連結";

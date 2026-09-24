@@ -211,6 +211,7 @@
 "detail.fileCount" = "Файлы";
 "detail.fileStatus" = "Статус";
 "file.unavailable.missing" = "Файл больше не существует";
+"finder.notResponding" = "Finder не отвечает";
 "file.unavailable.denied" = "Нет прав доступа";
 "detail.host" = "Хост";
 "detail.url" = "URL";

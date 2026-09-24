@@ -1700,8 +1700,19 @@ final class ClipboardManager: ObservableObject {
         app?.bundleIdentifier == "com.apple.finder"
     }
 
-    func getFinderSelectedFolder() -> URL? {
-        let script = """
+    enum FinderFolderLookup {
+        case folder(URL)
+        /// 访达在限时内没回话。单独拎出来是为了让调用方提示用户，而不是退回去往访达里
+        /// 粘图片数据——访达不收，等于按了回车什么都没发生。
+        case notResponding
+        case unavailable
+    }
+
+    /// 同步 Apple Event，调用方都在主线程。AppleScript 不设上限时默认等 120 秒，访达一卡
+    /// （Spotlight 重建索引、LaunchServices 重启时常见）PasteMemo 就跟着转圈、退不出去（#92）。
+    /// 已授权时限 3 秒；还没问过授权时不限，否则系统弹「允许控制访达」那一下会被当成超时。
+    func getFinderSelectedFolder() -> FinderFolderLookup {
+        let body = """
         tell application "Finder"
             if (count of windows) > 0 then
                 set theSelection to selection
@@ -1720,11 +1731,25 @@ final class ClipboardManager: ObservableObject {
             end if
         end tell
         """
-        guard let appleScript = NSAppleScript(source: script) else { return nil }
+        let script = Self.finderAutomationConsentPending()
+            ? body
+            : "with timeout of 3 seconds\n\(body)\nend timeout"
+        guard let appleScript = NSAppleScript(source: script) else { return .unavailable }
         var error: NSDictionary?
         let result = appleScript.executeAndReturnError(&error)
-        guard error == nil, let path = result.stringValue else { return nil }
-        return URL(fileURLWithPath: path)
+        if let error {
+            let code = (error[NSAppleScript.errorNumber] as? NSNumber)?.intValue
+            return code == Int(errAETimeout) ? .notResponding : .unavailable
+        }
+        guard let path = result.stringValue else { return .unavailable }
+        return .folder(URL(fileURLWithPath: path))
+    }
+
+    /// 只查不问：还没决定过「允许 PasteMemo 控制访达」时为 true。
+    private static func finderAutomationConsentPending() -> Bool {
+        let target = NSAppleEventDescriptor(bundleIdentifier: "com.apple.finder")
+        let status = AEDeterminePermissionToAutomateTarget(target.aeDesc, typeWildCard, typeWildCard, false)
+        return status == OSStatus(errAEEventWouldRequireUserConsent)
     }
 
     func saveImageToFolder(

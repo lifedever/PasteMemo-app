@@ -604,6 +604,7 @@ Usa %@ para pegar uno por uno.";
 "detail.fileCount" = "Archivos";
 "detail.fileStatus" = "Estado";
 "file.unavailable.missing" = "El archivo ya no existe";
+"finder.notResponding" = "Finder no responde";
 "file.unavailable.denied" = "Sin permiso de acceso";
 "detail.format" = "Formato";
 "detail.host" = "Host";

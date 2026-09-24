@@ -2453,11 +2453,10 @@ struct QuickPanelView: View {
         let textItems = items.filter { !isFileBasedItem($0) && $0.content != "[Image]" }
         let imageItems = items.filter { isPureImage($0) }
 
-        guard let folder = clipboardManager.getFinderSelectedFolder() else {
+        guard let folder = finderSelectedFolder(fallback: {
             // Fallback: paste as files if possible
             dismissAndRestoreApp { app in clipboardManager.pasteMultiple(items, targetApp: app) }
-            return
-        }
+        }) else { return }
 
         // Save pure images to folder — write the verbatim original, never the thumbnail.
         for img in imageItems {
@@ -2743,6 +2742,21 @@ struct QuickPanelView: View {
             && !QuickPanelWindowController.shared.previousFocusIsTextInput
     }
 
+    /// 访达当前文件夹。访达没响应时提示并返回 nil（面板留着，用户可以再按一次）；
+    /// 其他拿不到的情况（没授权控制访达等）交给 `fallback`。
+    private func finderSelectedFolder(fallback: () -> Void = {}) -> URL? {
+        switch clipboardManager.getFinderSelectedFolder() {
+        case .folder(let url):
+            return url
+        case .notResponding:
+            ToastCenter.shared.show(ToastDescriptor(message: L10n.tr("finder.notResponding"), icon: .info))
+            return nil
+        case .unavailable:
+            fallback()
+            return nil
+        }
+    }
+
     private var canSaveAttachmentToFolder: Bool {
         guard let item = currentItem,
               item.pasteableImageData != nil,
@@ -2898,7 +2912,7 @@ struct QuickPanelView: View {
     private func handlePasteTextToFolder() {
         guard let item = currentItem else { return }
 
-        guard let folder = clipboardManager.getFinderSelectedFolder() else { return }
+        guard let folder = finderSelectedFolder() else { return }
 
         let ext = item.resolvedFileExtension
         guard let savedURL = clipboardManager.saveTextToFolder(item.content, folder: folder, fileExtension: ext) else { return }
@@ -2922,7 +2936,7 @@ struct QuickPanelView: View {
 
     private func handlePasteLinkToFolder() {
         guard let item = currentItem, item.contentType == .link else { return }
-        guard let folder = clipboardManager.getFinderSelectedFolder() else { return }
+        guard let folder = finderSelectedFolder() else { return }
 
         let content = item.content.trimmingCharacters(in: .whitespacesAndNewlines)
         let linkTitle = item.linkTitle
@@ -3108,11 +3122,8 @@ struct QuickPanelView: View {
             return
         }
 
-        guard let folder = clipboardManager.getFinderSelectedFolder() else {
-            // Can't get folder, fallback to paste image
-            handlePasteImage()
-            return
-        }
+        // Can't get folder, fallback to paste image
+        guard let folder = finderSelectedFolder(fallback: handlePasteImage) else { return }
 
         // Genuine file-backed clip (Finder copy) → copy the user's original file directly,
         // preserving its exact bytes / format / metadata and its filename.

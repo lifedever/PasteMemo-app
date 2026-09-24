@@ -230,6 +230,7 @@
 "detail.fileCount" = "Files";
 "detail.fileStatus" = "Status";
 "file.unavailable.missing" = "File no longer exists";
+"finder.notResponding" = "Finder isn't responding";
 "file.unavailable.denied" = "No permission to access";
 "detail.host" = "Host";
 "detail.url" = "URL";

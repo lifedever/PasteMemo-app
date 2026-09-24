@@ -211,6 +211,7 @@
 "detail.fileCount" = "File";
 "detail.fileStatus" = "Status";
 "file.unavailable.missing" = "File tidak ada lagi";
+"finder.notResponding" = "Finder tidak merespons";
 "file.unavailable.denied" = "Tidak ada izin akses";
 "detail.host" = "Host";
 "detail.url" = "URL";

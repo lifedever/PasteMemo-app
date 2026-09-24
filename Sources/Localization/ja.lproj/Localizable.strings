@@ -625,6 +625,7 @@
 "detail.fileCount" = "ファイル数";
 "detail.fileStatus" = "状態";
 "file.unavailable.missing" = "ファイルは存在しません";
+"finder.notResponding" = "Finderが応答していません";
 "file.unavailable.denied" = "アクセス権限がありません";
 "detail.format" = "フォーマット";
 "detail.host" = "ホスト";

@@ -211,6 +211,7 @@
 "detail.fileCount" = "File";
 "detail.fileStatus" = "Stato";
 "file.unavailable.missing" = "Il file non esiste piu";
+"finder.notResponding" = "Il Finder non risponde";
 "file.unavailable.denied" = "Nessun permesso di accesso";
 "detail.host" = "Host";
 "detail.url" = "URL";

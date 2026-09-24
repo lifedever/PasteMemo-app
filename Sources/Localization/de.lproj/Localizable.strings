@@ -602,6 +602,7 @@ Verwenden Sie %@ zum Einfügen.";
 "detail.fileCount" = "Dateien";
 "detail.fileStatus" = "Status";
 "file.unavailable.missing" = "Datei existiert nicht mehr";
+"finder.notResponding" = "Finder reagiert nicht";
 "file.unavailable.denied" = "Kein Zugriffsrecht";
 "detail.format" = "Format";
 "detail.host" = "Host";
