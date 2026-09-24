@@ -1,7 +1,7 @@
 import Foundation
 
 /// Where "AI 改写" sends text. One OpenAI-compatible endpoint (`POST {baseURL}/chat/completions`)
-/// covers OpenAI, DeepSeek, Kimi, 智谱, SiliconFlow, OpenRouter, 火山方舟, Ollama, LM Studio —
+/// covers OpenAI, DeepSeek, Kimi, 智谱, SiliconFlow, OpenRouter, Requesty, 火山方舟, Ollama, LM Studio —
 /// the Base URL field is what makes that possible. Everything, the API key included, lives
 /// in UserDefaults: the Keychain item asked for the login password on every settings visit
 /// (each Dev build re-signs and loses the ACL), and the key never leaves this machine anyway.
@@ -186,7 +186,7 @@ enum AIThinkingMode: String, CaseIterable, Sendable, Codable {
 /// fields, the user can still edit them.
 enum AIProviderPreset: String, CaseIterable, Identifiable {
     case custom
-    case openai, deepseek, kimi, zhipu, siliconflow, openrouter, volcengine, ollama, lmstudio
+    case openai, deepseek, kimi, zhipu, siliconflow, openrouter, requesty, volcengine, ollama, lmstudio
 
     var id: String { rawValue }
 
@@ -199,6 +199,7 @@ enum AIProviderPreset: String, CaseIterable, Identifiable {
         case .zhipu: "智谱 GLM"
         case .siliconflow: "SiliconFlow"
         case .openrouter: "OpenRouter"
+        case .requesty: "Requesty"
         case .volcengine: "火山方舟"
         case .ollama: "Ollama"
         case .lmstudio: "LM Studio"
@@ -214,6 +215,7 @@ enum AIProviderPreset: String, CaseIterable, Identifiable {
         case .zhipu: "https://open.bigmodel.cn/api/paas/v4"
         case .siliconflow: "https://api.siliconflow.cn/v1"
         case .openrouter: "https://openrouter.ai/api/v1"
+        case .requesty: "https://router.requesty.ai/v1"
         case .volcengine: "https://ark.cn-beijing.volces.com/api/v3"
         case .ollama: "http://localhost:11434/v1"
         case .lmstudio: "http://localhost:1234/v1"
@@ -224,7 +226,7 @@ enum AIProviderPreset: String, CaseIterable, Identifiable {
     var defaultThinking: AIThinkingMode {
         switch self {
         case .deepseek, .zhipu, .siliconflow, .volcengine, .kimi: .off
-        case .custom, .openai, .openrouter, .ollama, .lmstudio: .auto
+        case .custom, .openai, .openrouter, .requesty, .ollama, .lmstudio: .auto
         }
     }
 
@@ -237,6 +239,7 @@ enum AIProviderPreset: String, CaseIterable, Identifiable {
         case .zhipu: "glm-4-flash"
         case .siliconflow: "Qwen/Qwen2.5-7B-Instruct"
         case .openrouter: "openai/gpt-4o-mini"
+        case .requesty: "openai/gpt-4o-mini"
         case .volcengine: ""
         case .ollama: "llama3.1"
         case .lmstudio: ""
