@@ -2743,11 +2743,17 @@ struct QuickPanelView: View {
     }
 
     /// 访达当前文件夹。访达没响应时提示并返回 nil（面板留着，用户可以再按一次）；
-    /// 其他拿不到的情况（没授权控制访达等）交给 `fallback`。
+    /// 其他拿不到的情况（拒绝了控制访达等）交给 `fallback`。
     private func finderSelectedFolder(fallback: () -> Void = {}) -> URL? {
-        switch clipboardManager.getFinderSelectedFolder() {
+        let lookup = clipboardManager.getFinderSelectedFolder(beforeConsentPrompt: {
+            // 面板在 .statusBar 层级，会盖住系统授权框；置顶也收，焦点交还访达。
+            QuickPanelWindowController.shared.dismiss(force: true)
+        })
+        switch lookup {
         case .folder(let url):
             return url
+        case .consentNotGranted:
+            return nil
         case .notResponding:
             ToastCenter.shared.show(ToastDescriptor(message: L10n.tr("finder.notResponding"), icon: .info))
             return nil

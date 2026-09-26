@@ -1702,16 +1702,24 @@ final class ClipboardManager: ObservableObject {
 
     enum FinderFolderLookup {
         case folder(URL)
+        /// 刚弹过授权框，用户没允许（拒绝，或 60 秒内没点）。面板已经收起，调用方别再退回去
+        /// 粘贴。
+        case consentNotGranted
         /// 访达在限时内没回话。单独拎出来是为了让调用方提示用户，而不是退回去往访达里
         /// 粘图片数据——访达不收，等于按了回车什么都没发生。
         case notResponding
         case unavailable
     }
 
-    /// 同步 Apple Event，调用方都在主线程。AppleScript 不设上限时默认等 120 秒，访达一卡
-    /// （Spotlight 重建索引、LaunchServices 重启时常见）PasteMemo 就跟着转圈、退不出去（#92）。
-    /// 已授权时限 3 秒；还没问过授权时不限，否则系统弹「允许控制访达」那一下会被当成超时。
-    func getFinderSelectedFolder() -> FinderFolderLookup {
+    /// 同步 Apple Event，调用方都在主线程，所以两头都不能无限等（#92）：
+    /// - 还没授权时，访达收到事件要先等用户点系统的「允许控制访达」。授权框会被 .statusBar
+    ///   层级的快捷面板盖住，用户看不到，主线程就干等到 AppleScript 默认的 120 秒超时。所以
+    ///   发事件前先调 `beforeConsentPrompt` 收起面板，再同步等用户点：点了允许，这次粘贴
+    ///   接着完成。上限 60 秒。
+    /// - 已授权时限 3 秒，访达卡住（Spotlight 重建索引、LaunchServices 重启）也拖不死主线程。
+    func getFinderSelectedFolder(beforeConsentPrompt: () -> Void) -> FinderFolderLookup {
+        let consentPending = Self.finderAutomationConsentPending()
+        if consentPending { beforeConsentPrompt() }
         let body = """
         tell application "Finder"
             if (count of windows) > 0 then
@@ -1731,17 +1739,16 @@ final class ClipboardManager: ObservableObject {
             end if
         end tell
         """
-        let script = Self.finderAutomationConsentPending()
-            ? body
-            : "with timeout of 3 seconds\n\(body)\nend timeout"
-        guard let appleScript = NSAppleScript(source: script) else { return .unavailable }
+        let script = "with timeout of \(consentPending ? 60 : 3) seconds\n\(body)\nend timeout"
+        let failure: FinderFolderLookup = consentPending ? .consentNotGranted : .unavailable
+        guard let appleScript = NSAppleScript(source: script) else { return failure }
         var error: NSDictionary?
         let result = appleScript.executeAndReturnError(&error)
         if let error {
             let code = (error[NSAppleScript.errorNumber] as? NSNumber)?.intValue
-            return code == Int(errAETimeout) ? .notResponding : .unavailable
+            return code == Int(errAETimeout) && !consentPending ? .notResponding : failure
         }
-        guard let path = result.stringValue else { return .unavailable }
+        guard let path = result.stringValue else { return failure }
         return .folder(URL(fileURLWithPath: path))
     }
 
