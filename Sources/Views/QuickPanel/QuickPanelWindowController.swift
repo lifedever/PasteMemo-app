@@ -18,21 +18,27 @@ private let MIN_WIDTH: CGFloat = 360
 private let MIN_HEIGHT: CGFloat = 420
 private let PANEL_CORNER_RADIUS: CGFloat = 16
 
-/// Liquid Glass 面板那层亮度锁定底色的不透明度。这层铺在玻璃**下方**、被玻璃一起
-/// 采样折射，所以它只决定玻璃看到的「背景」有多亮，不会盖住玻璃自己的边缘折射与
-/// 高光。取值偏高是刻意的：面板本体要像 Raycast 那样安静，浮在它上面的三块玻璃
-/// （标签栏、底栏胶囊、⌘K 卡片）才是层次的来源；0.25 时面板整块吸环境色，彩色
-/// 背景前很「玻璃」但很吵，浮起元素反而分不出来。
-private let GLASS_CONTRAST_ALPHA: CGFloat = 0.7
+/// 面板染色层的不透明度：盖在 behindWindow 模糊之上，决定背后内容透进来多少。
+/// 取值参照 Raycast：黑底前面板本体跟背景几乎同色，彩色背景前能看到一点光晕。
+/// 浅色偏高，浅色内容前面板要安静，浮在上面的三块玻璃才是层次的来源。
+/// 深色实测（蓝色壁纸前，hudWindow 材质本身在深色下已偏实）：0.82 等于实心、
+/// 0.70 只剩一丝、0.60 能看到背后光晕而面板仍是深的、0.50 就太透。
+private let PANEL_LIGHT_TINT_ALPHA: CGFloat = 0.70
+private let PANEL_DARK_TINT_ALPHA: CGFloat = 0.60
 
-/// 把对比层底色朝黑压一档，两种外观都要压、系数不同。注意光降 GLASS_CONTRAST_ALPHA
-/// 治不了发白——那只是让背后内容透得更多，背后是白的结果还是白。
-///
+/// 染色层底色 = windowBackgroundColor 朝黑压一档，两种外观都要压、系数不同。
 /// 浅色：windowBackgroundColor 本身接近白，面板叠在浅色内容前会整个发白。
 /// 深色：windowBackgroundColor 停在中灰（约 #323232），浮起元素（tab 滑块、底栏
-/// 胶囊）跟它拉不开明度差，整片糊在一起；压到接近 #262626 后层次才出来。
-private let GLASS_LIGHT_DARKEN: CGFloat = 0.10
-private let GLASS_DARK_DARKEN: CGFloat = 0.25
+/// 胶囊）跟它拉不开明度差；0.4 压到 #1e1e1e，叠在黑底模糊上落到 Raycast 那种
+/// #1c1c1e 的沉黑。
+private let PANEL_LIGHT_DARKEN: CGFloat = 0.05
+private let PANEL_DARK_DARKEN: CGFloat = 0.40
+
+/// 面板四周 1px 细线。投影是自己画的散射（见 DiffuseShadow），没有系统投影那圈接触线，
+/// 轮廓要自己勾：深色白线、浅色黑线，都压得很淡。
+private let PANEL_DARK_BORDER_ALPHA: CGFloat = 0.12
+private let PANEL_LIGHT_BORDER_ALPHA: CGFloat = 0.25
+
 
 /// Below this width the preview pane is hidden and the list fills the full width.
 let QUICK_PANEL_PREVIEW_BREAKPOINT: CGFloat = 620
@@ -69,21 +75,38 @@ private class KeyablePanel: NSPanel {
     }
 }
 
-/// Liquid Glass 面板的亮度锁定层：铺在 NSGlassEffectView **之下**，作为玻璃采样的
-/// 背景的一部分，把玻璃看到的底色拉向 windowBackgroundColor，使其跟随外观而非背后
-/// 内容。放在玻璃下面而不是上面，玻璃的边缘折射、高光和环境取色才不会被它盖掉。
+/// 面板染色层：铺在 behindWindow 模糊之上、内容之下，把面板底色拉向
+/// windowBackgroundColor，使其跟随外观而非背后内容。
 /// 走 updateLayer 而不是一次性写 layer.backgroundColor —— CGColor 是解析过的静态
 /// 颜色，不会自己跟随深浅色切换，直接设一次会把面板永久留在切换前的底色上。
-private class GlassContrastView: NSView {
+private class PanelTintView: NSView {
     override var wantsUpdateLayer: Bool { true }
 
     override func updateLayer() {
         effectiveAppearance.performAsCurrentDrawingAppearance {
             let isDark = effectiveAppearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua
             let base = NSColor.windowBackgroundColor
-            let darken = isDark ? GLASS_DARK_DARKEN : GLASS_LIGHT_DARKEN
+            let darken = isDark ? PANEL_DARK_DARKEN : PANEL_LIGHT_DARKEN
+            let alpha = isDark ? PANEL_DARK_TINT_ALPHA : PANEL_LIGHT_TINT_ALPHA
             let tuned = base.blended(withFraction: darken, of: .black) ?? base
-            layer?.backgroundColor = tuned.withAlphaComponent(GLASS_CONTRAST_ALPHA).cgColor
+            layer?.backgroundColor = tuned.withAlphaComponent(alpha).cgColor
+        }
+    }
+}
+
+/// 面板容器：负责圆角裁切和四周的 1px 细线。细线挂在容器自己的 layer 上，CALayer 的
+/// border 画在所有 sublayer 之上，所以它压在模糊、染色和内容的外沿。同样走
+/// updateLayer 跟随深浅色，理由见 PanelTintView。
+private class PanelHostView: NSView {
+    override var wantsUpdateLayer: Bool { true }
+
+    override func updateLayer() {
+        effectiveAppearance.performAsCurrentDrawingAppearance {
+            let isDark = effectiveAppearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua
+            let border: NSColor = isDark
+                ? .white.withAlphaComponent(PANEL_DARK_BORDER_ALPHA)
+                : .black.withAlphaComponent(PANEL_LIGHT_BORDER_ALPHA)
+            layer?.borderColor = border.cgColor
         }
     }
 }
@@ -102,6 +125,8 @@ final class QuickPanelWindowController {
     static let shared = QuickPanelWindowController()
 
     private var panel: NSPanel?
+    /// 只画投影的透明子窗口，垫在面板下面，随面板移动；尺寸变了要 syncShadow 重画。
+    private var shadowPanel: NSPanel?
     /// ⌘K 菜单浮窗要挂成它的子窗口（跟随移动），所以需要对外暴露。
     var panelWindow: NSWindow? { panel }
     private var layoutState: QuickPanelLayoutState?
@@ -214,48 +239,38 @@ final class QuickPanelWindowController {
         guard let panel else { return }
 
         positionPanel(panel)
-
-        let shouldAnimate = isLaunchAnimationEnabled
-
-        if shouldAnimate {
-            // 起始状态：alpha 0 + scale 0.995（极轻微缩放）
-            panel.alphaValue = 0
-            if let layer = panel.contentView?.layer {
-                CATransaction.begin()
-                CATransaction.setDisableActions(true)
-                layer.removeAnimation(forKey: "showScale")
-                layer.transform = CATransform3DMakeScale(0.995, 0.995, 1)
-                CATransaction.commit()
-            }
-        } else {
-            panel.alphaValue = 1
-            if let layer = panel.contentView?.layer {
-                CATransaction.begin()
-                CATransaction.setDisableActions(true)
-                layer.removeAnimation(forKey: "showScale")
-                layer.transform = CATransform3DIdentity
-                CATransaction.commit()
+        // 对子窗口 orderOut 会把它从父窗口上摘掉（dismiss 里就是这么收的），所以每次
+        // 显示都要重新挂回去；不挂回去它就成了独立窗口，面板关了它还留着。
+        if let shadowPanel {
+            syncShadow(to: panel)
+            if shadowPanel.parent == nil {
+                panel.addChildWindow(shadowPanel, ordered: .below)
             }
         }
 
+        let shouldAnimate = isLaunchAnimationEnabled
+        // 入场只做淡入，不做缩放。之前面板内容有一个 0.995→1 的缩放：投影在另一个窗口
+        // 里，两个窗口的 layer 动画各自向窗口服务器提交，差一帧边线和投影就错开成重影；
+        // 投影不缩、只缩面板则边线从投影里「滑」出来。两个窗口都先在 alpha 0 时排好序，
+        // 再在同一个动画组里一起淡入，顺序上的一帧差看不见。
+        for layer in [panel.contentView?.layer, shadowPanel?.contentView?.layer].compactMap({ $0 }) {
+            layer.removeAnimation(forKey: "showScale")
+            layer.transform = CATransform3DIdentity
+        }
+        let startAlpha: CGFloat = shouldAnimate ? 0 : 1
+        panel.alphaValue = startAlpha
+        shadowPanel?.alphaValue = startAlpha
+
         panel.orderFrontRegardless()
         panel.makeKey()
+        shadowPanel?.order(.below, relativeTo: panel.windowNumber)
 
         if shouldAnimate {
-            // 动画到 alpha 1 + scale 1.0（仅作轻微空间引导，时长 0.1s）
-            NSAnimationContext.runAnimationGroup { ctx in
+            NSAnimationContext.runAnimationGroup { [shadowPanel] ctx in
                 ctx.duration = 0.1
                 ctx.timingFunction = CAMediaTimingFunction(name: .easeOut)
                 panel.animator().alphaValue = 1
-            }
-            if let layer = panel.contentView?.layer {
-                let anim = CABasicAnimation(keyPath: "transform")
-                anim.fromValue = CATransform3DMakeScale(0.995, 0.995, 1)
-                anim.toValue = CATransform3DIdentity
-                anim.duration = 0.1
-                anim.timingFunction = CAMediaTimingFunction(name: .easeOut)
-                layer.add(anim, forKey: "showScale")
-                layer.transform = CATransform3DIdentity
+                shadowPanel?.animator().alphaValue = 1
             }
         }
 
@@ -362,6 +377,8 @@ final class QuickPanelWindowController {
             child.animationBehavior = .none
             child.orderOut(nil)
         }
+        // 投影窗口不在子窗口列表里时（上面的 orderOut 已把它摘掉、或 show 没走完）也要收。
+        shadowPanel?.orderOut(nil)
         // 先通知视图清理状态（搜索文本、pill 等），强制 SwiftUI 完成一次重绘后再隐藏 panel；
         // 这样下次打开时首帧是干净状态，不会闪现上次的 `/` 建议浮层
         NotificationCenter.default.post(name: .quickPanelWillDismiss, object: nil)
@@ -460,7 +477,9 @@ final class QuickPanelWindowController {
         panel.isMovableByWindowBackground = true
         panel.backgroundColor = .clear
         panel.isOpaque = false
-        panel.hasShadow = true
+        // 投影由 shadowPanel 自绘（见 DiffuseShadow）：系统投影贴边那圈深色接触线在浅色
+        // 外观下就是一道黑边。
+        panel.hasShadow = false
         panel.hidesOnDeactivate = false
         panel.titleVisibility = .hidden
         panel.titlebarAppearsTransparent = true
@@ -480,71 +499,47 @@ final class QuickPanelWindowController {
         let hostingView = hosting.view
         hostingView.translatesAutoresizingMaskIntoConstraints = false
 
-        // macOS 26 走 Liquid Glass，但玻璃只负责边缘折射/高光/形态，亮度另有一层
-        // 锁死。166c650 那版把 hostingView 直接设成 glass.contentView，亮度全靠
-        // tintColor——而 tint 是「染色」（跟背景混合、保留背景亮度），不是 alpha
-        // 合成，所以探针里 tint 1.0 叠黑背景仍是中灰、黑字糊掉，ed71b8b 才整体回退。
-        // 这里改成 GlassContrastView 在下、glass 在上的分层：contrast 层成为玻璃
-        // 采样背景的一部分（glass 看到的是 a*windowBackground + (1-a)*窗口后方），
-        // 亮度可预测且跟随外观，而玻璃自己的折射、高光、取色完整保留在最上面。
+        // 面板本体不用 NSGlassEffectView。3cdba6f / 6f9faaf 两版试过「对比层在下、玻璃
+        // 在上」的分层，实测（2026-09-26，黑底 #151515 前）：对比层压到 #191919、alpha 0.5
+        // 之后面板本体仍停在 #2b2b2b，玻璃材质自己有一道亮度下限，顶边还带一条 8px 的
+        // 高光渐变；同一背景前 Raycast 面板是 #141415，跟背景几乎同色，全靠 1px 细线和
+        // 阴影勾轮廓。所以本体退回 Raycast 同款三层：背后内容模糊 + 跟随外观的染色层 +
+        // 1px 细线；浮在上面的标签栏、底栏胶囊、⌘K 卡片仍是玻璃，层次由它们提供。
         let panelFrame = NSRect(x: 0, y: 0, width: panelWidth, height: panelHeight)
-        let container: NSView
-        if #available(macOS 26.0, *) {
-            // 对比层做玻璃的「兄弟」而不是 tintColor：tint 是染色、保留背景亮度，
-            // 所以 tint 1.0 叠黑背景仍是中灰（ed71b8b 踩过）；兄弟层是普通 alpha
-            // 合成，亮度可预测。
-            let glassHost = NSView(frame: panelFrame)
-            glassHost.wantsLayer = true
-            glassHost.layer?.cornerRadius = PANEL_CORNER_RADIUS
-            glassHost.layer?.masksToBounds = true
+        let container = PanelHostView(frame: panelFrame)
+        container.wantsLayer = true
+        container.layer?.cornerRadius = PANEL_CORNER_RADIUS
+        container.layer?.masksToBounds = true
+        container.layer?.borderWidth = 1
 
-            // 对比层先加、位于玻璃下方：玻璃采样的是「窗口后方内容 + 这层底色」，
-            // 折射、边缘高光、环境取色都画在它之上。之前把它盖在玻璃上面，等于在
-            // 玻璃上贴了一层半透明磨砂膜，把玻璃的身份特征均匀削掉了一半。
-            let backdrop = GlassContrastView(frame: panelFrame)
-            backdrop.wantsLayer = true
-            backdrop.autoresizingMask = [.width, .height]
-            glassHost.addSubview(backdrop)
+        let blur = NSVisualEffectView(frame: panelFrame)
+        blur.material = .hudWindow
+        blur.blendingMode = .behindWindow
+        blur.state = .active
+        blur.autoresizingMask = [.width, .height]
+        container.addSubview(blur)
 
-            let glass = NSGlassEffectView(frame: panelFrame)
-            glass.cornerRadius = PANEL_CORNER_RADIUS
-            glass.autoresizingMask = [.width, .height]
-            glassHost.addSubview(glass)
+        let tint = PanelTintView(frame: panelFrame)
+        tint.wantsLayer = true
+        tint.autoresizingMask = [.width, .height]
+        container.addSubview(tint)
 
-            glassHost.addSubview(hostingView)
-            NSLayoutConstraint.activate([
-                hostingView.topAnchor.constraint(equalTo: glassHost.topAnchor),
-                hostingView.bottomAnchor.constraint(equalTo: glassHost.bottomAnchor),
-                hostingView.leadingAnchor.constraint(equalTo: glassHost.leadingAnchor),
-                hostingView.trailingAnchor.constraint(equalTo: glassHost.trailingAnchor),
-            ])
-            container = glassHost
-        } else {
-            let legacy = NSView(frame: panelFrame)
-            legacy.wantsLayer = true
-            legacy.layer?.cornerRadius = PANEL_CORNER_RADIUS
-            legacy.layer?.masksToBounds = true
-
-            let visualEffect = NSVisualEffectView(frame: legacy.bounds)
-            visualEffect.material = .headerView
-            visualEffect.blendingMode = .behindWindow
-            visualEffect.state = .active
-            visualEffect.autoresizingMask = [.width, .height]
-            legacy.addSubview(visualEffect)
-
-            legacy.addSubview(hostingView)
-            NSLayoutConstraint.activate([
-                hostingView.topAnchor.constraint(equalTo: legacy.topAnchor),
-                hostingView.bottomAnchor.constraint(equalTo: legacy.bottomAnchor),
-                hostingView.leadingAnchor.constraint(equalTo: legacy.leadingAnchor),
-                hostingView.trailingAnchor.constraint(equalTo: legacy.trailingAnchor),
-            ])
-            container = legacy
-        }
+        container.addSubview(hostingView)
+        NSLayoutConstraint.activate([
+            hostingView.topAnchor.constraint(equalTo: container.topAnchor),
+            hostingView.bottomAnchor.constraint(equalTo: container.bottomAnchor),
+            hostingView.leadingAnchor.constraint(equalTo: container.leadingAnchor),
+            hostingView.trailingAnchor.constraint(equalTo: container.trailingAnchor),
+        ])
         container.layoutSubtreeIfNeeded()
 
         panel.contentView = container
         panel.minSize = NSSize(width: MIN_WIDTH, height: MIN_HEIGHT)
+
+        let shadowPanel = DiffuseShadow.makePanel(level: panel.level)
+        panel.addChildWindow(shadowPanel, ordered: .below)
+        self.shadowPanel = shadowPanel
+        syncShadow(to: panel)
 
         // Save size when resized. warmUp runs once so registering here is safe;
         // we still track the token so a future rebuild path wouldn't duplicate writes.
@@ -555,16 +550,29 @@ final class QuickPanelWindowController {
             forName: NSWindow.didResizeNotification,
             object: panel,
             queue: .main
-        ) { [weak panel, weak state] _ in
+        ) { [weak self, weak panel, weak state] _ in
             Task { @MainActor in
-                guard let size = panel?.frame.size else { return }
+                guard let panel else { return }
+                let size = panel.frame.size
                 UserDefaults.standard.set(Double(size.width), forKey: "\(SIZE_KEY).width")
                 UserDefaults.standard.set(Double(size.height), forKey: "\(SIZE_KEY).height")
                 state?.width = size.width
+                self?.syncShadow(to: panel)
             }
         }
 
         return panel
+    }
+
+    /// 让投影子窗口跟上面板的大小。位置由 child window 机制自动跟随，只有尺寸变了
+    /// 才需要重画（散射范围按轮廓算，不能简单拉伸）。
+    private func syncShadow(to panel: NSPanel) {
+        guard let shadowPanel else { return }
+        let frame = panel.frame.insetBy(dx: -DiffuseShadow.pad, dy: -DiffuseShadow.pad)
+        if shadowPanel.contentView?.frame.size != frame.size {
+            shadowPanel.contentView = DiffuseShadow.makeView(size: frame.size, cornerRadius: PANEL_CORNER_RADIUS, contactLineInDark: true)
+        }
+        shadowPanel.setFrame(frame, display: true)
     }
 
     private func positionPanel(_ panel: NSPanel) {

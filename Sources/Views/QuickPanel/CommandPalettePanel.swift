@@ -35,7 +35,7 @@ final class CommandPalettePanel {
     private var onDismiss: (() -> Void)?
     private var occlusionObserver: NSObjectProtocol?
     /// 投影窗口比卡片大出的一圈，容纳投影的散射范围。
-    private static let shadowPad: CGFloat = 40
+    private static let shadowPad: CGFloat = DiffuseShadow.pad
     private static let cornerRadius: CGFloat = 16
 
     /// 主面板的 resignKey 监听用它判断「key 是被自家菜单拿走的」，不当成用户点了别处。
@@ -134,50 +134,13 @@ final class CommandPalettePanel {
         }
     }
 
-    /// 投影视图：一个只有 shadowPath 的 CALayer 让 CA 按卡片轮廓画散射，再用奇偶
-    /// 遮罩把卡片内部掏空，卡片底下是透明的、玻璃采样不到暗色。
+    /// 投影视图与投影窗口的做法见 DiffuseShadow，主面板共用。
     private static func makeShadowView(size: NSSize) -> NSView {
-        let view = NSView(frame: NSRect(origin: .zero, size: size))
-        view.wantsLayer = true
-        let cardRect = view.bounds.insetBy(dx: shadowPad, dy: shadowPad)
-        let cardPath = CGPath(roundedRect: cardRect, cornerWidth: cornerRadius, cornerHeight: cornerRadius, transform: nil)
-        let shadow = CALayer()
-        shadow.frame = view.bounds
-        shadow.shadowPath = cardPath
-        shadow.shadowColor = NSColor.black.cgColor
-        shadow.shadowOpacity = 0.30
-        shadow.shadowRadius = 22
-        shadow.shadowOffset = CGSize(width: 0, height: -8)
-        let hole = CAShapeLayer()
-        hole.frame = view.bounds
-        let maskPath = CGMutablePath()
-        maskPath.addRect(view.bounds)
-        maskPath.addPath(cardPath)
-        hole.path = maskPath
-        hole.fillRule = .evenOdd
-        shadow.mask = hole
-        view.layer?.addSublayer(shadow)
-        return view
+        DiffuseShadow.makeView(size: size, cornerRadius: cornerRadius)
     }
 
     private func makeShadowPanel() -> NSPanel {
-        let panel = NSPanel(
-            contentRect: .zero,
-            styleMask: [.borderless, .nonactivatingPanel],
-            backing: .buffered,
-            defer: false
-        )
-        panel.isFloatingPanel = true
-        panel.level = .statusBar + 1
-        panel.backgroundColor = .clear
-        panel.isOpaque = false
-        panel.hasShadow = false
-        panel.ignoresMouseEvents = true
-        panel.isMovable = false
-        panel.hidesOnDeactivate = false
-        panel.animationBehavior = .none
-        panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
-        return panel
+        DiffuseShadow.makePanel(level: .statusBar + 1)
     }
 
     /// 玻璃内容等窗口真正被窗口服务器合成之后再挂上去：新建的窗口在 `orderFront`
