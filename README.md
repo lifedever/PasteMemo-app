@@ -85,12 +85,21 @@
 - **Auto Trigger** -- Rules run silently when you copy. E.g., auto-clean tracking parameters from URLs.
 - **Manual Trigger** -- Apply transformations via the command palette or right-click menu.
 - **Built-in Rules** -- Clean URL tracking params, lowercase emails, remove blank lines, and more.
+- **Text Tools** -- Format / minify JSON, Base64, camelCase / snake_case, full-width / half-width, Simplified to Traditional Chinese, sort / dedupe / join lines, strip HTML tags, keep only the links or the verification code, recognize text in an image.
+- **Conditions** -- Content type, text, regex, length, line count, source app, the app you're pasting into, pinned / sensitive / group, time of day, day of week. Any condition can be negated.
+- **Where the Result Goes** -- Replace the clip, add a new clip, copy, paste into the front app, save to a folder, or POST to a webhook.
 
 ### Privacy & Security
 
 - **Sensitive Detection** -- Automatically detects passwords and sensitive data, masks them in the UI.
 - **Ignored Apps** -- Exclude specific apps (e.g., password managers) from clipboard monitoring.
+- **Sensitive Clip Expiry** -- Delete sensitive clips 10 minutes to 7 days after their last copy or paste.
 - **Open Source** -- Full source code available. You know exactly what runs on your Mac.
+
+### Shortcuts & Spotlight
+
+- **Actions** -- Open the Quick Panel, search clipboard history, get a recent clip, process text with an automation rule (AI rewrite included).
+- **Spotlight** -- The first three show up in Spotlight without setting anything up.
 
 ### AI Agent Bridge
 
