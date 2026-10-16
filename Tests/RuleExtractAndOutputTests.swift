@@ -129,6 +129,23 @@ struct RuleExtractAndOutputTests {
         #expect(ActionExecutor.lastSideEffects.links.isEmpty)
     }
 
+    @Test("openLink never turns a bare word into https://word")
+    func openLinkBareWord() {
+        #expect(ActionExecutor.linkToOpen(in: "hello") == nil)
+        #expect(ActionExecutor.linkToOpen(in: "README") == nil)
+        #expect(ActionExecutor.linkToOpen(in: "example.com/docs")?.host == "example.com")
+        #expect(ActionExecutor.linkToOpen(in: " https://example.com/a?b=1 ")?.absoluteString == "https://example.com/a?b=1")
+    }
+
+    @Test("saveToFile on an image without bytes fails instead of writing the placeholder")
+    func saveImageWithoutBytes() throws {
+        let folder = try makeTempFolder()
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let image = ClipItem(content: "[Image]", contentType: .image)
+        #expect(RuleOutputDelivery.save(text: "[Image]", of: image, asText: false, into: folder) == nil)
+        #expect(try FileManager.default.contentsOfDirectory(atPath: folder.path).isEmpty)
+    }
+
     @Test("Relay actions queue the processed text; split drops blank pieces")
     func relay() throws {
         let context = try makeContext()

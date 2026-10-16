@@ -655,11 +655,11 @@ struct AutomationRuleEditorView: View {
         let set: (RuleCondition) -> Void = { conditions[index].value = negated ? .not($0) : $0 }
         switch base {
         case .sourceApp(let bundleIDs):
-            appListRow(titleKey: "automation.condition.sourceApp", bundleIDs: bundleIDs, at: index) {
+            appListRow(titleKey: "automation.condition.sourceApp", bundleIDs: bundleIDs, condition: condition, at: index) {
                 set(.sourceApp(bundleIDs: $0))
             }
         case .targetApp(let bundleIDs):
-            appListRow(titleKey: "automation.condition.targetApp", bundleIDs: bundleIDs, at: index,
+            appListRow(titleKey: "automation.condition.targetApp", bundleIDs: bundleIDs, condition: condition, at: index,
                        note: L10n.tr("automation.condition.targetApp.help")) {
                 set(.targetApp(bundleIDs: $0))
             }
@@ -667,7 +667,7 @@ struct AutomationRuleEditorView: View {
             HStack {
                 conditionControls(base, set: set)
                 Spacer(minLength: 8)
-                negateToggle(at: index)
+                negateToggle(condition, at: index)
                 removeButton { conditions.remove(at: index) }
             }
         }
@@ -741,9 +741,10 @@ struct AutomationRuleEditorView: View {
         }
     }
 
-    /// "Not met" switch: flips the row between `base` and `.not(base)`.
-    private func negateToggle(at index: Int) -> some View {
-        let (base, negated) = conditions[index].value.unwrappedNegation
+    /// "Not met" switch: flips the row between `base` and `.not(base)`. Takes the
+    /// row's condition instead of reading `conditions[index]` while rendering.
+    private func negateToggle(_ condition: RuleCondition, at index: Int) -> some View {
+        let (base, negated) = condition.unwrappedNegation
         return Toggle(L10n.tr("automation.condition.negated"), isOn: Binding(
             get: { negated },
             set: { conditions[index].value = $0 ? .not(base) : base }
@@ -821,13 +822,13 @@ struct AutomationRuleEditorView: View {
     }
 
     @ViewBuilder
-    private func appListRow(titleKey: String, bundleIDs: [String], at index: Int, note: String? = nil,
-                            set: @escaping ([String]) -> Void) -> some View {
+    private func appListRow(titleKey: String, bundleIDs: [String], condition: RuleCondition, at index: Int,
+                            note: String? = nil, set: @escaping ([String]) -> Void) -> some View {
         VStack(alignment: .leading, spacing: bundleIDs.isEmpty ? 6 : 10) {
             HStack {
                 Text(L10n.tr(titleKey))
                 Spacer()
-                negateToggle(at: index)
+                negateToggle(condition, at: index)
                 removeButton { conditions.remove(at: index) }
             }
             if let note {

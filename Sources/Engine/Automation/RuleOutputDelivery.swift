@@ -50,7 +50,9 @@ enum RuleOutputDelivery {
         if asText {
             return ClipboardManager.shared.saveTextToFolder(text, folder: folder)
         }
-        if item.contentType == .image, let data = item.imageBytesForExport() {
+        if item.contentType == .image {
+            // No bytes → a failed save, not a .txt holding the "[Image]" placeholder.
+            guard let data = item.imageBytesForExport() else { return nil }
             return ClipboardManager.shared.saveImageToFolder(data, folder: folder)
         }
         if item.contentType.isFileBased {

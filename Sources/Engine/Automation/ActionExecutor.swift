@@ -313,10 +313,13 @@ enum ActionExecutor {
         }
     }
 
-    /// The result itself when it's a link, otherwise the first http(s) link in it.
-    /// Other schemes (file:, javascript:, app URLs) are never opened from a rule.
+    /// The result itself when it's an http(s) address, otherwise the first link found
+    /// in it. Not `URL.fromLinkString`: that prefixes https:// onto any bare word, so a
+    /// clip saying "hello" would open https://hello. Other schemes (file:, javascript:,
+    /// app URLs) are never opened from a rule.
     static func linkToOpen(in text: String) -> URL? {
-        if let url = URL.fromLinkString(text),
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        if let url = URL(string: trimmed),
            let scheme = url.scheme?.lowercased(), scheme == "http" || scheme == "https",
            url.host?.isEmpty == false {
             return url
