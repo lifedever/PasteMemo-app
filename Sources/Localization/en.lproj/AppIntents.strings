@@ -1,0 +1,21 @@
+/* Shortcuts / Spotlight action titles. Read by Shortcuts from the app bundle; copied there by scripts/appintents-metadata.sh. */
+
+"intent.openQuickPanel.title" = "Open Quick Panel";
+"intent.openQuickPanel.description" = "Opens the PasteMemo quick paste panel.";
+"intent.openQuickPanel.short" = "Quick Panel";
+"intent.searchClips.title" = "Search Clipboard History";
+"intent.searchClips.description" = "Returns text clips that contain the search text, most recently used first. Sensitive clips are left out.";
+"intent.searchClips.query" = "Search Text";
+"intent.searchClips.limit" = "Maximum Results";
+"intent.searchClips.short" = "Search History";
+"intent.recentClip.title" = "Get Recent Clip";
+"intent.recentClip.description" = "Returns the Nth most recent text clip; 1 is the latest. Sensitive clips are skipped.";
+"intent.recentClip.position" = "Position";
+"intent.recentClip.short" = "Latest Clip";
+"intent.rule.type" = "Automation Rule";
+"intent.processText.title" = "Process Text with Rule";
+"intent.processText.description" = "Runs the rule’s text actions, AI rewrite included, on the text and returns the result. Nothing is saved to history.";
+"intent.processText.rule" = "Rule";
+"intent.processText.text" = "Text";
+"intent.error.nothingFound" = "No matching clip.";
+"intent.error.ruleNotFound" = "That rule no longer exists.";

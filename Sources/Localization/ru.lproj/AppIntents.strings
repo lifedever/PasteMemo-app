@@ -1,0 +1,21 @@
+/* Shortcuts / Spotlight action titles. Read by Shortcuts from the app bundle; copied there by scripts/appintents-metadata.sh. */
+
+"intent.openQuickPanel.title" = "Открыть быструю панель";
+"intent.openQuickPanel.description" = "Открывает быструю панель вставки PasteMemo.";
+"intent.openQuickPanel.short" = "Быстрая панель";
+"intent.searchClips.title" = "Поиск в истории буфера";
+"intent.searchClips.description" = "Возвращает текстовые записи с искомым текстом, сначала недавние. Конфиденциальные записи не включаются.";
+"intent.searchClips.query" = "Текст для поиска";
+"intent.searchClips.limit" = "Максимум результатов";
+"intent.searchClips.short" = "Поиск";
+"intent.recentClip.title" = "Получить недавнюю запись";
+"intent.recentClip.description" = "Возвращает N-ю по новизне текстовую запись; 1 — самая новая. Конфиденциальные пропускаются.";
+"intent.recentClip.position" = "Номер";
+"intent.recentClip.short" = "Последняя запись";
+"intent.rule.type" = "Правило автоматизации";
+"intent.processText.title" = "Обработать текст правилом";
+"intent.processText.description" = "Применяет к тексту текстовые действия правила, включая ИИ-переписывание, и возвращает результат. В историю ничего не сохраняется.";
+"intent.processText.rule" = "Правило";
+"intent.processText.text" = "Текст";
+"intent.error.nothingFound" = "Подходящих записей нет.";
+"intent.error.ruleNotFound" = "Этого правила больше нет.";

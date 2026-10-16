@@ -297,6 +297,18 @@ struct RuleExtractAndOutputTests {
         #expect(normal.content == "hi")
     }
 
+    // MARK: - Shortcuts "process text with rule"
+
+    @Test("transformText runs the text transforms in order and ignores everything else")
+    func transformText() async throws {
+        let actions: [RuleAction] = [
+            .runOCR, .trimWhitespace, .toSnakeCase, .pin, .deleteItem, .runShortcut(name: "x"),
+            .addPrefix(text: "> "), .openLink,
+        ]
+        let result = try await ActionExecutor.transformText("  userName  ", with: actions)
+        #expect(result == "> user_name")
+    }
+
     // MARK: - Capture path
 
     @Test("capture: an output-only rule (no actions) still fires and carries its output")

@@ -165,21 +165,8 @@ enum ActionExecutor {
                     showedAIToast = true
                 }
                 do {
-                    if aiClientOverride == nil, AIProviderSettings.mode == .local {
-                        // A CLI takes no thinking/temperature knobs — it was configured
-                        // once, in its own settings, and reads none of ours.
-                        var cli = AIProviderSettings.cliSnapshot()
-                        if let timeout { cli.timeout = timeout }
-                        current = try await AICLIBackend(config: cli).transform(prompt: prompt, content: current)
-                    } else {
-                        var config = aiClientOverride?.config ?? AIProviderSettings.snapshot()
-                        if let thinking { config.thinking = thinking }
-                        if let temperature { config.temperature = temperature }
-                        if let timeout { config.timeout = timeout }
-                        let client = aiClientOverride.map { AIClient(config: config, transport: $0.transport) }
-                            ?? AIClient(config: config)
-                        current = try await client.transform(prompt: prompt, content: current)
-                    }
+                    current = try await runAI(prompt: prompt, thinking: thinking, temperature: temperature,
+                                              timeout: timeout, content: current)
                 } catch {
                     if showsToast { ToastCenter.shared.dismiss() }
                     toast((error as? AIError)?.userMessage ?? error.localizedDescription, icon: .info)
@@ -224,6 +211,51 @@ enum ActionExecutor {
             return
         }
         conclude(outcome, rule: rule, actions: actions, host: host, context: context)
+    }
+
+    /// One AI rewrite with the rule's per-action overrides on top of the global
+    /// settings. Shared by ⌘K and the Shortcuts "process text with rule" action.
+    static func runAI(prompt: String, thinking: AIThinkingMode?, temperature: Double?,
+                      timeout: Double?, content: String) async throws -> String {
+        if aiClientOverride == nil, AIProviderSettings.mode == .local {
+            // A CLI takes no thinking/temperature knobs — it was configured
+            // once, in its own settings, and reads none of ours.
+            var cli = AIProviderSettings.cliSnapshot()
+            if let timeout { cli.timeout = timeout }
+            return try await AICLIBackend(config: cli).transform(prompt: prompt, content: content)
+        }
+        var config = aiClientOverride?.config ?? AIProviderSettings.snapshot()
+        if let thinking { config.thinking = thinking }
+        if let temperature { config.temperature = temperature }
+        if let timeout { config.timeout = timeout }
+        let client = aiClientOverride.map { AIClient(config: config, transport: $0.transport) }
+            ?? AIClient(config: config)
+        return try await client.transform(prompt: prompt, content: content)
+    }
+
+    /// A rule's text work on a bare string — no clip, no output mode, no side effects.
+    /// Used by Shortcuts, which hands in text and wants text back. Shortcut actions are
+    /// skipped (a Shortcut calling a rule that runs a Shortcut would loop), and so is OCR
+    /// (there's no image). Throws the first AI failure.
+    static func transformText(_ text: String, with actions: [RuleAction]) async throws -> String {
+        var current = text
+        for action in actions where action.kind == .transform {
+            switch action {
+            case .aiTransform(let prompt, let thinking, let temperature, let timeout):
+                guard aiClientOverride != nil || AIProviderSettings.isConfigured else {
+                    throw AIError.notConfigured
+                }
+                try AITransformGuard.check(content: current, isSensitive: false, sourceAppBundleID: nil,
+                                           blockedBundleIDs: [])
+                current = try await runAI(prompt: prompt, thinking: thinking, temperature: temperature,
+                                          timeout: timeout, content: current)
+            case .runOCR:
+                continue
+            default:
+                current = action.execute(on: current)
+            }
+        }
+        return current
     }
 
     // MARK: - Shared tail

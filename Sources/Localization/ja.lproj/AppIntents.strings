@@ -1,0 +1,21 @@
+/* Shortcuts / Spotlight action titles. Read by Shortcuts from the app bundle; copied there by scripts/appintents-metadata.sh. */
+
+"intent.openQuickPanel.title" = "クイックパネルを開く";
+"intent.openQuickPanel.description" = "PasteMemo のクイックペーストパネルを開きます。";
+"intent.openQuickPanel.short" = "クイックパネル";
+"intent.searchClips.title" = "クリップボード履歴を検索";
+"intent.searchClips.description" = "検索語を含むテキスト項目を、最近使った順に返します。機密項目は含みません。";
+"intent.searchClips.query" = "検索語";
+"intent.searchClips.limit" = "最大件数";
+"intent.searchClips.short" = "履歴を検索";
+"intent.recentClip.title" = "最近の項目を取得";
+"intent.recentClip.description" = "N 番目に新しいテキスト項目を返します。1 が最新です。機密項目は飛ばします。";
+"intent.recentClip.position" = "何番目";
+"intent.recentClip.short" = "最新の項目";
+"intent.rule.type" = "自動化ルール";
+"intent.processText.title" = "ルールでテキストを処理";
+"intent.processText.description" = "ルールのテキスト処理（AI 書き換えを含む）をテキストに適用して結果を返します。履歴には保存しません。";
+"intent.processText.rule" = "ルール";
+"intent.processText.text" = "テキスト";
+"intent.error.nothingFound" = "該当する項目がありません。";
+"intent.error.ruleNotFound" = "このルールはもうありません。";

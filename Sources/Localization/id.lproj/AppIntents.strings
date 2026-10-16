@@ -1,0 +1,21 @@
+/* Shortcuts / Spotlight action titles. Read by Shortcuts from the app bundle; copied there by scripts/appintents-metadata.sh. */
+
+"intent.openQuickPanel.title" = "Buka Panel Cepat";
+"intent.openQuickPanel.description" = "Membuka panel tempel cepat PasteMemo.";
+"intent.openQuickPanel.short" = "Panel Cepat";
+"intent.searchClips.title" = "Cari riwayat papan klip";
+"intent.searchClips.description" = "Mengembalikan item teks yang berisi kata pencarian, yang terbaru dipakai lebih dulu. Item sensitif tidak disertakan.";
+"intent.searchClips.query" = "Teks pencarian";
+"intent.searchClips.limit" = "Hasil maksimum";
+"intent.searchClips.short" = "Cari riwayat";
+"intent.recentClip.title" = "Ambil item terbaru";
+"intent.recentClip.description" = "Mengembalikan item teks terbaru ke-N; 1 adalah yang terbaru. Item sensitif dilewati.";
+"intent.recentClip.position" = "Urutan";
+"intent.recentClip.short" = "Item terbaru";
+"intent.rule.type" = "Aturan otomatisasi";
+"intent.processText.title" = "Proses teks dengan aturan";
+"intent.processText.description" = "Menjalankan aksi teks aturan, termasuk tulis ulang AI, pada teks dan mengembalikan hasilnya. Tidak ada yang disimpan ke riwayat.";
+"intent.processText.rule" = "Aturan";
+"intent.processText.text" = "Teks";
+"intent.error.nothingFound" = "Tidak ada item yang cocok.";
+"intent.error.ruleNotFound" = "Aturan itu sudah tidak ada.";

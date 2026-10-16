@@ -1,0 +1,7 @@
+/* App Shortcut phrases (Siri / Spotlight). Keys are the English phrases in ShortcutsIntents.swift; keep ${applicationName}. */
+
+"Open ${applicationName}" = "Buka ${applicationName}";
+"Show ${applicationName} quick panel" = "Tampilkan panel cepat ${applicationName}";
+"Search ${applicationName}" = "Cari di ${applicationName}";
+"Search clipboard history in ${applicationName}" = "Cari riwayat papan klip di ${applicationName}";
+"Get the latest clip from ${applicationName}" = "Ambil item terbaru dari ${applicationName}";

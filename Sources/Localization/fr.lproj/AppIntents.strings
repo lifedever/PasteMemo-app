@@ -1,0 +1,21 @@
+/* Shortcuts / Spotlight action titles. Read by Shortcuts from the app bundle; copied there by scripts/appintents-metadata.sh. */
+
+"intent.openQuickPanel.title" = "Ouvrir le panneau rapide";
+"intent.openQuickPanel.description" = "Ouvre le panneau de collage rapide de PasteMemo.";
+"intent.openQuickPanel.short" = "Panneau rapide";
+"intent.searchClips.title" = "Rechercher dans l’historique";
+"intent.searchClips.description" = "Renvoie les éléments texte contenant la recherche, les plus récents en premier. Les éléments sensibles sont exclus.";
+"intent.searchClips.query" = "Texte recherché";
+"intent.searchClips.limit" = "Résultats maximum";
+"intent.searchClips.short" = "Rechercher";
+"intent.recentClip.title" = "Obtenir un élément récent";
+"intent.recentClip.description" = "Renvoie le N-ième élément texte le plus récent ; 1 est le dernier. Les éléments sensibles sont ignorés.";
+"intent.recentClip.position" = "Position";
+"intent.recentClip.short" = "Dernier élément";
+"intent.rule.type" = "Règle d’automatisation";
+"intent.processText.title" = "Traiter le texte avec une règle";
+"intent.processText.description" = "Applique au texte les actions de texte de la règle, réécriture IA comprise, et renvoie le résultat. Rien n’est enregistré dans l’historique.";
+"intent.processText.rule" = "Règle";
+"intent.processText.text" = "Texte";
+"intent.error.nothingFound" = "Aucun élément correspondant.";
+"intent.error.ruleNotFound" = "Cette règle n’existe plus.";

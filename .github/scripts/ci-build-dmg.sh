@@ -35,6 +35,9 @@ ENTITLEMENTS="$ROOT_DIR/.github/scripts/release-entitlements.plist"
 
 cd "$ROOT_DIR"
 
+# Shortcuts / Spotlight actions: extra compiler flags + a metadata step before signing.
+source "$ROOT_DIR/scripts/appintents-metadata.sh"
+
 echo "📦 Building $APP_NAME v$VERSION (signed) ..."
 
 # Clean every intermediate output, including the dmg staging dirs — a stale
@@ -97,7 +100,7 @@ build_arch() {
 
     echo "  Building for $ARCH..."
     # -Osize: workaround for Swift 6.3 compiler crash in CopyPropagation pass (Xcode 26 beta)
-    swift build -c release --arch "$ARCH" -Xswiftc -Osize 2>&1
+    swift build -c release --arch "$ARCH" -Xswiftc -Osize "${APPINTENTS_SWIFTC_FLAGS[@]}" 2>&1
 
     local BIN_PATH
     BIN_PATH=$(swift build -c release --arch "$ARCH" -Xswiftc -Osize --show-bin-path)
@@ -105,7 +108,7 @@ build_arch() {
     cp "$BIN_PATH/$APP_NAME" "$APP_BUNDLE/Contents/MacOS/$APP_NAME"
 
     # Build and install the MCP CLI proxy alongside the main binary.
-    swift build -c release --arch "$ARCH" -Xswiftc -Osize --product pastememo-mcp 2>&1
+    swift build -c release --arch "$ARCH" -Xswiftc -Osize --product pastememo-mcp "${APPINTENTS_SWIFTC_FLAGS[@]}" 2>&1
     cp "$BIN_PATH/pastememo-mcp" "$APP_BUNDLE/Contents/MacOS/pastememo-mcp"
     chmod +x "$APP_BUNDLE/Contents/MacOS/pastememo-mcp"
 
@@ -153,11 +156,11 @@ PLIST
     mkdir -p "$APP_BUNDLE/Contents/Resources"
     cp "Sources/Resources/AppIcon.icns" "$APP_BUNDLE/Contents/Resources/AppIcon.icns"
 
-    # Empty <lang>.lproj markers advertise supported localizations to macOS.
-    # Enumerate them from the source tree instead of a hardcoded list.
-    for lproj in Sources/Localization/*.lproj; do
-        [ -d "$lproj" ] && mkdir -p "$APP_BUNDLE/Contents/Resources/$(basename "$lproj")"
-    done
+    # <lang>.lproj per Sources/Localization language advertises supported
+    # localizations to macOS and carries the Shortcuts action titles; then the
+    # Shortcuts metadata. Both inside Contents/Resources, before signing.
+    appintents_install_strings "$APP_BUNDLE"
+    appintents_install_metadata "$BIN_PATH" "$ARCH" "$APP_BUNDLE"
 
     # Copy every SwiftPM resource bundle (main target + deps like PermissionFlow;
     # missing one SIGTRAPs at Bundle.module — issue #34). Unlike the local

@@ -1,0 +1,21 @@
+/* Shortcuts / Spotlight action titles. Read by Shortcuts from the app bundle; copied there by scripts/appintents-metadata.sh. */
+
+"intent.openQuickPanel.title" = "빠른 패널 열기";
+"intent.openQuickPanel.description" = "PasteMemo 빠른 붙여넣기 패널을 엽니다.";
+"intent.openQuickPanel.short" = "빠른 패널";
+"intent.searchClips.title" = "클립보드 기록 검색";
+"intent.searchClips.description" = "검색어가 포함된 텍스트 항목을 최근 사용 순으로 반환합니다. 민감한 항목은 제외됩니다.";
+"intent.searchClips.query" = "검색어";
+"intent.searchClips.limit" = "최대 결과 수";
+"intent.searchClips.short" = "기록 검색";
+"intent.recentClip.title" = "최근 항목 가져오기";
+"intent.recentClip.description" = "N번째로 최근 텍스트 항목을 반환합니다. 1이 가장 최근입니다. 민감한 항목은 건너뜁니다.";
+"intent.recentClip.position" = "순서";
+"intent.recentClip.short" = "최신 항목";
+"intent.rule.type" = "자동화 규칙";
+"intent.processText.title" = "규칙으로 텍스트 처리";
+"intent.processText.description" = "규칙의 텍스트 동작(AI 다시 쓰기 포함)을 텍스트에 적용해 결과를 반환합니다. 기록에는 저장하지 않습니다.";
+"intent.processText.rule" = "규칙";
+"intent.processText.text" = "텍스트";
+"intent.error.nothingFound" = "해당하는 항목이 없습니다.";
+"intent.error.ruleNotFound" = "이 규칙은 더 이상 없습니다.";

@@ -1,0 +1,21 @@
+/* Shortcuts / Spotlight action titles. Read by Shortcuts from the app bundle; copied there by scripts/appintents-metadata.sh. */
+
+"intent.openQuickPanel.title" = "打開快速面板";
+"intent.openQuickPanel.description" = "打開 PasteMemo 的快速貼上面板。";
+"intent.openQuickPanel.short" = "快速面板";
+"intent.searchClips.title" = "搜尋剪貼簿歷史";
+"intent.searchClips.description" = "傳回包含搜尋文字的文字項目，最近用過的在前。敏感項目不傳回。";
+"intent.searchClips.query" = "搜尋文字";
+"intent.searchClips.limit" = "最多傳回";
+"intent.searchClips.short" = "搜尋歷史";
+"intent.recentClip.title" = "取得最近的項目";
+"intent.recentClip.description" = "傳回第 N 近的文字項目，1 是最新一筆。略過敏感項目。";
+"intent.recentClip.position" = "第幾筆";
+"intent.recentClip.short" = "最新項目";
+"intent.rule.type" = "自動化規則";
+"intent.processText.title" = "用規則處理文字";
+"intent.processText.description" = "用規則裡的文字動作（包括 AI 改寫）處理這段文字並傳回結果，不寫入歷史。";
+"intent.processText.rule" = "規則";
+"intent.processText.text" = "文字";
+"intent.error.nothingFound" = "沒有符合條件的項目。";
+"intent.error.ruleNotFound" = "這條規則已經不在了。";
