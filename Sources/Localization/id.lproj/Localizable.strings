@@ -1081,3 +1081,11 @@ Gunakan %@ untuk menempel satu per satu.";
 "automation.condition.timeOfDay" = "Jam";
 "automation.condition.weekday" = "Hari";
 "automation.condition.negated" = "Tidak terpenuhi";
+
+/* Privacy: sensitive retention */
+"settings.privacy.sensitiveRetention" = "Simpan item sensitif";
+"settings.privacy.sensitiveRetention.followHistory" = "Sama seperti riwayat";
+"settings.privacy.sensitiveRetention.minutes" = "%d menit";
+"settings.privacy.sensitiveRetention.hours" = "%d jam";
+"settings.privacy.sensitiveRetention.hint" = "Dihitung sejak salin atau tempel terakhir, lalu dihapus. Item yang disematkan dan item di grup simpan permanen tetap ada.";
+"settings.privacy.sensitiveRetention.cleanConfirm" = "%d item sensitif akan dihapus";

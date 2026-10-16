@@ -1071,3 +1071,11 @@ Usa %@ per incollare uno per uno.";
 "automation.condition.timeOfDay" = "Fascia oraria";
 "automation.condition.weekday" = "Giorno della settimana";
 "automation.condition.negated" = "Non soddisfatta";
+
+/* Privacy: sensitive retention */
+"settings.privacy.sensitiveRetention" = "Conserva elementi sensibili";
+"settings.privacy.sensitiveRetention.followHistory" = "Come la cronologia";
+"settings.privacy.sensitiveRetention.minutes" = "%d minuti";
+"settings.privacy.sensitiveRetention.hours" = "%d ore";
+"settings.privacy.sensitiveRetention.hint" = "Conteggiato dall’ultima copia o incolla, poi eliminato. Restano gli elementi fissati e quelli nei gruppi conservati per sempre.";
+"settings.privacy.sensitiveRetention.cleanConfirm" = "Verranno eliminati %d elementi sensibili";

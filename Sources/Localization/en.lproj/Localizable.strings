@@ -1055,3 +1055,11 @@
 "automation.condition.timeOfDay" = "Time of day";
 "automation.condition.weekday" = "Day of week";
 "automation.condition.negated" = "Not met";
+
+/* Privacy: sensitive retention */
+"settings.privacy.sensitiveRetention" = "Keep sensitive clips";
+"settings.privacy.sensitiveRetention.followHistory" = "Same as history";
+"settings.privacy.sensitiveRetention.minutes" = "%d minutes";
+"settings.privacy.sensitiveRetention.hours" = "%d hour(s)";
+"settings.privacy.sensitiveRetention.hint" = "Counted from the last copy or paste, then deleted. Pinned clips and clips in groups kept permanently stay.";
+"settings.privacy.sensitiveRetention.cleanConfirm" = "%d sensitive clips will be deleted";

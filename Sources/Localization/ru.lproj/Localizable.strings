@@ -1081,3 +1081,11 @@
 "automation.condition.timeOfDay" = "Время суток";
 "automation.condition.weekday" = "День недели";
 "automation.condition.negated" = "Не выполнено";
+
+/* Privacy: sensitive retention */
+"settings.privacy.sensitiveRetention" = "Хранить конфиденциальные записи";
+"settings.privacy.sensitiveRetention.followHistory" = "Как история";
+"settings.privacy.sensitiveRetention.minutes" = "%d мин";
+"settings.privacy.sensitiveRetention.hours" = "%d ч";
+"settings.privacy.sensitiveRetention.hint" = "Отсчитывается от последнего копирования или вставки, затем запись удаляется. Закреплённые записи и записи в бессрочных группах остаются.";
+"settings.privacy.sensitiveRetention.cleanConfirm" = "Будет удалено конфиденциальных записей: %d";

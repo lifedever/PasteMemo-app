@@ -1136,6 +1136,7 @@ struct PrivacyTab: View {
                 Text(L10n.tr("settings.privacy.sensitiveHint"))
                     .font(.callout)
                     .foregroundStyle(.tertiary)
+                SensitiveRetentionRow()
             }
 
             IgnoredAppsSection()
@@ -1149,6 +1150,73 @@ struct PrivacyTab: View {
             }
         }
         .formStyle(.grouped)
+    }
+}
+
+/// How long sensitive clips are kept. Bound to a local copy, not `@AppStorage`: a
+/// shorter limit is only written once the user confirms deleting what it expires —
+/// the sweep runs as soon as the value lands.
+private struct SensitiveRetentionRow: View {
+    @Environment(\.modelContext) private var modelContext
+    @State private var selection = SensitiveRetention.minutes
+    @State private var pendingMinutes: Int?
+    @State private var pendingCount = 0
+
+    var body: some View {
+        Picker(L10n.tr("settings.privacy.sensitiveRetention"), selection: Binding(
+            get: { selection },
+            set: { choose($0) }
+        )) {
+            ForEach(SensitiveRetention.OPTIONS, id: \.self) { minutes in
+                Text(Self.label(minutes)).tag(minutes)
+            }
+        }
+        .alert(
+            L10n.tr("settings.privacy.sensitiveRetention.cleanConfirm", pendingCount),
+            isPresented: Binding(get: { pendingMinutes != nil }, set: { if !$0 { pendingMinutes = nil } })
+        ) {
+            Button(L10n.tr("action.delete"), role: .destructive) {
+                let minutes = pendingMinutes
+                pendingMinutes = nil
+                // After the alert has closed — same reason as the history retention
+                // cleanup: its close animation touches the rows being deleted.
+                DispatchQueue.main.async { if let minutes { commit(minutes) } }
+            }
+            Button(L10n.tr("action.cancel"), role: .cancel) { pendingMinutes = nil }
+        } message: {
+            Text(L10n.tr("settings.retentionDays.cleanWarning"))
+        }
+        Text(L10n.tr("settings.privacy.sensitiveRetention.hint"))
+            .font(.callout)
+            .foregroundStyle(.tertiary)
+    }
+
+    private func choose(_ minutes: Int) {
+        if let cutoff = SensitiveRetention.cutoff(minutes: minutes) {
+            let count = SensitiveRetention.expiredItems(in: modelContext, cutoff: cutoff).count
+            if count > 0 {
+                pendingCount = count
+                pendingMinutes = minutes
+                return
+            }
+        }
+        commit(minutes)
+    }
+
+    private func commit(_ minutes: Int) {
+        selection = minutes
+        UserDefaults.standard.set(minutes, forKey: SensitiveRetention.MINUTES_KEY)
+        ClipboardManager.shared.updateSensitiveSweep()
+        ClipboardManager.shared.sweepSensitiveNow()
+    }
+
+    private static func label(_ minutes: Int) -> String {
+        switch minutes {
+        case 0: return L10n.tr("settings.privacy.sensitiveRetention.followHistory")
+        case ..<60: return L10n.tr("settings.privacy.sensitiveRetention.minutes", minutes)
+        case ..<1440: return L10n.tr("settings.privacy.sensitiveRetention.hours", minutes / 60)
+        default: return L10n.tr("settings.retentionDays.days", minutes / 1440)
+        }
     }
 }
 

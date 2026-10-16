@@ -1093,3 +1093,11 @@ Verwenden Sie %@ zum Einfügen.";
 "automation.condition.timeOfDay" = "Uhrzeit";
 "automation.condition.weekday" = "Wochentag";
 "automation.condition.negated" = "Nicht erfüllt";
+
+/* Privacy: sensitive retention */
+"settings.privacy.sensitiveRetention" = "Sensible Einträge behalten";
+"settings.privacy.sensitiveRetention.followHistory" = "Wie Verlauf";
+"settings.privacy.sensitiveRetention.minutes" = "%d Minuten";
+"settings.privacy.sensitiveRetention.hours" = "%d Std.";
+"settings.privacy.sensitiveRetention.hint" = "Ab dem letzten Kopieren oder Einfügen gezählt, danach gelöscht. Angeheftete Einträge und Einträge in dauerhaft behaltenen Gruppen bleiben.";
+"settings.privacy.sensitiveRetention.cleanConfirm" = "%d sensible Einträge werden gelöscht";

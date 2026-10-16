@@ -1111,3 +1111,11 @@ Usa %@ para pegar uno por uno.";
 "automation.condition.timeOfDay" = "Franja horaria";
 "automation.condition.weekday" = "Día de la semana";
 "automation.condition.negated" = "No se cumple";
+
+/* Privacy: sensitive retention */
+"settings.privacy.sensitiveRetention" = "Conservar elementos sensibles";
+"settings.privacy.sensitiveRetention.followHistory" = "Igual que el historial";
+"settings.privacy.sensitiveRetention.minutes" = "%d minutos";
+"settings.privacy.sensitiveRetention.hours" = "%d h";
+"settings.privacy.sensitiveRetention.hint" = "Se cuenta desde la última copia o pegado y después se elimina. Los elementos fijados y los de grupos que se conservan siempre se mantienen.";
+"settings.privacy.sensitiveRetention.cleanConfirm" = "Se eliminarán %d elementos sensibles";

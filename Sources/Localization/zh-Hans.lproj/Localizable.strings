@@ -1055,3 +1055,11 @@
 "automation.condition.timeOfDay" = "时间段";
 "automation.condition.weekday" = "星期";
 "automation.condition.negated" = "不满足";
+
+/* Privacy: sensitive retention */
+"settings.privacy.sensitiveRetention" = "敏感条目保留";
+"settings.privacy.sensitiveRetention.followHistory" = "跟随保留时长";
+"settings.privacy.sensitiveRetention.minutes" = "%d 分钟";
+"settings.privacy.sensitiveRetention.hours" = "%d 小时";
+"settings.privacy.sensitiveRetention.hint" = "从最后一次复制或粘贴算起，到时自动删除。置顶和永久保留分组里的条目不删。";
+"settings.privacy.sensitiveRetention.cleanConfirm" = "将删除 %d 条敏感条目";

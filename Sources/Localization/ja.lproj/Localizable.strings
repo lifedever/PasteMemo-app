@@ -1107,3 +1107,11 @@
 "automation.condition.timeOfDay" = "時間帯";
 "automation.condition.weekday" = "曜日";
 "automation.condition.negated" = "満たさない";
+
+/* Privacy: sensitive retention */
+"settings.privacy.sensitiveRetention" = "機密項目の保持期間";
+"settings.privacy.sensitiveRetention.followHistory" = "履歴と同じ";
+"settings.privacy.sensitiveRetention.minutes" = "%d 分";
+"settings.privacy.sensitiveRetention.hours" = "%d 時間";
+"settings.privacy.sensitiveRetention.hint" = "最後にコピーまたは貼り付けした時点から数え、期間が過ぎると削除します。ピン留めと永久保存グループの項目は残ります。";
+"settings.privacy.sensitiveRetention.cleanConfirm" = "%d 件の機密項目を削除します";

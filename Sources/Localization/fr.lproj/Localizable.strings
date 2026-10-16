@@ -1111,3 +1111,11 @@ Utilisez %@ pour coller un par un.";
 "automation.condition.timeOfDay" = "Plage horaire";
 "automation.condition.weekday" = "Jour de la semaine";
 "automation.condition.negated" = "Non rempli";
+
+/* Privacy: sensitive retention */
+"settings.privacy.sensitiveRetention" = "Conserver les éléments sensibles";
+"settings.privacy.sensitiveRetention.followHistory" = "Comme l’historique";
+"settings.privacy.sensitiveRetention.minutes" = "%d minutes";
+"settings.privacy.sensitiveRetention.hours" = "%d h";
+"settings.privacy.sensitiveRetention.hint" = "Compté depuis la dernière copie ou le dernier collage, puis supprimé. Les éléments épinglés et ceux des groupes conservés en permanence restent.";
+"settings.privacy.sensitiveRetention.cleanConfirm" = "%d éléments sensibles seront supprimés";

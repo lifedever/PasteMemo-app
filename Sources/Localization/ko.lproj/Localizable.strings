@@ -1109,3 +1109,11 @@
 "automation.condition.timeOfDay" = "시간대";
 "automation.condition.weekday" = "요일";
 "automation.condition.negated" = "충족 안 함";
+
+/* Privacy: sensitive retention */
+"settings.privacy.sensitiveRetention" = "민감한 항목 보관";
+"settings.privacy.sensitiveRetention.followHistory" = "기록과 동일";
+"settings.privacy.sensitiveRetention.minutes" = "%d분";
+"settings.privacy.sensitiveRetention.hours" = "%d시간";
+"settings.privacy.sensitiveRetention.hint" = "마지막으로 복사하거나 붙여넣은 때부터 계산해 기간이 지나면 삭제합니다. 고정된 항목과 영구 보관 그룹의 항목은 남습니다.";
+"settings.privacy.sensitiveRetention.cleanConfirm" = "민감한 항목 %d개가 삭제됩니다";

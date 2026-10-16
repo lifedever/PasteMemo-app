@@ -1067,3 +1067,11 @@
 "automation.condition.timeOfDay" = "時段";
 "automation.condition.weekday" = "星期";
 "automation.condition.negated" = "不滿足";
+
+/* Privacy: sensitive retention */
+"settings.privacy.sensitiveRetention" = "敏感項目保留";
+"settings.privacy.sensitiveRetention.followHistory" = "跟隨保留時長";
+"settings.privacy.sensitiveRetention.minutes" = "%d 分鐘";
+"settings.privacy.sensitiveRetention.hours" = "%d 小時";
+"settings.privacy.sensitiveRetention.hint" = "從最後一次複製或貼上算起，到時自動刪除。置頂和永久保留分組裡的項目不刪。";
+"settings.privacy.sensitiveRetention.cleanConfirm" = "將刪除 %d 筆敏感項目";

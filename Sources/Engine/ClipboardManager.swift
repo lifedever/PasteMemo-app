@@ -1047,6 +1047,7 @@ final class ClipboardManager: ObservableObject {
     }
 
     private func cleanExpiredItems(in context: ModelContext) {
+        purgeExpiredSensitiveItems(in: context)
         guard let cutoff = ProManager.shared.retentionCutoffDate else { return }
 
         let candidates = Self.fetchExpiredCandidates(in: context, cutoff: cutoff)
@@ -1055,7 +1056,47 @@ final class ClipboardManager: ObservableObject {
         let preservedGroupNames = SmartGroupRetention.preservedGroupNames(in: context)
         let expiredItems = SmartGroupRetention.filterDeletableItems(candidates, preservedGroupNames: preservedGroupNames)
         guard !expiredItems.isEmpty else { return }
+        deleteExpired(expiredItems, in: context)
+    }
 
+    // MARK: - Sensitive retention
+
+    private var sensitiveSweepTimer: Timer?
+
+    /// Sweeps expired sensitive clips once a minute while a sensitive retention is
+    /// set — a 10-minute limit can't wait for the next copy to be enforced. Cheap to
+    /// call repeatedly; starts / stops the timer only when the setting flips.
+    func updateSensitiveSweep() {
+        let active = SensitiveRetention.minutes > 0
+        if active, sensitiveSweepTimer == nil {
+            sensitiveSweepTimer = Timer.scheduledTimer(withTimeInterval: 60, repeats: true) { [weak self] _ in
+                Task { @MainActor in self?.sweepSensitiveNow() }
+            }
+            sweepSensitiveNow()
+        } else if !active, let timer = sensitiveSweepTimer {
+            timer.invalidate()
+            sensitiveSweepTimer = nil
+        }
+    }
+
+    func sweepSensitiveNow() {
+        guard let container = modelContainer else { return }
+        let context = container.mainContext
+        if purgeExpiredSensitiveItems(in: context) > 0 {
+            ClipItemStore.saveAndNotify(context)
+        }
+    }
+
+    @discardableResult
+    func purgeExpiredSensitiveItems(in context: ModelContext) -> Int {
+        guard let cutoff = SensitiveRetention.cutoff() else { return 0 }
+        let expired = SensitiveRetention.expiredItems(in: context, cutoff: cutoff)
+        guard !expired.isEmpty else { return 0 }
+        deleteExpired(expired, in: context)
+        return expired.count
+    }
+
+    private func deleteExpired(_ expiredItems: [ClipItem], in context: ModelContext) {
         let hasGroupedItems = expiredItems.contains { $0.groupName != nil }
         // Expiry is permanent (never undoable) — reclaim each clip's original-bytes cache
         // file now rather than leaving it for the next launch sweep.
