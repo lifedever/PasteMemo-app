@@ -214,6 +214,8 @@ struct AutomationManagerView: View {
             conditions: rule.conditions,
             actions: rule.actions
         )
+        copy.outputMode = rule.outputMode
+        copy.outputParam = rule.outputParam
         modelContext.insert(copy)
         try? modelContext.save()
         selectedRuleID = copy.ruleID

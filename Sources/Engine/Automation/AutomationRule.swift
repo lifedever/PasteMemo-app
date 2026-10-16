@@ -26,14 +26,25 @@ enum RuleOutputMode: String, Codable, Sendable, CaseIterable {
     case clipboard
     /// Write to the pasteboard and paste into the app the panel was opened from.
     case pasteToFrontmost
+    /// Write the result into the folder in `outputParam` (text → .txt, image /
+    /// file clips → their bytes). On capture the clip is stored as well.
+    case saveToFile
+    /// POST the result as JSON to the URL in `outputParam`. On capture the clip is
+    /// stored as well. Sensitive clips are never sent.
+    case postWebhook
 
     /// On capture there is no paste target and the clip is being created anyway,
     /// so the only question is whether to mirror the result to the pasteboard.
     var mirrorsToPasteboardOnCapture: Bool {
         switch self {
         case .clipboard, .pasteToFrontmost: return true
-        case .replaceItem, .newItem: return false
+        case .replaceItem, .newItem, .saveToFile, .postWebhook: return false
         }
+    }
+
+    /// Modes that need `outputParam` (a folder path / a URL).
+    var needsParameter: Bool {
+        self == .saveToFile || self == .postWebhook
     }
 }
 
@@ -52,6 +63,9 @@ final class AutomationRule {
     /// fallback when `outputModeRaw` is empty (rules created before the field existed).
     var writeBackToPasteboard: Bool = false
     var outputModeRaw: String = ""
+    /// Parameter of the output mode: folder path for `.saveToFile`, URL for
+    /// `.postWebhook`. Empty for the other modes.
+    var outputParam: String = ""
     var conditionLogicRaw: String = ConditionLogic.all.rawValue
     var conditionsData: Data = Data()
     var actionsData: Data = Data()
@@ -142,9 +156,21 @@ final class AutomationRule {
             )
             guard ok else { return false }
         }
+        // Output-only rule ("save to folder" with no actions): the output is the work.
+        // A webhook only sends text.
+        if actions.isEmpty {
+            switch outputMode {
+            case .saveToFile: return true
+            case .postWebhook: return item.contentType.isMergeable
+            default: return false
+            }
+        }
         // An AI rewrite needs text; offering it on an image would only run the
-        // metadata leftovers and silently skip the part the rule is about.
-        if !item.contentType.isMergeable, actions.contains(where: { $0.isAsync && $0.inputKind == .text }) {
+        // metadata leftovers and silently skip the part the rule is about — unless
+        // the chain recognises the image's text first.
+        let yieldsText = item.contentType.isMergeable
+            || (item.contentType == .image && actions.contains(.runOCR))
+        if !yieldsText, actions.contains(where: { $0.isAsync && $0.inputKind == .text }) {
             return false
         }
         return actions.contains { $0.inputKind.accepts(item.contentType) }

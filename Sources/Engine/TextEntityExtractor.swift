@@ -104,6 +104,25 @@ enum TextEntityExtractor {
         types: NSTextCheckingResult.CheckingType.link.rawValue
     )
 
+    /// Every http(s) link in `text`, in order, duplicates dropped. Unlike the panel
+    /// rows (`entities(in:)`) there's no per-host or count cap and a text that is
+    /// one bare link still yields it: the "keep only links" rule action wants all of them.
+    static func linkURLs(in text: String) -> [String] {
+        guard let detector = linkDetector, !text.isEmpty else { return [] }
+        let ns = text as NSString
+        var seen = Set<String>()
+        var result: [String] = []
+        for match in detector.matches(in: text, range: NSRange(location: 0, length: ns.length)) {
+            guard let url = match.url,
+                  let scheme = url.scheme?.lowercased(), scheme == "http" || scheme == "https",
+                  url.host?.isEmpty == false else { continue }
+            let raw = ns.substring(with: match.range)
+            guard raw.contains("://") || !URL.looksLikeFilename(raw) else { continue }
+            if seen.insert(url.absoluteString).inserted { result.append(url.absoluteString) }
+        }
+        return result
+    }
+
     private static func links(in text: String) -> [Entity] {
         guard let detector = linkDetector else { return [] }
         let ns = text as NSString

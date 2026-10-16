@@ -50,6 +50,8 @@ struct ExportRule: Codable {
     /// Absent in files written before output modes existed; falls back to
     /// `writeBackToPasteboard` on import.
     let outputModeRaw: String?
+    /// Folder / URL for the save-to-file and webhook outputs; absent in older files.
+    let outputParam: String?
     let conditionLogicRaw: String
     let conditionsDataBase64: String
     let actionsDataBase64: String
@@ -361,6 +363,7 @@ enum DataPorter {
             notifyOnTrigger: rule.notifyOnTrigger,
             writeBackToPasteboard: rule.writeBackToPasteboard,
             outputModeRaw: rule.outputModeRaw,
+            outputParam: rule.outputParam,
             conditionLogicRaw: rule.conditionLogicRaw,
             conditionsDataBase64: rule.conditionsData.base64EncodedString(),
             actionsDataBase64: rule.actionsData.base64EncodedString(),
@@ -464,6 +467,7 @@ enum DataPorter {
             rule.notifyOnTrigger = exp.notifyOnTrigger
             rule.writeBackToPasteboard = exp.writeBackToPasteboard
             rule.outputModeRaw = exp.outputModeRaw ?? ""
+            rule.outputParam = exp.outputParam ?? ""
             rule.conditionLogicRaw = exp.conditionLogicRaw
             rule.conditionsData = Data(base64Encoded: exp.conditionsDataBase64) ?? Data()
             rule.actionsData = Data(base64Encoded: exp.actionsDataBase64) ?? Data()

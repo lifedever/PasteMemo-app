@@ -124,6 +124,13 @@ enum SoundManager {
         play(source)
     }
 
+    /// The "play sound" rule action. Plays even with copy / paste sounds turned
+    /// off: the user put this sound into the rule on purpose.
+    static func play(storageKey: String) {
+        guard !storageKey.isEmpty else { return }
+        play(SoundSource.from(storageKey: storageKey))
+    }
+
     private static var audioPlayer: AVAudioPlayer?
 
     private static func play(_ source: SoundSource) {

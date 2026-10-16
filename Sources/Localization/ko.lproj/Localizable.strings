@@ -737,7 +737,7 @@
 "automation.rule.triggerMode" = "트리거";
 "automation.rule.triggerMode.automatic" = "자동";
 "automation.rule.triggerMode.manual" = "수동만";
-"automation.rule.triggerMode.shortcutManualOnly" = "단축어 실행, AI 다시 쓰기, 빠른 패널 닫기가 포함된 규칙은 수동 트리거에서만 동작";
+"automation.rule.triggerMode.shortcutManualOnly" = "수동으로만 실행되는 동작이 있어 수동 트리거에서만 동작";
 "automation.rule.outputMode" = "결과 위치";
 "automation.rule.outputMode.replaceItem" = "이 항목 대체";
 "automation.rule.outputMode.newItem" = "새 항목 생성";
@@ -1042,3 +1042,29 @@
 // MARK: - List row metrics
 "meta.chars" = "%@자";
 "meta.lines" = "%@줄";
+
+/* Automation: extract / open / outputs */
+"automation.action.convertColor" = "색상 형식 변환";
+"automation.action.extractVerificationCode" = "인증 코드만 남기기";
+"automation.action.extractLinks" = "링크만 남기기";
+"automation.action.runOCR" = "이미지 속 텍스트 인식";
+"automation.action.deleteItem" = "원래 항목 삭제";
+"automation.action.playSound" = "사운드 재생";
+"automation.action.section.extract" = "추출 및 인식";
+"automation.action.section.open" = "열기 및 릴레이";
+"automation.rule.outputMode.saveToFile" = "폴더에 저장";
+"automation.rule.outputMode.postWebhook" = "Webhook으로 전송";
+"automation.output.folder.empty" = "선택한 폴더 없음";
+"automation.output.folder.choose" = "선택…";
+"automation.output.folder.invalid" = "폴더를 찾을 수 없습니다";
+"automation.output.webhook.placeholder" = "https://";
+"automation.output.webhook.help" = "JSON(content, contentType, sourceApp, rule, createdAt)을 전송합니다. 민감한 항목은 전송하지 않습니다.";
+"automation.output.webhook.invalidURL" = "주소는 http:// 또는 https://로 시작해야 합니다";
+"automation.output.webhook.tooLarge" = "내용이 너무 길어 전송하지 않았습니다";
+"automation.output.webhook.failedStatus" = "전송 실패(HTTP %d)";
+"automation.output.webhook.failed" = "전송 실패: %@";
+"automation.output.webhook.sent" = "전송함";
+"automation.output.webhook.refused" = "민감한 항목은 전송하지 않습니다";
+"automation.output.webhook.textOnly" = "텍스트만 전송할 수 있습니다";
+"automation.output.saved" = "‘%@’에 저장함";
+"automation.output.saveFailed" = "저장하지 못했습니다. 폴더가 있는지 확인하세요";

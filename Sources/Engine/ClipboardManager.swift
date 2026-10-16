@@ -214,16 +214,20 @@ final class ClipboardManager: ObservableObject {
             sourceApp: appInfo.bundleID,
             context: context
         )
+        var captureOutputs: [CaptureOutput] = []
+        var ruleSounds: [String] = []
         switch result {
         case .unchanged:
             break
-        case .applied(let processed, _, let actions, let writeBack):
+        case .applied(let processed, _, let actions, let writeBack, let outputs):
             if actions.contains(.skipCapture) { return }
             applyAutomationActions(actions, processed: processed, to: newItem, writeBack: writeBack, context: context)
             if writeBack, newItem.contentType.isMergeable {
                 mirrorTransformedTextToPasteboard(processed, original: originalContent)
             }
-        case .pendingConfirmation(let processed, let ruleName, _, let actions, let writeBack):
+            captureOutputs = outputs
+            ruleSounds = Self.soundNames(in: actions)
+        case .pendingConfirmation(let processed, let ruleName, _, let actions, let writeBack, let outputs):
             let accepted = showAutomationConfirmation(
                 ruleName: ruleName, original: newItem.content, processed: processed
             )
@@ -233,10 +237,19 @@ final class ClipboardManager: ObservableObject {
                 if writeBack, newItem.contentType.isMergeable {
                     mirrorTransformedTextToPasteboard(processed, original: originalContent)
                 }
+                captureOutputs = outputs
+                ruleSounds = Self.soundNames(in: actions)
             }
         }
 
+        // An app that writes the same thing twice in a row isn't a second copy:
+        // no second file / POST / sound for it.
         if isLatestDuplicate(newItem, in: context) { return }
+
+        ruleSounds.last.map(SoundManager.play(storageKey:))
+        if !captureOutputs.isEmpty {
+            RuleOutputDelivery.deliverOnCapture(captureOutputs, item: newItem)
+        }
 
         if let existingItem = findExistingDuplicate(for: newItem, in: context) {
             reuseExistingDuplicate(existingItem, with: newItem, in: context)
@@ -1952,6 +1965,10 @@ extension ClipboardManager: ClipboardControllable {
             }
         }
         applyMetadataActions(actions, to: item, context: context)
+    }
+
+    private static func soundNames(in actions: [RuleAction]) -> [String] {
+        actions.compactMap { if case .playSound(let name) = $0, !name.isEmpty { return name }; return nil }
     }
 
     /// Metadata actions live in `ActionExecutor`; kept as a forwarder so the capture

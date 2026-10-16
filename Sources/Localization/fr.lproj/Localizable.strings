@@ -739,7 +739,7 @@ Utilisez %@ pour coller un par un.";
 "automation.rule.triggerMode" = "Déclenchement";
 "automation.rule.triggerMode.automatic" = "Automatique";
 "automation.rule.triggerMode.manual" = "Manuel uniquement";
-"automation.rule.triggerMode.shortcutManualOnly" = "Les règles avec « Exécuter le raccourci », « Réécriture IA » ou « Fermer le panneau rapide » ne fonctionnent qu’en déclenchement manuel";
+"automation.rule.triggerMode.shortcutManualOnly" = "Contient des actions uniquement manuelles : déclenchement manuel seulement";
 "automation.rule.outputMode" = "Destination du résultat";
 "automation.rule.outputMode.replaceItem" = "Remplacer cet élément";
 "automation.rule.outputMode.newItem" = "Nouvel élément";
@@ -1044,3 +1044,29 @@ Utilisez %@ pour coller un par un.";
 // MARK: - List row metrics
 "meta.chars" = "%@ caractères";
 "meta.lines" = "%@ lignes";
+
+/* Automation: extract / open / outputs */
+"automation.action.convertColor" = "Convertir le format de couleur";
+"automation.action.extractVerificationCode" = "Garder seulement le code de vérification";
+"automation.action.extractLinks" = "Garder seulement les liens";
+"automation.action.runOCR" = "Reconnaître le texte de l’image";
+"automation.action.deleteItem" = "Supprimer l’élément d’origine";
+"automation.action.playSound" = "Jouer un son";
+"automation.action.section.extract" = "Extraire et reconnaître";
+"automation.action.section.open" = "Ouvrir et relais";
+"automation.rule.outputMode.saveToFile" = "Enregistrer dans un dossier";
+"automation.rule.outputMode.postWebhook" = "Envoyer au webhook";
+"automation.output.folder.empty" = "Aucun dossier choisi";
+"automation.output.folder.choose" = "Choisir…";
+"automation.output.folder.invalid" = "Dossier introuvable";
+"automation.output.webhook.placeholder" = "https://";
+"automation.output.webhook.help" = "Envoie du JSON (content, contentType, sourceApp, rule, createdAt). Les éléments sensibles ne sont jamais envoyés.";
+"automation.output.webhook.invalidURL" = "L’adresse doit commencer par http:// ou https://";
+"automation.output.webhook.tooLarge" = "Trop long, non envoyé";
+"automation.output.webhook.failedStatus" = "Échec de l’envoi (HTTP %d)";
+"automation.output.webhook.failed" = "Échec de l’envoi : %@";
+"automation.output.webhook.sent" = "Envoyé";
+"automation.output.webhook.refused" = "Les éléments sensibles ne sont pas envoyés";
+"automation.output.webhook.textOnly" = "Seul du texte peut être envoyé";
+"automation.output.saved" = "Enregistré dans « %@ »";
+"automation.output.saveFailed" = "Échec de l’enregistrement. Vérifiez que le dossier existe encore.";

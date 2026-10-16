@@ -513,7 +513,7 @@
 "automation.rule.triggerMode" = "Trigger";
 "automation.rule.triggerMode.automatic" = "Automatic";
 "automation.rule.triggerMode.manual" = "Manual only";
-"automation.rule.triggerMode.shortcutManualOnly" = "Rules with Run Shortcut, AI rewrite or Close Quick Panel only work with manual trigger";
+"automation.rule.triggerMode.shortcutManualOnly" = "This rule has actions that only run manually, so it can only be triggered manually";
 "automation.rule.outputMode" = "Result goes to";
 "automation.rule.outputMode.replaceItem" = "Replace this item";
 "automation.rule.outputMode.newItem" = "New item";
@@ -988,3 +988,29 @@
 // MARK: - List row metrics
 "meta.chars" = "%@ chars";
 "meta.lines" = "%@ lines";
+
+/* Automation: extract / open / outputs */
+"automation.action.convertColor" = "Convert Color Format";
+"automation.action.extractVerificationCode" = "Keep Only Verification Code";
+"automation.action.extractLinks" = "Keep Only Links";
+"automation.action.runOCR" = "Recognize Text in Image";
+"automation.action.deleteItem" = "Delete Original Clip";
+"automation.action.playSound" = "Play Sound";
+"automation.action.section.extract" = "Extract & Recognize";
+"automation.action.section.open" = "Open & Relay";
+"automation.rule.outputMode.saveToFile" = "Save to Folder";
+"automation.rule.outputMode.postWebhook" = "Send to Webhook";
+"automation.output.folder.empty" = "No folder selected";
+"automation.output.folder.choose" = "Choose…";
+"automation.output.folder.invalid" = "Folder not found";
+"automation.output.webhook.placeholder" = "https://";
+"automation.output.webhook.help" = "Sends JSON (content, contentType, sourceApp, rule, createdAt). Sensitive clips are never sent.";
+"automation.output.webhook.invalidURL" = "The address must start with http:// or https://";
+"automation.output.webhook.tooLarge" = "Too long to send";
+"automation.output.webhook.failedStatus" = "Send failed (HTTP %d)";
+"automation.output.webhook.failed" = "Send failed: %@";
+"automation.output.webhook.sent" = "Sent";
+"automation.output.webhook.refused" = "Sensitive clips aren’t sent";
+"automation.output.webhook.textOnly" = "Only text can be sent";
+"automation.output.saved" = "Saved to “%@”";
+"automation.output.saveFailed" = "Couldn’t save. Check that the folder is still there.";

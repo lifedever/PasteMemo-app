@@ -703,7 +703,7 @@ Usa %@ per incollare uno per uno.";
 "automation.rule.triggerMode" = "Attivazione";
 "automation.rule.triggerMode.automatic" = "Automatica";
 "automation.rule.triggerMode.manual" = "Solo manuale";
-"automation.rule.triggerMode.shortcutManualOnly" = "Le regole con «Esegui comando rapido», «Riscrittura IA» o «Chiudi il pannello rapido» funzionano solo con attivazione manuale";
+"automation.rule.triggerMode.shortcutManualOnly" = "Contiene azioni solo manuali: solo attivazione manuale";
 "automation.rule.outputMode" = "Il risultato va in";
 "automation.rule.outputMode.replaceItem" = "Sostituisci questo elemento";
 "automation.rule.outputMode.newItem" = "Nuovo elemento";
@@ -1004,3 +1004,29 @@ Usa %@ per incollare uno per uno.";
 // MARK: - List row metrics
 "meta.chars" = "%@ caratteri";
 "meta.lines" = "%@ righe";
+
+/* Automation: extract / open / outputs */
+"automation.action.convertColor" = "Converti formato colore";
+"automation.action.extractVerificationCode" = "Mantieni solo il codice di verifica";
+"automation.action.extractLinks" = "Mantieni solo i link";
+"automation.action.runOCR" = "Riconosci il testo nell’immagine";
+"automation.action.deleteItem" = "Elimina l’elemento originale";
+"automation.action.playSound" = "Riproduci suono";
+"automation.action.section.extract" = "Estrai e riconosci";
+"automation.action.section.open" = "Apri e staffetta";
+"automation.rule.outputMode.saveToFile" = "Salva nella cartella";
+"automation.rule.outputMode.postWebhook" = "Invia al webhook";
+"automation.output.folder.empty" = "Nessuna cartella selezionata";
+"automation.output.folder.choose" = "Scegli…";
+"automation.output.folder.invalid" = "Cartella non trovata";
+"automation.output.webhook.placeholder" = "https://";
+"automation.output.webhook.help" = "Invia JSON (content, contentType, sourceApp, rule, createdAt). Gli elementi sensibili non vengono mai inviati.";
+"automation.output.webhook.invalidURL" = "L’indirizzo deve iniziare con http:// o https://";
+"automation.output.webhook.tooLarge" = "Troppo lungo, non inviato";
+"automation.output.webhook.failedStatus" = "Invio non riuscito (HTTP %d)";
+"automation.output.webhook.failed" = "Invio non riuscito: %@";
+"automation.output.webhook.sent" = "Inviato";
+"automation.output.webhook.refused" = "Gli elementi sensibili non vengono inviati";
+"automation.output.webhook.textOnly" = "Si può inviare solo testo";
+"automation.output.saved" = "Salvato in «%@»";
+"automation.output.saveFailed" = "Salvataggio non riuscito. Controlla che la cartella esista ancora.";

@@ -83,7 +83,7 @@ struct RuleApplicationTests {
         )
 
         switch result {
-        case .applied(_, _, let actions, _):
+        case .applied(_, _, let actions, _, _):
             #expect(actions.contains(.assignGroup(name: "图片")))
         default:
             Issue.record("expected .applied for an image rule, got \(result)")

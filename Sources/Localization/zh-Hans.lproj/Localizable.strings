@@ -514,7 +514,7 @@
 "automation.rule.triggerMode" = "触发模式";
 "automation.rule.triggerMode.automatic" = "自动触发";
 "automation.rule.triggerMode.manual" = "仅手动触发";
-"automation.rule.triggerMode.shortcutManualOnly" = "含快捷指令、AI 改写或关闭面板的规则只能手动触发";
+"automation.rule.triggerMode.shortcutManualOnly" = "规则里有只能手动执行的动作，只能手动触发";
 "automation.rule.outputMode" = "结果去向";
 "automation.rule.outputMode.replaceItem" = "替换当前条目";
 "automation.rule.outputMode.newItem" = "生成新条目";
@@ -988,3 +988,29 @@
 // MARK: - List row metrics
 "meta.chars" = "%@ 字";
 "meta.lines" = "%@ 行";
+
+/* Automation: extract / open / outputs */
+"automation.action.convertColor" = "转换颜色格式";
+"automation.action.extractVerificationCode" = "只保留验证码";
+"automation.action.extractLinks" = "只保留链接";
+"automation.action.runOCR" = "识别图中文字";
+"automation.action.deleteItem" = "删除原条目";
+"automation.action.playSound" = "播放提示音";
+"automation.action.section.extract" = "提取与识别";
+"automation.action.section.open" = "打开与接力";
+"automation.rule.outputMode.saveToFile" = "存到文件夹";
+"automation.rule.outputMode.postWebhook" = "发到 Webhook";
+"automation.output.folder.empty" = "未选择文件夹";
+"automation.output.folder.choose" = "选择…";
+"automation.output.folder.invalid" = "找不到这个文件夹";
+"automation.output.webhook.placeholder" = "https://";
+"automation.output.webhook.help" = "发送 JSON（content、contentType、sourceApp、rule、createdAt）。敏感内容不发送。";
+"automation.output.webhook.invalidURL" = "地址要以 http:// 或 https:// 开头";
+"automation.output.webhook.tooLarge" = "内容太长，没有发送";
+"automation.output.webhook.failedStatus" = "发送失败（HTTP %d）";
+"automation.output.webhook.failed" = "发送失败：%@";
+"automation.output.webhook.sent" = "已发送";
+"automation.output.webhook.refused" = "敏感内容不发送";
+"automation.output.webhook.textOnly" = "只能发送文字内容";
+"automation.output.saved" = "已存到「%@」";
+"automation.output.saveFailed" = "保存失败，检查文件夹是否还在";

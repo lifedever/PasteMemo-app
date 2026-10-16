@@ -4,8 +4,8 @@ import UserNotifications
 
 enum AutomationResult: Sendable {
     case unchanged
-    case applied(content: String, ruleName: String, actions: [RuleAction], writeBack: Bool)
-    case pendingConfirmation(content: String, ruleName: String, ruleID: String, actions: [RuleAction], writeBack: Bool)
+    case applied(content: String, ruleName: String, actions: [RuleAction], writeBack: Bool, outputs: [CaptureOutput])
+    case pendingConfirmation(content: String, ruleName: String, ruleID: String, actions: [RuleAction], writeBack: Bool, outputs: [CaptureOutput])
 }
 
 @MainActor
@@ -33,24 +33,32 @@ final class AutomationEngine {
         var allActions: [RuleAction] = []
         var lastRuleName = ""
         var writeBack = false
+        var outputs: [CaptureOutput] = []
+        var matchedAny = false
         var needsConfirmation: (ruleName: String, ruleID: String)?
 
         for rule in rules {
             let conditions = rule.conditions
             let actions = rule.actions
-            guard !conditions.isEmpty, !actions.isEmpty else { continue }
+            let hasOutput = rule.outputMode.needsParameter
+            guard !conditions.isEmpty, !actions.isEmpty || hasOutput else { continue }
             guard Self.matchesConditions(
                 conditions, logic: rule.conditionLogic, content: currentContent, contentType: contentType, sourceApp: sourceApp
             ) else { continue }
 
             let processed = Self.executeActions(actions, on: currentContent)
             let hasSpecialActions = Self.containsSpecialAction(actions)
-            guard processed != currentContent || hasSpecialActions else { continue }
+            guard processed != currentContent || hasSpecialActions || hasOutput else { continue }
 
+            matchedAny = true
             currentContent = processed
             allActions.append(contentsOf: actions)
             lastRuleName = rule.name
             if rule.outputMode.mirrorsToPasteboardOnCapture { writeBack = true }
+            if hasOutput {
+                let displayName = rule.isBuiltIn ? L10n.tr(rule.name) : rule.name
+                outputs.append(CaptureOutput(mode: rule.outputMode, param: rule.outputParam, ruleName: displayName))
+            }
 
             if rule.notifyOnTrigger {
                 let displayName = rule.isBuiltIn ? L10n.tr(rule.name) : rule.name
@@ -65,12 +73,12 @@ final class AutomationEngine {
             if actions.contains(.stopProcessing) { break }
         }
 
-        guard !allActions.isEmpty else { return .unchanged }
+        guard matchedAny else { return .unchanged }
 
         if let confirm = needsConfirmation {
-            return .pendingConfirmation(content: currentContent, ruleName: confirm.ruleName, ruleID: confirm.ruleID, actions: allActions, writeBack: writeBack)
+            return .pendingConfirmation(content: currentContent, ruleName: confirm.ruleName, ruleID: confirm.ruleID, actions: allActions, writeBack: writeBack, outputs: outputs)
         }
-        return .applied(content: currentContent, ruleName: lastRuleName, actions: allActions, writeBack: writeBack)
+        return .applied(content: currentContent, ruleName: lastRuleName, actions: allActions, writeBack: writeBack, outputs: outputs)
     }
 
     /// Apply a sequence of actions to content. Pure text transformation, no SwiftData needed.

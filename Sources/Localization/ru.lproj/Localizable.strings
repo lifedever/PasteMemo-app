@@ -714,7 +714,7 @@
 "automation.rule.triggerMode" = "Триггер";
 "automation.rule.triggerMode.automatic" = "Автоматический";
 "automation.rule.triggerMode.manual" = "Только вручную";
-"automation.rule.triggerMode.shortcutManualOnly" = "Правила с «Запустить команду», «ИИ-переписыванием» или «Закрыть быструю панель» работают только при ручном запуске";
+"automation.rule.triggerMode.shortcutManualOnly" = "Есть действия, выполняемые только вручную, — только ручной запуск";
 "automation.rule.outputMode" = "Куда идёт результат";
 "automation.rule.outputMode.replaceItem" = "Заменить этот элемент";
 "automation.rule.outputMode.newItem" = "Новый элемент";
@@ -1014,3 +1014,29 @@
 // MARK: - List row metrics
 "meta.chars" = "%@ симв.";
 "meta.lines" = "%@ строк";
+
+/* Automation: extract / open / outputs */
+"automation.action.convertColor" = "Преобразовать формат цвета";
+"automation.action.extractVerificationCode" = "Оставить только код подтверждения";
+"automation.action.extractLinks" = "Оставить только ссылки";
+"automation.action.runOCR" = "Распознать текст на изображении";
+"automation.action.deleteItem" = "Удалить исходную запись";
+"automation.action.playSound" = "Воспроизвести звук";
+"automation.action.section.extract" = "Извлечение и распознавание";
+"automation.action.section.open" = "Открыть и очередь";
+"automation.rule.outputMode.saveToFile" = "Сохранить в папку";
+"automation.rule.outputMode.postWebhook" = "Отправить в вебхук";
+"automation.output.folder.empty" = "Папка не выбрана";
+"automation.output.folder.choose" = "Выбрать…";
+"automation.output.folder.invalid" = "Папка не найдена";
+"automation.output.webhook.placeholder" = "https://";
+"automation.output.webhook.help" = "Отправляет JSON (content, contentType, sourceApp, rule, createdAt). Конфиденциальные записи не отправляются.";
+"automation.output.webhook.invalidURL" = "Адрес должен начинаться с http:// или https://";
+"automation.output.webhook.tooLarge" = "Слишком длинно, не отправлено";
+"automation.output.webhook.failedStatus" = "Ошибка отправки (HTTP %d)";
+"automation.output.webhook.failed" = "Ошибка отправки: %@";
+"automation.output.webhook.sent" = "Отправлено";
+"automation.output.webhook.refused" = "Конфиденциальные записи не отправляются";
+"automation.output.webhook.textOnly" = "Можно отправить только текст";
+"automation.output.saved" = "Сохранено в «%@»";
+"automation.output.saveFailed" = "Не удалось сохранить. Проверьте, что папка существует.";

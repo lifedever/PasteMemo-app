@@ -714,7 +714,7 @@ Gunakan %@ untuk menempel satu per satu.";
 "automation.rule.triggerMode" = "Pemicu";
 "automation.rule.triggerMode.automatic" = "Otomatis";
 "automation.rule.triggerMode.manual" = "Hanya manual";
-"automation.rule.triggerMode.shortcutManualOnly" = "Aturan dengan “Jalankan Pintasan”, “Tulis ulang AI”, atau “Tutup Panel Cepat” hanya berjalan dengan pemicu manual";
+"automation.rule.triggerMode.shortcutManualOnly" = "Berisi aksi yang hanya berjalan manual, jadi hanya bisa dipicu manual";
 "automation.rule.outputMode" = "Hasil ke";
 "automation.rule.outputMode.replaceItem" = "Ganti item ini";
 "automation.rule.outputMode.newItem" = "Item baru";
@@ -1014,3 +1014,29 @@ Gunakan %@ untuk menempel satu per satu.";
 // MARK: - List row metrics
 "meta.chars" = "%@ karakter";
 "meta.lines" = "%@ baris";
+
+/* Automation: extract / open / outputs */
+"automation.action.convertColor" = "Ubah format warna";
+"automation.action.extractVerificationCode" = "Simpan kode verifikasi saja";
+"automation.action.extractLinks" = "Simpan tautan saja";
+"automation.action.runOCR" = "Kenali teks di gambar";
+"automation.action.deleteItem" = "Hapus item asli";
+"automation.action.playSound" = "Putar suara";
+"automation.action.section.extract" = "Ekstrak & Kenali";
+"automation.action.section.open" = "Buka & Relay";
+"automation.rule.outputMode.saveToFile" = "Simpan ke folder";
+"automation.rule.outputMode.postWebhook" = "Kirim ke webhook";
+"automation.output.folder.empty" = "Belum ada folder";
+"automation.output.folder.choose" = "Pilih…";
+"automation.output.folder.invalid" = "Folder tidak ditemukan";
+"automation.output.webhook.placeholder" = "https://";
+"automation.output.webhook.help" = "Mengirim JSON (content, contentType, sourceApp, rule, createdAt). Item sensitif tidak pernah dikirim.";
+"automation.output.webhook.invalidURL" = "Alamat harus diawali http:// atau https://";
+"automation.output.webhook.tooLarge" = "Terlalu panjang, tidak dikirim";
+"automation.output.webhook.failedStatus" = "Gagal mengirim (HTTP %d)";
+"automation.output.webhook.failed" = "Gagal mengirim: %@";
+"automation.output.webhook.sent" = "Terkirim";
+"automation.output.webhook.refused" = "Item sensitif tidak dikirim";
+"automation.output.webhook.textOnly" = "Hanya teks yang bisa dikirim";
+"automation.output.saved" = "Disimpan ke “%@”";
+"automation.output.saveFailed" = "Gagal menyimpan. Periksa apakah folder masih ada.";

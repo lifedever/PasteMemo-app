@@ -14,6 +14,7 @@ struct AutomationRuleEditorView: View {
     @State private var draftTrigger: TriggerMode = .automatic
     @State private var draftLogic: ConditionLogic = .all
     @State private var draftOutput: RuleOutputMode = .replaceItem
+    @State private var draftOutputParam = ""
     @State private var draftNotifyBefore = false
     @State private var draftNotifyOn = false
     @State private var conditions: [IdentifiedCondition] = []
@@ -39,6 +40,7 @@ struct AutomationRuleEditorView: View {
             || draftTrigger != rule.triggerMode
             || draftLogic != rule.conditionLogic
             || draftOutput != rule.outputMode
+            || draftOutputParam != rule.outputParam
             || draftNotifyBefore != rule.notifyBeforeApply
             || draftNotifyOn != rule.notifyOnTrigger
             || conditions.map(\.value) != rule.conditions
@@ -387,6 +389,21 @@ struct AutomationRuleEditorView: View {
                     .fixedSize()
                     Spacer()
                 }
+                if draftOutput == .saveToFile {
+                    cardRow { outputFolderRow }
+                } else if draftOutput == .postWebhook {
+                    cardRow {
+                        TextField("", text: $draftOutputParam,
+                                  prompt: Text(L10n.tr("automation.output.webhook.placeholder")))
+                            .labelsHidden()
+                            .font(.system(.body, design: .monospaced))
+                    }
+                    cardRow {
+                        Text(L10n.tr("automation.output.webhook.help"))
+                            .font(.callout)
+                            .foregroundStyle(.secondary)
+                    }
+                }
                 if draftTrigger == .automatic, draftOutput.mirrorsToPasteboardOnCapture {
                     cardRow {
                         Text(L10n.tr("automation.rule.outputMode.help"))
@@ -403,6 +420,15 @@ struct AutomationRuleEditorView: View {
             } else {
                 cardRow {
                     Text(L10n.tr("automation.rule.outputMode.\(rule.outputMode.rawValue)"))
+                    if rule.outputMode.needsParameter {
+                        Spacer()
+                        Text(rule.outputParam)
+                            .font(.system(.callout, design: .monospaced))
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                            .truncationMode(.middle)
+                            .textSelection(.enabled)
+                    }
                 }
                 rowDivider
                 cardRow {
@@ -412,6 +438,33 @@ struct AutomationRuleEditorView: View {
                 }
             }
         }
+    }
+
+    private var outputFolderRow: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "folder").foregroundStyle(.secondary)
+            Text(draftOutputParam.isEmpty
+                 ? L10n.tr("automation.output.folder.empty")
+                 : (draftOutputParam as NSString).abbreviatingWithTildeInPath)
+                .foregroundStyle(draftOutputParam.isEmpty ? .tertiary : .primary)
+                .lineLimit(1)
+                .truncationMode(.middle)
+            Spacer()
+            Button(L10n.tr("automation.output.folder.choose")) { chooseOutputFolder() }
+        }
+    }
+
+    private func chooseOutputFolder() {
+        let panel = NSOpenPanel()
+        panel.canChooseDirectories = true
+        panel.canChooseFiles = false
+        panel.canCreateDirectories = true
+        panel.allowsMultipleSelection = false
+        if let current = RuleOutputDelivery.folderURL(from: draftOutputParam) {
+            panel.directoryURL = current
+        }
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        draftOutputParam = url.path
     }
 
     // MARK: - Preview
@@ -504,6 +557,7 @@ struct AutomationRuleEditorView: View {
         draftTrigger = rule.triggerMode
         draftLogic = rule.conditionLogic
         draftOutput = rule.outputMode
+        draftOutputParam = rule.outputParam
         draftNotifyBefore = rule.notifyBeforeApply
         draftNotifyOn = rule.notifyOnTrigger
         conditions = rule.conditions.map { IdentifiedCondition(value: $0) }
@@ -516,6 +570,7 @@ struct AutomationRuleEditorView: View {
     /// Commit every draft field. Turning notifications on asks for permission and backs
     /// the toggle out if it's refused.
     private func save() {
+        guard validateOutput() else { return }
         let wantsNotification = draftNotifyOn && !rule.notifyOnTrigger
         if rule.isBuiltIn {
             // Renaming a built-in makes it the user's own rule; remember the original key
@@ -534,6 +589,9 @@ struct AutomationRuleEditorView: View {
         rule.triggerMode = ruleRequiresManual ? .manual : draftTrigger
         draftTrigger = rule.triggerMode
         rule.outputMode = draftOutput
+        rule.outputParam = draftOutput.needsParameter
+            ? draftOutputParam.trimmingCharacters(in: .whitespacesAndNewlines) : ""
+        draftOutputParam = rule.outputParam
         rule.notifyBeforeApply = draftNotifyBefore
         rule.notifyOnTrigger = draftNotifyOn
         rule.updatedAt = Date()
@@ -656,6 +714,10 @@ struct AutomationRuleEditorView: View {
                         actionItem(.lowercased), actionItem(.uppercased), actionItem(.trimWhitespace),
                         actionItem(.removeBlankLines), actionItem(.stripRichText),
                     ]),
+                    .submenu(L10n.tr("automation.action.section.extract"), symbol: "text.viewfinder", [
+                        actionItem(.extractVerificationCode), actionItem(.extractLinks),
+                        actionItem(.convertColor(format: ColorFormat.hex.rawValue)), actionItem(.runOCR),
+                    ]),
                     .submenu(L10n.tr("automation.action.section.url"), symbol: "link", [
                         actionItem(.urlEncode), actionItem(.urlDecode), actionItem(.removeQueryParams(patterns: ["utm_*"])),
                     ]),
@@ -665,12 +727,17 @@ struct AutomationRuleEditorView: View {
                     .submenu(L10n.tr("automation.action.section.external"), symbol: "sparkles", [
                         actionItem(.aiTransform(prompt: "", thinking: nil, temperature: nil, timeoutSeconds: nil)), actionItem(.runShortcut(name: "")),
                     ]),
+                    .submenu(L10n.tr("automation.action.section.open"), symbol: "arrow.up.forward.square", [
+                        actionItem(.openLink), actionItem(.openInPreview), actionItem(.showInFinder),
+                        actionItem(.addToRelay), actionItem(.splitToRelay(delimiter: "\n")),
+                    ]),
                     .submenu(L10n.tr("automation.action.section.clipboard"), symbol: "tag", [
                         actionItem(.pin), actionItem(.unpin), actionItem(.markSensitive), actionItem(.unmarkSensitive),
-                        actionItem(.assignGroup(name: "")), actionItem(.skipCapture),
+                        actionItem(.assignGroup(name: "")), actionItem(.skipCapture), actionItem(.deleteItem),
                     ]),
                     .submenu(L10n.tr("automation.action.section.flow"), symbol: "flag", [
                         actionItem(.stopProcessing), actionItem(.closeQuickPanel),
+                        actionItem(.playSound(name: SoundManager.SYSTEM_SOUNDS[0].storageKey)),
                     ]),
                 ]
             }
@@ -686,6 +753,7 @@ struct AutomationRuleEditorView: View {
         switch action {
         case .assignGroup: L10n.tr("automation.action.assignGroup")
         case .runShortcut: L10n.tr("automation.action.runShortcut")
+        case .convertColor: L10n.tr("automation.action.convertColor")
         default: action.displayLabel
         }
     }
@@ -693,6 +761,15 @@ struct AutomationRuleEditorView: View {
         switch action {
         case .aiTransform: ("sparkles", .purple)
         case .runShortcut: ("square.stack.3d.up.fill", .purple)
+        case .runOCR: ("text.viewfinder", .blue)
+        case .convertColor: ("paintpalette", .blue)
+        case .openLink: ("link", .gray)
+        case .openInPreview: ("eye", .gray)
+        case .showInFinder: ("folder", .gray)
+        case .addToRelay: ("arrow.right.arrow.left", .gray)
+        case .splitToRelay: ("scissors", .gray)
+        case .deleteItem: ("trash", .red)
+        case .playSound: ("speaker.wave.2", .gray)
         default:
             switch action.kind {
             case .transform: ("textformat", .blue)
@@ -805,10 +882,67 @@ struct AutomationRuleEditorView: View {
                 .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty)
                 .help(L10n.tr("automation.action.runShortcut.openInApp"))
             }
-        
+
+
+        case .convertColor(let format):
+            Picker("", selection: Binding(
+                get: { format },
+                set: { actions[index].value = .convertColor(format: $0) }
+            )) {
+                ForEach(ColorFormat.allCases, id: \.rawValue) { f in
+                    Text(f.rawValue).tag(f.rawValue)
+                }
+            }
+            .labelsHidden()
+
+        case .splitToRelay(let delimiter):
+            delimiterPicker(delimiter, at: index)
+
+        case .playSound(let name):
+            Picker("", selection: Binding(
+                get: { name },
+                set: {
+                    actions[index].value = .playSound(name: $0)
+                    SoundManager.play(storageKey: $0)
+                }
+            )) {
+                ForEach(SoundManager.ALL_SOUNDS, id: \.storageKey) { source in
+                    Text(source.displayName).tag(source.storageKey)
+                }
+            }
+            .labelsHidden()
 
         default:
             EmptyView()
+        }
+    }
+
+    /// Newline / comma / 、 presets, or any other text.
+    @ViewBuilder
+    private func delimiterPicker(_ delimiter: String, at index: Int) -> some View {
+        let presets = RelaySplitter.PRESET_DELIMITERS.map(\.value)
+        let isCustom = !delimiter.isEmpty && !presets.contains(delimiter)
+        HStack(spacing: 8) {
+            Picker("", selection: Binding(
+                get: { isCustom ? "\u{0}custom" : (delimiter.isEmpty ? "\n" : delimiter) },
+                set: { picked in
+                    actions[index].value = .splitToRelay(delimiter: picked == "\u{0}custom" ? "|" : picked)
+                }
+            )) {
+                ForEach(RelaySplitter.PRESET_DELIMITERS, id: \.self) { preset in
+                    Text(L10n.tr(preset.displayName)).tag(preset.value)
+                }
+                Text(L10n.tr("relay.delimiter.custom")).tag("\u{0}custom")
+            }
+            .labelsHidden()
+            if isCustom {
+                TextField("", text: Binding(
+                    get: { delimiter },
+                    set: { actions[index].value = .splitToRelay(delimiter: $0) }
+                ))
+                .labelsHidden()
+                .frame(width: 80)
+            }
         }
     }
     /// Per-action model knobs in a collapsible card. Collapsed, the header line sums up
@@ -1031,6 +1165,15 @@ struct AutomationRuleEditorView: View {
             Text(name.isEmpty ? L10n.tr("automation.action.runShortcut.empty") : name)
                 .font(.callout)
                 .foregroundStyle(name.isEmpty ? .tertiary : .secondary)
+        case .convertColor(let format):
+            Text(format).font(.callout).foregroundStyle(.secondary)
+        case .splitToRelay(let delimiter):
+            let preset = RelaySplitter.PRESET_DELIMITERS.first { $0.value == (delimiter.isEmpty ? "\n" : delimiter) }
+            Text(preset.map { L10n.tr($0.displayName) } ?? "“\(delimiter)”")
+                .font(.callout).foregroundStyle(.secondary)
+        case .playSound(let name):
+            Text(SoundManager.SoundSource.from(storageKey: name).displayName)
+                .font(.callout).foregroundStyle(.secondary)
         default:
             EmptyView()
         }
@@ -1071,8 +1214,11 @@ struct AutomationRuleEditorView: View {
         }
     }
 
+    /// Enabling needs conditions plus something to do: an action, or an output that
+    /// goes somewhere (save to folder / webhook) on its own.
     private func validateRule() -> Bool {
-        guard !conditions.isEmpty, !actions.isEmpty else {
+        let hasWork = !rule.actions.isEmpty || rule.outputMode.needsParameter
+        guard !rule.conditions.isEmpty, hasWork else {
             let alert = NSAlert()
             alert.messageText = L10n.tr("automation.validation.incomplete")
             alert.informativeText = L10n.tr("automation.validation.incompleteMessage")
@@ -1080,6 +1226,23 @@ struct AutomationRuleEditorView: View {
             return false
         }
         return true
+    }
+
+    /// A folder that exists / an http(s) URL, before the draft is saved.
+    private func validateOutput() -> Bool {
+        let message: String
+        switch draftOutput {
+        case .saveToFile where RuleOutputDelivery.folderURL(from: draftOutputParam) == nil:
+            message = L10n.tr("automation.output.folder.invalid")
+        case .postWebhook where RuleOutputDelivery.webhookURL(from: draftOutputParam) == nil:
+            message = L10n.tr("automation.output.webhook.invalidURL")
+        default:
+            return true
+        }
+        let alert = NSAlert()
+        alert.messageText = message
+        alert.runModal()
+        return false
     }
 
     private func appIcon(for bundleID: String) -> some View {

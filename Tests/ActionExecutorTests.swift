@@ -161,7 +161,7 @@ struct ActionExecutorTests {
 
         let result = AutomationEngine.shared.process(content: "hi", contentType: .text, sourceApp: nil, context: context)
 
-        guard case .applied(let content, _, _, _) = result else {
+        guard case .applied(let content, _, _, _, _) = result else {
             Issue.record("expected .applied, got \(result)")
             return
         }

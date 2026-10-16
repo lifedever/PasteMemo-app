@@ -35,6 +35,33 @@ enum RuleAction: Codable, Equatable, Hashable, Sendable {
     /// `thinking` / `temperature` / `timeoutSeconds` override the global AI settings when
     /// set; `nil` follows Settings → AI 服务. Older rules without these keys decode as nil.
     case aiTransform(prompt: String, thinking: AIThinkingMode? = nil, temperature: Double? = nil, timeoutSeconds: Double? = nil)
+    /// Reformat a color value. `format` is a `ColorFormat` raw value; text that
+    /// isn't a color passes through unchanged.
+    case convertColor(format: String)
+    /// Keep only the verification code found in the text. No code → unchanged.
+    case extractVerificationCode
+    /// Keep only the http(s) links in the text, one per line. No link → unchanged.
+    case extractLinks
+    /// Manual-trigger only, image clips. Recognises the text in the image; the
+    /// actions after it and the output work on that text.
+    case runOCR
+    /// Manual-trigger only. Opens the result as a link, or the first link in it.
+    case openLink
+    /// Manual-trigger only. Quick Look (or Preview.app for images / PDFs).
+    case openInPreview
+    /// Manual-trigger only, file clips. Reveals the file in Finder.
+    case showInFinder
+    /// Manual-trigger only. Appends the result to the Relay queue.
+    case addToRelay
+    /// Manual-trigger only. Splits the result by `delimiter` (empty = newline)
+    /// and appends the pieces to the Relay queue.
+    case splitToRelay(delimiter: String)
+    /// Manual-trigger only. Deletes the original clip after the rule ran; the
+    /// usual undo toast applies.
+    case deleteItem
+    /// Plays a sound when the rule applies. `name` is a `SoundManager.SoundSource`
+    /// storage key (`system:Glass`, `custom:Bubble`).
+    case playSound(name: String)
 
     @MainActor var displayLabel: String {
         switch self {
@@ -59,6 +86,17 @@ enum RuleAction: Codable, Equatable, Hashable, Sendable {
         case .closeQuickPanel: L10n.tr("automation.action.closeQuickPanel")
         case .runShortcut(let name): L10n.tr("automation.action.runShortcut") + ": " + name
         case .aiTransform: L10n.tr("automation.action.aiTransform")
+        case .convertColor(let format): L10n.tr("automation.action.convertColor") + ": " + format
+        case .extractVerificationCode: L10n.tr("automation.action.extractVerificationCode")
+        case .extractLinks: L10n.tr("automation.action.extractLinks")
+        case .runOCR: L10n.tr("automation.action.runOCR")
+        case .openLink: L10n.tr("cmd.openLink")
+        case .openInPreview: L10n.tr("cmd.quickLook")
+        case .showInFinder: L10n.tr("cmd.showInFinder")
+        case .addToRelay: L10n.tr("relay.addToQueue")
+        case .splitToRelay: L10n.tr("relay.splitAndRelay")
+        case .deleteItem: L10n.tr("automation.action.deleteItem")
+        case .playSound: L10n.tr("automation.action.playSound")
         }
     }
 
@@ -87,8 +125,20 @@ enum RuleAction: Codable, Equatable, Hashable, Sendable {
             return text + content
         case .addSuffix(let text):
             return content + text
+        case .convertColor(let format):
+            guard let color = ColorConverter.parse(content.trimmingCharacters(in: .whitespacesAndNewlines)) else {
+                return content
+            }
+            return color.formatted(ColorFormat(rawValue: format) ?? .hex)
+        case .extractVerificationCode:
+            return VerificationCodeExtractor.extract(from: content) ?? content
+        case .extractLinks:
+            let links = TextEntityExtractor.linkURLs(in: content)
+            return links.isEmpty ? content : links.joined(separator: "\n")
         case .stripRichText, .assignGroup, .markSensitive, .unmarkSensitive, .pin, .unpin,
-             .skipCapture, .stopProcessing, .closeQuickPanel, .runShortcut, .aiTransform:
+             .skipCapture, .stopProcessing, .closeQuickPanel, .runShortcut, .aiTransform,
+             .runOCR, .openLink, .openInPreview, .showInFinder, .addToRelay, .splitToRelay,
+             .deleteItem, .playSound:
             // Not synchronous text transforms — applied by ActionExecutor / AutomationEngine.
             return content
         }
@@ -102,20 +152,29 @@ enum RuleAction: Codable, Equatable, Hashable, Sendable {
     var kind: ActionKind {
         switch self {
         case .lowercased, .uppercased, .trimWhitespace, .removeBlankLines, .urlEncode,
-             .urlDecode, .removeQueryParams, .regexReplace, .addPrefix, .addSuffix, .aiTransform:
+             .urlDecode, .removeQueryParams, .regexReplace, .addPrefix, .addSuffix, .aiTransform,
+             .convertColor, .extractVerificationCode, .extractLinks, .runOCR:
             return .transform
         case .stripRichText, .assignGroup, .markSensitive, .unmarkSensitive, .pin, .unpin:
             return .metadata
-        case .skipCapture, .stopProcessing, .closeQuickPanel:
+        case .skipCapture, .stopProcessing, .closeQuickPanel, .openLink, .openInPreview,
+             .showInFinder, .addToRelay, .splitToRelay, .deleteItem, .playSound:
             return .sideEffect
         case .runShortcut:
             return .external
         }
     }
 
-    /// Which clips the action is meaningful for. Text transforms are text-only;
-    /// metadata, flow-control and Shortcuts accept anything.
+    /// Which clips the action is meaningful for. Text transforms are text-only
+    /// (OCR is the one transform that reads an image); metadata, flow-control and
+    /// Shortcuts accept anything.
     var inputKind: InputKind {
+        switch self {
+        case .runOCR: return .image
+        case .showInFinder: return .file
+        case .openLink, .splitToRelay: return .text
+        default: break
+        }
         switch kind {
         case .transform: return .text
         case .metadata, .sideEffect, .external: return .any
@@ -127,7 +186,7 @@ enum RuleAction: Codable, Equatable, Hashable, Sendable {
     /// rule to manual trigger.
     var isAsync: Bool {
         switch self {
-        case .runShortcut, .aiTransform: return true
+        case .runShortcut, .aiTransform, .runOCR: return true
         default: return false
         }
     }
@@ -138,9 +197,22 @@ enum RuleAction: Codable, Equatable, Hashable, Sendable {
     var requiredContext: ActionContextRequirement {
         switch self {
         case .closeQuickPanel: return .panel
-        case .runShortcut: return .manualTrigger
+        case .runShortcut, .runOCR: return .manualTrigger
         case .aiTransform: return [.manualTrigger, .network]
+        // Opening windows, touching the Relay queue or deleting on every copy
+        // would be a surprise; these only run when the user picks the rule.
+        case .openLink, .openInPreview, .showInFinder, .addToRelay, .splitToRelay, .deleteItem:
+            return .manualTrigger
         default: return []
+        }
+    }
+
+    /// Side effects that take the user somewhere else; the Quick Panel closes
+    /// first so the browser / Finder window isn't left behind it.
+    var leavesQuickPanel: Bool {
+        switch self {
+        case .openLink, .showInFinder: return true
+        default: return false
         }
     }
 

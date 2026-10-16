@@ -700,7 +700,7 @@
 "automation.rule.triggerMode" = "觸發模式";
 "automation.rule.triggerMode.automatic" = "自動觸發";
 "automation.rule.triggerMode.manual" = "僅手動觸發";
-"automation.rule.triggerMode.shortcutManualOnly" = "含捷徑、AI 改寫或關閉面板的規則只能手動觸發";
+"automation.rule.triggerMode.shortcutManualOnly" = "規則裡有只能手動執行的動作，只能手動觸發";
 "automation.rule.outputMode" = "結果去向";
 "automation.rule.outputMode.replaceItem" = "取代目前項目";
 "automation.rule.outputMode.newItem" = "產生新項目";
@@ -1000,3 +1000,29 @@
 // MARK: - List row metrics
 "meta.chars" = "%@ 字";
 "meta.lines" = "%@ 行";
+
+/* Automation: extract / open / outputs */
+"automation.action.convertColor" = "轉換顏色格式";
+"automation.action.extractVerificationCode" = "只保留驗證碼";
+"automation.action.extractLinks" = "只保留連結";
+"automation.action.runOCR" = "辨識圖中文字";
+"automation.action.deleteItem" = "刪除原項目";
+"automation.action.playSound" = "播放提示音";
+"automation.action.section.extract" = "擷取與辨識";
+"automation.action.section.open" = "開啟與接力";
+"automation.rule.outputMode.saveToFile" = "存到資料夾";
+"automation.rule.outputMode.postWebhook" = "傳到 Webhook";
+"automation.output.folder.empty" = "未選擇資料夾";
+"automation.output.folder.choose" = "選擇…";
+"automation.output.folder.invalid" = "找不到這個資料夾";
+"automation.output.webhook.placeholder" = "https://";
+"automation.output.webhook.help" = "傳送 JSON（content、contentType、sourceApp、rule、createdAt）。敏感內容不傳送。";
+"automation.output.webhook.invalidURL" = "位址要以 http:// 或 https:// 開頭";
+"automation.output.webhook.tooLarge" = "內容太長，沒有傳送";
+"automation.output.webhook.failedStatus" = "傳送失敗（HTTP %d）";
+"automation.output.webhook.failed" = "傳送失敗：%@";
+"automation.output.webhook.sent" = "已傳送";
+"automation.output.webhook.refused" = "敏感內容不傳送";
+"automation.output.webhook.textOnly" = "只能傳送文字內容";
+"automation.output.saved" = "已存到「%@」";
+"automation.output.saveFailed" = "儲存失敗，檢查資料夾是否還在";

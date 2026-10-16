@@ -739,7 +739,7 @@ Usa %@ para pegar uno por uno.";
 "automation.rule.triggerMode" = "Activador";
 "automation.rule.triggerMode.automatic" = "Automático";
 "automation.rule.triggerMode.manual" = "Solo manual";
-"automation.rule.triggerMode.shortcutManualOnly" = "Las reglas con «Ejecutar atajo», «Reescritura IA» o «Cerrar el panel rápido» solo funcionan con activación manual";
+"automation.rule.triggerMode.shortcutManualOnly" = "Contiene acciones solo manuales: solo activación manual";
 "automation.rule.outputMode" = "El resultado va a";
 "automation.rule.outputMode.replaceItem" = "Reemplazar este elemento";
 "automation.rule.outputMode.newItem" = "Nuevo elemento";
@@ -1044,3 +1044,29 @@ Usa %@ para pegar uno por uno.";
 // MARK: - List row metrics
 "meta.chars" = "%@ caracteres";
 "meta.lines" = "%@ líneas";
+
+/* Automation: extract / open / outputs */
+"automation.action.convertColor" = "Convertir formato de color";
+"automation.action.extractVerificationCode" = "Conservar solo el código de verificación";
+"automation.action.extractLinks" = "Conservar solo los enlaces";
+"automation.action.runOCR" = "Reconocer texto de la imagen";
+"automation.action.deleteItem" = "Eliminar el elemento original";
+"automation.action.playSound" = "Reproducir sonido";
+"automation.action.section.extract" = "Extraer y reconocer";
+"automation.action.section.open" = "Abrir y relevo";
+"automation.rule.outputMode.saveToFile" = "Guardar en carpeta";
+"automation.rule.outputMode.postWebhook" = "Enviar a webhook";
+"automation.output.folder.empty" = "Ninguna carpeta seleccionada";
+"automation.output.folder.choose" = "Elegir…";
+"automation.output.folder.invalid" = "No se encuentra la carpeta";
+"automation.output.webhook.placeholder" = "https://";
+"automation.output.webhook.help" = "Envía JSON (content, contentType, sourceApp, rule, createdAt). Los elementos sensibles nunca se envían.";
+"automation.output.webhook.invalidURL" = "La dirección debe empezar por http:// o https://";
+"automation.output.webhook.tooLarge" = "Demasiado largo, no se envió";
+"automation.output.webhook.failedStatus" = "Error al enviar (HTTP %d)";
+"automation.output.webhook.failed" = "Error al enviar: %@";
+"automation.output.webhook.sent" = "Enviado";
+"automation.output.webhook.refused" = "Los elementos sensibles no se envían";
+"automation.output.webhook.textOnly" = "Solo se puede enviar texto";
+"automation.output.saved" = "Guardado en «%@»";
+"automation.output.saveFailed" = "No se pudo guardar. Comprueba que la carpeta sigue existiendo.";

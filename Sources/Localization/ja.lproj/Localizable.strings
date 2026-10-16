@@ -759,7 +759,7 @@
 "automation.rule.triggerMode" = "トリガー";
 "automation.rule.triggerMode.automatic" = "自動";
 "automation.rule.triggerMode.manual" = "手動のみ";
-"automation.rule.triggerMode.shortcutManualOnly" = "ショートカット実行・AIで書き換え・クイックパネルを閉じる を含むルールは手動トリガーのみ";
+"automation.rule.triggerMode.shortcutManualOnly" = "手動でしか実行できないアクションを含むため、手動トリガーのみ";
 "automation.rule.outputMode" = "結果の出力先";
 "automation.rule.outputMode.replaceItem" = "この項目を置き換え";
 "automation.rule.outputMode.newItem" = "新しい項目を作成";
@@ -1040,3 +1040,29 @@
 // MARK: - List row metrics
 "meta.chars" = "%@ 文字";
 "meta.lines" = "%@ 行";
+
+/* Automation: extract / open / outputs */
+"automation.action.convertColor" = "カラー形式を変換";
+"automation.action.extractVerificationCode" = "認証コードだけ残す";
+"automation.action.extractLinks" = "リンクだけ残す";
+"automation.action.runOCR" = "画像内の文字を認識";
+"automation.action.deleteItem" = "元の項目を削除";
+"automation.action.playSound" = "サウンドを再生";
+"automation.action.section.extract" = "抽出・認識";
+"automation.action.section.open" = "開く・リレー";
+"automation.rule.outputMode.saveToFile" = "フォルダに保存";
+"automation.rule.outputMode.postWebhook" = "Webhook に送信";
+"automation.output.folder.empty" = "フォルダ未選択";
+"automation.output.folder.choose" = "選択…";
+"automation.output.folder.invalid" = "フォルダが見つかりません";
+"automation.output.webhook.placeholder" = "https://";
+"automation.output.webhook.help" = "JSON（content、contentType、sourceApp、rule、createdAt）を送信します。機密項目は送信しません。";
+"automation.output.webhook.invalidURL" = "アドレスは http:// か https:// で始めてください";
+"automation.output.webhook.tooLarge" = "長すぎるため送信しませんでした";
+"automation.output.webhook.failedStatus" = "送信に失敗しました（HTTP %d）";
+"automation.output.webhook.failed" = "送信に失敗しました：%@";
+"automation.output.webhook.sent" = "送信しました";
+"automation.output.webhook.refused" = "機密項目は送信しません";
+"automation.output.webhook.textOnly" = "送信できるのはテキストのみです";
+"automation.output.saved" = "「%@」に保存しました";
+"automation.output.saveFailed" = "保存できませんでした。フォルダがあるか確認してください";

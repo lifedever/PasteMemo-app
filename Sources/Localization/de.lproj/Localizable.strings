@@ -727,7 +727,7 @@ Verwenden Sie %@ zum Einfügen.";
 "automation.rule.triggerMode" = "Auslöser";
 "automation.rule.triggerMode.automatic" = "Automatisch";
 "automation.rule.triggerMode.manual" = "Nur manuell";
-"automation.rule.triggerMode.shortcutManualOnly" = "Regeln mit „Kurzbefehl ausführen“, „KI-Umschreiben“ oder „Schnellpanel schließen“ funktionieren nur mit manuellem Auslöser";
+"automation.rule.triggerMode.shortcutManualOnly" = "Enthält Aktionen, die nur manuell laufen – nur manueller Auslöser möglich";
 "automation.rule.outputMode" = "Ergebnis geht an";
 "automation.rule.outputMode.replaceItem" = "Diesen Eintrag ersetzen";
 "automation.rule.outputMode.newItem" = "Neuer Eintrag";
@@ -1026,3 +1026,29 @@ Verwenden Sie %@ zum Einfügen.";
 // MARK: - List row metrics
 "meta.chars" = "%@ Zeichen";
 "meta.lines" = "%@ Zeilen";
+
+/* Automation: extract / open / outputs */
+"automation.action.convertColor" = "Farbformat umwandeln";
+"automation.action.extractVerificationCode" = "Nur Bestätigungscode behalten";
+"automation.action.extractLinks" = "Nur Links behalten";
+"automation.action.runOCR" = "Text im Bild erkennen";
+"automation.action.deleteItem" = "Ursprünglichen Eintrag löschen";
+"automation.action.playSound" = "Ton abspielen";
+"automation.action.section.extract" = "Extrahieren & Erkennen";
+"automation.action.section.open" = "Öffnen & Relay";
+"automation.rule.outputMode.saveToFile" = "In Ordner speichern";
+"automation.rule.outputMode.postWebhook" = "An Webhook senden";
+"automation.output.folder.empty" = "Kein Ordner ausgewählt";
+"automation.output.folder.choose" = "Auswählen…";
+"automation.output.folder.invalid" = "Ordner nicht gefunden";
+"automation.output.webhook.placeholder" = "https://";
+"automation.output.webhook.help" = "Sendet JSON (content, contentType, sourceApp, rule, createdAt). Sensible Einträge werden nie gesendet.";
+"automation.output.webhook.invalidURL" = "Die Adresse muss mit http:// oder https:// beginnen";
+"automation.output.webhook.tooLarge" = "Zu lang, nicht gesendet";
+"automation.output.webhook.failedStatus" = "Senden fehlgeschlagen (HTTP %d)";
+"automation.output.webhook.failed" = "Senden fehlgeschlagen: %@";
+"automation.output.webhook.sent" = "Gesendet";
+"automation.output.webhook.refused" = "Sensible Einträge werden nicht gesendet";
+"automation.output.webhook.textOnly" = "Nur Text kann gesendet werden";
+"automation.output.saved" = "In „%@“ gespeichert";
+"automation.output.saveFailed" = "Speichern fehlgeschlagen. Prüfe, ob der Ordner noch existiert.";
