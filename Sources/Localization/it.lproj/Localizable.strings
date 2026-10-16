@@ -1030,3 +1030,24 @@ Usa %@ per incollare uno per uno.";
 "automation.output.webhook.textOnly" = "Si può inviare solo testo";
 "automation.output.saved" = "Salvato in «%@»";
 "automation.output.saveFailed" = "Salvataggio non riuscito. Controlla che la cartella esista ancora.";
+
+/* Automation: text toolbox */
+"automation.action.base64Encode" = "Codifica Base64";
+"automation.action.base64Decode" = "Decodifica Base64";
+"automation.action.jsonFormat" = "Formatta JSON";
+"automation.action.jsonMinify" = "Comprimi JSON";
+"automation.action.toCamelCase" = "Converti in camelCase";
+"automation.action.toSnakeCase" = "Converti in snake_case";
+"automation.action.toHalfWidth" = "Da larghezza piena a mezza";
+"automation.action.toFullWidth" = "Da mezza larghezza a piena";
+"automation.action.simplifiedToTraditional" = "Cinese semplificato in tradizionale";
+"automation.action.removeDuplicateLines" = "Rimuovi righe duplicate";
+"automation.action.sortLines" = "Ordina righe";
+"automation.action.sortLines.ascending" = "Crescente";
+"automation.action.sortLines.descending" = "Decrescente";
+"automation.action.joinLines" = "Unisci righe";
+"automation.action.joinLines.space" = "Spazio";
+"automation.action.joinLines.none" = "Senza separatore";
+"automation.action.removeHTMLTags" = "Rimuovi tag HTML";
+"automation.action.section.format" = "Converti";
+"automation.action.section.lines" = "Righe";

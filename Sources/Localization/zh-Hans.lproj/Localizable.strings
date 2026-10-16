@@ -1014,3 +1014,24 @@
 "automation.output.webhook.textOnly" = "只能发送文字内容";
 "automation.output.saved" = "已存到「%@」";
 "automation.output.saveFailed" = "保存失败，检查文件夹是否还在";
+
+/* Automation: text toolbox */
+"automation.action.base64Encode" = "Base64 编码";
+"automation.action.base64Decode" = "Base64 解码";
+"automation.action.jsonFormat" = "JSON 格式化";
+"automation.action.jsonMinify" = "JSON 压缩";
+"automation.action.toCamelCase" = "转驼峰命名";
+"automation.action.toSnakeCase" = "转下划线命名";
+"automation.action.toHalfWidth" = "全角转半角";
+"automation.action.toFullWidth" = "半角转全角";
+"automation.action.simplifiedToTraditional" = "简体转繁体";
+"automation.action.removeDuplicateLines" = "删除重复行";
+"automation.action.sortLines" = "按行排序";
+"automation.action.sortLines.ascending" = "升序";
+"automation.action.sortLines.descending" = "降序";
+"automation.action.joinLines" = "合并为一行";
+"automation.action.joinLines.space" = "空格";
+"automation.action.joinLines.none" = "直接拼接";
+"automation.action.removeHTMLTags" = "去掉 HTML 标签";
+"automation.action.section.format" = "格式转换";
+"automation.action.section.lines" = "按行处理";

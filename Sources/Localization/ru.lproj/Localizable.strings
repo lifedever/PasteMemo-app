@@ -1040,3 +1040,24 @@
 "automation.output.webhook.textOnly" = "Можно отправить только текст";
 "automation.output.saved" = "Сохранено в «%@»";
 "automation.output.saveFailed" = "Не удалось сохранить. Проверьте, что папка существует.";
+
+/* Automation: text toolbox */
+"automation.action.base64Encode" = "Кодировать в Base64";
+"automation.action.base64Decode" = "Декодировать Base64";
+"automation.action.jsonFormat" = "Отформатировать JSON";
+"automation.action.jsonMinify" = "Сжать JSON";
+"automation.action.toCamelCase" = "В camelCase";
+"automation.action.toSnakeCase" = "В snake_case";
+"automation.action.toHalfWidth" = "Полноширинные в обычные";
+"automation.action.toFullWidth" = "Обычные в полноширинные";
+"automation.action.simplifiedToTraditional" = "Упрощённый китайский в традиционный";
+"automation.action.removeDuplicateLines" = "Удалить повторяющиеся строки";
+"automation.action.sortLines" = "Сортировать строки";
+"automation.action.sortLines.ascending" = "По возрастанию";
+"automation.action.sortLines.descending" = "По убыванию";
+"automation.action.joinLines" = "Объединить строки";
+"automation.action.joinLines.space" = "Пробел";
+"automation.action.joinLines.none" = "Без разделителя";
+"automation.action.removeHTMLTags" = "Удалить HTML-теги";
+"automation.action.section.format" = "Преобразование";
+"automation.action.section.lines" = "Строки";

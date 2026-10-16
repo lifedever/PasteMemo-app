@@ -1040,3 +1040,24 @@ Gunakan %@ untuk menempel satu per satu.";
 "automation.output.webhook.textOnly" = "Hanya teks yang bisa dikirim";
 "automation.output.saved" = "Disimpan ke “%@”";
 "automation.output.saveFailed" = "Gagal menyimpan. Periksa apakah folder masih ada.";
+
+/* Automation: text toolbox */
+"automation.action.base64Encode" = "Enkode Base64";
+"automation.action.base64Decode" = "Dekode Base64";
+"automation.action.jsonFormat" = "Rapikan JSON";
+"automation.action.jsonMinify" = "Ringkas JSON";
+"automation.action.toCamelCase" = "Ubah ke camelCase";
+"automation.action.toSnakeCase" = "Ubah ke snake_case";
+"automation.action.toHalfWidth" = "Lebar penuh ke setengah";
+"automation.action.toFullWidth" = "Setengah lebar ke penuh";
+"automation.action.simplifiedToTraditional" = "Mandarin Sederhana ke Tradisional";
+"automation.action.removeDuplicateLines" = "Hapus baris duplikat";
+"automation.action.sortLines" = "Urutkan baris";
+"automation.action.sortLines.ascending" = "Naik";
+"automation.action.sortLines.descending" = "Turun";
+"automation.action.joinLines" = "Gabungkan baris";
+"automation.action.joinLines.space" = "Spasi";
+"automation.action.joinLines.none" = "Tanpa pemisah";
+"automation.action.removeHTMLTags" = "Hapus tag HTML";
+"automation.action.section.format" = "Konversi";
+"automation.action.section.lines" = "Baris";

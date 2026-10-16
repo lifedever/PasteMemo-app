@@ -1014,3 +1014,24 @@
 "automation.output.webhook.textOnly" = "Only text can be sent";
 "automation.output.saved" = "Saved to “%@”";
 "automation.output.saveFailed" = "Couldn’t save. Check that the folder is still there.";
+
+/* Automation: text toolbox */
+"automation.action.base64Encode" = "Base64 Encode";
+"automation.action.base64Decode" = "Base64 Decode";
+"automation.action.jsonFormat" = "Format JSON";
+"automation.action.jsonMinify" = "Minify JSON";
+"automation.action.toCamelCase" = "To camelCase";
+"automation.action.toSnakeCase" = "To snake_case";
+"automation.action.toHalfWidth" = "Full-Width to Half-Width";
+"automation.action.toFullWidth" = "Half-Width to Full-Width";
+"automation.action.simplifiedToTraditional" = "Simplified to Traditional Chinese";
+"automation.action.removeDuplicateLines" = "Remove Duplicate Lines";
+"automation.action.sortLines" = "Sort Lines";
+"automation.action.sortLines.ascending" = "A to Z";
+"automation.action.sortLines.descending" = "Z to A";
+"automation.action.joinLines" = "Join Lines";
+"automation.action.joinLines.space" = "Space";
+"automation.action.joinLines.none" = "Nothing";
+"automation.action.removeHTMLTags" = "Remove HTML Tags";
+"automation.action.section.format" = "Convert";
+"automation.action.section.lines" = "Lines";

@@ -1052,3 +1052,24 @@ Verwenden Sie %@ zum Einfügen.";
 "automation.output.webhook.textOnly" = "Nur Text kann gesendet werden";
 "automation.output.saved" = "In „%@“ gespeichert";
 "automation.output.saveFailed" = "Speichern fehlgeschlagen. Prüfe, ob der Ordner noch existiert.";
+
+/* Automation: text toolbox */
+"automation.action.base64Encode" = "Base64 kodieren";
+"automation.action.base64Decode" = "Base64 dekodieren";
+"automation.action.jsonFormat" = "JSON formatieren";
+"automation.action.jsonMinify" = "JSON verkleinern";
+"automation.action.toCamelCase" = "In camelCase umwandeln";
+"automation.action.toSnakeCase" = "In snake_case umwandeln";
+"automation.action.toHalfWidth" = "Vollbreite zu Halbbreite";
+"automation.action.toFullWidth" = "Halbbreite zu Vollbreite";
+"automation.action.simplifiedToTraditional" = "Vereinfacht zu traditionell (Chinesisch)";
+"automation.action.removeDuplicateLines" = "Doppelte Zeilen entfernen";
+"automation.action.sortLines" = "Zeilen sortieren";
+"automation.action.sortLines.ascending" = "Aufsteigend";
+"automation.action.sortLines.descending" = "Absteigend";
+"automation.action.joinLines" = "Zeilen verbinden";
+"automation.action.joinLines.space" = "Leerzeichen";
+"automation.action.joinLines.none" = "Ohne Trennzeichen";
+"automation.action.removeHTMLTags" = "HTML-Tags entfernen";
+"automation.action.section.format" = "Umwandeln";
+"automation.action.section.lines" = "Zeilen";

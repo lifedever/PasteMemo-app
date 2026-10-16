@@ -1066,3 +1066,24 @@
 "automation.output.webhook.textOnly" = "送信できるのはテキストのみです";
 "automation.output.saved" = "「%@」に保存しました";
 "automation.output.saveFailed" = "保存できませんでした。フォルダがあるか確認してください";
+
+/* Automation: text toolbox */
+"automation.action.base64Encode" = "Base64 エンコード";
+"automation.action.base64Decode" = "Base64 デコード";
+"automation.action.jsonFormat" = "JSON を整形";
+"automation.action.jsonMinify" = "JSON を圧縮";
+"automation.action.toCamelCase" = "キャメルケースに変換";
+"automation.action.toSnakeCase" = "スネークケースに変換";
+"automation.action.toHalfWidth" = "全角を半角に";
+"automation.action.toFullWidth" = "半角を全角に";
+"automation.action.simplifiedToTraditional" = "簡体字を繁体字に";
+"automation.action.removeDuplicateLines" = "重複行を削除";
+"automation.action.sortLines" = "行を並べ替え";
+"automation.action.sortLines.ascending" = "昇順";
+"automation.action.sortLines.descending" = "降順";
+"automation.action.joinLines" = "1 行に結合";
+"automation.action.joinLines.space" = "スペース";
+"automation.action.joinLines.none" = "区切りなし";
+"automation.action.removeHTMLTags" = "HTML タグを削除";
+"automation.action.section.format" = "変換";
+"automation.action.section.lines" = "行の処理";

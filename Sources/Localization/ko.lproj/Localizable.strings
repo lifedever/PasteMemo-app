@@ -1068,3 +1068,24 @@
 "automation.output.webhook.textOnly" = "텍스트만 전송할 수 있습니다";
 "automation.output.saved" = "‘%@’에 저장함";
 "automation.output.saveFailed" = "저장하지 못했습니다. 폴더가 있는지 확인하세요";
+
+/* Automation: text toolbox */
+"automation.action.base64Encode" = "Base64 인코딩";
+"automation.action.base64Decode" = "Base64 디코딩";
+"automation.action.jsonFormat" = "JSON 정렬";
+"automation.action.jsonMinify" = "JSON 압축";
+"automation.action.toCamelCase" = "카멜 케이스로 변환";
+"automation.action.toSnakeCase" = "스네이크 케이스로 변환";
+"automation.action.toHalfWidth" = "전각을 반각으로";
+"automation.action.toFullWidth" = "반각을 전각으로";
+"automation.action.simplifiedToTraditional" = "간체를 번체로";
+"automation.action.removeDuplicateLines" = "중복 줄 삭제";
+"automation.action.sortLines" = "줄 정렬";
+"automation.action.sortLines.ascending" = "오름차순";
+"automation.action.sortLines.descending" = "내림차순";
+"automation.action.joinLines" = "한 줄로 합치기";
+"automation.action.joinLines.space" = "공백";
+"automation.action.joinLines.none" = "구분자 없음";
+"automation.action.removeHTMLTags" = "HTML 태그 제거";
+"automation.action.section.format" = "형식 변환";
+"automation.action.section.lines" = "줄 처리";

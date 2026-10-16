@@ -62,6 +62,20 @@ enum RuleAction: Codable, Equatable, Hashable, Sendable {
     /// Plays a sound when the rule applies. `name` is a `SoundManager.SoundSource`
     /// storage key (`system:Glass`, `custom:Bubble`).
     case playSound(name: String)
+    // Text toolbox — see `TextTools` for exact behaviour.
+    case base64Encode
+    case base64Decode
+    case jsonFormat
+    case jsonMinify
+    case toCamelCase
+    case toSnakeCase
+    case toHalfWidth
+    case toFullWidth
+    case simplifiedToTraditional
+    case removeDuplicateLines
+    case sortLines(ascending: Bool)
+    case joinLines(separator: String)
+    case removeHTMLTags
 
     @MainActor var displayLabel: String {
         switch self {
@@ -97,6 +111,19 @@ enum RuleAction: Codable, Equatable, Hashable, Sendable {
         case .splitToRelay: L10n.tr("relay.splitAndRelay")
         case .deleteItem: L10n.tr("automation.action.deleteItem")
         case .playSound: L10n.tr("automation.action.playSound")
+        case .base64Encode: L10n.tr("automation.action.base64Encode")
+        case .base64Decode: L10n.tr("automation.action.base64Decode")
+        case .jsonFormat: L10n.tr("automation.action.jsonFormat")
+        case .jsonMinify: L10n.tr("automation.action.jsonMinify")
+        case .toCamelCase: L10n.tr("automation.action.toCamelCase")
+        case .toSnakeCase: L10n.tr("automation.action.toSnakeCase")
+        case .toHalfWidth: L10n.tr("automation.action.toHalfWidth")
+        case .toFullWidth: L10n.tr("automation.action.toFullWidth")
+        case .simplifiedToTraditional: L10n.tr("automation.action.simplifiedToTraditional")
+        case .removeDuplicateLines: L10n.tr("automation.action.removeDuplicateLines")
+        case .sortLines: L10n.tr("automation.action.sortLines")
+        case .joinLines: L10n.tr("automation.action.joinLines")
+        case .removeHTMLTags: L10n.tr("automation.action.removeHTMLTags")
         }
     }
 
@@ -135,6 +162,19 @@ enum RuleAction: Codable, Equatable, Hashable, Sendable {
         case .extractLinks:
             let links = TextEntityExtractor.linkURLs(in: content)
             return links.isEmpty ? content : links.joined(separator: "\n")
+        case .base64Encode: return TextTools.base64Encode(content)
+        case .base64Decode: return TextTools.base64Decode(content)
+        case .jsonFormat: return TextTools.formatJSON(content)
+        case .jsonMinify: return TextTools.minifyJSON(content)
+        case .toCamelCase: return TextTools.camelCase(content)
+        case .toSnakeCase: return TextTools.snakeCase(content)
+        case .toHalfWidth: return TextTools.halfWidth(content)
+        case .toFullWidth: return TextTools.fullWidth(content)
+        case .simplifiedToTraditional: return TextTools.simplifiedToTraditional(content)
+        case .removeDuplicateLines: return TextTools.removeDuplicateLines(content)
+        case .sortLines(let ascending): return TextTools.sortLines(content, ascending: ascending)
+        case .joinLines(let separator): return TextTools.joinLines(content, separator: separator)
+        case .removeHTMLTags: return TextTools.removeHTMLTags(content)
         case .stripRichText, .assignGroup, .markSensitive, .unmarkSensitive, .pin, .unpin,
              .skipCapture, .stopProcessing, .closeQuickPanel, .runShortcut, .aiTransform,
              .runOCR, .openLink, .openInPreview, .showInFinder, .addToRelay, .splitToRelay,
@@ -153,7 +193,10 @@ enum RuleAction: Codable, Equatable, Hashable, Sendable {
         switch self {
         case .lowercased, .uppercased, .trimWhitespace, .removeBlankLines, .urlEncode,
              .urlDecode, .removeQueryParams, .regexReplace, .addPrefix, .addSuffix, .aiTransform,
-             .convertColor, .extractVerificationCode, .extractLinks, .runOCR:
+             .convertColor, .extractVerificationCode, .extractLinks, .runOCR,
+             .base64Encode, .base64Decode, .jsonFormat, .jsonMinify, .toCamelCase, .toSnakeCase,
+             .toHalfWidth, .toFullWidth, .simplifiedToTraditional, .removeDuplicateLines,
+             .sortLines, .joinLines, .removeHTMLTags:
             return .transform
         case .stripRichText, .assignGroup, .markSensitive, .unmarkSensitive, .pin, .unpin:
             return .metadata

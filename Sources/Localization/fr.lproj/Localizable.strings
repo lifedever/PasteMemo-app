@@ -1070,3 +1070,24 @@ Utilisez %@ pour coller un par un.";
 "automation.output.webhook.textOnly" = "Seul du texte peut être envoyé";
 "automation.output.saved" = "Enregistré dans « %@ »";
 "automation.output.saveFailed" = "Échec de l’enregistrement. Vérifiez que le dossier existe encore.";
+
+/* Automation: text toolbox */
+"automation.action.base64Encode" = "Encoder en Base64";
+"automation.action.base64Decode" = "Décoder le Base64";
+"automation.action.jsonFormat" = "Mettre en forme le JSON";
+"automation.action.jsonMinify" = "Compacter le JSON";
+"automation.action.toCamelCase" = "Convertir en camelCase";
+"automation.action.toSnakeCase" = "Convertir en snake_case";
+"automation.action.toHalfWidth" = "Pleine chasse vers demi-chasse";
+"automation.action.toFullWidth" = "Demi-chasse vers pleine chasse";
+"automation.action.simplifiedToTraditional" = "Chinois simplifié vers traditionnel";
+"automation.action.removeDuplicateLines" = "Supprimer les lignes en double";
+"automation.action.sortLines" = "Trier les lignes";
+"automation.action.sortLines.ascending" = "Croissant";
+"automation.action.sortLines.descending" = "Décroissant";
+"automation.action.joinLines" = "Joindre les lignes";
+"automation.action.joinLines.space" = "Espace";
+"automation.action.joinLines.none" = "Sans séparateur";
+"automation.action.removeHTMLTags" = "Supprimer les balises HTML";
+"automation.action.section.format" = "Convertir";
+"automation.action.section.lines" = "Lignes";

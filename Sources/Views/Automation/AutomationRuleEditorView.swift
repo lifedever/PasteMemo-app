@@ -712,7 +712,17 @@ struct AutomationRuleEditorView: View {
                 [
                     .submenu(L10n.tr("automation.action.section.text"), symbol: "textformat", [
                         actionItem(.lowercased), actionItem(.uppercased), actionItem(.trimWhitespace),
-                        actionItem(.removeBlankLines), actionItem(.stripRichText),
+                        actionItem(.removeBlankLines), actionItem(.stripRichText), actionItem(.removeHTMLTags),
+                    ]),
+                    .submenu(L10n.tr("automation.action.section.format"), symbol: "arrow.left.arrow.right", [
+                        actionItem(.jsonFormat), actionItem(.jsonMinify),
+                        actionItem(.base64Encode), actionItem(.base64Decode),
+                        actionItem(.toCamelCase), actionItem(.toSnakeCase),
+                        actionItem(.toHalfWidth), actionItem(.toFullWidth), actionItem(.simplifiedToTraditional),
+                    ]),
+                    .submenu(L10n.tr("automation.action.section.lines"), symbol: "list.bullet", [
+                        actionItem(.removeDuplicateLines), actionItem(.sortLines(ascending: true)),
+                        actionItem(.joinLines(separator: " ")),
                     ]),
                     .submenu(L10n.tr("automation.action.section.extract"), symbol: "text.viewfinder", [
                         actionItem(.extractVerificationCode), actionItem(.extractLinks),
@@ -898,6 +908,19 @@ struct AutomationRuleEditorView: View {
         case .splitToRelay(let delimiter):
             delimiterPicker(delimiter, at: index)
 
+        case .sortLines(let ascending):
+            Picker("", selection: Binding(
+                get: { ascending },
+                set: { actions[index].value = .sortLines(ascending: $0) }
+            )) {
+                Text(L10n.tr("automation.action.sortLines.ascending")).tag(true)
+                Text(L10n.tr("automation.action.sortLines.descending")).tag(false)
+            }
+            .labelsHidden()
+
+        case .joinLines(let separator):
+            joinSeparatorPicker(separator, at: index)
+
         case .playSound(let name):
             Picker("", selection: Binding(
                 get: { name },
@@ -914,6 +937,41 @@ struct AutomationRuleEditorView: View {
 
         default:
             EmptyView()
+        }
+    }
+
+    /// What goes between joined lines: space / nothing / comma / 、, or any other text.
+    private static let joinPresets: [(value: String, key: String)] = [
+        (" ", "automation.action.joinLines.space"),
+        ("", "automation.action.joinLines.none"),
+        (", ", "relay.delimiter.comma"),
+        ("、", "relay.delimiter.chineseComma"),
+    ]
+
+    @ViewBuilder
+    private func joinSeparatorPicker(_ separator: String, at index: Int) -> some View {
+        let isCustom = !Self.joinPresets.contains { $0.value == separator }
+        HStack(spacing: 8) {
+            Picker("", selection: Binding(
+                get: { isCustom ? "\u{0}custom" : separator },
+                set: { picked in
+                    actions[index].value = .joinLines(separator: picked == "\u{0}custom" ? " | " : picked)
+                }
+            )) {
+                ForEach(Self.joinPresets, id: \.value) { preset in
+                    Text(L10n.tr(preset.key)).tag(preset.value)
+                }
+                Text(L10n.tr("relay.delimiter.custom")).tag("\u{0}custom")
+            }
+            .labelsHidden()
+            if isCustom {
+                TextField("", text: Binding(
+                    get: { separator },
+                    set: { actions[index].value = .joinLines(separator: $0) }
+                ))
+                .labelsHidden()
+                .frame(width: 80)
+            }
         }
     }
 
@@ -1173,6 +1231,13 @@ struct AutomationRuleEditorView: View {
                 .font(.callout).foregroundStyle(.secondary)
         case .playSound(let name):
             Text(SoundManager.SoundSource.from(storageKey: name).displayName)
+                .font(.callout).foregroundStyle(.secondary)
+        case .sortLines(let ascending):
+            Text(L10n.tr(ascending ? "automation.action.sortLines.ascending" : "automation.action.sortLines.descending"))
+                .font(.callout).foregroundStyle(.secondary)
+        case .joinLines(let separator):
+            let preset = Self.joinPresets.first { $0.value == separator }
+            Text(preset.map { L10n.tr($0.key) } ?? "“\(separator)”")
                 .font(.callout).foregroundStyle(.secondary)
         default:
             EmptyView()

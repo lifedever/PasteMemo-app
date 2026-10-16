@@ -1026,3 +1026,24 @@
 "automation.output.webhook.textOnly" = "只能傳送文字內容";
 "automation.output.saved" = "已存到「%@」";
 "automation.output.saveFailed" = "儲存失敗，檢查資料夾是否還在";
+
+/* Automation: text toolbox */
+"automation.action.base64Encode" = "Base64 編碼";
+"automation.action.base64Decode" = "Base64 解碼";
+"automation.action.jsonFormat" = "JSON 格式化";
+"automation.action.jsonMinify" = "JSON 壓縮";
+"automation.action.toCamelCase" = "轉駝峰命名";
+"automation.action.toSnakeCase" = "轉底線命名";
+"automation.action.toHalfWidth" = "全形轉半形";
+"automation.action.toFullWidth" = "半形轉全形";
+"automation.action.simplifiedToTraditional" = "簡體轉繁體";
+"automation.action.removeDuplicateLines" = "刪除重複行";
+"automation.action.sortLines" = "按行排序";
+"automation.action.sortLines.ascending" = "升冪";
+"automation.action.sortLines.descending" = "降冪";
+"automation.action.joinLines" = "合併為一行";
+"automation.action.joinLines.space" = "空格";
+"automation.action.joinLines.none" = "直接拼接";
+"automation.action.removeHTMLTags" = "移除 HTML 標籤";
+"automation.action.section.format" = "格式轉換";
+"automation.action.section.lines" = "按行處理";
