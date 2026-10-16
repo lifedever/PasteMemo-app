@@ -1,3 +1,4 @@
+import AppKit
 import Foundation
 import SwiftData
 
@@ -25,18 +26,25 @@ enum RelayRuleResolver {
     static func actionsApplying(to item: RelayItem) -> [RuleAction] {
         guard let rule = currentRule() else { return [] }
         guard item.contentKind == .text else { return [] }
-        let contentType = ClipboardManager.shared.detectContentType(item.content).type
-        let ok = rule.conditions.isEmpty || AutomationEngine.matchesConditions(
-            rule.conditions,
-            logic: rule.conditionLogic,
-            content: item.content,
-            contentType: contentType,
-            sourceApp: item.sourceAppBundleID
-        )
         // Relay transforms text at paste time, synchronously: only content transforms
         // apply here. Async actions (Shortcuts) and metadata / flow actions would be
         // silent no-ops and are dropped.
-        return ok ? rule.actions.filter { $0.kind == .transform } : []
+        return matches(rule, item: item) ? rule.actions.filter { $0.kind == .transform } : []
+    }
+
+    /// Whether `rule`'s conditions hold for `item` right now. Shared by the paste
+    /// and the queue previews so they never disagree. The paste target is whatever
+    /// app is in front — Relay pastes into it — unless that's PasteMemo itself.
+    static func matches(_ rule: AutomationRule, item: RelayItem) -> Bool {
+        guard !rule.conditions.isEmpty else { return true }
+        let front = NSWorkspace.shared.frontmostApplication?.bundleIdentifier
+        let input = ConditionInput(
+            content: item.content,
+            contentType: ClipboardManager.shared.detectContentType(item.content).type,
+            sourceApp: item.sourceAppBundleID,
+            targetApp: front == Bundle.main.bundleIdentifier ? nil : front
+        )
+        return AutomationEngine.matchesConditions(rule.conditions, logic: rule.conditionLogic, input: input)
     }
 
     /// Rules the Relay picker offers: enabled ones that are purely synchronous.

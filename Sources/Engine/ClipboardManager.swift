@@ -212,6 +212,7 @@ final class ClipboardManager: ObservableObject {
             content: newItem.content,
             contentType: newItem.contentType,
             sourceApp: appInfo.bundleID,
+            isSensitive: newItem.isSensitive,
             context: context
         )
         var captureOutputs: [CaptureOutput] = []

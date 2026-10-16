@@ -1035,3 +1035,23 @@
 "automation.action.removeHTMLTags" = "去掉 HTML 标签";
 "automation.action.section.format" = "格式转换";
 "automation.action.section.lines" = "按行处理";
+
+/* Automation: conditions */
+"automation.condition.section.content" = "内容";
+"automation.condition.section.app" = "应用";
+"automation.condition.section.state" = "条目状态";
+"automation.condition.section.time" = "时间";
+"automation.condition.targetApp" = "粘贴到的应用是";
+"automation.condition.targetApp.help" = "只在快捷面板和接力粘贴时能判断，复制时自动触发的规则不会满足这一条";
+"automation.condition.contentLength" = "字数范围";
+"automation.condition.lineCount" = "行数范围";
+"automation.condition.range.min" = "最少";
+"automation.condition.range.max" = "最多";
+"automation.condition.range.any" = "不限";
+"automation.condition.isPinned" = "已置顶";
+"automation.condition.isSensitive" = "已标记为敏感";
+"automation.condition.inGroup" = "所在分组是";
+"automation.condition.inGroup.any" = "任意分组";
+"automation.condition.timeOfDay" = "时间段";
+"automation.condition.weekday" = "星期";
+"automation.condition.negated" = "不满足";

@@ -187,15 +187,7 @@ struct RelayHeroCard: View {
     private func previewDiff(for item: RelayItem) -> String? {
         guard let rule = activeRule, settingPreviewEnabled, item.contentKind == .text else { return nil }
         guard item.content.utf8.count <= 64 * 1024 else { return nil }
-        let contentType = ClipboardManager.shared.detectContentType(item.content).type
-        let ok = rule.conditions.isEmpty || AutomationEngine.matchesConditions(
-            rule.conditions,
-            logic: rule.conditionLogic,
-            content: item.content,
-            contentType: contentType,
-            sourceApp: item.sourceAppBundleID
-        )
-        guard ok else { return nil }
+        guard RelayRuleResolver.matches(rule, item: item) else { return nil }
         let processed = AutomationEngine.apply(rule.actions, to: item.content)
         return processed == item.content ? nil : processed
     }

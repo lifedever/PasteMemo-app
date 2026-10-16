@@ -1089,3 +1089,23 @@
 "automation.action.removeHTMLTags" = "HTML 태그 제거";
 "automation.action.section.format" = "형식 변환";
 "automation.action.section.lines" = "줄 처리";
+
+/* Automation: conditions */
+"automation.condition.section.content" = "내용";
+"automation.condition.section.app" = "앱";
+"automation.condition.section.state" = "항목 상태";
+"automation.condition.section.time" = "시간";
+"automation.condition.targetApp" = "붙여넣을 앱이";
+"automation.condition.targetApp.help" = "빠른 패널과 릴레이 붙여넣기에서만 판단됩니다. 복사 시 자동 실행되는 규칙은 이 조건을 충족하지 않습니다";
+"automation.condition.contentLength" = "글자 수";
+"automation.condition.lineCount" = "줄 수";
+"automation.condition.range.min" = "최소";
+"automation.condition.range.max" = "최대";
+"automation.condition.range.any" = "제한 없음";
+"automation.condition.isPinned" = "고정됨";
+"automation.condition.isSensitive" = "민감으로 표시됨";
+"automation.condition.inGroup" = "그룹이";
+"automation.condition.inGroup.any" = "아무 그룹";
+"automation.condition.timeOfDay" = "시간대";
+"automation.condition.weekday" = "요일";
+"automation.condition.negated" = "충족 안 함";

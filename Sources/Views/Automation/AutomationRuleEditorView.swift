@@ -615,65 +615,225 @@ struct AutomationRuleEditorView: View {
         HStack {
             NativePullDownButton(title: L10n.tr("automation.condition.add")) {
                 [
-                    .item(L10n.tr("automation.condition.anyText"), symbol: "text.alignleft") { conditions.append(IdentifiedCondition(value: .anyText)) },
-                    .item(L10n.tr("automation.condition.contentType"), symbol: "doc") { conditions.append(IdentifiedCondition(value: .contentType(.text))) },
-                    .item(L10n.tr("automation.condition.containsText"), symbol: "magnifyingglass") { conditions.append(IdentifiedCondition(value: .containsText(text: ""))) },
-                    .item(L10n.tr("automation.condition.regexMatch"), symbol: "asterisk") { conditions.append(IdentifiedCondition(value: .regexMatch(pattern: ""))) },
-                    .item(L10n.tr("automation.condition.sourceApp"), symbol: "app") { conditions.append(IdentifiedCondition(value: .sourceApp(bundleIDs: []))) },
+                    .submenu(L10n.tr("automation.condition.section.content"), symbol: "doc.text", [
+                        conditionItem("automation.condition.anyText", .anyText),
+                        conditionItem("automation.condition.contentType", .contentType(.text)),
+                        conditionItem("automation.condition.containsText", .containsText(text: "")),
+                        conditionItem("automation.condition.regexMatch", .regexMatch(pattern: "")),
+                        conditionItem("automation.condition.contentLength", .contentLength(min: nil, max: nil)),
+                        conditionItem("automation.condition.lineCount", .lineCount(min: nil, max: nil)),
+                    ]),
+                    .submenu(L10n.tr("automation.condition.section.app"), symbol: "app", [
+                        conditionItem("automation.condition.sourceApp", .sourceApp(bundleIDs: [])),
+                        conditionItem("automation.condition.targetApp", .targetApp(bundleIDs: [])),
+                    ]),
+                    .submenu(L10n.tr("automation.condition.section.state"), symbol: "tag", [
+                        conditionItem("automation.condition.isPinned", .isPinned),
+                        conditionItem("automation.condition.isSensitive", .isSensitive),
+                        conditionItem("automation.condition.inGroup", .inGroup(name: "")),
+                    ]),
+                    .submenu(L10n.tr("automation.condition.section.time"), symbol: "clock", [
+                        conditionItem("automation.condition.timeOfDay", .timeOfDay(startMinute: 9 * 60, endMinute: 18 * 60)),
+                        conditionItem("automation.condition.weekday", .weekday(days: [2, 3, 4, 5, 6])),
+                    ]),
                 ]
             }
             .fixedSize()
             Spacer()
         }
     }
+
+    private func conditionItem(_ key: String, _ condition: RuleCondition) -> NativeMenuItem {
+        .item(L10n.tr(key)) { conditions.append(IdentifiedCondition(value: condition)) }
+    }
+
+    /// One editable condition. A negated condition is stored as `.not(base)` and edited
+    /// as `base` plus the "not met" switch; `set` writes the wrapper back.
     @ViewBuilder
     private func conditionRow(_ condition: RuleCondition, at index: Int) -> some View {
-        if case .sourceApp(let bundleIDs) = condition {
-            sourceAppRow(bundleIDs: bundleIDs, at: index)
-        } else {
+        let (base, negated) = condition.unwrappedNegation
+        let set: (RuleCondition) -> Void = { conditions[index].value = negated ? .not($0) : $0 }
+        switch base {
+        case .sourceApp(let bundleIDs):
+            appListRow(titleKey: "automation.condition.sourceApp", bundleIDs: bundleIDs, at: index) {
+                set(.sourceApp(bundleIDs: $0))
+            }
+        case .targetApp(let bundleIDs):
+            appListRow(titleKey: "automation.condition.targetApp", bundleIDs: bundleIDs, at: index,
+                       note: L10n.tr("automation.condition.targetApp.help")) {
+                set(.targetApp(bundleIDs: $0))
+            }
+        default:
             HStack {
-                switch condition {
-                case .contentType(let type):
-                    Picker(L10n.tr("automation.condition.contentType"), selection: Binding(
-                        get: { type },
-                        set: { conditions[index].value = .contentType($0) }
-                    )) {
-                        ForEach(ClipContentType.ruleEditorVisibleCases, id: \.self) { t in
-                            Text(t.label).tag(t)
-                        }
-                    }
-                
-                case .anyText:
-                    Text(L10n.tr("automation.condition.anyText"))
-                case .regexMatch(let pattern):
-                    TextField(L10n.tr("automation.condition.regexMatch"), text: Binding(
-                        get: { pattern },
-                        set: { conditions[index].value = .regexMatch(pattern: $0) }
-                    ), prompt: Text(L10n.tr("automation.condition.regexMatch.placeholder")))
-                    .font(.system(.body, design: .monospaced))
-                
-                case .containsText(let text):
-                    TextField(L10n.tr("automation.condition.containsText"), text: Binding(
-                        get: { text },
-                        set: { conditions[index].value = .containsText(text: $0) }
-                    ), prompt: Text(L10n.tr("automation.condition.containsText.placeholder")))
-                
-                default:
-                    EmptyView()
-                }
+                conditionControls(base, set: set)
                 Spacer(minLength: 8)
+                negateToggle(at: index)
                 removeButton { conditions.remove(at: index) }
-            
             }
         }
     }
+
     @ViewBuilder
-    private func sourceAppRow(bundleIDs: [String], at index: Int) -> some View {
+    private func conditionControls(_ condition: RuleCondition, set: @escaping (RuleCondition) -> Void) -> some View {
+        switch condition {
+        case .contentType(let type):
+            Picker(L10n.tr("automation.condition.contentType"), selection: Binding(
+                get: { type },
+                set: { set(.contentType($0)) }
+            )) {
+                ForEach(ClipContentType.ruleEditorVisibleCases, id: \.self) { t in
+                    Text(t.label).tag(t)
+                }
+            }
+        case .anyText:
+            Text(L10n.tr("automation.condition.anyText"))
+        case .regexMatch(let pattern):
+            TextField(L10n.tr("automation.condition.regexMatch"), text: Binding(
+                get: { pattern },
+                set: { set(.regexMatch(pattern: $0)) }
+            ), prompt: Text(L10n.tr("automation.condition.regexMatch.placeholder")))
+            .font(.system(.body, design: .monospaced))
+        case .containsText(let text):
+            TextField(L10n.tr("automation.condition.containsText"), text: Binding(
+                get: { text },
+                set: { set(.containsText(text: $0)) }
+            ), prompt: Text(L10n.tr("automation.condition.containsText.placeholder")))
+        case .contentLength(let min, let max):
+            rangeFields(titleKey: "automation.condition.contentLength", min: min, max: max) {
+                set(.contentLength(min: $0, max: $1))
+            }
+        case .lineCount(let min, let max):
+            rangeFields(titleKey: "automation.condition.lineCount", min: min, max: max) {
+                set(.lineCount(min: $0, max: $1))
+            }
+        case .isPinned:
+            Text(L10n.tr("automation.condition.isPinned"))
+        case .isSensitive:
+            Text(L10n.tr("automation.condition.isSensitive"))
+        case .inGroup(let name):
+            // Same shape as the "move to group" action's picker — no `.fixedSize()`.
+            Picker(L10n.tr("automation.condition.inGroup"), selection: Binding(
+                get: { name },
+                set: { set(.inGroup(name: $0)) }
+            )) {
+                let groups = (try? modelContext.fetch(FetchDescriptor<SmartGroup>(sortBy: [SortDescriptor(\.sortOrder)]))) ?? []
+                Text(L10n.tr("automation.condition.inGroup.any")).tag("")
+                ForEach(groups, id: \.name) { group in
+                    Label(group.name, systemImage: group.icon).tag(group.name)
+                }
+            }
+        case .timeOfDay(let start, let end):
+            Text(L10n.tr("automation.condition.timeOfDay"))
+            DatePicker("", selection: minuteBinding(start) { set(.timeOfDay(startMinute: $0, endMinute: end)) },
+                       displayedComponents: .hourAndMinute)
+                .labelsHidden()
+                .fixedSize()
+            Text("–").foregroundStyle(.secondary)
+            DatePicker("", selection: minuteBinding(end) { set(.timeOfDay(startMinute: start, endMinute: $0)) },
+                       displayedComponents: .hourAndMinute)
+                .labelsHidden()
+                .fixedSize()
+        case .weekday(let days):
+            Text(L10n.tr("automation.condition.weekday"))
+            weekdayToggles(days) { set(.weekday(days: $0)) }
+        case .sourceApp, .targetApp, .not:
+            EmptyView()
+        }
+    }
+
+    /// "Not met" switch: flips the row between `base` and `.not(base)`.
+    private func negateToggle(at index: Int) -> some View {
+        let (base, negated) = conditions[index].value.unwrappedNegation
+        return Toggle(L10n.tr("automation.condition.negated"), isOn: Binding(
+            get: { negated },
+            set: { conditions[index].value = $0 ? .not(base) : base }
+        ))
+        .toggleStyle(.button)
+        .controlSize(.small)
+    }
+
+    private var negationBadge: some View {
+        Text(L10n.tr("automation.condition.negated"))
+            .font(.caption.weight(.semibold))
+            .padding(.horizontal, 6)
+            .padding(.vertical, 2)
+            .background(Capsule().fill(Color.orange.opacity(0.15)))
+            .foregroundStyle(.orange)
+    }
+
+    private func rangeFields(titleKey: String, min: Int?, max: Int?, set: @escaping (Int?, Int?) -> Void) -> some View {
+        HStack(spacing: 6) {
+            Text(L10n.tr(titleKey))
+            optionalNumberField(min, placeholderKey: "automation.condition.range.min") { set($0, max) }
+            Text("–").foregroundStyle(.secondary)
+            optionalNumberField(max, placeholderKey: "automation.condition.range.max") { set(min, $0) }
+        }
+    }
+
+    private func optionalNumberField(_ value: Int?, placeholderKey: String, set: @escaping (Int?) -> Void) -> some View {
+        TextField("", text: Binding(
+            get: { value.map(String.init) ?? "" },
+            set: { text in
+                let digits = String(text.filter { $0.isASCII && $0.isNumber }.prefix(9))
+                set(digits.isEmpty ? nil : Int(digits))
+            }
+        ), prompt: Text(L10n.tr(placeholderKey)))
+        .labelsHidden()
+        .multilineTextAlignment(.trailing)
+        .frame(width: 64)
+    }
+
+    private func minuteBinding(_ minute: Int, set: @escaping (Int) -> Void) -> Binding<Date> {
+        Binding(
+            get: { Calendar.current.date(bySettingHour: minute / 60, minute: minute % 60, second: 0, of: Date()) ?? Date() },
+            set: { date in
+                let parts = Calendar.current.dateComponents([.hour, .minute], from: date)
+                set((parts.hour ?? 0) * 60 + (parts.minute ?? 0))
+            }
+        )
+    }
+
+    /// Weekdays in the user's calendar order (Monday first in most regions).
+    private static var orderedWeekdays: [Int] {
+        let first = Calendar.current.firstWeekday
+        return (0..<7).map { (first - 1 + $0) % 7 + 1 }
+    }
+
+    private static func weekdayName(_ day: Int) -> String {
+        Calendar.current.shortStandaloneWeekdaySymbols[day - 1]
+    }
+
+    private func weekdayToggles(_ days: [Int], set: @escaping ([Int]) -> Void) -> some View {
+        HStack(spacing: 4) {
+            ForEach(Self.orderedWeekdays, id: \.self) { day in
+                Toggle(Self.weekdayName(day), isOn: Binding(
+                    get: { days.contains(day) },
+                    set: { on in
+                        var next = Set(days)
+                        if on { next.insert(day) } else { next.remove(day) }
+                        set(next.sorted())
+                    }
+                ))
+                .toggleStyle(.button)
+                .controlSize(.small)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func appListRow(titleKey: String, bundleIDs: [String], at index: Int, note: String? = nil,
+                            set: @escaping ([String]) -> Void) -> some View {
         VStack(alignment: .leading, spacing: bundleIDs.isEmpty ? 6 : 10) {
             HStack {
-                Text(L10n.tr("automation.condition.sourceApp"))
+                Text(L10n.tr(titleKey))
                 Spacer()
+                negateToggle(at: index)
                 removeButton { conditions.remove(at: index) }
+            }
+            if let note {
+                Text(note)
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
             }
             if bundleIDs.isEmpty {
                 Text(L10n.tr("automation.condition.sourceApp.empty"))
@@ -686,22 +846,18 @@ struct AutomationRuleEditorView: View {
                     Text(appName(for: bid))
                     Spacer()
                     Button {
-                        var ids = bundleIDs
-                        ids.removeAll { $0 == bid }
-                        conditions[index].value = .sourceApp(bundleIDs: ids)
+                        set(bundleIDs.filter { $0 != bid })
                     } label: {
                         Image(systemName: "minus.circle.fill").foregroundStyle(.secondary.opacity(0.5))
                     }
                     .buttonStyle(.borderless)
-                
                 }
             }
             Button(L10n.tr("automation.condition.sourceApp.add")) {
-                browseForApp(at: index, existing: bundleIDs)
+                browseForApp(existing: bundleIDs, set: set)
             }
             .buttonStyle(.bordered)
             .controlSize(.regular)
-        
         }
     }
     /// Grouped submenus: the flat five-section list ran out of room once the
@@ -1160,6 +1316,15 @@ struct AutomationRuleEditorView: View {
     }
     @ViewBuilder
     private func readOnlyCondition(_ condition: RuleCondition) -> some View {
+        let (base, negated) = condition.unwrappedNegation
+        HStack(alignment: .firstTextBaseline, spacing: 8) {
+            if negated { negationBadge }
+            readOnlyBaseCondition(base)
+        }
+    }
+
+    @ViewBuilder
+    private func readOnlyBaseCondition(_ condition: RuleCondition) -> some View {
         switch condition {
         case .contentType(let type):
             LabeledContent(L10n.tr("automation.condition.contentType")) { Text(type.label) }
@@ -1171,9 +1336,13 @@ struct AutomationRuleEditorView: View {
             }
         case .containsText(let text):
             LabeledContent(L10n.tr("automation.condition.containsText")) { Text(text) }
-        case .sourceApp(let bundleIDs):
+        case .sourceApp(let bundleIDs), .targetApp(let bundleIDs):
             VStack(alignment: .leading, spacing: 6) {
-                Text(L10n.tr("automation.condition.sourceApp"))
+                if case .targetApp = condition {
+                    Text(L10n.tr("automation.condition.targetApp"))
+                } else {
+                    Text(L10n.tr("automation.condition.sourceApp"))
+                }
                 ForEach(bundleIDs, id: \.self) { bid in
                     HStack(spacing: 6) {
                         appIcon(for: bid)
@@ -1181,8 +1350,45 @@ struct AutomationRuleEditorView: View {
                     }
                 }
             }
+        case .contentLength(let min, let max):
+            LabeledContent(L10n.tr("automation.condition.contentLength")) { Text(Self.rangeText(min, max)) }
+        case .lineCount(let min, let max):
+            LabeledContent(L10n.tr("automation.condition.lineCount")) { Text(Self.rangeText(min, max)) }
+        case .isPinned:
+            Text(L10n.tr("automation.condition.isPinned"))
+        case .isSensitive:
+            Text(L10n.tr("automation.condition.isSensitive"))
+        case .inGroup(let name):
+            LabeledContent(L10n.tr("automation.condition.inGroup")) {
+                Text(name.isEmpty ? L10n.tr("automation.condition.inGroup.any") : name)
+            }
+        case .timeOfDay(let start, let end):
+            LabeledContent(L10n.tr("automation.condition.timeOfDay")) {
+                Text(Self.clockText(start) + " – " + Self.clockText(end)).monospacedDigit()
+            }
+        case .weekday(let days):
+            LabeledContent(L10n.tr("automation.condition.weekday")) {
+                Text(Self.orderedWeekdays.filter(days.contains).map(Self.weekdayName).joined(separator: " "))
+            }
+        case .not:
+            // `unwrappedNegation` already peeled every `.not` off.
+            EmptyView()
         }
     }
+
+    private static func rangeText(_ min: Int?, _ max: Int?) -> String {
+        switch (min, max) {
+        case let (min?, max?): return "\(min) – \(max)"
+        case let (min?, nil): return "≥ \(min)"
+        case let (nil, max?): return "≤ \(max)"
+        case (nil, nil): return L10n.tr("automation.condition.range.any")
+        }
+    }
+
+    private static func clockText(_ minute: Int) -> String {
+        String(format: "%02d:%02d", minute / 60, minute % 60)
+    }
+
     @ViewBuilder
     private func readOnlyParameters(_ action: RuleAction) -> some View {
         switch action {
@@ -1243,11 +1449,12 @@ struct AutomationRuleEditorView: View {
             EmptyView()
         }
     }
-    /// Synchronous transforms only. Source-app conditions are skipped — typed text has
-    /// no source app, and failing on that would only ever say "not matched".
+    /// Synchronous transforms only. Conditions about the stored clip or the paste target
+    /// are skipped — typed text has neither, and failing on that would only ever say
+    /// "not matched".
     private var previewOutput: String {
         let type = ClipboardManager.shared.detectContentType(previewInput).type
-        let checked = conditions.map(\.value).filter { if case .sourceApp = $0 { return false }; return true }
+        let checked = conditions.map(\.value).filter { !$0.needsClipContext }
         let matched = checked.isEmpty || AutomationEngine.matchesConditions(
             checked, logic: draftLogic, content: previewInput, contentType: type, sourceApp: nil
         )
@@ -1327,7 +1534,7 @@ struct AutomationRuleEditorView: View {
         return bundleID
     }
 
-    private func browseForApp(at index: Int, existing: [String]) {
+    private func browseForApp(existing: [String], set: ([String]) -> Void) {
         let panel = NSOpenPanel()
         panel.title = L10n.tr("automation.condition.sourceApp.select")
         panel.allowedContentTypes = [.application]
@@ -1341,7 +1548,7 @@ struct AutomationRuleEditorView: View {
                 ids.append(bid)
             }
         }
-        conditions[index].value = .sourceApp(bundleIDs: ids)
+        set(ids)
     }
 }
 

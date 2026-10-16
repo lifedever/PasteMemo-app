@@ -16,15 +16,7 @@ struct RelayRow: View {
     private var effectivePreviewActions: [RuleAction] {
         guard let rule = previewRule, item.contentKind == .text else { return [] }
         guard item.content.utf8.count <= 64 * 1024 else { return [] }
-        let contentType = ClipboardManager.shared.detectContentType(item.content).type
-        let ok = rule.conditions.isEmpty || AutomationEngine.matchesConditions(
-            rule.conditions,
-            logic: rule.conditionLogic,
-            content: item.content,
-            contentType: contentType,
-            sourceApp: item.sourceAppBundleID
-        )
-        return ok ? rule.actions : []
+        return RelayRuleResolver.matches(rule, item: item) ? rule.actions : []
     }
 
     private var primaryText: String {

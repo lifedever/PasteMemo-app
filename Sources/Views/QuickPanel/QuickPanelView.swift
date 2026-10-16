@@ -1817,7 +1817,7 @@ struct QuickPanelView: View {
         })
         if ProManager.AUTOMATION_ENABLED {
             let manualRules = fetchEnabledRules()
-                .filter { $0.triggerMode == .manual && $0.matches(item: item) }
+                .filter { $0.triggerMode == .manual && $0.matches(item: item, targetAppBundleID: pasteTargetBundleID) }
             if !manualRules.isEmpty {
                 menu.append(.separator)
                 menu.append(.submenu(L10n.tr("cmd.automation"), manualRules.map { rule in
@@ -2321,6 +2321,12 @@ struct QuickPanelView: View {
         }
     }
 
+    /// The app the panel was opened from — what "paste target is …" rule
+    /// conditions compare against.
+    private var pasteTargetBundleID: String? {
+        QuickPanelWindowController.shared.previousApp?.bundleIdentifier
+    }
+
     /// Manual-trigger rules visible in the ⌘K palette for this clip. Capped
     /// at 5 so a rule-heavy setup doesn't drown out built-in actions.
     private func manualRulesForPalette(item: ClipItem) -> [AutomationRule] {
@@ -2331,7 +2337,7 @@ struct QuickPanelView: View {
         )
         let enabled = (try? modelContext.fetch(descriptor)) ?? []
         let filtered = enabled.filter {
-            $0.triggerMode == .manual && $0.matches(item: item)
+            $0.triggerMode == .manual && $0.matches(item: item, targetAppBundleID: pasteTargetBundleID)
         }
         return Array(filtered.prefix(5))
     }

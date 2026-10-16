@@ -1061,3 +1061,23 @@ Gunakan %@ untuk menempel satu per satu.";
 "automation.action.removeHTMLTags" = "Hapus tag HTML";
 "automation.action.section.format" = "Konversi";
 "automation.action.section.lines" = "Baris";
+
+/* Automation: conditions */
+"automation.condition.section.content" = "Konten";
+"automation.condition.section.app" = "Aplikasi";
+"automation.condition.section.state" = "Status item";
+"automation.condition.section.time" = "Waktu";
+"automation.condition.targetApp" = "Tempel ke";
+"automation.condition.targetApp.help" = "Hanya diketahui di Panel Cepat dan saat tempel relay. Aturan yang terpicu saat menyalin tidak pernah memenuhinya.";
+"automation.condition.contentLength" = "Jumlah karakter";
+"automation.condition.lineCount" = "Jumlah baris";
+"automation.condition.range.min" = "Min";
+"automation.condition.range.max" = "Maks";
+"automation.condition.range.any" = "Bebas";
+"automation.condition.isPinned" = "Disematkan";
+"automation.condition.isSensitive" = "Ditandai sensitif";
+"automation.condition.inGroup" = "Grup adalah";
+"automation.condition.inGroup.any" = "Grup mana pun";
+"automation.condition.timeOfDay" = "Jam";
+"automation.condition.weekday" = "Hari";
+"automation.condition.negated" = "Tidak terpenuhi";

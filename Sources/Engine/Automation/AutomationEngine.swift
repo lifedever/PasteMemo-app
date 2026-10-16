@@ -22,6 +22,7 @@ final class AutomationEngine {
         content: String,
         contentType: ClipContentType,
         sourceApp: String?,
+        isSensitive: Bool = false,
         context: ModelContext
     ) -> AutomationResult {
         guard ProManager.AUTOMATION_ENABLED else { return .unchanged }
@@ -36,15 +37,17 @@ final class AutomationEngine {
         var outputs: [CaptureOutput] = []
         var matchedAny = false
         var needsConfirmation: (ruleName: String, ruleID: String)?
+        // The new clip's state as earlier rules in this pass leave it, so a later
+        // rule's "is pinned" / "in group" sees the pin / group an earlier one set.
+        var input = ConditionInput(content: content, contentType: contentType, sourceApp: sourceApp, isSensitive: isSensitive)
 
         for rule in rules {
             let conditions = rule.conditions
             let actions = rule.actions
             let hasOutput = rule.outputMode.needsParameter
             guard !conditions.isEmpty, !actions.isEmpty || hasOutput else { continue }
-            guard Self.matchesConditions(
-                conditions, logic: rule.conditionLogic, content: currentContent, contentType: contentType, sourceApp: sourceApp
-            ) else { continue }
+            input.content = currentContent
+            guard Self.matchesConditions(conditions, logic: rule.conditionLogic, input: input) else { continue }
 
             let processed = Self.executeActions(actions, on: currentContent)
             let hasSpecialActions = Self.containsSpecialAction(actions)
@@ -53,6 +56,16 @@ final class AutomationEngine {
             matchedAny = true
             currentContent = processed
             allActions.append(contentsOf: actions)
+            for action in actions {
+                switch action {
+                case .pin: input.isPinned = true
+                case .unpin: input.isPinned = false
+                case .markSensitive: input.isSensitive = true
+                case .unmarkSensitive: input.isSensitive = false
+                case .assignGroup(let name) where !name.isEmpty: input.groupName = name
+                default: break
+                }
+            }
             lastRuleName = rule.name
             if rule.outputMode.mirrorsToPasteboardOnCapture { writeBack = true }
             if hasOutput {
@@ -96,21 +109,18 @@ final class AutomationEngine {
         contentType: ClipContentType,
         sourceApp: String?
     ) -> Bool {
+        matchesConditions(conditions, logic: logic,
+                          input: ConditionInput(content: content, contentType: contentType, sourceApp: sourceApp))
+    }
+
+    nonisolated static func matchesConditions(
+        _ conditions: [RuleCondition],
+        logic: ConditionLogic = .all,
+        input: ConditionInput
+    ) -> Bool {
         switch logic {
-        case .all:
-            for condition in conditions {
-                if !condition.matches(content: content, contentType: contentType, sourceApp: sourceApp) {
-                    return false
-                }
-            }
-            return true
-        case .any:
-            for condition in conditions {
-                if condition.matches(content: content, contentType: contentType, sourceApp: sourceApp) {
-                    return true
-                }
-            }
-            return false
+        case .all: return conditions.allSatisfy { $0.matches(input) }
+        case .any: return conditions.contains { $0.matches(input) }
         }
     }
 

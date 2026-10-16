@@ -1087,3 +1087,23 @@
 "automation.action.removeHTMLTags" = "HTML タグを削除";
 "automation.action.section.format" = "変換";
 "automation.action.section.lines" = "行の処理";
+
+/* Automation: conditions */
+"automation.condition.section.content" = "内容";
+"automation.condition.section.app" = "アプリ";
+"automation.condition.section.state" = "項目の状態";
+"automation.condition.section.time" = "時間";
+"automation.condition.targetApp" = "貼り付け先アプリが";
+"automation.condition.targetApp.help" = "クイックパネルとリレー貼り付けのときだけ判定できます。コピー時の自動実行では満たされません";
+"automation.condition.contentLength" = "文字数";
+"automation.condition.lineCount" = "行数";
+"automation.condition.range.min" = "最小";
+"automation.condition.range.max" = "最大";
+"automation.condition.range.any" = "制限なし";
+"automation.condition.isPinned" = "ピン留め済み";
+"automation.condition.isSensitive" = "機密としてマーク済み";
+"automation.condition.inGroup" = "グループが";
+"automation.condition.inGroup.any" = "いずれかのグループ";
+"automation.condition.timeOfDay" = "時間帯";
+"automation.condition.weekday" = "曜日";
+"automation.condition.negated" = "満たさない";

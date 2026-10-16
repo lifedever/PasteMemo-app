@@ -1091,3 +1091,23 @@ Usa %@ para pegar uno por uno.";
 "automation.action.removeHTMLTags" = "Quitar etiquetas HTML";
 "automation.action.section.format" = "Convertir";
 "automation.action.section.lines" = "Líneas";
+
+/* Automation: conditions */
+"automation.condition.section.content" = "Contenido";
+"automation.condition.section.app" = "Apps";
+"automation.condition.section.state" = "Estado del elemento";
+"automation.condition.section.time" = "Hora";
+"automation.condition.targetApp" = "Pegar en";
+"automation.condition.targetApp.help" = "Solo se conoce en el panel rápido y al pegar con relevo. Las reglas que se activan al copiar nunca lo cumplen.";
+"automation.condition.contentLength" = "Número de caracteres";
+"automation.condition.lineCount" = "Número de líneas";
+"automation.condition.range.min" = "Mín.";
+"automation.condition.range.max" = "Máx.";
+"automation.condition.range.any" = "Cualquiera";
+"automation.condition.isPinned" = "Está fijado";
+"automation.condition.isSensitive" = "Está marcado como sensible";
+"automation.condition.inGroup" = "El grupo es";
+"automation.condition.inGroup.any" = "Cualquier grupo";
+"automation.condition.timeOfDay" = "Franja horaria";
+"automation.condition.weekday" = "Día de la semana";
+"automation.condition.negated" = "No se cumple";

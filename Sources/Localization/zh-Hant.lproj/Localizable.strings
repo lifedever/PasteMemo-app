@@ -1047,3 +1047,23 @@
 "automation.action.removeHTMLTags" = "移除 HTML 標籤";
 "automation.action.section.format" = "格式轉換";
 "automation.action.section.lines" = "按行處理";
+
+/* Automation: conditions */
+"automation.condition.section.content" = "內容";
+"automation.condition.section.app" = "應用程式";
+"automation.condition.section.state" = "項目狀態";
+"automation.condition.section.time" = "時間";
+"automation.condition.targetApp" = "貼上到的應用程式是";
+"automation.condition.targetApp.help" = "只在快速面板和接力貼上時能判斷，複製時自動觸發的規則不會滿足這一條";
+"automation.condition.contentLength" = "字數範圍";
+"automation.condition.lineCount" = "行數範圍";
+"automation.condition.range.min" = "最少";
+"automation.condition.range.max" = "最多";
+"automation.condition.range.any" = "不限";
+"automation.condition.isPinned" = "已置頂";
+"automation.condition.isSensitive" = "已標記為敏感";
+"automation.condition.inGroup" = "所在分組是";
+"automation.condition.inGroup.any" = "任意分組";
+"automation.condition.timeOfDay" = "時段";
+"automation.condition.weekday" = "星期";
+"automation.condition.negated" = "不滿足";

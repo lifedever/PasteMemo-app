@@ -1051,3 +1051,23 @@ Usa %@ per incollare uno per uno.";
 "automation.action.removeHTMLTags" = "Rimuovi tag HTML";
 "automation.action.section.format" = "Converti";
 "automation.action.section.lines" = "Righe";
+
+/* Automation: conditions */
+"automation.condition.section.content" = "Contenuto";
+"automation.condition.section.app" = "App";
+"automation.condition.section.state" = "Stato dell’elemento";
+"automation.condition.section.time" = "Orario";
+"automation.condition.targetApp" = "Incolla in";
+"automation.condition.targetApp.help" = "Noto solo nel pannello rapido e durante l’incolla a staffetta. Le regole attivate alla copia non lo soddisfano mai.";
+"automation.condition.contentLength" = "Numero di caratteri";
+"automation.condition.lineCount" = "Numero di righe";
+"automation.condition.range.min" = "Min";
+"automation.condition.range.max" = "Max";
+"automation.condition.range.any" = "Qualsiasi";
+"automation.condition.isPinned" = "È fissato";
+"automation.condition.isSensitive" = "È segnato come sensibile";
+"automation.condition.inGroup" = "Il gruppo è";
+"automation.condition.inGroup.any" = "Qualsiasi gruppo";
+"automation.condition.timeOfDay" = "Fascia oraria";
+"automation.condition.weekday" = "Giorno della settimana";
+"automation.condition.negated" = "Non soddisfatta";

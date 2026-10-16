@@ -1073,3 +1073,23 @@ Verwenden Sie %@ zum Einfügen.";
 "automation.action.removeHTMLTags" = "HTML-Tags entfernen";
 "automation.action.section.format" = "Umwandeln";
 "automation.action.section.lines" = "Zeilen";
+
+/* Automation: conditions */
+"automation.condition.section.content" = "Inhalt";
+"automation.condition.section.app" = "Apps";
+"automation.condition.section.state" = "Eintragsstatus";
+"automation.condition.section.time" = "Zeit";
+"automation.condition.targetApp" = "Einfügen in";
+"automation.condition.targetApp.help" = "Nur im Schnellpanel und beim Relay-Einfügen bekannt. Beim Kopieren ausgelöste Regeln erfüllen dies nie.";
+"automation.condition.contentLength" = "Zeichenanzahl";
+"automation.condition.lineCount" = "Zeilenanzahl";
+"automation.condition.range.min" = "Min.";
+"automation.condition.range.max" = "Max.";
+"automation.condition.range.any" = "Beliebig";
+"automation.condition.isPinned" = "Ist angeheftet";
+"automation.condition.isSensitive" = "Ist als sensibel markiert";
+"automation.condition.inGroup" = "Gruppe ist";
+"automation.condition.inGroup.any" = "Beliebige Gruppe";
+"automation.condition.timeOfDay" = "Uhrzeit";
+"automation.condition.weekday" = "Wochentag";
+"automation.condition.negated" = "Nicht erfüllt";

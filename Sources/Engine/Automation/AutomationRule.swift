@@ -145,16 +145,21 @@ final class AutomationRule {
     /// 2. At least one action must accept the clip's content type (`inputKind`) —
     ///    a rule made only of text transforms is meaningless on an image, while
     ///    pin / move-to-group / run-Shortcut apply to anything.
-    func matches(item: ClipItem) -> Bool {
+    ///
+    /// `targetAppBundleID`: the app the panel was opened from, so "paste target is …"
+    /// conditions can pick the rules shown for it. `nil` in the main window.
+    func matches(item: ClipItem, targetAppBundleID: String? = nil) -> Bool {
         if !conditions.isEmpty {
-            let ok = AutomationEngine.matchesConditions(
-                conditions,
-                logic: conditionLogic,
+            let input = ConditionInput(
                 content: item.content,
                 contentType: item.contentType,
-                sourceApp: item.sourceAppBundleID
+                sourceApp: item.sourceAppBundleID,
+                targetApp: targetAppBundleID,
+                isSensitive: item.isSensitive,
+                isPinned: item.isPinned,
+                groupName: item.groupName
             )
-            guard ok else { return false }
+            guard AutomationEngine.matchesConditions(conditions, logic: conditionLogic, input: input) else { return false }
         }
         // Output-only rule ("save to folder" with no actions): the output is the work.
         // A webhook only sends text.

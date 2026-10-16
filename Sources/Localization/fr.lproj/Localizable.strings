@@ -1091,3 +1091,23 @@ Utilisez %@ pour coller un par un.";
 "automation.action.removeHTMLTags" = "Supprimer les balises HTML";
 "automation.action.section.format" = "Convertir";
 "automation.action.section.lines" = "Lignes";
+
+/* Automation: conditions */
+"automation.condition.section.content" = "Contenu";
+"automation.condition.section.app" = "Apps";
+"automation.condition.section.state" = "État de l’élément";
+"automation.condition.section.time" = "Heure";
+"automation.condition.targetApp" = "Collage dans";
+"automation.condition.targetApp.help" = "Connu seulement dans le panneau rapide et en collage relais. Les règles déclenchées à la copie ne le remplissent jamais.";
+"automation.condition.contentLength" = "Nombre de caractères";
+"automation.condition.lineCount" = "Nombre de lignes";
+"automation.condition.range.min" = "Min";
+"automation.condition.range.max" = "Max";
+"automation.condition.range.any" = "Indifférent";
+"automation.condition.isPinned" = "Est épinglé";
+"automation.condition.isSensitive" = "Est marqué comme sensible";
+"automation.condition.inGroup" = "Le groupe est";
+"automation.condition.inGroup.any" = "N’importe quel groupe";
+"automation.condition.timeOfDay" = "Plage horaire";
+"automation.condition.weekday" = "Jour de la semaine";
+"automation.condition.negated" = "Non rempli";

@@ -1035,3 +1035,23 @@
 "automation.action.removeHTMLTags" = "Remove HTML Tags";
 "automation.action.section.format" = "Convert";
 "automation.action.section.lines" = "Lines";
+
+/* Automation: conditions */
+"automation.condition.section.content" = "Content";
+"automation.condition.section.app" = "Apps";
+"automation.condition.section.state" = "Clip State";
+"automation.condition.section.time" = "Time";
+"automation.condition.targetApp" = "Pasting into";
+"automation.condition.targetApp.help" = "Known only in the Quick Panel and when relay-pasting. Rules triggered on copy never meet this.";
+"automation.condition.contentLength" = "Character count";
+"automation.condition.lineCount" = "Line count";
+"automation.condition.range.min" = "Min";
+"automation.condition.range.max" = "Max";
+"automation.condition.range.any" = "Any";
+"automation.condition.isPinned" = "Is pinned";
+"automation.condition.isSensitive" = "Is marked sensitive";
+"automation.condition.inGroup" = "Group is";
+"automation.condition.inGroup.any" = "Any group";
+"automation.condition.timeOfDay" = "Time of day";
+"automation.condition.weekday" = "Day of week";
+"automation.condition.negated" = "Not met";

@@ -1061,3 +1061,23 @@
 "automation.action.removeHTMLTags" = "Удалить HTML-теги";
 "automation.action.section.format" = "Преобразование";
 "automation.action.section.lines" = "Строки";
+
+/* Automation: conditions */
+"automation.condition.section.content" = "Содержимое";
+"automation.condition.section.app" = "Приложения";
+"automation.condition.section.state" = "Состояние записи";
+"automation.condition.section.time" = "Время";
+"automation.condition.targetApp" = "Вставка в";
+"automation.condition.targetApp.help" = "Известно только в быстрой панели и при вставке из очереди. Правила, срабатывающие при копировании, этому не соответствуют.";
+"automation.condition.contentLength" = "Число символов";
+"automation.condition.lineCount" = "Число строк";
+"automation.condition.range.min" = "Мин.";
+"automation.condition.range.max" = "Макс.";
+"automation.condition.range.any" = "Любое";
+"automation.condition.isPinned" = "Закреплено";
+"automation.condition.isSensitive" = "Отмечено как конфиденциальное";
+"automation.condition.inGroup" = "Группа";
+"automation.condition.inGroup.any" = "Любая группа";
+"automation.condition.timeOfDay" = "Время суток";
+"automation.condition.weekday" = "День недели";
+"automation.condition.negated" = "Не выполнено";
