@@ -163,7 +163,12 @@ final class ClipboardManager: ObservableObject {
         }
         // If an app switch happened very recently, the copy likely came from the previous app
         let appInfo: (name: String?, bundleID: String?)
-        let isSMSCodeWrite = NSPasteboard.general.string(forType: .smsCodeSource) != nil
+        let smsBody = Self.smsBody(
+            marker: NSPasteboard.general.string(forType: .smsCodeSource),
+            pasteboardText: NSPasteboard.general.string(forType: .string),
+            recent: recentSMSCode
+        )
+        let isSMSCodeWrite = smsBody != nil
         if isSMSCodeWrite {
             // SMS 验证码由 SMSCodeWatcher 写入,归因到「信息」App 而不是当前前台 App,
             // 侧栏来源过滤 / 自动化规则的 sourceApp 条件都按 com.apple.MobileSMS 命中。
@@ -197,8 +202,7 @@ final class ClipboardManager: ObservableObject {
 
         // 短信验证码:marker 的值就是短信全文,存到 smsMessageText 供列表角标 +
         // 预览区「短信原文」使用(content 只有码本身)。
-        if isSMSCodeWrite,
-           let smsBody = NSPasteboard.general.string(forType: .smsCodeSource), !smsBody.isEmpty {
+        if let smsBody, !smsBody.isEmpty {
             newItem.smsMessageText = smsBody
         }
 
@@ -245,7 +249,17 @@ final class ClipboardManager: ObservableObject {
 
         // An app that writes the same thing twice in a row isn't a second copy:
         // no second file / POST / sound for it.
-        if isLatestDuplicate(newItem, in: context) { return }
+        if let latest = latestDuplicate(of: newItem, in: context) {
+            // macOS's verification-code AutoFill can write the code before the SMS
+            // watcher gets to it (the watcher polls chat.db every 2 s); that earlier
+            // write landed as a plain clip of the frontmost app. Ours is the duplicate
+            // now — hand the clip its Messages attribution and SMS text.
+            if isSMSCodeWrite, latest.smsMessageText == nil {
+                Self.adoptSMSAttribution(latest, from: newItem)
+                ClipItemStore.saveAndNotify(context)
+            }
+            return
+        }
 
         ruleSounds.last.map(SoundManager.play(storageKey:))
         if !captureOutputs.isEmpty {
@@ -908,13 +922,57 @@ final class ClipboardManager: ObservableObject {
         }
     }
 
-    private func isLatestDuplicate(_ newItem: ClipItem, in context: ModelContext) -> Bool {
+    /// The newest clip, when `newItem` duplicates it.
+    private func latestDuplicate(of newItem: ClipItem, in context: ModelContext) -> ClipItem? {
         // fetchLimit 必须有：这里只看最新一条，没有 limit 会把全表（万条级）物化到
         // 内存，每次复制都在主线程卡数百毫秒（11k 条实测 ~220ms vs 4ms）。
         var descriptor = FetchDescriptor<ClipItem>(sortBy: [SortDescriptor(\.createdAt, order: .reverse)])
         descriptor.fetchLimit = 1
-        guard let latest = try? context.fetch(descriptor).first else { return false }
-        return matchesDuplicateCandidate(latest, with: newItem)
+        guard let latest = try? context.fetch(descriptor).first else { return nil }
+        return matchesDuplicateCandidate(latest, with: newItem) ? latest : nil
+    }
+
+    // MARK: - SMS code attribution
+
+    /// What `SMSCodeWatcher` last put on the pasteboard. When the user picks macOS's
+    /// "From Messages" verification-code suggestion in another app, the system writes the
+    /// same code to the pasteboard itself — without our marker, often a fraction of a
+    /// second after our write and so before the 0.5 s poll has seen ours (2026-10-17: the
+    /// code landed as a Google Chrome clip with no SMS text). Matching on the code keeps
+    /// such a write attributed to Messages.
+    private var recentSMSCode: SMSCodeWrite?
+
+    struct SMSCodeWrite: Equatable {
+        let code: String
+        let message: String
+        let at: Date
+    }
+
+    /// How long after the watcher's write the same code still counts as the SMS code.
+    nonisolated static let SMS_ATTRIBUTION_WINDOW: TimeInterval = 60
+
+    /// Called by `SMSCodeWatcher` right before it writes `code` to the pasteboard.
+    func noteSMSCodeWrite(code: String, message: String) {
+        recentSMSCode = SMSCodeWrite(code: code, message: message, at: Date())
+    }
+
+    /// The SMS text a capture should carry, or nil when it isn't an SMS code: our marker
+    /// when present, else the watcher's recent write when the pasteboard holds that code.
+    nonisolated static func smsBody(marker: String?, pasteboardText: String?,
+                                    recent: SMSCodeWrite?, now: Date = Date()) -> String? {
+        if let marker { return marker }
+        guard let recent, now.timeIntervalSince(recent.at) < SMS_ATTRIBUTION_WINDOW,
+              let text = pasteboardText?.trimmingCharacters(in: .whitespacesAndNewlines),
+              text == recent.code else { return nil }
+        return recent.message
+    }
+
+    /// Re-attribute an existing clip to Messages, the way a fresh SMS-code capture is.
+    static func adoptSMSAttribution(_ item: ClipItem, from smsCapture: ClipItem) {
+        item.sourceApp = smsCapture.sourceApp
+        item.sourceAppBundleID = smsCapture.sourceAppBundleID
+        item.smsMessageText = smsCapture.smsMessageText
+        item.isSensitive = false
     }
 
     private func matchesDuplicateCandidate(_ existingItem: ClipItem, with newItem: ClipItem) -> Bool {

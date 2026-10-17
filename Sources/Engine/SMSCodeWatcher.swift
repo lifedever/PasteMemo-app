@@ -196,6 +196,9 @@ final class SMSCodeWatcher: ObservableObject, @unchecked Sendable {
     /// Messages app + stores the body for the preview pane.
     @MainActor
     private static func copyToClipboard(_ code: String, message: String) {
+        // Before the write: macOS's own verification-code AutoFill may put the same code
+        // on the pasteboard right after us, without the marker (see ClipboardManager).
+        ClipboardManager.shared.noteSMSCodeWrite(code: code, message: message)
         let pasteboard = NSPasteboard.general
         pasteboard.clearContents()
         pasteboard.setString(code, forType: .string)
