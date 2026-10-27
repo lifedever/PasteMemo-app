@@ -19,17 +19,13 @@ enum AppMenuActions {
         let groups = (try? context.fetch(FetchDescriptor<SmartGroup>())) ?? []
         let rules = (try? context.fetch(FetchDescriptor<AutomationRule>())) ?? []
 
-        // Step 1: extract on main thread (SwiftData objects)
-        let payload = DataPorter.buildExportPayload(items, groups: groups, rules: rules)
-        // Step 2: encode + compress + write on background thread
-        Task.detached {
+        // Streamed to disk with the original images; see DataPorter.writeExportFile.
+        Task { @MainActor in
             do {
-                let compressed = try DataPorter.encodeAndCompress(payload)
-                let fileData = DataPorterCrypto.wrapPlaintext(compressed)
-                try fileData.write(to: url)
-                await MainActor.run { showAlert(L10n.tr("dataPorter.exportSuccess")) }
+                try await DataPorter.writeExportFile(clipItems: items, groups: groups, rules: rules, to: url, password: nil)
+                showAlert(L10n.tr("dataPorter.exportSuccess"))
             } catch {
-                await MainActor.run { showAlert(error.localizedDescription) }
+                showAlert(error.localizedDescription)
             }
         }
     }
@@ -45,7 +41,7 @@ enum AppMenuActions {
         let context = container.mainContext
 
         do {
-            let fileData = try Data(contentsOf: url)
+            let fileData = try Data(contentsOf: url, options: .mappedIfSafe)
             if DataPorterCrypto.isEncrypted(fileData) {
                 promptPasswordAndImport(fileData: fileData, context: context)
             } else {
@@ -92,16 +88,14 @@ enum AppMenuActions {
                 // multi-MB payload would freeze the panel and spin the cursor
                 // if done on the main actor. Run off-actor, then resume.
                 let pwd = password ?? ""
-                let payload: ExportPayload = try await Task.detached(priority: .userInitiated) {
-                    let jsonData = try DataPorterCrypto.decrypt(fileData: fileData, password: pwd)
-                    return try DataPorter.decodePayload(jsonData)
+                let jsonData = try await Task.detached(priority: .userInitiated) {
+                    try DataPorterCrypto.decrypt(fileData: fileData, password: pwd)
                 }.value
 
-                coordinator.updateProgress(current: 0, total: payload.items.count)
-
                 ClipItemStore.isBulkOperation = true
-                let result = try await DataPorter.importItems(
-                    payload: payload,
+                defer { ClipItemStore.isBulkOperation = false }
+                let result = try await DataPorter.importStreaming(
+                    jsonData,
                     into: context
                 ) { current, total in
                     coordinator.updateProgress(current: current, total: total)

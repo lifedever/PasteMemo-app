@@ -29,21 +29,18 @@ enum BackupEngine {
             .appendingPathComponent("pastememo-backup-\(UUID().uuidString).zlib")
         defer { try? FileManager.default.removeItem(at: tempURL) }
 
+        // The 6-byte plaintext envelope goes in first, so the temp file is the finished backup
+        // and is uploaded straight from disk — backups carry the original images now.
         try await DataPorter.encodeAndCompress(
             clipItems: clipItems,
             groups: groups,
             rules: rules,
-            to: tempURL
+            to: tempURL,
+            header: DataPorterCrypto.wrapPlaintext(Data())
         ) { current, _ in
             progress(current, total, false)
         }
         progress(total, total, true)
-
-        // Read the compressed file once + prepend the 6-byte plaintext envelope.
-        // upload(data:) still takes a Data; switching destinations to a streaming
-        // upload would cut peak further but is out of scope for this fix.
-        let compressedData = try Data(contentsOf: tempURL)
-        let fileData = DataPorterCrypto.wrapPlaintext(compressedData)
 
         let currentSlot = UserDefaults.standard.integer(forKey: "backupCurrentSlot")
         let nextSlot = (currentSlot % maxSlots) + 1
@@ -66,7 +63,7 @@ enum BackupEngine {
             try await destination.delete(fileName: stale.fileName)
         }
 
-        try await destination.upload(data: fileData, fileName: fileName)
+        try await destination.upload(fileURL: tempURL, fileName: fileName)
 
         UserDefaults.standard.set(nextSlot, forKey: "backupCurrentSlot")
         UserDefaults.standard.set(Date(), forKey: "backupLastDate")
@@ -95,11 +92,13 @@ enum BackupEngine {
         }
 
         let context = ModelContext(container)
+        var replacedOriginals: [String] = []
 
         if strategy == .overwrite {
             // Wipe clips and groups entirely; keep built-in rules (owned by BuiltInRules),
             // wipe user-defined ones.
             for item in (try? context.fetch(FetchDescriptor<ClipItem>())) ?? [] {
+                if let original = item.originalImageFilePath { replacedOriginals.append(original) }
                 context.delete(item)
             }
             for group in (try? context.fetch(FetchDescriptor<SmartGroup>())) ?? [] {
@@ -113,7 +112,9 @@ enum BackupEngine {
             }
         }
 
-        let result = try DataPorter.importItems(from: jsonData, into: context)
+        let result = try await DataPorter.importStreaming(jsonData, into: context)
+        // The wiped clips' cached originals, once the restore that replaced them has landed.
+        StorageCleaner.deleteCachedOriginals(replacedOriginals)
         return RestoreResult(restoredCount: result.imported, skippedCount: result.skipped)
     }
 }

@@ -166,7 +166,6 @@
 "settings.quickPanelTabTypes" = "Catégories de la barre d’onglets";
 "settings.quickPanelTabTypes.hint" = "Glissez pour réordonner. Décocher masque l'onglet dans le panneau rapide ; la barre latérale reste inchangée.";
 "settings.quickPanelTabTypes.reset" = "Réinitialiser";
-"settings.history" = "Historique";
 "settings.retentionDays" = "Conserver l'historique";
 "settings.retentionDays.forever" = "Toujours";
 "settings.retentionDays.days" = "%d jours";
@@ -297,6 +296,7 @@
 
 /* Data Import/Export */
 "dataPorter.section" = "Données";
+"dataPorter.importExport" = "Importer et exporter";
 "dataPorter.export" = "Exporter les données";
 "dataPorter.compressing" = "Compression...";
 "dataPorter.import" = "Importer les données";
@@ -400,7 +400,6 @@
 
 "filter.sensitive" = "Sensible";
 
-"settings.clearData" = "Effacer les données";
 
 "settings.sound" = "Son";
 "settings.sound.enabled" = "Effets sonores";
@@ -683,12 +682,6 @@ Utilisez %@ pour coller un par un.";
 "stats.clips" = "clips";
 
 /* Settings - Clear Data */
-"settings.clearData.1month" = "Plus d'un mois";
-"settings.clearData.1year" = "Plus d'un an";
-"settings.clearData.3months" = "Plus de 3 mois";
-"settings.clearData.6months" = "Plus de 6 mois";
-"settings.clearData.all" = "Tout supprimer";
-"settings.clearData.result" = "%d éléments supprimés";
 
 /* Settings - Double Tap */
 "settings.doubleTap" = "Double-appui pour ouvrir";
@@ -1119,3 +1112,59 @@ Utilisez %@ pour coller un par un.";
 "settings.privacy.sensitiveRetention.hours" = "%d h";
 "settings.privacy.sensitiveRetention.hint" = "Compté depuis la dernière copie ou le dernier collage, puis supprimé. Les éléments épinglés et ceux des groupes conservés en permanence restent.";
 "settings.privacy.sensitiveRetention.cleanConfirm" = "%d éléments sensibles seront supprimés";
+
+/* Storage */
+"settings.storage" = "Stockage";
+"storage.manage.title" = "Gérer le stockage";
+"storage.manage" = "Gérer";
+"storage.recordCount" = "%@ éléments";
+"storage.scanFailed" = "Impossible de lire les données";
+"storage.scanning" = "Calcul en cours...";
+"storage.part.originals" = "Originaux";
+"storage.part.previews" = "Vignettes";
+"storage.part.richText" = "Texte enrichi";
+"storage.byType" = "Par type";
+"storage.itemCount" = "%@ éléments";
+"storage.autoClean" = "Nettoyage automatique";
+"storage.optimize" = "Optimiser";
+"storage.tiff.title" = "Convertir les originaux TIFF en PNG (sans perte)";
+"storage.tiff.detail" = "%1$@ images · %2$@";
+"storage.tiff.progress" = "Conversion %1$@ sur %2$@";
+"storage.tiff.result" = "%1$@ images converties, %2$@ libérés";
+"storage.tiff.kept" = "%@ images ne peuvent pas être converties sans perte et restent en TIFF";
+"storage.sourceCount" = "%@ sources";
+"storage.grouping.source" = "Par source";
+"storage.typeCount" = "%@ types";
+"storage.column.type" = "Type";
+"storage.typeSelectionSummary" = "%1$@ types sélectionnés · %2$@ éléments · %3$@";
+"storage.searchSources" = "Rechercher une source";
+"storage.allSources" = "Toutes les sources";
+"storage.sourceWithCount" = "%1$@ · %2$@";
+"storage.column.source" = "Source";
+"storage.column.latest" = "Dernière copie";
+"storage.column.count" = "Éléments";
+"storage.column.size" = "Taille";
+"storage.protectedNote" = "Seuls des éléments de PasteMemo sont supprimés, pas vos fichiers d'origine. Les éléments épinglés et ceux des groupes permanents ne sont jamais supprimés.";
+"storage.protectedExcluded" = "Sans compter %@ éléments épinglés ou de groupes permanents";
+"storage.deleteRecords" = "Supprimer les éléments";
+"storage.delete.scope" = "Seuls les éléments de PasteMemo et les copies qu'il conserve sont supprimés ; vos fichiers d'origine ne sont pas touchés. Action irréversible.";
+"storage.selectionSummary" = "%1$@ sources sélectionnées · %2$@ éléments · %3$@";
+"storage.delete.confirm" = "Supprimer %@ éléments ?";
+"storage.deleting" = "Suppression...";
+"storage.empty" = "Rien à nettoyer";
+"storage.time.all" = "Toute la période";
+"storage.time.1month" = "Plus de 1 mois";
+"storage.time.3months" = "Plus de 3 mois";
+"storage.time.6months" = "Plus de 6 mois";
+"storage.time.1year" = "Plus de 1 an";
+"storage.time.custom" = "Période personnalisée...";
+"storage.type.all" = "Tous les types";
+"storage.listSeparator" = ", ";
+"storage.sort.size" = "Les plus volumineux";
+"storage.sort.latest" = "Les plus récents";
+"storage.selectAll" = "Tout sélectionner";
+"storage.deselectAll" = "Tout désélectionner";
+"storage.itemSelectionSummary" = "%1$@ sélectionnés · %2$@";
+"storage.custom.title" = "Période personnalisée";
+"storage.custom.from" = "Du";
+"storage.custom.to" = "Au";

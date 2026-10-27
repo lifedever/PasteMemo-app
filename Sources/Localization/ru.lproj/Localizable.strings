@@ -138,7 +138,6 @@
 "settings.quickPanelTabTypes" = "Категории на панели вкладок";
 "settings.quickPanelTabTypes.hint" = "Перетащите, чтобы изменить порядок. Снятие галочки скрывает вкладку в быстрой панели; боковая панель не меняется.";
 "settings.quickPanelTabTypes.reset" = "Сбросить";
-"settings.history" = "История";
 "settings.retentionDays" = "Хранить историю";
 "settings.retentionDays.forever" = "Навсегда";
 "settings.retentionDays.days" = "%d дней";
@@ -393,6 +392,7 @@
 
 /* Data Import/Export */
 "dataPorter.section" = "Данные";
+"dataPorter.importExport" = "Импорт и экспорт";
 "dataPorter.export" = "Экспорт данных";
 "dataPorter.compressing" = "Сжатие...";
 "dataPorter.import" = "Импорт данных";
@@ -496,7 +496,6 @@
 
 "filter.sensitive" = "Конфиденциальные";
 
-"settings.clearData" = "Очистить все данные";
 
 "settings.sound" = "Звуки";
 "settings.sound.enabled" = "Звуковые эффекты";
@@ -671,12 +670,6 @@
 "help.relay.exit" = "Кнопка закрытия или Esc для выхода из режима эстафеты";
 
 /* Missing Keys - Clear Data */
-"settings.clearData.1month" = "Старше 1 месяца";
-"settings.clearData.3months" = "Старше 3 месяцев";
-"settings.clearData.6months" = "Старше 6 месяцев";
-"settings.clearData.1year" = "Старше 1 года";
-"settings.clearData.all" = "Удалить всё";
-"settings.clearData.result" = "Удалено элементов: %d";
 
 /* Missing Keys - Backup */
 "backup.nextBackup" = "Следующая копия";
@@ -1089,3 +1082,59 @@
 "settings.privacy.sensitiveRetention.hours" = "%d ч";
 "settings.privacy.sensitiveRetention.hint" = "Отсчитывается от последнего копирования или вставки, затем запись удаляется. Закреплённые записи и записи в бессрочных группах остаются.";
 "settings.privacy.sensitiveRetention.cleanConfirm" = "Будет удалено конфиденциальных записей: %d";
+
+/* Storage */
+"settings.storage" = "Хранилище";
+"storage.manage.title" = "Управление хранилищем";
+"storage.manage" = "Управлять";
+"storage.recordCount" = "Записей: %@";
+"storage.scanFailed" = "Не удалось прочитать данные";
+"storage.scanning" = "Подсчёт...";
+"storage.part.originals" = "Оригиналы";
+"storage.part.previews" = "Миниатюры";
+"storage.part.richText" = "Форматированный текст";
+"storage.byType" = "По типу";
+"storage.itemCount" = "%@ шт.";
+"storage.autoClean" = "Автоочистка";
+"storage.optimize" = "Оптимизация";
+"storage.tiff.title" = "Преобразовать оригиналы TIFF в PNG без потерь";
+"storage.tiff.detail" = "Изображений: %1$@ · %2$@";
+"storage.tiff.progress" = "Преобразование: %1$@ из %2$@";
+"storage.tiff.result" = "Преобразовано изображений: %1$@, освобождено %2$@";
+"storage.tiff.kept" = "Изображений без преобразования (остались в TIFF): %@";
+"storage.sourceCount" = "Источников: %@";
+"storage.grouping.source" = "По источнику";
+"storage.typeCount" = "Типов: %@";
+"storage.column.type" = "Тип";
+"storage.typeSelectionSummary" = "Выбрано типов: %1$@ · записей: %2$@ · %3$@";
+"storage.searchSources" = "Поиск источника";
+"storage.allSources" = "Все источники";
+"storage.sourceWithCount" = "%1$@ · %2$@";
+"storage.column.source" = "Источник";
+"storage.column.latest" = "Последнее копирование";
+"storage.column.count" = "Записи";
+"storage.column.size" = "Размер";
+"storage.protectedNote" = "Удаляются записи PasteMemo, а не исходные файлы. Закреплённые элементы и элементы из постоянных групп не удаляются.";
+"storage.protectedExcluded" = "Без учёта закреплённых и постоянных: %@";
+"storage.deleteRecords" = "Удалить записи";
+"storage.delete.scope" = "Удаляются только записи PasteMemo и сохранённые им копии; исходные файлы не затрагиваются. Это действие нельзя отменить.";
+"storage.selectionSummary" = "Выбрано источников: %1$@ · записей: %2$@ · %3$@";
+"storage.delete.confirm" = "Удалить записи (%@)?";
+"storage.deleting" = "Удаление...";
+"storage.empty" = "Нечего очищать";
+"storage.time.all" = "За всё время";
+"storage.time.1month" = "Старше 1 месяца";
+"storage.time.3months" = "Старше 3 месяцев";
+"storage.time.6months" = "Старше 6 месяцев";
+"storage.time.1year" = "Старше 1 года";
+"storage.time.custom" = "Свой период...";
+"storage.type.all" = "Все типы";
+"storage.listSeparator" = ", ";
+"storage.sort.size" = "Сначала крупные";
+"storage.sort.latest" = "Сначала новые";
+"storage.selectAll" = "Выбрать все";
+"storage.deselectAll" = "Снять выбор";
+"storage.itemSelectionSummary" = "Выбрано: %1$@ · %2$@";
+"storage.custom.title" = "Свой период";
+"storage.custom.from" = "С";
+"storage.custom.to" = "По";

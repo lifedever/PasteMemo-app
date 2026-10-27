@@ -39,6 +39,24 @@ struct WebDAVBackupDestination: BackupDestination {
         }
     }
 
+    /// Streams the file from disk; the timeout is per idle stretch, not for the whole transfer.
+    func upload(fileURL: URL, fileName: String) async throws {
+        guard let url = buildURL(fileName) else {
+            throw BackupError.backupFailed("Invalid WebDAV URL")
+        }
+        var request = URLRequest(url: url, timeoutInterval: 120)
+        request.httpMethod = "PUT"
+        request.setValue("application/octet-stream", forHTTPHeaderField: "Content-Type")
+        applyAuth(&request)
+
+        let (_, response) = try await URLSession.shared.upload(for: request, fromFile: fileURL)
+        guard let http = response as? HTTPURLResponse,
+              (200...299).contains(http.statusCode) else {
+            let code = (response as? HTTPURLResponse)?.statusCode ?? 0
+            throw BackupError.backupFailed("Upload failed with status \(code)")
+        }
+    }
+
     func download(fileName: String) async throws -> Data {
         guard let url = buildURL(fileName) else {
             throw BackupError.restoreFailed("Invalid WebDAV URL")

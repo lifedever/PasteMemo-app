@@ -151,6 +151,12 @@ struct NativePullDownButton: NSViewRepresentable {
     }
 
     func updateNSView(_ button: NSPopUpButton, context: Context) {
+        // Filter buttons show the current choice on their face, so a new title must reach it.
+        if context.coordinator.title != title, let face = button.menu?.items.first {
+            face.title = title
+            button.sizeToFit()
+            button.invalidateIntrinsicContentSize()
+        }
         context.coordinator.title = title
         context.coordinator.symbolName = symbolName
         context.coordinator.items = items

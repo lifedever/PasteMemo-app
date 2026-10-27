@@ -148,7 +148,6 @@
 "settings.quickPanelTabTypes" = "Tab bar categories";
 "settings.quickPanelTabTypes.hint" = "Drag to reorder. Unchecking hides the tab in the Quick Panel; the main window sidebar is unaffected.";
 "settings.quickPanelTabTypes.reset" = "Reset";
-"settings.history" = "History";
 "settings.retentionDays" = "Keep History";
 "settings.retentionDays.forever" = "Forever";
 "settings.retentionDays.days" = "%d days";
@@ -442,6 +441,7 @@
 
 /* Data Import/Export */
 "dataPorter.section" = "Data";
+"dataPorter.importExport" = "Import & Export";
 "dataPorter.export" = "Export Data";
 "dataPorter.compressing" = "Compressing...";
 "dataPorter.import" = "Import Data";
@@ -731,13 +731,6 @@
 
 "filter.sensitive" = "Sensitive";
 
-"settings.clearData" = "Clear Data";
-"settings.clearData.1month" = "Older than 1 month";
-"settings.clearData.3months" = "Older than 3 months";
-"settings.clearData.6months" = "Older than 6 months";
-"settings.clearData.1year" = "Older than 1 year";
-"settings.clearData.all" = "Delete all";
-"settings.clearData.result" = "%d items deleted";
 
 "settings.sound" = "Sound";
 "settings.sound.enabled" = "Sound effects";
@@ -1063,3 +1056,59 @@
 "settings.privacy.sensitiveRetention.hours" = "%d hour(s)";
 "settings.privacy.sensitiveRetention.hint" = "Counted from the last copy or paste, then deleted. Pinned clips and clips in groups kept permanently stay.";
 "settings.privacy.sensitiveRetention.cleanConfirm" = "%d sensitive clips will be deleted";
+
+/* Storage */
+"settings.storage" = "Storage";
+"storage.manage.title" = "Manage Storage";
+"storage.manage" = "Manage";
+"storage.recordCount" = "%@ items";
+"storage.scanFailed" = "Couldn't read the data";
+"storage.scanning" = "Calculating...";
+"storage.part.originals" = "Originals";
+"storage.part.previews" = "Thumbnails";
+"storage.part.richText" = "Rich text";
+"storage.byType" = "By Type";
+"storage.itemCount" = "%@ items";
+"storage.autoClean" = "Auto Cleanup";
+"storage.optimize" = "Optimize";
+"storage.tiff.title" = "Convert TIFF originals to PNG (lossless)";
+"storage.tiff.detail" = "%1$@ images · %2$@";
+"storage.tiff.progress" = "Converting %1$@ of %2$@";
+"storage.tiff.result" = "Converted %1$@ images, saved %2$@";
+"storage.tiff.kept" = "%@ images can't be converted losslessly and stay TIFF";
+"storage.sourceCount" = "%@ sources";
+"storage.grouping.source" = "By Source";
+"storage.typeCount" = "%@ types";
+"storage.column.type" = "Type";
+"storage.typeSelectionSummary" = "%1$@ types selected · %2$@ items · %3$@";
+"storage.searchSources" = "Search sources";
+"storage.allSources" = "All Sources";
+"storage.sourceWithCount" = "%1$@ · %2$@";
+"storage.column.source" = "Source";
+"storage.column.latest" = "Last Copied";
+"storage.column.count" = "Items";
+"storage.column.size" = "Size";
+"storage.protectedNote" = "Deleting removes items from PasteMemo; your original files aren't touched. Pinned items and items in permanent groups are never deleted.";
+"storage.protectedExcluded" = "Not counting %@ pinned or permanent-group items";
+"storage.deleteRecords" = "Delete Items";
+"storage.delete.scope" = "Only PasteMemo's items and the copies it keeps are deleted; your original files aren't touched. This can't be undone.";
+"storage.selectionSummary" = "%1$@ sources selected · %2$@ items · %3$@";
+"storage.delete.confirm" = "Delete %@ items?";
+"storage.deleting" = "Deleting...";
+"storage.empty" = "Nothing to clean up";
+"storage.time.all" = "All Time";
+"storage.time.1month" = "Older than 1 month";
+"storage.time.3months" = "Older than 3 months";
+"storage.time.6months" = "Older than 6 months";
+"storage.time.1year" = "Older than 1 year";
+"storage.time.custom" = "Custom Range...";
+"storage.type.all" = "All Types";
+"storage.listSeparator" = ", ";
+"storage.sort.size" = "Largest First";
+"storage.sort.latest" = "Most Recent";
+"storage.selectAll" = "Select All";
+"storage.deselectAll" = "Deselect All";
+"storage.itemSelectionSummary" = "%1$@ selected · %2$@";
+"storage.custom.title" = "Custom Range";
+"storage.custom.from" = "From";
+"storage.custom.to" = "To";

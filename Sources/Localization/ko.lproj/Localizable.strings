@@ -166,7 +166,6 @@
 "settings.quickPanelTabTypes" = "탭 바에 표시할 분류";
 "settings.quickPanelTabTypes.hint" = "드래그해 순서를 바꿉니다. 체크를 해제하면 빠른 패널에서 숨겨지며 사이드바는 그대로입니다.";
 "settings.quickPanelTabTypes.reset" = "기본값";
-"settings.history" = "기록";
 "settings.retentionDays" = "기록 보관";
 "settings.retentionDays.forever" = "영구";
 "settings.retentionDays.days" = "%d일";
@@ -297,6 +296,7 @@
 
 /* Data Import/Export */
 "dataPorter.section" = "데이터";
+"dataPorter.importExport" = "가져오기 및 내보내기";
 "dataPorter.export" = "데이터 내보내기";
 "dataPorter.compressing" = "압축 중...";
 "dataPorter.import" = "데이터 가져오기";
@@ -400,7 +400,6 @@
 
 "filter.sensitive" = "민감";
 
-"settings.clearData" = "데이터 지우기";
 
 "settings.sound" = "소리";
 "settings.sound.enabled" = "효과음";
@@ -683,12 +682,6 @@
 "stats.clips" = "클립";
 
 /* Settings - Clear Data */
-"settings.clearData.1month" = "1개월 이전";
-"settings.clearData.1year" = "1년 이전";
-"settings.clearData.3months" = "3개월 이전";
-"settings.clearData.6months" = "6개월 이전";
-"settings.clearData.all" = "모두 삭제";
-"settings.clearData.result" = "%d개 항목 삭제됨";
 
 /* Settings - Double Tap */
 "settings.doubleTap" = "두 번 눌러 열기";
@@ -1117,3 +1110,59 @@
 "settings.privacy.sensitiveRetention.hours" = "%d시간";
 "settings.privacy.sensitiveRetention.hint" = "마지막으로 복사하거나 붙여넣은 때부터 계산해 기간이 지나면 삭제합니다. 고정된 항목과 영구 보관 그룹의 항목은 남습니다.";
 "settings.privacy.sensitiveRetention.cleanConfirm" = "민감한 항목 %d개가 삭제됩니다";
+
+/* Storage */
+"settings.storage" = "저장 공간";
+"storage.manage.title" = "저장 공간 관리";
+"storage.manage" = "관리";
+"storage.recordCount" = "항목 %@개";
+"storage.scanFailed" = "데이터를 읽을 수 없습니다";
+"storage.scanning" = "계산 중...";
+"storage.part.originals" = "원본";
+"storage.part.previews" = "미리보기 이미지";
+"storage.part.richText" = "서식 있는 텍스트";
+"storage.byType" = "유형별";
+"storage.itemCount" = "%@개";
+"storage.autoClean" = "자동 정리";
+"storage.optimize" = "최적화";
+"storage.tiff.title" = "TIFF 원본을 PNG로 무손실 변환";
+"storage.tiff.detail" = "%1$@장 · %2$@";
+"storage.tiff.progress" = "변환 중 %1$@ / %2$@";
+"storage.tiff.result" = "%1$@장 변환, %2$@ 절약";
+"storage.tiff.kept" = "%@장은 무손실 변환이 불가능해 TIFF로 유지됩니다";
+"storage.sourceCount" = "출처 %@개";
+"storage.grouping.source" = "출처별";
+"storage.typeCount" = "유형 %@개";
+"storage.column.type" = "유형";
+"storage.typeSelectionSummary" = "유형 %1$@개 선택 · 항목 %2$@개 · %3$@";
+"storage.searchSources" = "출처 검색";
+"storage.allSources" = "모든 출처";
+"storage.sourceWithCount" = "%1$@ · %2$@";
+"storage.column.source" = "출처";
+"storage.column.latest" = "최근 복사";
+"storage.column.count" = "항목 수";
+"storage.column.size" = "크기";
+"storage.protectedNote" = "PasteMemo의 항목만 삭제되며 원본 파일은 그대로입니다. 고정된 항목과 영구 보관 그룹의 항목은 삭제되지 않습니다.";
+"storage.protectedExcluded" = "고정 항목 및 영구 보관 그룹의 항목 %@개 제외";
+"storage.deleteRecords" = "항목 삭제";
+"storage.delete.scope" = "PasteMemo의 항목과 보관 중인 사본만 삭제되며 원본 파일은 그대로입니다. 되돌릴 수 없습니다.";
+"storage.selectionSummary" = "출처 %1$@개 선택 · 항목 %2$@개 · %3$@";
+"storage.delete.confirm" = "항목 %@개를 삭제할까요?";
+"storage.deleting" = "삭제 중...";
+"storage.empty" = "정리할 항목이 없습니다";
+"storage.time.all" = "전체 기간";
+"storage.time.1month" = "1개월 이전";
+"storage.time.3months" = "3개월 이전";
+"storage.time.6months" = "6개월 이전";
+"storage.time.1year" = "1년 이전";
+"storage.time.custom" = "기간 지정...";
+"storage.type.all" = "모든 유형";
+"storage.listSeparator" = ", ";
+"storage.sort.size" = "큰 항목 순";
+"storage.sort.latest" = "최신순";
+"storage.selectAll" = "모두 선택";
+"storage.deselectAll" = "선택 해제";
+"storage.itemSelectionSummary" = "%1$@개 선택 · %2$@";
+"storage.custom.title" = "기간 지정";
+"storage.custom.from" = "시작";
+"storage.custom.to" = "종료";

@@ -148,7 +148,6 @@
 "settings.quickPanelTabTypes" = "标签栏显示的分类";
 "settings.quickPanelTabTypes.hint" = "拖拽调整顺序，置顶和全部也能排。取消勾选可在快捷面板隐藏该分类，主窗口侧边栏不受影响。";
 "settings.quickPanelTabTypes.reset" = "恢复默认";
-"settings.history" = "历史记录";
 "settings.retentionDays" = "保留时长";
 "settings.retentionDays.forever" = "永久";
 "settings.retentionDays.days" = "%d 天";
@@ -443,6 +442,7 @@
 
 /* Data Import/Export */
 "dataPorter.section" = "数据";
+"dataPorter.importExport" = "导入与导出";
 "dataPorter.export" = "导出数据";
 "dataPorter.compressing" = "压缩中...";
 "dataPorter.import" = "导入数据";
@@ -732,13 +732,6 @@
 
 "filter.sensitive" = "敏感";
 
-"settings.clearData" = "清理数据";
-"settings.clearData.1month" = "删除 1 个月前";
-"settings.clearData.3months" = "删除 3 个月前";
-"settings.clearData.6months" = "删除 6 个月前";
-"settings.clearData.1year" = "删除 1 年前";
-"settings.clearData.all" = "删除全部";
-"settings.clearData.result" = "已删除 %d 条记录";
 
 "settings.sound" = "音效";
 "settings.sound.enabled" = "操作音效";
@@ -1063,3 +1056,59 @@
 "settings.privacy.sensitiveRetention.hours" = "%d 小时";
 "settings.privacy.sensitiveRetention.hint" = "从最后一次复制或粘贴算起，到时自动删除。置顶和永久保留分组里的条目不删。";
 "settings.privacy.sensitiveRetention.cleanConfirm" = "将删除 %d 条敏感条目";
+
+/* Storage */
+"settings.storage" = "存储空间";
+"storage.manage.title" = "管理存储空间";
+"storage.manage" = "管理";
+"storage.recordCount" = "%@ 条记录";
+"storage.scanFailed" = "无法读取数据";
+"storage.scanning" = "正在计算...";
+"storage.part.originals" = "原图";
+"storage.part.previews" = "缩略图";
+"storage.part.richText" = "富文本";
+"storage.byType" = "按类型";
+"storage.itemCount" = "%@ 条";
+"storage.autoClean" = "自动清理";
+"storage.optimize" = "优化";
+"storage.tiff.title" = "TIFF 原图无损转为 PNG";
+"storage.tiff.detail" = "%1$@ 张 · %2$@";
+"storage.tiff.progress" = "正在转换 %1$@ / %2$@";
+"storage.tiff.result" = "已转换 %1$@ 张，省 %2$@";
+"storage.tiff.kept" = "%@ 张无法无损转换，保留 TIFF";
+"storage.sourceCount" = "共 %@ 个来源";
+"storage.grouping.source" = "按来源";
+"storage.typeCount" = "共 %@ 种类型";
+"storage.column.type" = "类型";
+"storage.typeSelectionSummary" = "已选 %1$@ 种类型 · %2$@ 条 · %3$@";
+"storage.searchSources" = "搜索来源";
+"storage.allSources" = "全部来源";
+"storage.sourceWithCount" = "%1$@ · %2$@";
+"storage.column.source" = "来源";
+"storage.column.latest" = "最近时间";
+"storage.column.count" = "条数";
+"storage.column.size" = "占用";
+"storage.protectedNote" = "删除的是 PasteMemo 里的记录，原文件不受影响。置顶和「永久保存」分组里的不会删除。";
+"storage.protectedExcluded" = "不含置顶和「永久保存」分组里的 %@ 条";
+"storage.deleteRecords" = "删除记录";
+"storage.delete.scope" = "只删除 PasteMemo 里的记录和副本，原文件不受影响。此操作不可恢复，确定要继续吗？";
+"storage.selectionSummary" = "已选 %1$@ 个来源 · %2$@ 条 · %3$@";
+"storage.delete.confirm" = "将删除 %@ 条记录";
+"storage.deleting" = "正在删除...";
+"storage.empty" = "没有可清理的内容";
+"storage.time.all" = "全部时间";
+"storage.time.1month" = "1 个月前";
+"storage.time.3months" = "3 个月前";
+"storage.time.6months" = "6 个月前";
+"storage.time.1year" = "1 年前";
+"storage.time.custom" = "自定义时间...";
+"storage.type.all" = "全部类型";
+"storage.listSeparator" = "、";
+"storage.sort.size" = "占用从大到小";
+"storage.sort.latest" = "最近复制";
+"storage.selectAll" = "全选";
+"storage.deselectAll" = "取消全选";
+"storage.itemSelectionSummary" = "已选 %1$@ 条 · %2$@";
+"storage.custom.title" = "自定义时间";
+"storage.custom.from" = "开始";
+"storage.custom.to" = "结束";

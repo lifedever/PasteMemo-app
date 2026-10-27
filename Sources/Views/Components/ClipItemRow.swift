@@ -5,7 +5,7 @@ struct ClipItemRow: View {
     let onTap: () -> Void
 
     var body: some View {
-        if item.isDeleted {
+        if item.isGone {
             EmptyView()
         } else {
         Button(action: onTap) {

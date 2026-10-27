@@ -119,7 +119,18 @@ protocol BackupDestination: Sendable {
     var isAvailable: Bool { get async }
 
     func upload(data: Data, fileName: String) async throws
+    /// Uploads a finished backup file without reading it into memory first; backups carry the
+    /// original images and run to hundreds of MB.
+    func upload(fileURL: URL, fileName: String) async throws
     func download(fileName: String) async throws -> Data
     func list() async throws -> [BackupMetadata]
     func delete(fileName: String) async throws
+}
+
+extension BackupDestination {
+    /// Fallback for destinations without a streaming upload: the file is mapped, not copied
+    /// into memory.
+    func upload(fileURL: URL, fileName: String) async throws {
+        try await upload(data: Data(contentsOf: fileURL, options: .mappedIfSafe), fileName: fileName)
+    }
 }

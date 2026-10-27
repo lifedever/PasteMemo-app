@@ -86,6 +86,38 @@ enum DevDataImporter {
             let destFile = destDir.appendingPathComponent(sourceFile.lastPathComponent)
             try fm.copyItem(at: sourceFile, to: destFile)
         }
+
+        // The store alone isn't the data: large thumbnails / rich text live in Core Data's
+        // external-blob folder, full-size images in the Originals cache. Without them the
+        // copy shows empty thumbnails and the storage page under-counts.
+        for folder in [".PasteMemo_SUPPORT", "Originals"] {
+            let source = sourceDir.appendingPathComponent(folder)
+            let dest = destDir.appendingPathComponent(folder)
+            try? fm.removeItem(at: dest)
+            if fm.fileExists(atPath: source.path) {
+                try fm.copyItem(at: source, to: dest)
+            }
+        }
+        try repointOriginals(
+            inStore: destDir.appendingPathComponent("PasteMemo.store"),
+            from: sourceDir.appendingPathComponent("Originals").path + "/",
+            to: destDir.appendingPathComponent("Originals").path + "/"
+        )
+    }
+
+    /// Original paths are stored absolute: rewrite them to Dev's copy, so Dev never reads —
+    /// or deletes — Release's files.
+    private static func repointOriginals(inStore store: URL, from oldPrefix: String, to newPrefix: String) throws {
+        guard let db = SQLiteConnection(path: store.path) else { return }
+        defer { db.close() }
+        let sql = """
+            UPDATE ZCLIPITEM SET ZORIGINALIMAGEFILEPATH = ? || substr(ZORIGINALIMAGEFILEPATH, ?)
+            WHERE substr(ZORIGINALIMAGEFILEPATH, 1, ?) = ?
+            """
+        let prefixLength = oldPrefix.unicodeScalars.count  // SQLite substr counts code points
+        guard db.run(sql, params: [newPrefix, prefixLength + 1, prefixLength, oldPrefix]) else {
+            throw NSError(domain: "DevDataImporter", code: 1, userInfo: [NSLocalizedDescriptionKey: db.lastErrorMessage])
+        }
     }
 
     // MARK: - Post-Import Cleanup

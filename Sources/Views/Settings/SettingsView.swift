@@ -58,7 +58,7 @@ struct SettingsSidebar: View {
                 .fill(isSelected ? Color.accentColor : Color.clear)
         )
         .contentShape(Rectangle())
-        .onTapGesture { nav.selection = category }
+        .onTapGesture { nav.select(category) }
         .pointerCursor()
     }
 
@@ -71,11 +71,30 @@ struct SettingsSidebar: View {
 /// 设置窗口详情区。标题栏那对前进/后退箭头也挂在这里（经 hosting controller 桥接）。
 struct SettingsDetail: View {
     @EnvironmentObject private var nav: SettingsNavigationModel
+    /// 数据页和它推进去的两个存储页共用：扫描结果、筛选条件在页面之间来回时保留。
+    @StateObject private var storage = StorageModel()
 
     var body: some View {
-        detailView(for: nav.selection)
+        content
+            .environmentObject(storage)
+            // 删除、转换跑完前不让关；三个存储页共用这一个
+            .sheet(isPresented: Binding(get: { storage.job != nil }, set: { _ in })) {
+                if let job = storage.job { StorageJobSheet(job: job) }
+            }
             // 去掉标题栏底色和那条分隔线，内容直接从顶部开始，同系统设置
             .toolbarBackground(.hidden, for: .windowToolbar)
+    }
+
+    @ViewBuilder
+    private var content: some View {
+        if nav.selection == .data, let subpage = nav.subpage {
+            switch subpage {
+            case .storageManage: StorageManagePane()
+            case .storageGroup(let key): StorageGroupPane(key: key)
+            }
+        } else {
+            detailView(for: nav.selection)
+        }
     }
 
     @ViewBuilder
@@ -90,7 +109,7 @@ struct SettingsDetail: View {
         case .aiAgents: AIAgentIntegrationView()
         case .aiService: AIServicePane()
         case .automation: AutomationTab()
-        case .data: DataTab()
+        case .data: DataPane()
         case .sponsor: SponsorTab()
         case .about: AboutTab()
         }
@@ -445,19 +464,6 @@ struct AppearancePane: View {
                 }
                 .help(L10n.tr("settings.menuBar.leftClickAction.help"))
             }
-        }
-        .formStyle(.grouped)
-    }
-}
-
-// MARK: - Data Tab
-
-struct DataTab: View {
-    var body: some View {
-        Form {
-            HistorySection()
-            BackupSection()
-            DataPorterSection()
         }
         .formStyle(.grouped)
     }
@@ -977,8 +983,10 @@ struct PreviewPane: View {
     }
 }
 
+/// 「存储空间」页的自动清理：保留时长。
 struct HistorySection: View {
     @Environment(\.modelContext) private var modelContext
+    @EnvironmentObject private var storage: StorageModel
     @AppStorage("retentionDays") private var retentionDays = 90
     @State private var pendingRetentionOldDays = 0
     @State private var pendingExpiredCount = 0
@@ -987,7 +995,7 @@ struct HistorySection: View {
     private let allRetentionOptions = [1, 3, 7, 14, 30, 60, 90, 180, 365]
 
     var body: some View {
-        Section(L10n.tr("settings.history")) {
+        Section(L10n.tr("storage.autoClean")) {
             Picker(L10n.tr("settings.retentionDays"), selection: $retentionDays) {
                 Text(L10n.tr("settings.retentionDays.forever")).tag(0)
                 ForEach(allRetentionOptions, id: \.self) { days in
@@ -1047,13 +1055,12 @@ struct HistorySection: View {
                 && !SmartGroupRetention.shouldPreserve(item: $0, preservedGroupNames: preservedGroupNames)
         }
         guard !expiredItems.isEmpty else { return }
-
-        for item in expiredItems {
-            if let groupName = item.groupName, !groupName.isEmpty {
-                ClipboardManager.shared.decrementSmartGroup(name: groupName, context: modelContext)
-            }
+        // Through StorageCleaner so cached originals and freed database pages go too, and the
+        // page's totals reflect it. Group counts are recalculated by the delete itself.
+        Task {
+            await StorageCleaner.delete(expiredItems, in: modelContext)
+            await storage.refresh()
         }
-        ClipItemStore.deleteAndNotify(expiredItems, from: modelContext)
     }
 }
 

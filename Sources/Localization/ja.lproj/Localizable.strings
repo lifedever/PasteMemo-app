@@ -174,7 +174,6 @@
 "settings.quickPanelTabTypes" = "タブバーに表示するカテゴリ";
 "settings.quickPanelTabTypes.hint" = "ドラッグで並び替え。チェックを外すとクイックパネルで非表示になります（サイドバーはそのまま）。";
 "settings.quickPanelTabTypes.reset" = "デフォルトに戻す";
-"settings.history" = "履歴";
 "settings.retentionDays" = "履歴の保持";
 "settings.retentionDays.forever" = "永久";
 "settings.retentionDays.days" = "%d日";
@@ -314,6 +313,7 @@
 
 /* Data Import/Export */
 "dataPorter.section" = "データ";
+"dataPorter.importExport" = "読み込みと書き出し";
 "dataPorter.export" = "データをエクスポート";
 "dataPorter.compressing" = "圧縮中...";
 "dataPorter.import" = "データをインポート";
@@ -417,7 +417,6 @@
 
 "filter.sensitive" = "機密";
 
-"settings.clearData" = "データを消去";
 
 "settings.sound" = "サウンド";
 "settings.sound.enabled" = "効果音";
@@ -705,12 +704,6 @@
 "stats.clips" = "クリップ";
 
 /* Settings - Clear Data */
-"settings.clearData.1month" = "1ヶ月以上前";
-"settings.clearData.1year" = "1年以上前";
-"settings.clearData.3months" = "3ヶ月以上前";
-"settings.clearData.6months" = "6ヶ月以上前";
-"settings.clearData.all" = "すべて削除";
-"settings.clearData.result" = "%d 件を削除しました";
 
 /* Settings - Double Tap */
 "settings.doubleTap" = "ダブルタップで開く";
@@ -1115,3 +1108,59 @@
 "settings.privacy.sensitiveRetention.hours" = "%d 時間";
 "settings.privacy.sensitiveRetention.hint" = "最後にコピーまたは貼り付けした時点から数え、期間が過ぎると削除します。ピン留めと永久保存グループの項目は残ります。";
 "settings.privacy.sensitiveRetention.cleanConfirm" = "%d 件の機密項目を削除します";
+
+/* Storage */
+"settings.storage" = "ストレージ";
+"storage.manage.title" = "ストレージを管理";
+"storage.manage" = "管理";
+"storage.recordCount" = "%@ 件の項目";
+"storage.scanFailed" = "データを読み込めません";
+"storage.scanning" = "計算中...";
+"storage.part.originals" = "オリジナル";
+"storage.part.previews" = "サムネイル";
+"storage.part.richText" = "リッチテキスト";
+"storage.byType" = "種類別";
+"storage.itemCount" = "%@ 件";
+"storage.autoClean" = "自動クリーンアップ";
+"storage.optimize" = "最適化";
+"storage.tiff.title" = "TIFF オリジナルを PNG にロスレス変換";
+"storage.tiff.detail" = "%1$@ 枚 · %2$@";
+"storage.tiff.progress" = "変換中 %1$@ / %2$@";
+"storage.tiff.result" = "%1$@ 枚を変換、%2$@ 節約";
+"storage.tiff.kept" = "%@ 枚はロスレス変換できないため TIFF のままです";
+"storage.sourceCount" = "%@ 個のソース";
+"storage.grouping.source" = "ソース別";
+"storage.typeCount" = "%@ 種類";
+"storage.column.type" = "種類";
+"storage.typeSelectionSummary" = "%1$@ 種類を選択 · %2$@ 件 · %3$@";
+"storage.searchSources" = "ソースを検索";
+"storage.allSources" = "すべてのソース";
+"storage.sourceWithCount" = "%1$@ · %2$@";
+"storage.column.source" = "ソース";
+"storage.column.latest" = "最終コピー";
+"storage.column.count" = "件数";
+"storage.column.size" = "サイズ";
+"storage.protectedNote" = "削除されるのは PasteMemo の項目で、元のファイルには影響しません。ピン留めした項目と永久保存グループの項目は削除されません。";
+"storage.protectedExcluded" = "ピン留め・永久保存グループの %@ 件は含みません";
+"storage.deleteRecords" = "項目を削除";
+"storage.delete.scope" = "削除されるのは PasteMemo の項目と保存しているコピーだけで、元のファイルには影響しません。この操作は取り消せません。";
+"storage.selectionSummary" = "%1$@ 個のソースを選択 · %2$@ 件 · %3$@";
+"storage.delete.confirm" = "%@ 件の項目を削除しますか？";
+"storage.deleting" = "削除中...";
+"storage.empty" = "クリーンアップするものはありません";
+"storage.time.all" = "すべての期間";
+"storage.time.1month" = "1 か月より前";
+"storage.time.3months" = "3 か月より前";
+"storage.time.6months" = "6 か月より前";
+"storage.time.1year" = "1 年より前";
+"storage.time.custom" = "期間を指定...";
+"storage.type.all" = "すべての種類";
+"storage.listSeparator" = "、";
+"storage.sort.size" = "サイズの大きい順";
+"storage.sort.latest" = "新しい順";
+"storage.selectAll" = "すべて選択";
+"storage.deselectAll" = "選択を解除";
+"storage.itemSelectionSummary" = "%1$@ 件を選択 · %2$@";
+"storage.custom.title" = "期間を指定";
+"storage.custom.from" = "開始";
+"storage.custom.to" = "終了";

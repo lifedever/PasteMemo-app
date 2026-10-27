@@ -19,10 +19,9 @@ struct DataPorterSection: View {
     @State private var importProgress = ""
     @State private var progressValue: Double = 0
     @State private var progressTitle = ""
-    @State private var showClearMenu = false
 
     var body: some View {
-        Section(L10n.tr("dataPorter.section")) {
+        Section(L10n.tr("dataPorter.importExport")) {
             exportControls
         }
     }
@@ -45,8 +44,6 @@ struct DataPorterSection: View {
             Button(L10n.tr("dataPorter.import")) { handleImport() }
                 .disabled(isProcessing)
                 .pointerCursor()
-            Spacer()
-            clearDataButton
         }
         .sheet(isPresented: $isProcessing) {
             VStack(spacing: 16) {
@@ -122,47 +119,28 @@ struct DataPorterSection: View {
         let password = exportPassword
         let snapshotGroups = groups
         let snapshotRules = rules
+        let snapshotItems = clipItems
         Task { @MainActor in
-            let total = clipItems.count
-            var exportItems: [ExportItem] = []
-            exportItems.reserveCapacity(total)
-            let batchSize = 100
-            for i in stride(from: 0, to: total, by: batchSize) {
-                let end = min(i + batchSize, total)
-                for j in i..<end {
-                    exportItems.append(DataPorter.buildSingleExportItem(clipItems[j]))
+            do {
+                // Streamed straight to disk, original images included: building the whole
+                // document in memory first costs several times the export's size.
+                try await DataPorter.writeExportFile(
+                    clipItems: snapshotItems,
+                    groups: snapshotGroups,
+                    rules: snapshotRules,
+                    to: url,
+                    password: encrypt ? password : nil
+                ) { current, total in
+                    importProgress = "\(current) / \(total)"
+                    progressValue = Double(current) / Double(max(total, 1))
+                    if current == total { importProgress = L10n.tr("dataPorter.compressing") }
                 }
-                importProgress = "\(end) / \(total)"
-                progressValue = Double(end) / Double(max(total, 1))
-                await Task.yield()
-            }
-            let payload = ExportPayload(
-                version: DataPorter.currentVersion,
-                exportDate: Date(),
-                items: exportItems,
-                groups: snapshotGroups.map(DataPorter.buildSingleExportGroup),
-                rules: snapshotRules.map(DataPorter.buildSingleExportRule)
-            )
-            importProgress = L10n.tr("dataPorter.compressing")
-            await Task.yield()
-            Task.detached {
-                do {
-                    let compressed = try DataPorter.encodeAndCompress(payload)
-                    let fileData = encrypt
-                        ? try DataPorterCrypto.encrypt(data: compressed, password: password)
-                        : DataPorterCrypto.wrapPlaintext(compressed)
-                    try fileData.write(to: url)
-                    await MainActor.run {
-                        isProcessing = false
-                        showAlert(L10n.tr("dataPorter.exportSuccess"))
-                        resetExportFields()
-                    }
-                } catch {
-                    await MainActor.run {
-                        isProcessing = false
-                        showAlert(error.localizedDescription)
-                    }
-                }
+                isProcessing = false
+                showAlert(L10n.tr("dataPorter.exportSuccess"))
+                resetExportFields()
+            } catch {
+                isProcessing = false
+                showAlert(error.localizedDescription)
             }
         }
     }
@@ -175,7 +153,8 @@ struct DataPorterSection: View {
         guard panel.runModal() == .OK, let url = panel.url else { return }
 
         do {
-            let fileData = try Data(contentsOf: url)
+            // Mapped: the import streams through it once.
+            let fileData = try Data(contentsOf: url, options: .mappedIfSafe)
             if DataPorterCrypto.isEncrypted(fileData) {
                 pendingImportData = fileData
                 importPassword = ""
@@ -220,17 +199,16 @@ struct DataPorterSection: View {
                 // main actor freezes the progress sheet and spins the cursor —
                 // the symptoms the user reported. Run off-actor, then resume.
                 let pwd = password ?? ""
-                let payload: ExportPayload = try await Task.detached(priority: .userInitiated) {
-                    let jsonData = try DataPorterCrypto.decrypt(fileData: fileData, password: pwd)
-                    return try DataPorter.decodePayload(jsonData)
+                let jsonData = try await Task.detached(priority: .userInitiated) {
+                    try DataPorterCrypto.decrypt(fileData: fileData, password: pwd)
                 }.value
 
-                importProgress = "0 / \(payload.items.count)"
-                progressValue = 0
-
+                // Streams the items past instead of decoding the whole file: exports carry
+                // the original images and would take several times their size in memory.
                 ClipItemStore.isBulkOperation = true
-                let result = try await DataPorter.importItems(
-                    payload: payload,
+                defer { ClipItemStore.isBulkOperation = false }
+                let result = try await DataPorter.importStreaming(
+                    jsonData,
                     into: modelContext
                 ) { current, total in
                     importProgress = "\(current) / \(total)"
@@ -287,72 +265,4 @@ struct DataPorterSection: View {
         isAlertPresented = true
     }
 
-    private var clearDataButton: some View {
-        Menu {
-            Button(L10n.tr("settings.clearData.1month")) { confirmClear(days: 30) }
-            Button(L10n.tr("settings.clearData.3months")) { confirmClear(days: 90) }
-            Button(L10n.tr("settings.clearData.6months")) { confirmClear(days: 180) }
-            Button(L10n.tr("settings.clearData.1year")) { confirmClear(days: 365) }
-            Divider()
-            Button(L10n.tr("settings.clearData.all"), role: .destructive) { confirmClear(days: 0) }
-        } label: {
-            Label(L10n.tr("settings.clearData"), systemImage: "trash")
-        }
-        .pointerCursor()
-        .alert(L10n.tr("settings.clearData"), isPresented: $showClearConfirm) {
-            Button(L10n.tr("action.delete"), role: .destructive) { clearItems(olderThan: pendingClearDays) }
-            Button(L10n.tr("action.cancel"), role: .cancel) {}
-        } message: {
-            Text(L10n.tr("action.clearConfirm"))
-        }
-        .alert(alertMessage, isPresented: $showClearResult) {
-            Button(L10n.tr("action.confirm")) {}
-        }
-    }
-
-    private func confirmClear(days: Int) {
-        pendingClearDays = days
-        showClearConfirm = true
-    }
-
-    @State private var showClearResult = false
-    @State private var showClearConfirm = false
-    @State private var pendingClearDays = 0
-
-    private func clearItems(olderThan days: Int) {
-        progressTitle = L10n.tr("settings.clearData")
-        isProcessing = true
-        importProgress = ""
-        progressValue = 0
-        Task { @MainActor in
-            defer {
-                isProcessing = false
-                importProgress = ""
-            }
-
-            let preservedGroupNames = SmartGroupRetention.preservedGroupNames(in: modelContext)
-            let descriptor: FetchDescriptor<ClipItem>
-            if days > 0 {
-                let cutoff = Calendar.current.date(byAdding: .day, value: -days, to: Date())!
-                descriptor = FetchDescriptor<ClipItem>(
-                    predicate: #Predicate { !$0.isPinned && $0.createdAt < cutoff }
-                )
-            } else {
-                descriptor = FetchDescriptor<ClipItem>(
-                    predicate: #Predicate { !$0.isPinned }
-                )
-            }
-            guard let fetchedItems = try? modelContext.fetch(descriptor) else { return }
-            let items = SmartGroupRetention.filterDeletableItems(fetchedItems, preservedGroupNames: preservedGroupNames)
-            let total = items.count
-
-            await ClipItemStore.deleteAndNotifyBatched(items, from: modelContext) { done, total in
-                importProgress = "\(done) / \(total)"
-                progressValue = Double(done) / Double(max(total, 1))
-            }
-
-            alertMessage = L10n.tr("settings.clearData.result", total)
-            showClearResult = true
-        }
-    }
 }

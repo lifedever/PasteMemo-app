@@ -10,6 +10,9 @@ final class ImageCache: @unchecked Sendable {
     private var thumbnailTasks: [String: Task<Void, Never>] = [:]
     private var videoThumbnailTasks: [String: Task<Void, Never>] = [:]
     private var videoDurations: [String: String] = [:]
+    /// Bumped by `invalidate(key:)`; part of every cache key, so a clip whose image bytes were
+    /// replaced in place stops hitting its old decoded images. Guarded by `taskQueue`.
+    private var keyGenerations: [String: Int] = [:]
     private let taskQueue = DispatchQueue(label: "ImageCache.tasks")
     private let videoMetadataQueue = DispatchQueue(label: "ImageCache.videoMetadata")
 
@@ -270,12 +273,22 @@ final class ImageCache: @unchecked Sendable {
         cache.setObject(image, forKey: cacheKey, cost: decodedCost(image))
     }
 
+    /// Forget the decoded thumbnails and previews of `key` (a clip whose `imageData` changed).
+    /// The old entries simply stop matching and age out of the NSCache.
+    func invalidate(key: String) {
+        taskQueue.sync { keyGenerations[key, default: 0] += 1 }
+    }
+
+    private func generation(of key: String) -> Int {
+        taskQueue.sync { keyGenerations[key] ?? 0 }
+    }
+
     private func previewCacheKey(for key: String, maxDimension: CGFloat) -> NSString {
-        "preview_\(key)_\(Int(maxDimension))" as NSString
+        "preview_\(key)_\(generation(of: key))_\(Int(maxDimension))" as NSString
     }
 
     private func thumbnailCacheKey(for key: String, size: CGFloat) -> NSString {
-        "thumb_\(key)_\(Int(size))" as NSString
+        "thumb_\(key)_\(generation(of: key))_\(Int(size))" as NSString
     }
 
     private static func formatDuration(_ seconds: Float64) -> String {

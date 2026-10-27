@@ -19,7 +19,7 @@ struct ClipDetailView: View {
 
     @ViewBuilder
     var body: some View {
-        if item.isDeleted { EmptyView() } else {
+        if item.isGone { EmptyView() } else {
         VStack(alignment: .leading, spacing: 0) {
             actionBar
                 .padding(.horizontal, 16)

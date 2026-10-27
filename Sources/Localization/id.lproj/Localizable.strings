@@ -138,7 +138,6 @@
 "settings.quickPanelTabTypes" = "Kategori di bilah tab";
 "settings.quickPanelTabTypes.hint" = "Seret untuk mengurutkan. Hapus centang untuk menyembunyikan tab di panel cepat; bilah sisi tidak berubah.";
 "settings.quickPanelTabTypes.reset" = "Atur ulang";
-"settings.history" = "Riwayat";
 "settings.retentionDays" = "Simpan Riwayat";
 "settings.retentionDays.forever" = "Selamanya";
 "settings.retentionDays.days" = "%d hari";
@@ -393,6 +392,7 @@
 
 /* Data Import/Export */
 "dataPorter.section" = "Data";
+"dataPorter.importExport" = "Impor & Ekspor";
 "dataPorter.export" = "Ekspor Data";
 "dataPorter.compressing" = "Mengompresi...";
 "dataPorter.import" = "Impor Data";
@@ -496,7 +496,6 @@
 
 "filter.sensitive" = "Sensitif";
 
-"settings.clearData" = "Hapus Semua Data";
 
 "settings.sound" = "Suara";
 "settings.sound.enabled" = "Efek suara";
@@ -671,12 +670,6 @@ Gunakan %@ untuk menempel satu per satu.";
 "help.relay.exit" = "Tombol Tutup atau Esc untuk keluar dari mode relay";
 
 /* Missing Keys - Clear Data */
-"settings.clearData.1month" = "Lebih dari 1 bulan";
-"settings.clearData.3months" = "Lebih dari 3 bulan";
-"settings.clearData.6months" = "Lebih dari 6 bulan";
-"settings.clearData.1year" = "Lebih dari 1 tahun";
-"settings.clearData.all" = "Hapus semua";
-"settings.clearData.result" = "%d item dihapus";
 
 /* Missing Keys - Backup */
 "backup.nextBackup" = "Cadangan berikutnya";
@@ -1089,3 +1082,59 @@ Gunakan %@ untuk menempel satu per satu.";
 "settings.privacy.sensitiveRetention.hours" = "%d jam";
 "settings.privacy.sensitiveRetention.hint" = "Dihitung sejak salin atau tempel terakhir, lalu dihapus. Item yang disematkan dan item di grup simpan permanen tetap ada.";
 "settings.privacy.sensitiveRetention.cleanConfirm" = "%d item sensitif akan dihapus";
+
+/* Storage */
+"settings.storage" = "Penyimpanan";
+"storage.manage.title" = "Kelola Penyimpanan";
+"storage.manage" = "Kelola";
+"storage.recordCount" = "%@ item";
+"storage.scanFailed" = "Tidak dapat membaca data";
+"storage.scanning" = "Menghitung...";
+"storage.part.originals" = "Asli";
+"storage.part.previews" = "Thumbnail";
+"storage.part.richText" = "Teks kaya";
+"storage.byType" = "Menurut Jenis";
+"storage.itemCount" = "%@ item";
+"storage.autoClean" = "Pembersihan Otomatis";
+"storage.optimize" = "Optimalkan";
+"storage.tiff.title" = "Ubah TIFF asli ke PNG (tanpa kehilangan kualitas)";
+"storage.tiff.detail" = "%1$@ gambar · %2$@";
+"storage.tiff.progress" = "Mengubah %1$@ dari %2$@";
+"storage.tiff.result" = "%1$@ gambar diubah, hemat %2$@";
+"storage.tiff.kept" = "%@ gambar tidak bisa diubah tanpa kehilangan kualitas dan tetap TIFF";
+"storage.sourceCount" = "%@ sumber";
+"storage.grouping.source" = "Menurut Sumber";
+"storage.typeCount" = "%@ jenis";
+"storage.column.type" = "Jenis";
+"storage.typeSelectionSummary" = "%1$@ jenis dipilih · %2$@ item · %3$@";
+"storage.searchSources" = "Cari sumber";
+"storage.allSources" = "Semua Sumber";
+"storage.sourceWithCount" = "%1$@ · %2$@";
+"storage.column.source" = "Sumber";
+"storage.column.latest" = "Terakhir disalin";
+"storage.column.count" = "Item";
+"storage.column.size" = "Ukuran";
+"storage.protectedNote" = "Yang dihapus adalah item di PasteMemo, bukan file asli Anda. Item yang disematkan dan item di grup permanen tidak pernah dihapus.";
+"storage.protectedExcluded" = "Tidak termasuk %@ item yang disematkan atau di grup permanen";
+"storage.deleteRecords" = "Hapus Item";
+"storage.delete.scope" = "Hanya item PasteMemo dan salinan yang disimpannya yang dihapus; file asli Anda tidak tersentuh. Tindakan ini tidak dapat dibatalkan.";
+"storage.selectionSummary" = "%1$@ sumber dipilih · %2$@ item · %3$@";
+"storage.delete.confirm" = "Hapus %@ item?";
+"storage.deleting" = "Menghapus...";
+"storage.empty" = "Tidak ada yang perlu dibersihkan";
+"storage.time.all" = "Semua Waktu";
+"storage.time.1month" = "Lebih dari 1 bulan";
+"storage.time.3months" = "Lebih dari 3 bulan";
+"storage.time.6months" = "Lebih dari 6 bulan";
+"storage.time.1year" = "Lebih dari 1 tahun";
+"storage.time.custom" = "Rentang Khusus...";
+"storage.type.all" = "Semua Jenis";
+"storage.listSeparator" = ", ";
+"storage.sort.size" = "Terbesar Dulu";
+"storage.sort.latest" = "Terbaru";
+"storage.selectAll" = "Pilih Semua";
+"storage.deselectAll" = "Batalkan Pilihan";
+"storage.itemSelectionSummary" = "%1$@ dipilih · %2$@";
+"storage.custom.title" = "Rentang Khusus";
+"storage.custom.from" = "Dari";
+"storage.custom.to" = "Sampai";

@@ -2,57 +2,104 @@ import AppKit
 import Combine
 import SwiftUI
 
+/// 分类页里推进去的二级页（数据 → 管理 → 某个来源或某种类型）。
+enum SettingsSubpage: Hashable {
+    case storageManage
+    case storageGroup(StorageGroupKey)
+}
+
 /// 设置窗口的导航状态：当前页 + 看过的页面栈（标题栏那对箭头用）。
 ///
 /// 从 View 里抽出来是因为窗口骨架改成了 AppKit 的 `NSSplitViewController`，
 /// 侧边栏和详情区是两个各自独立的 `NSHostingController`，得有个共同的状态源。
+/// 二级页也进同一个栈，所以标题栏的后退箭头就是二级页的返回，同系统设置。
 @MainActor
 final class SettingsNavigationModel: ObservableObject {
+    private struct Location: Hashable {
+        var category: SettingsCategory
+        var subpage: SettingsSubpage?
+    }
+
     @Published var selection: SettingsCategory = .general {
         didSet {
             guard oldValue != selection else { return }
-            recordHistory(selection)
-            onSelectionChange?(selection)
+            if !isNavigatingHistory { subpage = nil }
+            recordHistory()
+            onLocationChange?(title)
         }
     }
 
-    /// 选中页变化时的副作用（同步窗口标题）。由窗口骨架注入。
-    var onSelectionChange: ((SettingsCategory) -> Void)?
+    @Published private(set) var subpage: SettingsSubpage?
 
-    @Published private(set) var history: [SettingsCategory] = [.general]
-    @Published private(set) var historyIndex = 0
+    /// 当前页标题变化时的副作用（同步窗口标题）。由窗口骨架注入。
+    var onLocationChange: ((String) -> Void)?
+
+    @Published private var history: [Location] = [Location(category: .general)]
+    @Published private var historyIndex = 0
     /// 箭头触发的切换不该再入栈，否则一路后退会把历史越堆越长。
     private var isNavigatingHistory = false
 
     var canGoBack: Bool { historyIndex > 0 }
     var canGoForward: Bool { historyIndex < history.count - 1 }
 
+    var title: String {
+        switch subpage {
+        case nil: return L10n.tr(selection.titleKey)
+        case .storageManage: return L10n.tr("storage.manage.title")
+        case .storageGroup(.source(let name)): return name.isEmpty ? L10n.tr("filter.other") : name
+        case .storageGroup(.category(let category)): return category.label
+        }
+    }
+
+    /// 侧边栏点选。点的就是当前分类而人在二级页时，回到这个分类的首页。
+    func select(_ category: SettingsCategory) {
+        guard category == selection else {
+            selection = category
+            return
+        }
+        guard subpage != nil else { return }
+        subpage = nil
+        recordHistory()
+        onLocationChange?(title)
+    }
+
+    func push(_ page: SettingsSubpage) {
+        guard page != subpage else { return }
+        subpage = page
+        recordHistory()
+        onLocationChange?(title)
+    }
+
     func goBack() {
         guard canGoBack else { return }
-        isNavigatingHistory = true
         historyIndex -= 1
-        selection = history[historyIndex]
+        apply(history[historyIndex])
     }
 
     func goForward() {
         guard canGoForward else { return }
-        isNavigatingHistory = true
         historyIndex += 1
-        selection = history[historyIndex]
+        apply(history[historyIndex])
     }
 
-    /// 侧边栏点选时入栈。从中间位置跳到新页要先把「前进」那截截断——
+    private func apply(_ location: Location) {
+        isNavigatingHistory = true
+        subpage = location.subpage
+        selection = location.category
+        isNavigatingHistory = false
+        onLocationChange?(title)
+    }
+
+    /// 侧边栏点选和推入二级页时入栈。从中间位置跳到新页要先把「前进」那截截断——
     /// 浏览器和系统设置都是这个行为。
-    private func recordHistory(_ category: SettingsCategory) {
-        if isNavigatingHistory {
-            isNavigatingHistory = false
-            return
-        }
-        guard history.indices.contains(historyIndex), history[historyIndex] != category else { return }
+    private func recordHistory() {
+        guard !isNavigatingHistory else { return }
+        let location = Location(category: selection, subpage: subpage)
+        guard history.indices.contains(historyIndex), history[historyIndex] != location else { return }
         if historyIndex < history.count - 1 {
             history.removeSubrange((historyIndex + 1)...)
         }
-        history.append(category)
+        history.append(location)
         historyIndex = history.count - 1
     }
 }

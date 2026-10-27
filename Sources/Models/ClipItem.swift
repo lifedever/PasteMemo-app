@@ -426,3 +426,12 @@ final class ClipItem {
         }
     }
 }
+
+extension ClipItem {
+    /// Deleted, so no stored property may be read. `isDeleted` only covers a delete that hasn't
+    /// been saved: once it is, SwiftData reports `isDeleted == false` again and detaches the
+    /// context instead (measured 2026-10-27). Reading a property then traps, and an
+    /// external-storage one (rich text, image) throws from Core Data — a view still holding the
+    /// clip while a bulk delete saves batch by batch crashed exactly that way.
+    var isGone: Bool { isDeleted || modelContext == nil }
+}

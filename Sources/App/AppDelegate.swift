@@ -66,6 +66,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if ClipboardManager.shared.isMonitoringEnabled {
             ClipboardManager.shared.startMonitoring()
         }
+        // Existing TIFF originals → lossless PNG (storage page switch), once launch settles.
+        OriginalImageOptimizer.shared.convertExistingAfterLaunch()
         // Sensitive clips expire on their own clock, paused monitoring or not.
         ClipboardManager.shared.updateSensitiveSweep()
         // 补齐早期版本没存缩略图的视频条目(源文件还在的才补)。放启动流程而非视图

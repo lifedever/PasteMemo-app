@@ -28,7 +28,7 @@ struct ClipPropertiesView: View {
 
     @ViewBuilder
     var body: some View {
-        if item.isDeleted { EmptyView() } else {
+        if item.isGone { EmptyView() } else {
         VStack(alignment: .leading, spacing: 0) {
             commonProperties
             typeSpecificProperties
@@ -158,7 +158,7 @@ struct ClipPropertiesView: View {
     private var languageSelection: Binding<String> {
         Binding(
             get: {
-                guard !item.isDeleted else { return "_text" }
+                guard !item.isGone else { return "_text" }
                 if item.contentType == .text { return "_text" }
                 if let raw = item.codeLanguage { return raw }
                 return "_auto"

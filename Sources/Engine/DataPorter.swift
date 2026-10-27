@@ -27,6 +27,18 @@ struct ExportItem: Codable {
     let ocrUpdatedAt: Date?
     let ocrErrorMessage: String?
     let ocrVersion: Int?
+    /// The full-resolution original kept in the Originals cache, for clips whose `imageData`
+    /// is only a thumbnail. Optional both ways: older files lack it, older app versions skip it.
+    var originalImageBase64: String? = nil
+    // Same deal for the fields below, which earlier exports silently dropped.
+    /// Full pasteboard replay (Telegram custom emoji, Word / browser rich content).
+    var pasteboardSnapshotBase64: String? = nil
+    /// The file part of `.mixed` clips.
+    var filePaths: String? = nil
+    /// Original SMS behind an extracted verification code.
+    var smsMessageText: String? = nil
+    /// The AI Agent (MCP client) that wrote the clip.
+    var agentSource: String? = nil
 }
 
 struct ExportGroup: Codable {
@@ -134,6 +146,7 @@ enum DataPorter {
         groups: [SmartGroup],
         rules: [AutomationRule],
         to outputURL: URL,
+        header: Data = Data(),
         progress: @MainActor @escaping (_ current: Int, _ total: Int) -> Void = { _, _ in }
     ) async throws {
         let encoder = JSONEncoder()
@@ -142,6 +155,11 @@ enum DataPorter {
         FileManager.default.createFile(atPath: outputURL.path, contents: nil)
         let outHandle = try FileHandle(forWritingTo: outputURL)
         defer { try? outHandle.close() }
+        // Written raw ahead of the compressed stream (the backup file's plaintext envelope),
+        // so the finished file can be handed on as is instead of re-read and re-wrapped.
+        if !header.isEmpty {
+            try outHandle.write(contentsOf: header)
+        }
 
         let outputFilter = try OutputFilter(.compress, using: .zlib) { data in
             if let data = data, !data.isEmpty {
@@ -231,6 +249,7 @@ enum DataPorter {
 
         var imported = 0
         var skipped = 0
+        let deduplicator = ImportDeduplicator(context: context)
         // Each batch is one transaction (one context.save). Yield within the
         // batch too so heavy items (e.g. base64 image decode) don't hold the
         // main actor long enough for macOS to draw the spinning-beachball
@@ -243,10 +262,10 @@ enum DataPorter {
             let batch = payload.items[batchStart..<batchEnd]
 
             for (offset, exportItem) in batch.enumerated() {
-                if isDuplicate(exportItem, in: context) {
+                if deduplicator.mergeIfDuplicate(exportItem) {
                     skipped += 1
                 } else {
-                    insertClipItem(from: exportItem, into: context)
+                    deduplicator.add(insertClipItem(from: exportItem, into: context))
                     imported += 1
                 }
                 let globalIndex = batchStart + offset
@@ -287,12 +306,13 @@ enum DataPorter {
 
         var imported = 0
         var skipped = 0
+        let deduplicator = ImportDeduplicator(context: context)
 
         for exportItem in payload.items {
-            if isDuplicate(exportItem, in: context) {
+            if deduplicator.mergeIfDuplicate(exportItem) {
                 skipped += 1
             } else {
-                insertClipItem(from: exportItem, into: context)
+                deduplicator.add(insertClipItem(from: exportItem, into: context))
                 imported += 1
             }
         }
@@ -315,7 +335,7 @@ enum DataPorter {
     static func buildSingleExportRule(_ rule: AutomationRule) -> ExportRule { buildExportRule(from: rule) }
 
     private static func buildExportItem(from clip: ClipItem) -> ExportItem {
-        ExportItem(
+        var item = ExportItem(
             content: clip.content,
             contentType: clip.contentType.rawValue,
             sourceApp: clip.sourceApp,
@@ -339,6 +359,14 @@ enum DataPorter {
             ocrErrorMessage: clip.ocrErrorMessage,
             ocrVersion: clip.ocrVersion
         )
+        if let path = clip.originalImageFilePath, let original = ClipboardManager.loadOriginalImageData(at: path) {
+            item.originalImageBase64 = original.base64EncodedString()
+        }
+        item.pasteboardSnapshotBase64 = clip.pasteboardSnapshot?.base64EncodedString()
+        item.filePaths = clip.filePaths
+        item.smsMessageText = clip.smsMessageText
+        item.agentSource = clip.agentSource
+        return item
     }
 
     private static func buildExportGroup(from group: SmartGroup) -> ExportGroup {
@@ -372,24 +400,9 @@ enum DataPorter {
         )
     }
 
-    private static func isDuplicate(_ exportItem: ExportItem, in context: ModelContext) -> Bool {
-        let content = exportItem.content
-        let lowerBound = exportItem.createdAt.addingTimeInterval(-1)
-        let upperBound = exportItem.createdAt.addingTimeInterval(1)
-
-        let descriptor = FetchDescriptor<ClipItem>(
-            predicate: #Predicate<ClipItem> {
-                $0.content == content
-                    && $0.createdAt >= lowerBound
-                    && $0.createdAt <= upperBound
-            }
-        )
-        let count = (try? context.fetchCount(descriptor)) ?? 0
-        return count > 0
-    }
-
     @MainActor
-    private static func insertClipItem(from exportItem: ExportItem, into context: ModelContext) {
+    @discardableResult
+    static func insertClipItem(from exportItem: ExportItem, into context: ModelContext) -> ClipItem {
         let contentType = ClipContentType(rawValue: exportItem.contentType) ?? .text
         let clip = ClipItem(
             content: exportItem.content,
@@ -417,12 +430,22 @@ enum DataPorter {
         if let version = exportItem.ocrVersion {
             clip.ocrVersion = version
         }
+        clip.pasteboardSnapshot = exportItem.pasteboardSnapshotBase64.flatMap { Data(base64Encoded: $0) }
+        clip.filePaths = exportItem.filePaths
+        clip.smsMessageText = exportItem.smsMessageText
+        clip.agentSource = exportItem.agentSource
+        // A save that fails later leaves this file unreferenced; the launch sweep removes it.
+        if let encoded = exportItem.originalImageBase64, let original = Data(base64Encoded: encoded),
+           let path = ClipboardManager.writeOriginalImageToCache(original) {
+            clip.originalImageFilePath = path
+        }
         context.insert(clip)
+        return clip
     }
 
     /// Merge groups by name. Returns number of newly inserted groups.
     @discardableResult
-    private static func importGroups(
+    static func importGroups(
         _ exportGroups: [ExportGroup],
         into context: ModelContext
     ) -> Int {
@@ -447,7 +470,7 @@ enum DataPorter {
 
     /// Merge rules by ruleID; built-in rules are always skipped (owned by BuiltInRules).
     @discardableResult
-    private static func importRules(
+    static func importRules(
         _ exportRules: [ExportRule],
         into context: ModelContext
     ) -> Int {
@@ -481,7 +504,7 @@ enum DataPorter {
 
     /// SmartGroup.count is persisted; rebuild it from actual items after bulk import
     /// so sidebar badges and quick-panel suggestions reflect restored data.
-    private static func recalculateGroupCounts(in context: ModelContext) {
+    static func recalculateGroupCounts(in context: ModelContext) {
         guard let groups = try? context.fetch(FetchDescriptor<SmartGroup>()) else { return }
         for group in groups {
             let name = group.name
@@ -489,4 +512,72 @@ enum DataPorter {
             group.count = (try? context.fetchCount(descriptor)) ?? 0
         }
     }
+}
+
+/// Import-side duplicate check, same rule as a copy (`matchesDuplicateCandidate`): same type
+/// and content, and for pasteboard images (`[Image]`) the same picture; `.mixed` also the same
+/// file list. The old check (same content *and* created within a second) only caught the very
+/// same record, so a backup restored over history copied again later grew a second row.
+/// Existing clips are indexed once up front — the store has no content index, and a query per
+/// imported item scans every clip of that type.
+@MainActor
+final class ImportDeduplicator {
+    private var clips: [String: [ClipItem]] = [:]
+
+    init(context: ModelContext) {
+        for clip in (try? context.fetch(FetchDescriptor<ClipItem>())) ?? [] where !clip.isDeleted {
+            add(clip)
+        }
+    }
+
+    func add(_ clip: ClipItem) {
+        clips[Self.key(clip.contentTypeRaw, clip.content), default: []].append(clip)
+    }
+
+    /// Folds `exportItem` into the clip it duplicates and returns true, or returns false when
+    /// it's new.
+    func mergeIfDuplicate(_ exportItem: ExportItem) -> Bool {
+        guard let existing = match(exportItem) else { return false }
+        if exportItem.lastUsedAt > existing.lastUsedAt { existing.lastUsedAt = exportItem.lastUsedAt }
+        if exportItem.isPinned { existing.isPinned = true }
+        if existing.groupName?.isEmpty ?? true, let group = exportItem.groupName, !group.isEmpty {
+            existing.groupName = group
+        }
+        // Fill what the existing clip lacks, e.g. a full-size original lost to an older backup.
+        if existing.originalImageFilePath == nil, existing.content == "[Image]",
+           let encoded = exportItem.originalImageBase64, let original = Data(base64Encoded: encoded),
+           let path = ClipboardManager.writeOriginalImageToCache(original) {
+            existing.originalImageFilePath = path
+        }
+        if existing.richTextData == nil, let rich = exportItem.richTextDataBase64.flatMap({ Data(base64Encoded: $0) }) {
+            existing.richTextData = rich
+            existing.richTextType = exportItem.richTextType
+        }
+        if existing.pasteboardSnapshot == nil {
+            existing.pasteboardSnapshot = exportItem.pasteboardSnapshotBase64.flatMap { Data(base64Encoded: $0) }
+        }
+        if existing.ocrText == nil, let ocr = exportItem.ocrText {
+            existing.ocrText = ocr
+            existing.ocrStatus = exportItem.ocrStatus ?? existing.ocrStatus
+        }
+        existing.smsMessageText = existing.smsMessageText ?? exportItem.smsMessageText
+        existing.agentSource = existing.agentSource ?? exportItem.agentSource
+        return true
+    }
+
+    private func match(_ exportItem: ExportItem) -> ClipItem? {
+        guard let candidates = clips[Self.key(exportItem.contentType, exportItem.content)] else { return nil }
+        switch ClipContentType(rawValue: exportItem.contentType) {
+        case .image where exportItem.content == "[Image]":
+            let thumbnail = exportItem.imageDataBase64.flatMap { Data(base64Encoded: $0) }
+            return candidates.first { $0.imageData == thumbnail }
+        case .mixed:
+            let thumbnail = exportItem.imageDataBase64.flatMap { Data(base64Encoded: $0) }
+            return candidates.first { $0.imageData == thumbnail && $0.filePaths == exportItem.filePaths }
+        default:
+            return candidates.first
+        }
+    }
+
+    private static func key(_ type: String, _ content: String) -> String { type + "\u{0}" + content }
 }

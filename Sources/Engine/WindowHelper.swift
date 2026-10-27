@@ -49,7 +49,7 @@ private func clearLegacySettingsSidebarWidth() {
 @MainActor
 func openSettings(category: SettingsCategory) {
     AppAction.shared.openSettings?()
-    currentSettingsNavigation?.selection = category
+    currentSettingsNavigation?.select(category)
 }
 
 @MainActor
@@ -57,13 +57,13 @@ func showSettingsWindowAppKit() {
     clearLegacySettingsSidebarWidth()
     let model = SettingsNavigationModel()
     currentSettingsNavigation = model
-    model.onSelectionChange = { category in
-        WindowManager.shared.setTitle(L10n.tr(category.titleKey), for: "settings")
+    model.onLocationChange = { title in
+        WindowManager.shared.setTitle(title, for: "settings")
     }
     let controller = SettingsSplitViewController(model: model, sidebarWidth: SETTINGS_SIDEBAR_WIDTH)
     WindowManager.shared.showController(
         id: "settings",
-        title: L10n.tr(model.selection.titleKey),
+        title: model.title,
         size: NSSize(width: 760, height: 520),
         styleMask: [.titled, .closable, .miniaturizable, .resizable],
         frameAutosaveName: "SettingsWindow",

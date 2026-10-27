@@ -137,7 +137,6 @@
 "settings.quickPanelTabTypes" = "標籤列顯示的分類";
 "settings.quickPanelTabTypes.hint" = "拖曳調整順序，置頂和全部也能排。取消勾選可在快捷面板隱藏該分類，主視窗側邊欄不受影響。";
 "settings.quickPanelTabTypes.reset" = "恢復預設";
-"settings.history" = "歷史記錄";
 "settings.retentionDays" = "保留時長";
 "settings.retentionDays.forever" = "永久";
 "settings.retentionDays.days" = "%d 天";
@@ -393,6 +392,7 @@
 
 /* Data Import/Export */
 "dataPorter.section" = "資料";
+"dataPorter.importExport" = "匯入與匯出";
 "dataPorter.export" = "匯出資料";
 "dataPorter.compressing" = "壓縮中...";
 "dataPorter.import" = "匯入資料";
@@ -496,7 +496,6 @@
 
 "filter.sensitive" = "敏感";
 
-"settings.clearData" = "清空資料";
 
 "settings.sound" = "音效";
 "settings.sound.enabled" = "操作音效";
@@ -678,12 +677,6 @@
 "settings.doubleTap.modifier" = "雙擊修飾鍵";
 
 /* 缺失的鍵 - 清空資料 */
-"settings.clearData.1month" = "刪除 1 個月前";
-"settings.clearData.3months" = "刪除 3 個月前";
-"settings.clearData.6months" = "刪除 6 個月前";
-"settings.clearData.1year" = "刪除 1 年前";
-"settings.clearData.all" = "刪除全部";
-"settings.clearData.result" = "已刪除 %d 筆記錄";
 
 /* 缺失的鍵 - 備份 */
 "backup.nextBackup" = "下次備份";
@@ -1075,3 +1068,59 @@
 "settings.privacy.sensitiveRetention.hours" = "%d 小時";
 "settings.privacy.sensitiveRetention.hint" = "從最後一次複製或貼上算起，到時自動刪除。置頂和永久保留分組裡的項目不刪。";
 "settings.privacy.sensitiveRetention.cleanConfirm" = "將刪除 %d 筆敏感項目";
+
+/* Storage */
+"settings.storage" = "儲存空間";
+"storage.manage.title" = "管理儲存空間";
+"storage.manage" = "管理";
+"storage.recordCount" = "%@ 筆記錄";
+"storage.scanFailed" = "無法讀取資料";
+"storage.scanning" = "正在計算...";
+"storage.part.originals" = "原圖";
+"storage.part.previews" = "縮圖";
+"storage.part.richText" = "富文本";
+"storage.byType" = "依類型";
+"storage.itemCount" = "%@ 筆";
+"storage.autoClean" = "自動清理";
+"storage.optimize" = "最佳化";
+"storage.tiff.title" = "TIFF 原圖無損轉為 PNG";
+"storage.tiff.detail" = "%1$@ 張 · %2$@";
+"storage.tiff.progress" = "正在轉換 %1$@ / %2$@";
+"storage.tiff.result" = "已轉換 %1$@ 張，省下 %2$@";
+"storage.tiff.kept" = "%@ 張無法無損轉換，保留 TIFF";
+"storage.sourceCount" = "共 %@ 個來源";
+"storage.grouping.source" = "依來源";
+"storage.typeCount" = "共 %@ 種類型";
+"storage.column.type" = "類型";
+"storage.typeSelectionSummary" = "已選 %1$@ 種類型 · %2$@ 筆 · %3$@";
+"storage.searchSources" = "搜尋來源";
+"storage.allSources" = "全部來源";
+"storage.sourceWithCount" = "%1$@ · %2$@";
+"storage.column.source" = "來源";
+"storage.column.latest" = "最近時間";
+"storage.column.count" = "筆數";
+"storage.column.size" = "佔用";
+"storage.protectedNote" = "刪除的是 PasteMemo 裡的記錄，原始檔案不受影響。置頂和「永久保留」分組裡的不會刪除。";
+"storage.protectedExcluded" = "不含置頂和「永久保留」分組裡的 %@ 筆";
+"storage.deleteRecords" = "刪除記錄";
+"storage.delete.scope" = "只刪除 PasteMemo 裡的記錄和副本，原始檔案不受影響。此操作無法復原，確定要繼續嗎？";
+"storage.selectionSummary" = "已選 %1$@ 個來源 · %2$@ 筆 · %3$@";
+"storage.delete.confirm" = "將刪除 %@ 筆記錄";
+"storage.deleting" = "正在刪除...";
+"storage.empty" = "沒有可清理的內容";
+"storage.time.all" = "全部時間";
+"storage.time.1month" = "1 個月前";
+"storage.time.3months" = "3 個月前";
+"storage.time.6months" = "6 個月前";
+"storage.time.1year" = "1 年前";
+"storage.time.custom" = "自訂時間...";
+"storage.type.all" = "全部類型";
+"storage.listSeparator" = "、";
+"storage.sort.size" = "佔用從大到小";
+"storage.sort.latest" = "最近複製";
+"storage.selectAll" = "全選";
+"storage.deselectAll" = "取消全選";
+"storage.itemSelectionSummary" = "已選 %1$@ 筆 · %2$@";
+"storage.custom.title" = "自訂時間";
+"storage.custom.from" = "開始";
+"storage.custom.to" = "結束";

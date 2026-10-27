@@ -202,32 +202,116 @@ struct PasteMemoTests {
         #expect(existing.sourceApp == "New App")
     }
 
-    @Test("Different rich text payloads are not treated as duplicates")
-    @MainActor func differentRichTextPayloadsRemainDistinct() throws {
+    @Test("Same text with different formatting merges; the latest formatting and snapshot win")
+    @MainActor func differentRichTextPayloadsMerge() throws {
         let container = try ModelContainer(
             for: ClipItem.self, SmartGroup.self, AutomationRule.self,
             configurations: ModelConfiguration(isStoredInMemoryOnly: true)
         )
         let context = container.mainContext
 
+        // WPS / 金山文档 stamps every copy with a fresh clipboard ID.
         let existing = ClipItem(
             content: "hello",
             contentType: .text,
-            richTextData: Data("<b>hello</b>".utf8),
+            richTextData: Data("<div ksdocclipboard='{aaaa}'>hello</div>".utf8),
             richTextType: "html"
         )
+        existing.pasteboardSnapshot = Data("old snapshot".utf8)
         context.insert(existing)
         try context.save()
 
+        let newRich = Data("<div ksdocclipboard='{bbbb}'>hello</div>".utf8)
         let incoming = ClipItem(
             content: "hello",
             contentType: .text,
-            richTextData: Data("<i>hello</i>".utf8),
+            richTextData: newRich,
             richTextType: "html"
         )
+        incoming.pasteboardSnapshot = Data("new snapshot".utf8)
 
         let matched = ClipboardManager.shared.findExistingDuplicate(for: incoming, in: context)
-        #expect(matched == nil)
+        #expect(matched?.persistentModelID == existing.persistentModelID)
+        ClipboardManager.shared.reuseExistingDuplicate(existing, with: incoming, in: context)
+        #expect(existing.richTextData == newRich)
+        #expect(existing.pasteboardSnapshot == Data("new snapshot".utf8))
+    }
+
+    @Test("A file-backed image re-copied after the file changed is the same clip, with a fresh thumbnail")
+    @MainActor func fileImageMatchesByPath() throws {
+        let container = try ModelContainer(
+            for: ClipItem.self, SmartGroup.self, AutomationRule.self,
+            configurations: ModelConfiguration(isStoredInMemoryOnly: true)
+        )
+        let context = container.mainContext
+        let path = "/Users/me/Pictures/截图/CleanShot-2026-09-02-11_20_20@2x.png"
+        let existing = ClipItem(content: path, contentType: .image, imageData: Data([1, 1, 1]))
+        context.insert(existing)
+        try context.save()
+
+        let incoming = ClipItem(content: path, contentType: .image, imageData: Data([2, 2, 2]))
+        let matched = ClipboardManager.shared.findExistingDuplicate(for: incoming, in: context)
+        #expect(matched?.persistentModelID == existing.persistentModelID)
+        ClipboardManager.shared.reuseExistingDuplicate(existing, with: incoming, in: context)
+        #expect(existing.imageData == Data([2, 2, 2]))
+    }
+
+    @Test("Pasteboard images still compare pictures")
+    @MainActor func pasteboardImagesCompareThumbnails() throws {
+        let container = try ModelContainer(
+            for: ClipItem.self, SmartGroup.self, AutomationRule.self,
+            configurations: ModelConfiguration(isStoredInMemoryOnly: true)
+        )
+        let context = container.mainContext
+        context.insert(ClipItem(content: "[Image]", contentType: .image, imageData: Data([1, 1, 1])))
+        try context.save()
+
+        let different = ClipItem(content: "[Image]", contentType: .image, imageData: Data([2, 2, 2]))
+        #expect(ClipboardManager.shared.findExistingDuplicate(for: different, in: context) == nil)
+        let same = ClipItem(content: "[Image]", contentType: .image, imageData: Data([1, 1, 1]))
+        #expect(ClipboardManager.shared.findExistingDuplicate(for: same, in: context) != nil)
+    }
+
+    @Test("Import merges a clip copied again later instead of adding a second row")
+    @MainActor func importMergesSameContent() throws {
+        let destContainer = try ModelContainer(
+            for: ClipItem.self, SmartGroup.self, AutomationRule.self,
+            configurations: ModelConfiguration(isStoredInMemoryOnly: true)
+        )
+        let dest = destContainer.mainContext
+        let existing = ClipItem(content: "13731515882", contentType: .phone,
+                                createdAt: Date(timeIntervalSince1970: 100), lastUsedAt: Date(timeIntervalSince1970: 100))
+        dest.insert(existing)
+        dest.insert(ClipItem(content: "[Image]", contentType: .image, imageData: Data([1])))
+        try dest.save()
+
+        let sourceContainer = try ModelContainer(
+            for: ClipItem.self, SmartGroup.self, AutomationRule.self,
+            configurations: ModelConfiguration(isStoredInMemoryOnly: true)
+        )
+        let source = sourceContainer.mainContext
+        let later = ClipItem(content: "13731515882", contentType: .phone, isPinned: true,
+                             createdAt: Date(timeIntervalSince1970: 500), lastUsedAt: Date(timeIntervalSince1970: 900))
+        later.groupName = "联系人"
+        source.insert(later)
+        // Same number twice inside the file, too.
+        source.insert(ClipItem(content: "13731515882", contentType: .phone,
+                               createdAt: Date(timeIntervalSince1970: 600), lastUsedAt: Date(timeIntervalSince1970: 600)))
+        source.insert(ClipItem(content: "[Image]", contentType: .image, imageData: Data([2])))
+        try source.save()
+
+        let payload = DataPorter.buildExportPayload(try source.fetch(FetchDescriptor<ClipItem>()))
+        let result = try DataPorter.importItems(from: try DataPorter.encodeAndCompress(payload), into: dest)
+
+        #expect(result.imported == 1 && result.skipped == 2)
+        let phones = try dest.fetch(FetchDescriptor<ClipItem>(predicate: #Predicate { $0.content == "13731515882" }))
+        #expect(phones.count == 1)
+        #expect(phones.first?.lastUsedAt == Date(timeIntervalSince1970: 900))
+        #expect(phones.first?.isPinned == true)
+        #expect(phones.first?.groupName == "联系人")
+        #expect(phones.first?.createdAt == Date(timeIntervalSince1970: 100))
+        // A different picture is a different clip.
+        #expect(try dest.fetchCount(FetchDescriptor<ClipItem>(predicate: #Predicate { $0.content == "[Image]" })) == 2)
     }
 
     @Test("Retry OCR stays available with the global OCR toggle off")

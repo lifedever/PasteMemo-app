@@ -166,7 +166,6 @@
 "settings.quickPanelTabTypes" = "Categorías de la barra de pestañas";
 "settings.quickPanelTabTypes.hint" = "Arrastra para reordenar. Desmarcar oculta la pestaña en el panel rápido; la barra lateral no cambia.";
 "settings.quickPanelTabTypes.reset" = "Restablecer";
-"settings.history" = "Historial";
 "settings.retentionDays" = "Conservar historial";
 "settings.retentionDays.forever" = "Para siempre";
 "settings.retentionDays.days" = "%d días";
@@ -297,6 +296,7 @@
 
 /* Data Import/Export */
 "dataPorter.section" = "Datos";
+"dataPorter.importExport" = "Importar y exportar";
 "dataPorter.export" = "Exportar datos";
 "dataPorter.compressing" = "Comprimiendo...";
 "dataPorter.import" = "Importar datos";
@@ -400,7 +400,6 @@
 
 "filter.sensitive" = "Sensible";
 
-"settings.clearData" = "Borrar datos";
 
 "settings.sound" = "Sonido";
 "settings.sound.enabled" = "Efectos de sonido";
@@ -683,12 +682,6 @@ Usa %@ para pegar uno por uno.";
 "stats.clips" = "clips";
 
 /* Settings - Clear Data */
-"settings.clearData.1month" = "Más de 1 mes";
-"settings.clearData.1year" = "Más de 1 año";
-"settings.clearData.3months" = "Más de 3 meses";
-"settings.clearData.6months" = "Más de 6 meses";
-"settings.clearData.all" = "Eliminar todo";
-"settings.clearData.result" = "%d elementos eliminados";
 
 /* Settings - Double Tap */
 "settings.doubleTap" = "Doble pulsación para abrir";
@@ -1119,3 +1112,59 @@ Usa %@ para pegar uno por uno.";
 "settings.privacy.sensitiveRetention.hours" = "%d h";
 "settings.privacy.sensitiveRetention.hint" = "Se cuenta desde la última copia o pegado y después se elimina. Los elementos fijados y los de grupos que se conservan siempre se mantienen.";
 "settings.privacy.sensitiveRetention.cleanConfirm" = "Se eliminarán %d elementos sensibles";
+
+/* Storage */
+"settings.storage" = "Almacenamiento";
+"storage.manage.title" = "Gestionar almacenamiento";
+"storage.manage" = "Gestionar";
+"storage.recordCount" = "%@ elementos";
+"storage.scanFailed" = "No se pudieron leer los datos";
+"storage.scanning" = "Calculando...";
+"storage.part.originals" = "Originales";
+"storage.part.previews" = "Miniaturas";
+"storage.part.richText" = "Texto enriquecido";
+"storage.byType" = "Por tipo";
+"storage.itemCount" = "%@ elementos";
+"storage.autoClean" = "Limpieza automática";
+"storage.optimize" = "Optimizar";
+"storage.tiff.title" = "Convertir originales TIFF a PNG (sin pérdida)";
+"storage.tiff.detail" = "%1$@ imágenes · %2$@";
+"storage.tiff.progress" = "Convirtiendo %1$@ de %2$@";
+"storage.tiff.result" = "%1$@ imágenes convertidas, %2$@ ahorrados";
+"storage.tiff.kept" = "%@ imágenes no se pueden convertir sin pérdida y siguen en TIFF";
+"storage.sourceCount" = "%@ orígenes";
+"storage.grouping.source" = "Por origen";
+"storage.typeCount" = "%@ tipos";
+"storage.column.type" = "Tipo";
+"storage.typeSelectionSummary" = "%1$@ tipos seleccionados · %2$@ elementos · %3$@";
+"storage.searchSources" = "Buscar orígenes";
+"storage.allSources" = "Todos los orígenes";
+"storage.sourceWithCount" = "%1$@ · %2$@";
+"storage.column.source" = "Origen";
+"storage.column.latest" = "Última copia";
+"storage.column.count" = "Elementos";
+"storage.column.size" = "Tamaño";
+"storage.protectedNote" = "Se eliminan elementos de PasteMemo, no tus archivos originales. Los elementos fijados y los de grupos permanentes nunca se eliminan.";
+"storage.protectedExcluded" = "Sin contar %@ elementos fijados o de grupos permanentes";
+"storage.deleteRecords" = "Eliminar elementos";
+"storage.delete.scope" = "Solo se eliminan los elementos de PasteMemo y las copias que guarda; tus archivos originales no se tocan. No se puede deshacer.";
+"storage.selectionSummary" = "%1$@ orígenes seleccionados · %2$@ elementos · %3$@";
+"storage.delete.confirm" = "¿Eliminar %@ elementos?";
+"storage.deleting" = "Eliminando...";
+"storage.empty" = "No hay nada que limpiar";
+"storage.time.all" = "Todo el tiempo";
+"storage.time.1month" = "Anterior a 1 mes";
+"storage.time.3months" = "Anterior a 3 meses";
+"storage.time.6months" = "Anterior a 6 meses";
+"storage.time.1year" = "Anterior a 1 año";
+"storage.time.custom" = "Rango personalizado...";
+"storage.type.all" = "Todos los tipos";
+"storage.listSeparator" = ", ";
+"storage.sort.size" = "Más grandes primero";
+"storage.sort.latest" = "Más recientes";
+"storage.selectAll" = "Seleccionar todo";
+"storage.deselectAll" = "Deseleccionar todo";
+"storage.itemSelectionSummary" = "%1$@ seleccionados · %2$@";
+"storage.custom.title" = "Rango personalizado";
+"storage.custom.from" = "Desde";
+"storage.custom.to" = "Hasta";

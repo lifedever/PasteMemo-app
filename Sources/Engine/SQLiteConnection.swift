@@ -7,8 +7,9 @@ private let SQLITE_TRANSIENT = unsafeBitCast(-1, to: sqlite3_destructor_type.sel
 final class SQLiteConnection {
     private var db: OpaquePointer?
 
-    init?(path: String, readOnly: Bool = false) {
-        let flags = readOnly ? SQLITE_OPEN_READONLY : SQLITE_OPEN_READWRITE
+    /// `create` makes the file if it's missing (tests); the app only ever opens SwiftData's store.
+    init?(path: String, readOnly: Bool = false, create: Bool = false) {
+        let flags = readOnly ? SQLITE_OPEN_READONLY : (SQLITE_OPEN_READWRITE | (create ? SQLITE_OPEN_CREATE : 0))
         guard sqlite3_open_v2(path, &db, flags, nil) == SQLITE_OK else {
             sqlite3_close(db)
             return nil
@@ -183,6 +184,47 @@ final class SQLiteConnection {
             results.append((id, text, blob))
         }
         return results
+    }
+
+    /// Runs one statement with bound parameters; returns whether it ran to completion.
+    @discardableResult
+    func run(_ sql: String, params: [Any]) -> Bool {
+        var stmt: OpaquePointer?
+        guard sqlite3_prepare_v2(db, sql, -1, &stmt, nil) == SQLITE_OK else { return false }
+        defer { sqlite3_finalize(stmt) }
+        bind(params, to: stmt)
+        return sqlite3_step(stmt) == SQLITE_DONE
+    }
+
+    /// Column accessors for `forEachRow`. Valid only inside the callback.
+    struct Row {
+        fileprivate let stmt: OpaquePointer?
+
+        func int(_ column: Int32) -> Int64 { sqlite3_column_int64(stmt, column) }
+        func double(_ column: Int32) -> Double { sqlite3_column_double(stmt, column) }
+        func text(_ column: Int32) -> String? {
+            sqlite3_column_text(stmt, column).map { String(cString: $0) }
+        }
+        func blob(_ column: Int32) -> Data? {
+            guard sqlite3_column_type(stmt, column) == SQLITE_BLOB,
+                  let bytes = sqlite3_column_blob(stmt, column) else { return nil }
+            return Data(bytes: bytes, count: Int(sqlite3_column_bytes(stmt, column)))
+        }
+    }
+
+    /// Streams every result row through `body` without building an intermediate array.
+    /// Returns false when the statement fails to prepare.
+    @discardableResult
+    func forEachRow(_ sql: String, params: [Any] = [], _ body: (Row) -> Void) -> Bool {
+        var stmt: OpaquePointer?
+        guard sqlite3_prepare_v2(db, sql, -1, &stmt, nil) == SQLITE_OK else { return false }
+        defer { sqlite3_finalize(stmt) }
+        bind(params, to: stmt)
+        let row = Row(stmt: stmt)
+        while sqlite3_step(stmt) == SQLITE_ROW {
+            body(row)
+        }
+        return true
     }
 
     /// Returns true if a table exists.

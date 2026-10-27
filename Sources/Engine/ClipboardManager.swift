@@ -281,6 +281,9 @@ final class ClipboardManager: ObservableObject {
         didInsert = true
         cleanExpiredItems(in: context)
         ClipItemStore.saveAndNotify(context)
+        if let original = newItem.originalImageFilePath {
+            OriginalImageOptimizer.shared.enqueueCaptured(itemID: newItem.itemID, path: original)
+        }
 
         SoundManager.playCopy()
 
@@ -317,9 +320,18 @@ final class ClipboardManager: ObservableObject {
             ? capturePasteboardSnapshot(from: pasteboard)
             : nil
 
+        let paths = fileURLs.map(\.path)
+        // An image an app copied out of its own storage (Photos, WeChat) — keep the image, not
+        // a path that is about to vanish or can't be read. See `isAppPrivateImageCopy`.
+        let declaresImage = pasteboard.pasteboardItems?.first?.types
+            .contains(where: Self.PASTEBOARD_IMAGE_TYPES.contains) ?? false
+        if Self.isAppPrivateImageCopy(filePaths: paths, declaresImage: declaresImage),
+           let original = Self.completeImageFileData(at: paths[0]) ?? rawImageData {
+            return makeImageClip(original: original, sourceApp: sourceApp)
+        }
+
         // File URLs only (copied files/folders from Finder)
         if hasFiles {
-            let paths = fileURLs.map(\.path)
             let content = paths.joined(separator: "\n")
             let fileType = detectFileType(paths)
             // For image files, generate a small thumbnail (of the first file) for UI
@@ -357,26 +369,8 @@ final class ClipboardManager: ObservableObject {
         }
 
         // Image only (screenshots, copy image from apps that don't expose a file URL).
-        // Persist the verbatim original to our own cache file (any size, no transcode) and keep
-        // only a small JPEG thumbnail in `imageData`, so list/preview never fault the full
-        // original off disk on selection. Paste/OCR read the original back via `sourceImageFileURL`
-        // (→ `originalImageFilePath`). If the cache write OR thumbnailing fails, fall back to
-        // storing the original inline in `imageData` so the image is never lost — just unoptimised.
         if rawHasImage, let original = rawImageData {
-            if let cachePath = Self.writeOriginalImageToCache(original) {
-                if let thumb = Self.makeThumbnailData(from: original) {
-                    let item = ClipItem(content: "[Image]", contentType: .image, imageData: thumb,
-                                        originalImageFilePath: cachePath, sourceApp: sourceApp)
-                    // buildTitle measured the thumbnail; correct "Image (W×H)" to the original's dims.
-                    if let dims = ImageCache.shared.imageDimensions(for: original) {
-                        item.displayTitle = "Image (\(Int(dims.width))×\(Int(dims.height)))"
-                    }
-                    return item
-                }
-                // Thumbnail failed — don't leave an orphan cache file; fall through to inline.
-                try? FileManager.default.removeItem(atPath: cachePath)
-            }
-            return ClipItem(content: "[Image]", contentType: .image, imageData: original, sourceApp: sourceApp)
+            return makeImageClip(original: original, sourceApp: sourceApp)
         }
 
         // Plain text (no rich formatting). Still attach the snapshot when the source wrote
@@ -398,6 +392,28 @@ final class ClipboardManager: ObservableObject {
             sourceApp: sourceApp, codeLanguage: detected.language,
             pasteboardSnapshot: snapshot
         )
+    }
+
+    /// Persists the verbatim original to our own cache file (any size, no transcode) and keeps
+    /// only a small JPEG thumbnail in `imageData`, so list/preview never fault the full
+    /// original off disk on selection. Paste/OCR read the original back via `sourceImageFileURL`
+    /// (→ `originalImageFilePath`). If the cache write OR thumbnailing fails, falls back to
+    /// storing the original inline in `imageData` so the image is never lost — just unoptimised.
+    private func makeImageClip(original: Data, sourceApp: String?) -> ClipItem {
+        if let cachePath = Self.writeOriginalImageToCache(original) {
+            if let thumb = Self.makeThumbnailData(from: original) {
+                let item = ClipItem(content: "[Image]", contentType: .image, imageData: thumb,
+                                    originalImageFilePath: cachePath, sourceApp: sourceApp)
+                // buildTitle measured the thumbnail; correct "Image (W×H)" to the original's dims.
+                if let dims = ImageCache.shared.imageDimensions(for: original) {
+                    item.displayTitle = "Image (\(Int(dims.width))×\(Int(dims.height)))"
+                }
+                return item
+            }
+            // Thumbnail failed — don't leave an orphan cache file; fall through to inline.
+            try? FileManager.default.removeItem(atPath: cachePath)
+        }
+        return ClipItem(content: "[Image]", contentType: .image, imageData: original, sourceApp: sourceApp)
     }
 
     /// Returns true if the pasteboard carries at least one UTI whose prefix isn't in the
@@ -475,6 +491,65 @@ final class ClipboardManager: ObservableObject {
             return nil
         }
         return try? Data(contentsOf: url)
+    }
+
+    /// Some apps copy an image as a file URL into their *own* storage plus the image bytes:
+    /// Photos points into its library package (`….photoslibrary/…`, TCC-protected — macOS won't
+    /// even prompt an app lacking the photos-library entitlement), WeChat into its purged
+    /// `xwechat_files/…/temp/RWTemp/…`. The file branch stores only the path, so such clips
+    /// ended up previewing and pasting nothing. True tells the caller to keep the image itself
+    /// as a plain image clip.
+    ///
+    /// Files in user-managed places (Pictures, Downloads, iCloud Drive…) keep the path: they
+    /// last, and storing a copy would duplicate every screenshot already saved on disk.
+    /// `declaresImage` must mean the image type is declared on the pasteboard item, not merely
+    /// convertible: a Finder file copy declares only the file's icon (`com.apple.icns`), which
+    /// NSPasteboard turns into TIFF on request. Single file only — the raw image read covers
+    /// just the first pasteboard item, so a multi-image copy would silently keep one. Image
+    /// files only, so a video's poster frame never stands in for the video; GIF excluded
+    /// because image clips paste back as a still frame.
+    static func isAppPrivateImageCopy(
+        filePaths: [String], declaresImage: Bool, homeDirectory: String = NSHomeDirectory()
+    ) -> Bool {
+        guard declaresImage, filePaths.count == 1 else { return false }
+        let url = URL(fileURLWithPath: filePaths[0])
+        let ext = url.pathExtension.lowercased()
+        guard ext != "gif", IMAGE_EXTENSIONS.contains(ext) else { return false }
+        // `dropLast()`: copying the library package itself in Finder is an ordinary file copy.
+        if url.pathComponents.dropLast().contains(where: { $0.lowercased().hasSuffix(".photoslibrary") }) {
+            return true
+        }
+        let library = homeDirectory + "/Library/"
+        let privatePrefixes = [
+            library + "Containers/", library + "Group Containers/",
+            library + "Caches/", library + "Application Support/",
+            "/private/var/folders/", "/var/folders/", "/private/tmp/", "/tmp/",
+        ]
+        return privatePrefixes.contains(where: url.path.hasPrefix)
+    }
+
+    /// The source file's bytes when they form a complete image, else nil and the caller keeps
+    /// the pasteboard's bytes. The file comes first because the pasteboard's TIFF is often
+    /// several times its size (WeChat: 625 KB TIFF for a small PNG). It's nil when the file is
+    /// unreadable (Photos library) or still being written: WeChat creates its temp copy right
+    /// around the moment we read it.
+    nonisolated static func completeImageFileData(at path: String) -> Data? {
+        guard let data = loadOriginalImageData(at: path), isCompleteImage(data) else { return nil }
+        return data
+    }
+
+    /// ImageIO reads the header — dimensions included — of a half-written file without
+    /// complaint, so JPEG and PNG must also end in their end marker (EOI / IEND chunk).
+    nonisolated static func isCompleteImage(_ data: Data) -> Bool {
+        if data.starts(with: [0xFF, 0xD8, 0xFF]) {
+            return data.suffix(2).elementsEqual([0xFF, 0xD9])
+        }
+        if data.starts(with: [0x89, 0x50, 0x4E, 0x47]) {
+            // Last chunk: length (4) + "IEND" (4) + CRC (4).
+            return data.dropLast(4).suffix(4).elementsEqual(Array("IEND".utf8))
+        }
+        guard let source = CGImageSourceCreateWithData(data as CFData, nil) else { return false }
+        return CGImageSourceGetCount(source) > 0
     }
 
     /// Generates a JPEG thumbnail (long edge `FILE_THUMBNAIL_MAX_PIXELS`) for an
@@ -662,14 +737,15 @@ final class ClipboardManager: ObservableObject {
     /// drops it when the bytes exceed `MAX_IMAGE_BYTES`. Without the cap a single
     /// pathological clip (Photoshop selection, RAW export) can blow up both the
     /// SwiftData store and downstream backup encoding.
+    private static let PASTEBOARD_IMAGE_TYPES: [NSPasteboard.PasteboardType] = [
+        .png,
+        NSPasteboard.PasteboardType("public.jpeg"),
+        NSPasteboard.PasteboardType("public.heic"),
+        .tiff
+    ]
+
     private func capturePasteboardImage(from pasteboard: NSPasteboard) -> Data? {
-        let imageTypes: [NSPasteboard.PasteboardType] = [
-            .png,
-            NSPasteboard.PasteboardType("public.jpeg"),
-            NSPasteboard.PasteboardType("public.heic"),
-            .tiff
-        ]
-        for type in imageTypes {
+        for type in Self.PASTEBOARD_IMAGE_TYPES {
             guard let data = pasteboard.data(forType: type) else { continue }
             if data.count > Self.MAX_IMAGE_BYTES { return nil }
             return data
@@ -902,10 +978,23 @@ final class ClipboardManager: ObservableObject {
 
         if existingItem.imageData == nil {
             existingItem.imageData = newItem.imageData
+        } else if existingItem.contentType == .image, existingItem.content != "[Image]",
+                  let fresh = newItem.imageData, fresh != existingItem.imageData {
+            // Same file copied again after it changed (CleanShot re-saves an annotated shot
+            // under the same name): the clip pastes the file as it is now, so the thumbnail
+            // should show that too.
+            existingItem.imageData = fresh
+            ImageCache.shared.invalidate(key: existingItem.itemID)
         }
-        if existingItem.richTextData == nil {
-            existingItem.richTextData = newItem.richTextData
+        if let richText = newItem.richTextData {
+            // Same words, possibly new formatting: the copy just made wins, so pasting gives
+            // what was copied last. Its snapshot goes with it — an older one would replay
+            // the old formatting. A plain re-copy keeps the formatting already there.
+            existingItem.richTextData = richText
             existingItem.richTextType = newItem.richTextType
+            existingItem.pasteboardSnapshot = newItem.pasteboardSnapshot
+        } else if existingItem.pasteboardSnapshot == nil {
+            existingItem.pasteboardSnapshot = newItem.pasteboardSnapshot
         }
         if existingItem.codeLanguage == nil {
             existingItem.codeLanguage = newItem.codeLanguage
@@ -984,7 +1073,12 @@ final class ClipboardManager: ObservableObject {
         let newIsRelaxedText = newItem.contentType == .text
 
         if existingItem.contentType == newItem.contentType {
-            if existingItem.contentType == .image, existingItem.imageData != newItem.imageData { return false }
+            if existingItem.contentType == .image {
+                // A file-backed image is its file: the same path is the same clip, whatever the
+                // thumbnail says (an edited file thumbnails differently — CleanShot re-saves
+                // under the same name). Pasteboard images (`[Image]`) compare the pictures.
+                return existingItem.content != "[Image]" || existingItem.imageData == newItem.imageData
+            }
             if existingItem.contentType == .mixed {
                 // Mixed items carry multiple independent representations; any difference in
                 // image bytes or file path list means it's a distinct clip.
@@ -993,12 +1087,10 @@ final class ClipboardManager: ObservableObject {
                 return true
             }
             if existingIsRelaxedText && newIsRelaxedText {
-                let existingHasRichText = existingItem.richTextData != nil
-                let newHasRichText = newItem.richTextData != nil
-                if existingHasRichText != newHasRichText {
-                    return true
-                }
-                return existingItem.richTextData == newItem.richTextData
+                // The words are the identity. Comparing formatting bytes too split every copy
+                // from sources that stamp each one with a fresh ID (WPS / 金山文档 embeds a new
+                // `ksDocClipboardId` GUID per copy); the latest formatting is kept on reuse.
+                return true
             }
             // For non-text, non-image types (.link, .code, .phone, .color,
             // .file, .email, .video, .audio, .document, ...), the content

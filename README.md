@@ -65,6 +65,7 @@
 - **Filter by Type** -- Filter by content type: text, links, images, code, colors, files, etc.
 - **Filter by App** -- See which app each clip came from. Filter by source -- Chrome, VS Code, Figma, Slack, etc.
 - **History Retention** -- Configure how long to keep history: forever, or auto-delete after 1-365 days.
+- **Storage Management** -- See how much space PasteMemo uses and delete history by source, type, or age; your original files are never touched. TIFF originals can be converted to PNG losslessly.
 
 ### Quick Paste Panel
 
