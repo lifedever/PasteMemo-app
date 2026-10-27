@@ -3134,27 +3134,38 @@ struct QuickPanelView: View {
             return
         }
 
+        // 多选图片一次复制的条目：content 是多行路径，而 sourceImageFileURL / handlePasteImage
+        // 只认第一张，走单图那套只会落下一个文件。回退也改走普通粘贴，把文件 URL 全带上。
+        let isMultiFile = item.isMultiFileImage
+        let fallback: () -> Void = isMultiFile
+            ? { QuickPanelWindowController.shared.dismissAndPaste(item, clipboardManager: clipboardManager) }
+            : handlePasteImage
+
         // Can't get folder, fallback to paste image
-        guard let folder = finderSelectedFolder(fallback: handlePasteImage) else { return }
+        guard let folder = finderSelectedFolder(fallback: fallback) else { return }
 
         // Genuine file-backed clip (Finder copy) → copy the user's original file directly,
         // preserving its exact bytes / format / metadata and its filename.
         // Raw pasteboard image (incl. our cached screenshots, content == "[Image]") → write
         // the verbatim original bytes via `imageBytesForExport()` under a clean PasteMemo_<ts>
         // name (copying our internal cache file would give it an ugly UUID filename).
-        let savedURL: URL?
-        if item.content != "[Image]", let sourceURL = item.sourceImageFileURL {
-            savedURL = clipboardManager.copyImageFileToFolder(sourceURL: sourceURL, folder: folder)
+        let savedURLs: [URL]
+        if isMultiFile {
+            savedURLs = item.content.components(separatedBy: "\n")
+                .filter { !$0.isEmpty }
+                .compactMap { clipboardManager.copyImageFileToFolder(sourceURL: URL(fileURLWithPath: $0), folder: folder) }
+        } else if item.content != "[Image]", let sourceURL = item.sourceImageFileURL {
+            savedURLs = clipboardManager.copyImageFileToFolder(sourceURL: sourceURL, folder: folder).map { [$0] } ?? []
         } else {
-            savedURL = clipboardManager.saveImageToFolder(
+            savedURLs = clipboardManager.saveImageToFolder(
                 item.imageBytesForExport() ?? Data(),
                 folder: folder,
                 preferredFilename: nil
-            )
+            ).map { [$0] } ?? []
         }
-        guard let savedURL else {
+        guard let savedURL = savedURLs.first else {
             // Save failed, fallback to paste image
-            handlePasteImage()
+            fallback()
             return
         }
 
@@ -3170,7 +3181,11 @@ struct QuickPanelView: View {
                     if NSWorkspace.shared.frontmostApplication?.processIdentifier == app.processIdentifier { break }
                 }
                 try? await Task.sleep(for: .milliseconds(100))
-                NSWorkspace.shared.selectFile(savedURL.path, inFileViewerRootedAtPath: savedURL.deletingLastPathComponent().path)
+                if savedURLs.count > 1 {
+                    NSWorkspace.shared.activateFileViewerSelecting(savedURLs)
+                } else {
+                    NSWorkspace.shared.selectFile(savedURL.path, inFileViewerRootedAtPath: savedURL.deletingLastPathComponent().path)
+                }
             }
         }
     }
