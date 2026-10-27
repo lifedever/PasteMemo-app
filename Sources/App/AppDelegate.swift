@@ -1,5 +1,6 @@
 import AppKit
 import SwiftUI
+import SwiftData
 import Darwin
 
 // MARK: - Bridge for SwiftUI → AppKit window actions
@@ -50,6 +51,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         ClipboardManager.shared.modelContainer = PasteMemoApp.sharedModelContainer
         OCRTaskCoordinator.shared.configure(modelContainer: PasteMemoApp.sharedModelContainer)
+        // Before monitoring starts: the first capture runs the retention cleanup. An unreadable
+        // store counts as existing history — when in doubt, keep everything.
+        let historyCount = try? PasteMemoApp.sharedModelContainer.mainContext.fetchCount(FetchDescriptor<ClipItem>())
+        ProManager.pinRetentionDefaultIfNeeded(
+            isExistingInstall: UserDefaults.standard.bool(forKey: "hasCompletedOnboarding") || historyCount != 0
+        )
         // GC orphaned original-image cache files (deleted/expired clips, crash orphans).
         // Runs before monitoring starts so a fresh copy can't be mistaken for an orphan.
         ClipboardManager.sweepOrphanedOriginalImageCacheFiles(in: PasteMemoApp.sharedModelContainer.mainContext)
