@@ -7,6 +7,10 @@ import UniformTypeIdentifiers
 
 private let CLIPBOARD_POLL_INTERVAL: TimeInterval = 0.5
 private let PASTE_SIMULATION_DELAY: Duration = .milliseconds(30)
+/// Multi-paste pacing (`waitForTargetToCatchUp`): the pause before the second check, and the
+/// most one accessibility request may wait on a busy target, in seconds.
+private let TARGET_SETTLE_PAUSE: Duration = .milliseconds(100)
+private let TARGET_CATCH_UP_TIMEOUT: Float = 5
 /// Device-dependent modifier bit for the LEFT Command key (NX_DEVICELCMDKEYMASK).
 /// `.maskCommand` alone is the abstract Command bit — native macOS apps honor it,
 /// but remote-desktop / streaming clients (MS Remote Desktop, UU远程, issue #60)
@@ -1641,13 +1645,12 @@ final class ClipboardManager: ObservableObject {
 
     /// Paste multiple items in display order via sequential Cmd+V operations.
     /// Consecutive file items are merged into one paste; each text/image gets its own paste to preserve formatting.
-    /// Apps that don't handle rich text paste well — downgrade to plain text for merging.
-    /// This is a superset of TEXT_ONLY_APPS, adding IM apps that can receive files but need rich text downgrade.
-    private static let PLAIN_TEXT_ONLY_APPS: Set<String> = TEXT_ONLY_APPS.union([
-        // IM — can receive files, only need rich text downgrade
+    /// IM apps: can receive files but need rich text downgraded.
+    private static let IM_APPS: Set<String> = [
         "com.tencent.xinWeChat",          // WeChat
         "com.tencent.qq",                 // QQ
-        "com.alibaba.DingTalkMac",        // DingTalk
+        "com.alibaba.DingTalkMac",        // DingTalk (older builds)
+        "5ZSL2CJU2T.com.dingtalk.mac",    // DingTalk
         "com.electron.lark",              // Feishu/Lark
         "com.apple.iChat",               // Messages
         "com.microsoft.teams2",           // Teams
@@ -1658,11 +1661,19 @@ final class ClipboardManager: ObservableObject {
         "org.whispersystems.signal-desktop", // Signal
         "jp.naver.line.mac",              // Line
         "us.zoom.xos",                    // Zoom
-    ])
+    ]
+
+    /// Apps that don't handle rich text paste well — downgrade to plain text for merging.
+    private static let PLAIN_TEXT_ONLY_APPS: Set<String> = TEXT_ONLY_APPS.union(IM_APPS)
 
     private func shouldDowngradeRichText(targetApp: NSRunningApplication?) -> Bool {
         guard let bundleID = targetApp?.bundleIdentifier else { return false }
         return Self.PLAIN_TEXT_ONLY_APPS.contains(bundleID)
+    }
+
+    private func isIMApp(_ targetApp: NSRunningApplication?) -> Bool {
+        guard let bundleID = targetApp?.bundleIdentifier else { return false }
+        return Self.IM_APPS.contains(bundleID)
     }
 
     /// Whether the target app is a text-only environment that cannot accept file URLs or image data.
@@ -1678,10 +1689,19 @@ final class ClipboardManager: ObservableObject {
     }
 
     func pasteMultiple(_ items: [ClipItem], forceNewLine: Bool = false, targetApp: NSRunningApplication? = nil) {
+        let imagesAsFiles = targetApp?.bundleIdentifier.map(FileURLPaste.targetBundleIDs.contains) ?? false
+        if imagesAsFiles, let paths = FileURLPaste.filePaths(for: items) {
+            pasteFilesAtOnce(paths, forceNewLine: forceNewLine, targetPid: targetApp?.processIdentifier)
+            return
+        }
+
         let downgrade = shouldDowngradeRichText(targetApp: targetApp)
         let textOnly = isTextOnlyApp(targetApp)
         let terminal = isTerminalApp(targetApp)
-        let groups = buildPasteGroups(items, downgradeRichText: downgrade)
+        let ungrouped = buildPasteGroups(items, downgradeRichText: downgrade, imagesAsFiles: imagesAsFiles)
+        // A chat input should end up the way pasting one at a time by hand leaves it: no
+        // breaks between pieces. Elsewhere text gets its own lines.
+        let groups = isIMApp(targetApp) ? ungrouped : Self.insertingLineBreaks(ungrouped)
 
         SoundManager.playPaste()
         let targetPid = targetApp?.processIdentifier
@@ -1689,10 +1709,6 @@ final class ClipboardManager: ObservableObject {
             for (index, group) in groups.enumerated() {
                 if index > 0 {
                     try? await Task.sleep(for: .milliseconds(150))
-                    // Insert a newline between groups so heterogeneous pastes (text + file,
-                    // text + image, etc.) don't glue together on the same line.
-                    simulateReturn(targetPid: targetPid)
-                    try? await Task.sleep(for: .milliseconds(80))
                 }
 
                 let pasteboard = NSPasteboard.general
@@ -1734,15 +1750,82 @@ final class ClipboardManager: ObservableObject {
                 skipRelayMonitorIfActive()
                 try? await Task.sleep(for: PASTE_SIMULATION_DELAY)
                 simulateCommandV(targetPid: targetPid)
+
+                if let targetPid, index < groups.count - 1 || forceNewLine {
+                    await waitForTargetToCatchUp(targetPid)
+                }
             }
             if forceNewLine {
-                try? await Task.sleep(for: .milliseconds(100))
+                if targetPid == nil { try? await Task.sleep(for: .milliseconds(100)) }
                 simulateReturn(targetPid: targetPid)
             }
         }
     }
 
-    private enum PasteGroup {
+    /// Every item as a file, all in one pasteboard write and one ⌘V — see `FileURLPaste`.
+    private func pasteFilesAtOnce(_ paths: [String], forceNewLine: Bool, targetPid: pid_t?) {
+        SoundManager.playPaste()
+        Task { @MainActor in
+            let pasteboard = NSPasteboard.general
+            pasteboard.clearContents()
+            writeFileURLsToPasteboard(pasteboard, paths: paths)
+            pasteboard.markAsPasteMemoWrite()
+            lastChangeCount = pasteboard.changeCount
+            skipRelayMonitorIfActive()
+            try? await Task.sleep(for: PASTE_SIMULATION_DELAY)
+            simulateCommandV(targetPid: targetPid)
+            if forceNewLine {
+                if let targetPid { await waitForTargetToCatchUp(targetPid) }
+                simulateReturn(targetPid: targetPid)
+            }
+        }
+    }
+
+    /// Wait until the target's main thread answers an accessibility request. Apps handle a paste
+    /// on that thread, so an answer means it has worked through what was queued before — our ⌘V
+    /// included — and the next pasteboard write won't land under a paste still pending (WeChat
+    /// pasted the next group twice and lost the earlier one). A second request after a pause
+    /// covers work the paste queued right behind itself, like inserting an image. A busy target
+    /// is waited on, an idle one costs about the pause; bounded so a hung one can't stall us.
+    private func waitForTargetToCatchUp(_ pid: pid_t) async {
+        for pause in [Duration.zero, TARGET_SETTLE_PAUSE] {
+            try? await Task.sleep(for: pause)
+            await Task.detached(priority: .userInitiated) {
+                let app = AXUIElementCreateApplication(pid)
+                AXUIElementSetMessagingTimeout(app, TARGET_CATCH_UP_TIMEOUT)
+                var focused: CFTypeRef?
+                _ = AXUIElementCopyAttributeValue(app, kAXFocusedUIElementAttribute as CFString, &focused)
+            }.value
+        }
+    }
+
+    /// Line breaks between paste groups, written as text — never a synthetic Return: in a chat
+    /// input Return sends, and no app list can tell which inputs those are (a stale bundle ID
+    /// once sent DingTalk's first image on its own). A break goes wherever text meets anything
+    /// else; images and files next to each other stay on one line. It's folded into a
+    /// neighbouring plain-text group when there is one, otherwise pasted as its own "\n".
+    /// Known chat apps skip this altogether — see `pasteMultiple`.
+    static func insertingLineBreaks(_ groups: [PasteGroup]) -> [PasteGroup] {
+        var result: [PasteGroup] = []
+        for group in groups {
+            guard let previous = result.last, !(previous.isMedia && group.isMedia) else {
+                result.append(group)
+                continue
+            }
+            if case .text(let content, nil, _) = previous {
+                result[result.count - 1] = .text(content + "\n", richTextData: nil, richTextType: nil)
+                result.append(group)
+            } else if case .text(let content, nil, _) = group {
+                result.append(.text("\n" + content, richTextData: nil, richTextType: nil))
+            } else {
+                result.append(.text("\n", richTextData: nil, richTextType: nil))
+                result.append(group)
+            }
+        }
+        return result
+    }
+
+    enum PasteGroup {
         case files([String])
         case text(String, richTextData: Data?, richTextType: String?)
         case image(Data)
@@ -1750,10 +1833,19 @@ final class ClipboardManager: ObservableObject {
         /// pipeline (snapshot restore, mixed handling, etc.) is reused verbatim instead of
         /// reimplemented here. Prevents drift between single-paste and multi-paste behaviour.
         case clipItem(ClipItem)
+
+        var isMedia: Bool {
+            switch self {
+            case .files, .image: true
+            case .text, .clipItem: false
+            }
+        }
     }
 
     /// Group consecutive same-type items: files merge; texts and images each get their own group to preserve formatting.
-    private func buildPasteGroups(_ items: [ClipItem], downgradeRichText: Bool = false) -> [PasteGroup] {
+    /// `imagesAsFiles`: a raw image with a saved original goes out as that file (merging with
+    /// neighbouring files) rather than as image data — see `FileURLPaste`.
+    private func buildPasteGroups(_ items: [ClipItem], downgradeRichText: Bool = false, imagesAsFiles: Bool = false) -> [PasteGroup] {
         var groups: [PasteGroup] = []
         for item in items {
             // Items carrying a full pasteboard snapshot or multi-representation (.mixed) content
@@ -1764,8 +1856,10 @@ final class ClipboardManager: ObservableObject {
                 groups.append(.clipItem(item))
                 continue
             }
-            if isFileBasedContent(item) {
-                let paths = item.content.components(separatedBy: "\n").filter { !$0.isEmpty }
+            let originalFile = imagesAsFiles && item.contentType == .image && item.content == "[Image]"
+                ? item.sourceImageFileURL?.path : nil
+            if isFileBasedContent(item) || originalFile != nil {
+                let paths = originalFile.map { [$0] } ?? item.content.components(separatedBy: "\n").filter { !$0.isEmpty }
                 if case .files = groups.last {
                     if case .files(let existing) = groups.last {
                         groups[groups.count - 1] = .files(existing + paths)
