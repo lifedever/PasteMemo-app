@@ -51,6 +51,13 @@ final class ClipboardManager: ObservableObject {
 
     var isPaused: Bool { !isMonitoringEnabled || isTemporarilyPaused }
 
+    /// Holds taken while deleting / restoring clips, so the capture timer (and the expiry
+    /// sweep it drives) can't fire mid-transaction. Memory only: a crash or quit mid-delete
+    /// must not leave monitoring switched off on the next launch, which is what pausing via
+    /// the persisted user toggle did. Counted so overlapping holds release correctly, and
+    /// kept out of `isPaused` so the UI keeps showing the user's own setting.
+    private var bulkWriteHolds = 0
+
     // Track app switches to determine the real source app
     private var appBeforeSwitch: (name: String?, bundleID: String?) = (nil, nil)
     private var lastSwitchTime: Date = .distantPast
@@ -89,12 +96,26 @@ final class ClipboardManager: ObservableObject {
     }
 
     private func applyMonitoringState() {
-        if isPaused {
+        if isPaused || bulkWriteHolds > 0 {
             stopMonitoring()
         } else if timer == nil {
             startMonitoring()
         }
     }
+
+    /// Stop capturing until the matching `endBulkWriteHold()`. See `bulkWriteHolds`.
+    func beginBulkWriteHold() {
+        bulkWriteHolds += 1
+        applyMonitoringState()
+    }
+
+    func endBulkWriteHold() {
+        guard bulkWriteHolds > 0 else { return }
+        bulkWriteHolds -= 1
+        applyMonitoringState()
+    }
+
+    var isHeldForBulkWrite: Bool { bulkWriteHolds > 0 }
 
     func stopMonitoring() {
         timer?.invalidate()

@@ -163,8 +163,8 @@ final class DeleteUndoCoordinator {
         expirationTask?.cancel()
         expirationTask = nil
 
-        let wasPaused = ClipboardManager.shared.isPaused
-        if !wasPaused { ClipboardManager.shared.pauseMonitoring() }
+        ClipboardManager.shared.beginBulkWriteHold()
+        defer { ClipboardManager.shared.endBulkWriteHold() }
 
         let wasBulk = ClipItemStore.isBulkOperation
         ClipItemStore.isBulkOperation = true
@@ -177,8 +177,6 @@ final class DeleteUndoCoordinator {
         }
         ClipItemStore.isBulkOperation = wasBulk
         ClipItemStore.saveAndNotify(pending.context)
-
-        if !wasPaused { ClipboardManager.shared.resumeMonitoring() }
 
         self.pending = nil
         ToastCenter.shared.dismiss()
