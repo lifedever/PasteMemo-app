@@ -933,7 +933,7 @@ final class ClipboardManager: ObservableObject {
         "mp4", "mov", "avi", "mkv", "wmv", "flv", "webm", "m4v", "mpg", "mpeg", "3gp"
     ]
 
-    private static let IMAGE_EXTENSIONS: Set<String> = [
+    static let IMAGE_EXTENSIONS: Set<String> = [
         "png", "jpg", "jpeg", "gif", "bmp", "tiff", "tif", "webp", "heic", "heif", "svg", "ico"
     ]
 

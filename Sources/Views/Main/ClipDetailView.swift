@@ -607,8 +607,8 @@ struct ClipDetailView: View {
             // Lazy on purpose: multi-thousand-file Finder copies would otherwise build
             // every FileRow (icon lookup each) in one body pass and freeze the app.
             LazyVStack(alignment: .leading, spacing: 4) {
-                ForEach(Array(paths.enumerated()), id: \.offset) { _, path in
-                    FileRow(path: path)
+                ForEach(Array(paths.enumerated()), id: \.offset) { index, path in
+                    FileRow(path: path, listThumbnail: index == 0 ? item.listThumbnailOfFirstFile : nil)
                 }
             }
             .frame(maxWidth: .infinity, alignment: .topLeading)
@@ -794,15 +794,36 @@ struct ClipDetailView: View {
 
 struct FileRow: View {
     let path: String
+    /// The thumbnail the clip's list row already decoded, when this row is that same image
+    /// (the first file of a multi-image clip) — shown as is, nothing generated.
+    var listThumbnail: NSImage? = nil
     var onOpenInFinder: (() -> Void)?
     @State private var isHovered = false
+    /// Image files show a thumbnail instead of the file icon, loaded in the background (see
+    /// `ImageCache.fileThumbnail`); the icon stands in until it's there.
+    @State private var thumbnail: NSImage?
+
+    private static let THUMBNAIL_SIZE: CGFloat = 32
+
+    private var isImageFile: Bool {
+        ClipboardManager.IMAGE_EXTENSIONS.contains(URL(fileURLWithPath: path).pathExtension.lowercased())
+    }
 
     var body: some View {
         HStack(spacing: 8) {
-            Image(nsImage: systemIcon(forFile: path))
-                .resizable()
-                .aspectRatio(contentMode: .fit)
-                .frame(width: 20, height: 20)
+            if let thumb = listThumbnail ?? thumbnail
+                ?? (isImageFile ? ImageCache.shared.cachedFileThumbnail(forPath: path, size: Self.THUMBNAIL_SIZE) : nil) {
+                Image(nsImage: thumb)
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .frame(width: 20, height: 20)
+                    .clipShape(RoundedRectangle(cornerRadius: 3))
+            } else {
+                Image(nsImage: systemIcon(forFile: path))
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 20, height: 20)
+            }
             VStack(alignment: .leading, spacing: 2) {
                 Text(URL(fileURLWithPath: path).lastPathComponent)
                     .font(.system(size: 13))
@@ -842,6 +863,17 @@ struct FileRow: View {
                 .fill(isHovered ? Color.primary.opacity(0.06) : Color.clear)
         )
         .onHover { isHovered = $0 }
+        .task(id: path) {
+            thumbnail = nil
+            guard isImageFile, listThumbnail == nil,
+                  ImageCache.shared.cachedFileThumbnail(forPath: path, size: Self.THUMBNAIL_SIZE) == nil else { return }
+            let path = path
+            let size = Self.THUMBNAIL_SIZE
+            let loaded = await Task.detached(priority: .utility) {
+                ImageCache.shared.fileThumbnail(forPath: path, size: size)
+            }.value
+            if !Task.isCancelled { thumbnail = loaded }
+        }
     }
 }
 

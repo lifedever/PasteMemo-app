@@ -453,8 +453,12 @@ struct QuickPreviewPane: View {
             // copy froze the panel for seconds), and each FileRow does an icon lookup.
             // The enclosing ScrollView only materialises the visible rows this way.
             LazyVStack(alignment: .leading, spacing: 4) {
-                ForEach(Array(paths.enumerated()), id: \.offset) { _, path in
-                    FileRow(path: path, onOpenInFinder: { QuickPanelWindowController.shared.dismiss() })
+                ForEach(Array(paths.enumerated()), id: \.offset) { index, path in
+                    FileRow(
+                        path: path,
+                        listThumbnail: index == 0 ? item.listThumbnailOfFirstFile : nil,
+                        onOpenInFinder: { QuickPanelWindowController.shared.dismiss() }
+                    )
                 }
             }
             .frame(maxWidth: .infinity, alignment: .topLeading)

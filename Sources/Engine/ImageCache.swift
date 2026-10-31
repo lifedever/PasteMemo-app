@@ -6,6 +6,10 @@ final class ImageCache: @unchecked Sendable {
     static let shared = ImageCache()
 
     private let cache = NSCache<NSString, NSImage>()
+    /// File-list thumbnails (`fileThumbnail`) get their own cache: a Finder copy can list
+    /// thousands of images, and scrolling through them in the shared cache would evict the
+    /// list-row thumbnails and previews, which then decode again. Each one is ~10–16 KB.
+    private let fileThumbnails = NSCache<NSString, NSImage>()
     private var previewTasks: [String: Task<Void, Never>] = [:]
     private var thumbnailTasks: [String: Task<Void, Never>] = [:]
     private var videoThumbnailTasks: [String: Task<Void, Never>] = [:]
@@ -21,6 +25,8 @@ final class ImageCache: @unchecked Sendable {
         // 上限按「解码后位图」真实占用计（见 decodedCost）。之前用压缩字节当 cost，
         // 50MB 的「上限」实际能囤 300MB~1GB+ 的解码位图才淘汰 —— 内存失控的主因。
         cache.totalCostLimit = 96 * 1024 * 1024 // 96MB（解码位图真实预算，足够当前可见工作集，封住峰值）
+        fileThumbnails.countLimit = 500
+        fileThumbnails.totalCostLimit = 8 * 1024 * 1024
     }
 
     /// NSCache 的 cost 必须反映「解码后位图」占用（宽×高×4 RGBA），而不是压缩字节，
@@ -49,6 +55,37 @@ final class ImageCache: @unchecked Sendable {
 
     func cachedThumbnail(for key: String, size: CGFloat) -> NSImage? {
         cache.object(forKey: thumbnailCacheKey(for: key, size: size))
+    }
+
+    /// Small thumbnail of an image file for a file-list row (the multi-file preview). ImageIO
+    /// takes the file's embedded thumbnail when it has one and otherwise decodes at a reduced
+    /// size — the full image is never loaded. Call off the main thread; the row peeks with
+    /// `cachedFileThumbnail` first and shows the file icon until this returns.
+    func fileThumbnail(forPath path: String, size: CGFloat) -> NSImage? {
+        let cacheKey = fileThumbnailCacheKey(forPath: path, size: size)
+        if let cached = fileThumbnails.object(forKey: cacheKey) { return cached }
+        let url = URL(fileURLWithPath: path) as CFURL
+        guard let source = CGImageSourceCreateWithURL(url, [kCGImageSourceShouldCache: false] as CFDictionary) else {
+            return nil
+        }
+        let options: [CFString: Any] = [
+            kCGImageSourceCreateThumbnailFromImageIfAbsent: true,
+            kCGImageSourceCreateThumbnailWithTransform: true,
+            kCGImageSourceThumbnailMaxPixelSize: size * 2,
+            kCGImageSourceShouldCacheImmediately: true,
+        ]
+        guard let cgImage = CGImageSourceCreateThumbnailAtIndex(source, 0, options as CFDictionary) else { return nil }
+        let thumb = NSImage(cgImage: cgImage, size: NSSize(width: cgImage.width / 2, height: cgImage.height / 2))
+        fileThumbnails.setObject(thumb, forKey: cacheKey, cost: decodedCost(thumb))
+        return thumb
+    }
+
+    func cachedFileThumbnail(forPath path: String, size: CGFloat) -> NSImage? {
+        fileThumbnails.object(forKey: fileThumbnailCacheKey(forPath: path, size: size))
+    }
+
+    private func fileThumbnailCacheKey(forPath path: String, size: CGFloat) -> NSString {
+        "filethumb_\(Int(size))_\(path)" as NSString
     }
 
     /// 把 malloc 已释放但还没还给系统的页主动归还（解码大量图片后的高水位脏页）。
@@ -335,5 +372,16 @@ final class ImageCache: @unchecked Sendable {
                    operation: .copy, fraction: 1.0)
         newImage.unlockFocus()
         return newImage
+    }
+}
+
+extension ClipItem {
+    /// For a multi-image file clip, the thumbnail its list row has already decoded (its stored
+    /// thumbnail is the first file's) — a cache lookup only, nil when the row hasn't drawn it.
+    /// Doesn't touch `imageData`: no blob load, and safe on a clip that's just been deleted.
+    @MainActor
+    var listThumbnailOfFirstFile: NSImage? {
+        guard contentType == .image else { return nil }
+        return ImageCache.shared.cachedThumbnail(for: itemID, size: 36)
     }
 }
