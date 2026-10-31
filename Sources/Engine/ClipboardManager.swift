@@ -358,7 +358,7 @@ final class ClipboardManager: ObservableObject {
         // File URLs only (copied files/folders from Finder)
         if hasFiles {
             let content = paths.joined(separator: "\n")
-            let fileType = detectFileType(paths)
+            let fileType = Self.detectFileType(paths)
             // For image files, generate a small thumbnail (of the first file) for UI
             // preview only — multi-image copies need it too, otherwise the image-grid
             // tile has nothing to render. Paste writes the original file URLs — target
@@ -957,7 +957,7 @@ final class ClipboardManager: ObservableObject {
         "app", "pkg", "mpkg", "exe", "msi", "deb", "rpm", "apk", "ipa"
     ]
 
-    private func detectFileType(_ paths: [String]) -> ClipContentType {
+    static func detectFileType(_ paths: [String]) -> ClipContentType {
         let extensions = paths.compactMap { URL(fileURLWithPath: $0).pathExtension.lowercased() }
         let isDir = paths.count == 1 && {
             var isDirectory: ObjCBool = false

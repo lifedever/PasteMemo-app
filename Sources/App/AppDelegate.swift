@@ -60,6 +60,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // GC orphaned original-image cache files (deleted/expired clips, crash orphans).
         // Runs before monitoring starts so a fresh copy can't be mistaken for an orphan.
         ClipboardManager.sweepOrphanedOriginalImageCacheFiles(in: PasteMemoApp.sharedModelContainer.mainContext)
+        ClipMerge.sweepOrphanedMergeFolders(in: PasteMemoApp.sharedModelContainer.mainContext)
         if ProManager.AUTOMATION_ENABLED {
             BuiltInRules.seedIfNeeded(context: PasteMemoApp.sharedModelContainer.mainContext)
         }

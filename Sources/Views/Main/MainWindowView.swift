@@ -834,12 +834,7 @@ struct MainWindowView: View {
     }
 
     private func mergeSelectedItems() {
-        let items = selectedClipItems.sorted { $0.createdAt < $1.createdAt }
-        guard items.count > 1, items.allSatisfy({ $0.contentType.isMergeable }) else { return }
-        let merged = items.map(\.content).joined(separator: "\n")
-        let newItem = ClipItem(content: merged, contentType: .text)
-        modelContext.insert(newItem)
-        ClipItemStore.deleteAndNotify(items, from: modelContext)
+        guard let newItem = ClipMerge.mergeTexts(selectedClipItems, in: modelContext) else { return }
         let newID = newItem.persistentModelID
         selectedItems = [newID]
         navigationCursor = newID
@@ -939,6 +934,8 @@ struct MainWindowView: View {
             if let first = paths.first {
                 NSWorkspace.shared.selectFile(first, inFileViewerRootedAtPath: "")
             }
+        case .merge:
+            mergeSelectedItems()
         case .delete:
             deleteSelectedItems()
         case .runRule(let ruleID, _):

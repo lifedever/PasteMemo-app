@@ -35,6 +35,8 @@ enum CommandAction: Hashable {
     case splitAndRelay
     case pin(isPinned: Bool)
     case toggleSensitive(isSensitive: Bool)
+    /// Multi-select only: replace the selection with one clip — see `ClipMerge`.
+    case merge
     case delete
     /// Trigger a manual-trigger automation rule. Carries the rule's ID so the
     /// host can refetch and execute without keeping a SwiftData reference in
@@ -58,6 +60,7 @@ enum CommandAction: Hashable {
         case .splitAndRelay: "scissors"
         case .pin(let pinned): pinned ? "pin.slash" : "pin"
         case .toggleSensitive(let sensitive): sensitive ? "lock.open" : "lock.shield"
+        case .merge: "arrow.triangle.merge"
         case .delete: "trash"
         case .runRule: "sparkles"
         }
@@ -82,6 +85,7 @@ enum CommandAction: Hashable {
         case .splitAndRelay: L10n.tr("relay.splitAndRelay")
         case .pin(let pinned): pinned ? L10n.tr("action.unpin") : L10n.tr("action.pin")
         case .toggleSensitive(let sensitive): sensitive ? L10n.tr("sensitive.unmarkSensitive") : L10n.tr("sensitive.markSensitive")
+        case .merge: L10n.tr("action.merge")
         case .delete: L10n.tr("cmd.delete")
         case .runRule(_, let displayName): displayName
         }
@@ -104,6 +108,7 @@ enum CommandAction: Hashable {
         case .splitAndRelay: "S"
         case .pin: "T"
         case .toggleSensitive: "E"
+        case .merge: "M"
         case .delete: "D"
         case .runRule: nil
         }
@@ -126,6 +131,7 @@ enum CommandAction: Hashable {
         case .splitAndRelay: 1 // S
         case .pin: 17        // T
         case .toggleSensitive: 14 // E
+        case .merge: 46      // M
         case .delete: 2      // D
         case .runRule: nil
         }
@@ -147,7 +153,7 @@ enum CommandAction: Hashable {
         case .openLink, .pasteEntityCode,
              .retryOCR, .pasteOCR, .openInPreview, .showInFinder: 1
         case .copy, .addToRelay, .splitAndRelay: 2
-        case .pin, .toggleSensitive, .delete: 3
+        case .pin, .toggleSensitive, .merge, .delete: 3
         case .runRule: 4
         }
     }
@@ -203,6 +209,9 @@ private struct PaletteGlassBackground: ViewModifier {
 struct CommandPaletteContent: View {
     let item: ClipItem?
     let isMultiSelected: Bool
+    /// The selected clips when several are. Non-empty switches the palette to the actions
+    /// that act on all of them (`multiSelectionActions`); the main window doesn't pass it.
+    var selection: [ClipItem] = []
     /// Manual-trigger rules shown inline in the palette. Capped to 5 at the
     /// call site so a big rule list doesn't drown out built-in actions.
     var manualRules: [AutomationRule] = []
@@ -248,7 +257,29 @@ struct CommandPaletteContent: View {
         return TextEntityExtractor.openableLink(for: item)
     }
 
+    /// Only what acts on every selected clip; anything about one clip (open link, OCR,
+    /// preview, split…) is left out. Rules come in pre-filtered from the call site.
+    private var multiSelectionActions: [CommandAction] {
+        var list: [CommandAction] = [
+            .paste,
+            .cmdEnter(label: L10n.tr("cmd.pasteAsPlainText"), hasKey: true),
+            .copy,
+            .addToRelay,
+            .pin(isPinned: selection.contains(where: \.isPinned)),
+            .toggleSensitive(isSensitive: selection.contains(where: \.isSensitive)),
+        ]
+        if ClipMerge.canMerge(selection) {
+            list.append(.merge)
+        }
+        list.append(.delete)
+        for rule in manualRules {
+            list.append(.runRule(ruleID: rule.ruleID, displayName: rule.isBuiltIn ? L10n.tr(rule.name) : rule.name))
+        }
+        return list
+    }
+
     private var actions: [CommandAction] {
+        if selection.count > 1 { return multiSelectionActions }
         var list: [CommandAction] = [.paste]
         if canPasteAndDestroy {
             list.append(.pasteAndDestroy)

@@ -1387,7 +1387,7 @@ struct QuickPanelView: View {
                 CommandPaletteContent(
                     item: item,
                     isMultiSelected: isMultiSelected,
-                    manualRules: manualRulesForPalette(item: item),
+                    manualRules: manualRulesForPalette(items: [item]),
                     preservedGroupNames: SmartGroupRetention.preservedGroupNames(in: modelContext),
                     onAction: { handleCommandAction($0) },
                     onDismiss: { showCommandPalette = false; isSearchFocused = true }
@@ -1460,14 +1460,14 @@ struct QuickPanelView: View {
     /// 没有预览区、菜单必然整个落在窗口外，宽窗口下菜单也可能比预览区宽。
     private func syncCommandPalettePanel() {
         guard showCommandPalette,
-              let item = currentItem,
+              currentItem != nil || isMultiSelected,
               let window = QuickPanelWindowController.shared.panelWindow,
               CommandPalettePanel.shared.anchorRow != .zero else {
             CommandPalettePanel.shared.hide()
             return
         }
         CommandPalettePanel.shared.show(
-            content: paletteCard(for: item),
+            content: paletteCard(),
             width: PALETTE_WIDTH,
             maxHeight: PALETTE_MAX_HEIGHT,
             parent: window,
@@ -1481,13 +1481,15 @@ struct QuickPanelView: View {
     /// 菜单卡片本体。这里不能加 .shadow：套在玻璃上会让整块卡片退化成实色。投影由
     /// CommandPalettePanel 在另一个透明子窗口里画（见其类注释）。
     @ViewBuilder
-    private func paletteCard(for item: ClipItem) -> some View {
+    private func paletteCard() -> some View {
         // ScrollView 已挪进 CommandPaletteContent（要和 selectedIndex 同处一个 view
         // 才能让键盘焦点带着滚动条走），这里只负责限宽限高。
+        let selection = isMultiSelected ? currentItems : []
         let card = CommandPaletteContent(
-            item: item,
+            item: currentItem,
             isMultiSelected: isMultiSelected,
-            manualRules: manualRulesForPalette(item: item),
+            selection: selection,
+            manualRules: manualRulesForPalette(items: isMultiSelected ? selection : currentItem.map { [$0] } ?? []),
             preservedGroupNames: SmartGroupRetention.preservedGroupNames(in: modelContext),
             onAction: { handleCommandAction($0) },
             onDismiss: { showCommandPalette = false; isSearchFocused = true },
@@ -1949,6 +1951,10 @@ struct QuickPanelView: View {
                         ))
                         return nil
                     }
+                    if isMultiSelected {
+                        handleCommandAction(.cmdEnter(label: L10n.tr("cmd.pasteAsPlainText"), hasKey: true))
+                        return nil
+                    }
                     return event
                 case 9:
                     handleCommandAction(.paste)
@@ -2240,7 +2246,11 @@ struct QuickPanelView: View {
         }
         switch action {
         case .paste:
-            handlePaste(respectAutoPaste: false)
+            if isMultiSelected {
+                handleMultiPaste(asPlainText: false, respectAutoPaste: false)
+            } else {
+                handlePaste(respectAutoPaste: false)
+            }
         case .pasteAndDestroy:
             break  // handled above
         case .cmdEnter:
@@ -2307,6 +2317,15 @@ struct QuickPanelView: View {
                     dismissAndRevealInFinder(path)
                 }
             }
+        case .merge:
+            if isMultiSelected, let merged = ClipMerge.merge(currentItems, in: modelContext) {
+                // Load the new clip into the list before selecting it. The regular refresh
+                // lands a beat later, and in between the list (minus the merged-away clips)
+                // doesn't hold it — onChange(of: store.items) would move the selection to the
+                // first row instead.
+                ClipItemStore.refreshAllStoresNow()
+                selectItem(merged.persistentModelID)
+            }
         case .delete:
             handleDeleteSelected()
         case .runRule(let ruleID, _):
@@ -2329,15 +2348,19 @@ struct QuickPanelView: View {
 
     /// Manual-trigger rules visible in the ⌘K palette for this clip. Capped
     /// at 5 so a rule-heavy setup doesn't drown out built-in actions.
-    private func manualRulesForPalette(item: ClipItem) -> [AutomationRule] {
-        guard ProManager.AUTOMATION_ENABLED else { return [] }
+    /// For several clips: rules that match every one of them, minus async ones (Shortcuts /
+    /// AI / OCR) — those only ever run on the first clip.
+    private func manualRulesForPalette(items: [ClipItem]) -> [AutomationRule] {
+        guard ProManager.AUTOMATION_ENABLED, !items.isEmpty else { return [] }
         let descriptor = FetchDescriptor<AutomationRule>(
             predicate: #Predicate { $0.enabled },
             sortBy: [SortDescriptor(\.sortOrder)]
         )
         let enabled = (try? modelContext.fetch(descriptor)) ?? []
-        let filtered = enabled.filter {
-            $0.triggerMode == .manual && $0.matches(item: item, targetAppBundleID: pasteTargetBundleID)
+        let filtered = enabled.filter { rule in
+            rule.triggerMode == .manual
+                && items.allSatisfy { rule.matches(item: $0, targetAppBundleID: pasteTargetBundleID) }
+                && (items.count == 1 || !rule.actions.contains(where: \.isAsync))
         }
         return Array(filtered.prefix(5))
     }
