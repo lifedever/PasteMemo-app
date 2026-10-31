@@ -716,7 +716,9 @@ final class ClipboardManager: ObservableObject {
         let descriptor = FetchDescriptor<ClipItem>(
             predicate: #Predicate { $0.originalImageFilePath != nil }
         )
-        let referenced = Set((try? context.fetch(descriptor))?.compactMap(\.originalImageFilePath) ?? [])
+        // 查询失败就分不清哪些原图还被引用——宁可一个不删，也不能全删。
+        guard let rows = try? context.fetch(descriptor) else { return }
+        let referenced = Set(rows.compactMap(\.originalImageFilePath))
         Task.detached(priority: .utility) {
             for file in files where !referenced.contains(file.path) {
                 try? FileManager.default.removeItem(at: file)
