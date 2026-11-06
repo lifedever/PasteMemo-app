@@ -1152,14 +1152,69 @@ final class ClipboardManager: ObservableObject {
         guard webPreviewEnabled, !showLinkURL else { return }
 
         let targetItem = item
+        let urlString = item.content
         Task {
-            let metadata = await LinkMetadataFetcher.shared.fetchMetadata(urlString: targetItem.content)
+            let metadata = await LinkMetadataFetcher.shared.fetchMetadata(urlString: urlString)
             await MainActor.run {
+                // 抓取期间条目可能被删、或被用户改成了别的链接：旧网址的标题不能写回去
+                guard !targetItem.isGone, targetItem.content == urlString else { return }
                 if let title = metadata.title { targetItem.linkTitle = title }
                 if let favicon = metadata.faviconData { targetItem.faviconData = favicon }
                 ClipItemStore.saveAndNotifyContent(context)
             }
         }
+    }
+
+    // MARK: - Edit
+
+    /// 用户在主窗口 / 快捷面板里改写了条目文字。内容没变（或改成空）时什么都不做、返回 false
+    /// ——只是进编辑看一眼就粘贴，不该把富文本格式丢掉。
+    ///
+    /// 富文本和剪贴板快照一起清掉：粘贴时快照会被原样回放（`writeToPasteboard`），留着它
+    /// 贴出来的还是改之前的内容。
+    ///
+    /// 类型：文本和代码之间不重判（用户可能在属性里手动切过，改一个字就被识别器翻回去不合理）；
+    /// 链接 / 颜色 / 电话这类格式型的按新内容重判，改完不再是链接的不能还挂着旧网页标题。
+    /// 识别成文件路径的仍按文本存：用户改的是一段文字，粘出去变成文件不对。
+    @discardableResult
+    func applyEditedContent(_ newContent: String, to item: ClipItem, context: ModelContext) -> Bool {
+        guard !item.isGone, !newContent.isEmpty, newContent != item.content else { return false }
+
+        let oldType = item.contentType
+        let detected = detectContentType(newContent)
+        var newType: ClipContentType = detected.type == .file ? .text : detected.type
+        let textual: Set<ClipContentType> = [.text, .code]
+        if textual.contains(oldType), textual.contains(newType) {
+            newType = oldType
+        } else {
+            item.codeLanguage = newType == .code ? detected.language : nil
+        }
+
+        if oldType == .link || newType == .link {
+            item.linkTitle = nil
+            item.faviconData = nil
+        }
+        if newType == .link, DataImageURI.isBase64DataImageURI(newContent) {
+            item.imageData = DataImageURI.decodedImageData(from: newContent)
+        } else if oldType == .link {
+            item.imageData = nil
+        }
+
+        item.content = newContent
+        item.contentType = newType
+        item.richTextData = nil
+        item.richTextType = nil
+        item.pasteboardSnapshot = nil
+        item.displayTitle = ClipItem.buildTitle(content: newContent, contentType: newType, imageData: item.imageData)
+        // 只升不降：手动标过敏感的，改个错字不该被识别器悄悄取消
+        item.isSensitive = item.isSensitive || SensitiveDetector.isSensitive(
+            content: newContent,
+            sourceAppBundleID: item.sourceAppBundleID,
+            contentType: newType
+        )
+        ClipItemStore.saveAndNotifyContent(context)
+        refreshLinkMetadataIfNeeded(for: item, in: context)
+        return true
     }
 
     private func enqueueOCRIfNeeded(for item: ClipItem) {

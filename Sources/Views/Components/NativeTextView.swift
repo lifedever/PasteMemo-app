@@ -75,6 +75,16 @@ struct NativeTextView: NSViewRepresentable {
         let textView = scrollView.documentView as! NSTextView
         textView.isEditable = isEditable
         textView.isSelectable = true
+        if isEditable {
+            // 改的是剪贴板原文：只收纯文本（粘进来的格式存不下来），关掉智能引号 / 破折号 /
+            // 文本替换 / 自动纠错——否则代码、JSON、链接一边改一边被系统悄悄换字符。
+            textView.isRichText = false
+            textView.allowsUndo = true
+            textView.isAutomaticQuoteSubstitutionEnabled = false
+            textView.isAutomaticDashSubstitutionEnabled = false
+            textView.isAutomaticTextReplacementEnabled = false
+            textView.isAutomaticSpellingCorrectionEnabled = false
+        }
         textView.font = .systemFont(ofSize: fontSize)
         textView.textColor = textColor
         textView.backgroundColor = .clear

@@ -434,4 +434,18 @@ extension ClipItem {
     /// external-storage one (rich text, image) throws from Core Data — a view still holding the
     /// clip while a bulk delete saves batch by batch crashed exactly that way.
     var isGone: Bool { isDeleted || modelContext == nil }
+
+    /// 能在主窗口 / 快捷面板里直接改文字的条目：内容本身就是一段字符串的类型。
+    /// `data:image/...` 链接除外——它是几 MB 的 base64，没法当文字改。
+    var isEditableText: Bool {
+        guard !isGone else { return false }
+        switch contentType {
+        case .text, .code, .color, .email, .phone:
+            return true
+        case .link:
+            return !DataImageURI.isDataImageURI(content)
+        case .image, .file, .video, .audio, .document, .archive, .application, .mixed:
+            return false
+        }
+    }
 }

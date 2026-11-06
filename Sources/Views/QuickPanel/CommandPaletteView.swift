@@ -35,6 +35,9 @@ enum CommandAction: Hashable {
     case splitAndRelay
     case pin(isPinned: Bool)
     case toggleSensitive(isSensitive: Bool)
+    /// 改写条目文字（只有快捷面板会放出这一行，见 `CommandPaletteContent.canEdit`）。
+    /// `E` 和面板里的 ⌘E 对上——卡片匹配字母不看修饰键，菜单开着时按 ⌘E 也落到这一行。
+    case edit
     /// Multi-select only: replace the selection with one clip — see `ClipMerge`.
     case merge
     case delete
@@ -60,6 +63,7 @@ enum CommandAction: Hashable {
         case .splitAndRelay: "scissors"
         case .pin(let pinned): pinned ? "pin.slash" : "pin"
         case .toggleSensitive(let sensitive): sensitive ? "lock.open" : "lock.shield"
+        case .edit: "pencil"
         case .merge: "arrow.triangle.merge"
         case .delete: "trash"
         case .runRule: "sparkles"
@@ -85,6 +89,7 @@ enum CommandAction: Hashable {
         case .splitAndRelay: L10n.tr("relay.splitAndRelay")
         case .pin(let pinned): pinned ? L10n.tr("action.unpin") : L10n.tr("action.pin")
         case .toggleSensitive(let sensitive): sensitive ? L10n.tr("sensitive.unmarkSensitive") : L10n.tr("sensitive.markSensitive")
+        case .edit: L10n.tr("action.edit")
         case .merge: L10n.tr("action.merge")
         case .delete: L10n.tr("cmd.delete")
         case .runRule(_, let displayName): displayName
@@ -107,7 +112,8 @@ enum CommandAction: Hashable {
         case .addToRelay: "R"
         case .splitAndRelay: "S"
         case .pin: "T"
-        case .toggleSensitive: "E"
+        case .toggleSensitive: "H" // hide；`E` 让给了编辑
+        case .edit: "E"
         case .merge: "M"
         case .delete: "D"
         case .runRule: nil
@@ -130,7 +136,8 @@ enum CommandAction: Hashable {
         case .addToRelay: 15 // R
         case .splitAndRelay: 1 // S
         case .pin: 17        // T
-        case .toggleSensitive: 14 // E
+        case .toggleSensitive: 4  // H
+        case .edit: 14       // E
         case .merge: 46      // M
         case .delete: 2      // D
         case .runRule: nil
@@ -153,7 +160,7 @@ enum CommandAction: Hashable {
         case .openLink, .pasteEntityCode,
              .retryOCR, .pasteOCR, .openInPreview, .showInFinder: 1
         case .copy, .addToRelay, .splitAndRelay: 2
-        case .pin, .toggleSensitive, .merge, .delete: 3
+        case .edit, .pin, .toggleSensitive, .merge, .delete: 3
         case .runRule: 4
         }
     }
@@ -218,6 +225,8 @@ struct CommandPaletteContent: View {
     /// Group names flagged `preservesItems` at the moment the palette opened.
     /// Used to suppress `pasteAndDestroy` for items whose group forbids deletion.
     var preservedGroupNames: Set<String> = []
+    /// 放出「编辑」一行。只有快捷面板传 true——主窗口详情区自带编辑按钮。
+    var canEdit: Bool = false
     let onAction: (CommandAction) -> Void
     let onDismiss: () -> Void
     /// true：不自带宽度和背景，交给外部容器（快捷面板右下角的玻璃浮层）。
@@ -341,6 +350,9 @@ struct CommandPaletteContent: View {
         }
         let isPinned = isMultiSelected ? false : (item?.isPinned ?? false)
         let isSensitive = isMultiSelected ? false : (item?.isSensitive ?? false)
+        if canEdit, !isMultiSelected, item?.isEditableText == true {
+            list.append(.edit)
+        }
         list.append(.pin(isPinned: isPinned))
         list.append(.toggleSensitive(isSensitive: isSensitive))
         list.append(.delete)

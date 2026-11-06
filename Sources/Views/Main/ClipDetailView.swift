@@ -13,9 +13,7 @@ struct ClipDetailView: View {
     @State private var ocrCardWidth: CGFloat = 0
     @AppStorage(OCRTaskCoordinator.enableOCRKey) private var ocrEnabled = true
 
-    private var isEditableType: Bool {
-        item.contentType == .text || item.contentType == .code
-    }
+    private var isEditableType: Bool { item.isEditableText }
 
     @ViewBuilder
     var body: some View {
@@ -215,6 +213,7 @@ struct ClipDetailView: View {
             }
             .buttonStyle(.bordered)
             .controlSize(.small)
+            .disabled(editingContent.isEmpty)
 
             Button { cancelEdit() } label: {
                 Label(L10n.tr("action.cancel"), systemImage: "arrow.uturn.backward")
@@ -243,22 +242,9 @@ struct ClipDetailView: View {
     }
 
     private func saveEdit() {
-        item.content = editingContent
-        if item.richTextData != nil {
-            item.richTextData = nil
-            item.richTextType = nil
-        }
-        item.displayTitle = ClipItem.buildTitle(
-            content: item.content,
-            contentType: item.contentType,
-            imageData: item.imageData
-        )
-        item.isSensitive = SensitiveDetector.isSensitive(
-            content: item.content,
-            sourceAppBundleID: nil,
-            contentType: item.contentType
-        )
-        ClipItemStore.saveAndNotifyContent(modelContext)
+        // 清空了就不存：空条目粘不出任何东西，也不是用户想要的结果
+        guard !editingContent.isEmpty else { return }
+        clipboardManager.applyEditedContent(editingContent, to: item, context: modelContext)
         isEditing = false
         textRefreshID = UUID()
     }
@@ -340,37 +326,12 @@ struct ClipDetailView: View {
     }
 
     private var editableTextPreview: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            if item.richTextData != nil {
-                HStack(spacing: 6) {
-                    Image(systemName: "exclamationmark.triangle.fill")
-                        .foregroundStyle(.orange)
-                    Text(L10n.tr("detail.richText.editWarning"))
-                        .foregroundStyle(.secondary)
-                }
-                .font(.system(size: 11))
-                .padding(.horizontal, 11)
-                .padding(.vertical, 6)
-                .background(
-                    RoundedRectangle(cornerRadius: 6)
-                        .fill(Color.orange.opacity(0.08))
-                )
-            }
-            NativeTextView(
-                text: editingContent,
-                isEditable: true,
-                autoFocus: true,
-                onTextChange: { editingContent = $0 },
-                onEscape: { cancelEdit() }
-            )
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .padding(.vertical, 8)
-            .padding(.horizontal, 6)
-            .background(
-                RoundedRectangle(cornerRadius: 6)
-                    .fill(Color.primary.opacity(0.08))
-            )
-        }
+        ClipTextEditor(
+            hasRichText: item.richTextData != nil,
+            text: editingContent,
+            onTextChange: { editingContent = $0 },
+            onEscape: { cancelEdit() }
+        )
     }
 
     @State private var textRefreshID = UUID()

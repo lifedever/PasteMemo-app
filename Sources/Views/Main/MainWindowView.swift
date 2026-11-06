@@ -934,6 +934,8 @@ struct MainWindowView: View {
             if let first = paths.first {
                 NSWorkspace.shared.selectFile(first, inFileViewerRootedAtPath: "")
             }
+        case .edit:
+            break // 主窗口的菜单不放出这一行（canEdit 默认 false），编辑走详情区按钮
         case .merge:
             mergeSelectedItems()
         case .delete:
