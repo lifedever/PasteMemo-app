@@ -17,6 +17,12 @@ actor StorageThumbnailLoader {
 
     private init() {
         cache.countLimit = 300
+        // 解码位图按宽×高×4 真实占用计成本，封顶 24MB，避免存储页浏览时位图无限累积
+        cache.totalCostLimit = 24 * 1024 * 1024
+    }
+
+    private func decodedCost(_ image: CGImage) -> Int {
+        max(1, image.width * image.height * 4)
     }
 
     /// `version` changes when the clip's thumbnail does (its stored size, from the scan), so an
@@ -32,7 +38,7 @@ actor StorageThumbnailLoader {
         let image = await Task.detached(priority: .utility) {
             Self.decode(itemID: itemID, maxPixel: maxPixel)
         }.value
-        if let image { cache.setObject(image, forKey: key) }
+        if let image { cache.setObject(image, forKey: key, cost: decodedCost(image)) }
         return image
     }
 

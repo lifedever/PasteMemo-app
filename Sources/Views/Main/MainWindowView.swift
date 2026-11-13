@@ -234,6 +234,8 @@ struct MainWindowView: View {
                 flagsMonitor = nil
             }
             OptionKeyMonitor.shared.isOptionPressed = false
+            // 关闭主窗口时归还浏览历史产生的解码脏页（与快捷面板 dismiss 保持一致）
+            ImageCache.shared.reclaimFreedMemory()
         }
         .toolbar {
             ToolbarItem(placement: .automatic) {
