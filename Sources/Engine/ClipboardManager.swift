@@ -718,20 +718,33 @@ final class ClipboardManager: ObservableObject {
         guard let dir = originalsCacheDirectory() else { return }
         let files = (try? FileManager.default.contentsOfDirectory(at: dir, includingPropertiesForKeys: nil)) ?? []
         guard !files.isEmpty else { return }
-        // 谓词必须有：只取真正引用了缓存文件的行。不加谓词会把整张 ClipItem 表（含内联
-        // 缩略图 blob，万条级库 200MB+）物化进 mainContext，只为读一个 String? 列——
-        // 启动路径卡 1s+ 的主因（11k 条实测全表 ~100ms 热 / ~600ms 冷 vs 谓词 ~5ms）。
-        let descriptor = FetchDescriptor<ClipItem>(
-            predicate: #Predicate { $0.originalImageFilePath != nil }
-        )
         // 查询失败就分不清哪些原图还被引用——宁可一个不删，也不能全删。
-        guard let rows = try? context.fetch(descriptor) else { return }
-        let referenced = Set(rows.compactMap(\.originalImageFilePath))
+        guard let referenced = referencedOriginalImagePaths(in: context) else { return }
         Task.detached(priority: .utility) {
             for file in files where !referenced.contains(file.path) {
                 try? FileManager.default.removeItem(at: file)
             }
         }
+    }
+
+    /// Every `originalImageFilePath` in the store plus the context's unsaved inserts and
+    /// edits; nil when the store can't be read.
+    ///
+    /// Read with SQL rather than a fetch: the rows that reference a cache file are exactly the
+    /// screenshot clips, and fetching them loads each one's thumbnail too — 1.5k clips ≈ 100MB
+    /// and 1.2s on the main thread at launch, measured on 1.17.1-beta.1. `propertiesToFetch`
+    /// doesn't help: SwiftData still loads the whole row.
+    @MainActor
+    static func referencedOriginalImagePaths(in context: ModelContext) -> Set<String>? {
+        guard let db = SQLiteConnection.forStore(of: context) else { return nil }
+        defer { db.close() }
+        guard let saved = db.queryStringsIfSucceeded(
+            "SELECT ZORIGINALIMAGEFILEPATH FROM ZCLIPITEM WHERE ZORIGINALIMAGEFILEPATH IS NOT NULL"
+        ) else { return nil }
+        // A fetch counted unsaved changes too; SQL only sees what's been saved.
+        let pending = (context.insertedModelsArray + context.changedModelsArray)
+            .compactMap { ($0 as? ClipItem)?.originalImageFilePath }
+        return Set(saved).union(pending)
     }
 
     private nonisolated static func rasterizeVectorThumbnail(at fileURL: URL) -> Data? {

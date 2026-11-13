@@ -1,5 +1,6 @@
 import Foundation
 import SQLite3
+import SwiftData
 
 private let SQLITE_TRANSIENT = unsafeBitCast(-1, to: sqlite3_destructor_type.self)
 
@@ -84,6 +85,30 @@ final class SQLiteConnection {
             }
         }
         return results
+    }
+
+    /// Like `queryStrings`, but nil when the query fails instead of an empty list — for
+    /// callers that must not mistake "couldn't read" for "no rows" (deleting unreferenced files).
+    func queryStringsIfSucceeded(_ sql: String, params: [Any] = []) -> [String]? {
+        var stmt: OpaquePointer?
+        guard sqlite3_prepare_v2(db, sql, -1, &stmt, nil) == SQLITE_OK else { return nil }
+        defer { sqlite3_finalize(stmt) }
+
+        bind(params, to: stmt)
+
+        var results: [String] = []
+        while true {
+            switch sqlite3_step(stmt) {
+            case SQLITE_ROW:
+                if let cStr = sqlite3_column_text(stmt, 0) {
+                    results.append(String(cString: cStr))
+                }
+            case SQLITE_DONE:
+                return results
+            default:
+                return nil
+            }
+        }
     }
 
     func queryInt(_ sql: String, params: [Any] = []) -> Int {
@@ -238,5 +263,17 @@ final class SQLiteConnection {
     func close() {
         sqlite3_close(db)
         db = nil
+    }
+}
+
+extension SQLiteConnection {
+    /// A connection to the store behind `context`, for reads that must not materialise model
+    /// objects (launch-time sweeps). nil when the store can't be opened — in-memory included.
+    @MainActor
+    static func forStore(of context: ModelContext) -> SQLiteConnection? {
+        guard let url = context.container.configurations.first?.url,
+              let db = SQLiteConnection(path: url.path) else { return nil }
+        db.setBusyTimeout(milliseconds: 3000)
+        return db
     }
 }

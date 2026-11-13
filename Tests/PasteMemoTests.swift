@@ -300,6 +300,46 @@ struct PasteMemoTests {
         #expect(ClipboardManager.shared.findExistingDuplicate(for: third, in: context) == nil)
     }
 
+    @Test("Originals sweep reads referenced paths from the store plus unsaved clips, and nil when unreadable")
+    @MainActor func referencedOriginalImagePaths() throws {
+        let dir = FileManager.default.temporaryDirectory.appendingPathComponent("pm-sweep-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let container = try ModelContainer(
+            for: ClipItem.self, SmartGroup.self, AutomationRule.self,
+            configurations: ModelConfiguration(url: dir.appendingPathComponent("sweep.store"))
+        )
+        let context = container.mainContext
+        context.insert(ClipItem(content: "[Image]", contentType: .image, imageData: Data([1]),
+                                originalImageFilePath: "/originals/saved.png"))
+        context.insert(ClipItem(content: "plain text"))
+        try context.save()
+        context.insert(ClipItem(content: "[Image]", contentType: .image, imageData: Data([2]),
+                                originalImageFilePath: "/originals/unsaved.png"))
+        #expect(ClipboardManager.referencedOriginalImagePaths(in: context)
+                == ["/originals/saved.png", "/originals/unsaved.png"])
+
+        // Unreadable store: nothing may be treated as unreferenced.
+        let memory = try ModelContainer(
+            for: ClipItem.self, SmartGroup.self, AutomationRule.self,
+            configurations: ModelConfiguration(isStoredInMemoryOnly: true)
+        )
+        #expect(ClipboardManager.referencedOriginalImagePaths(in: memory.mainContext) == nil)
+    }
+
+    @Test("queryStringsIfSucceeded tells a failed query from an empty result")
+    func queryStringsIfSucceeded() throws {
+        let path = FileManager.default.temporaryDirectory.appendingPathComponent("pm-q-\(UUID().uuidString).db").path
+        defer { try? FileManager.default.removeItem(atPath: path) }
+        let db = try #require(SQLiteConnection(path: path, create: true))
+        defer { db.close() }
+        db.execute("CREATE TABLE t (v TEXT)")
+        #expect(db.queryStringsIfSucceeded("SELECT v FROM t") == [])
+        db.execute("INSERT INTO t VALUES ('a')")
+        #expect(db.queryStringsIfSucceeded("SELECT v FROM t") == ["a"])
+        #expect(db.queryStringsIfSucceeded("SELECT v FROM missing_table") == nil)
+    }
+
     @Test("Import merges a clip copied again later instead of adding a second row")
     @MainActor func importMergesSameContent() throws {
         let destContainer = try ModelContainer(
