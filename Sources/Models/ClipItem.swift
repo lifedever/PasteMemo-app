@@ -1,6 +1,7 @@
 import Foundation
 import SwiftData
 import AppKit
+import CryptoKit
 
 enum OCRStatus: String, Codable, CaseIterable {
     case pending = "pending"
@@ -186,6 +187,12 @@ final class ClipItem {
     /// SMSCodeWatcher (content holds just the code). Drives the code badge in
     /// list rows and the original-message preview. nil for every other clip.
     var smsMessageText: String?
+    /// SHA-256 of `imageData` for raw clipboard images (`content == "[Image]"`). Every such
+    /// clip shares that same `content`, so the duplicate check on copy narrows by this
+    /// instead of loading every image clip's bytes. nil = not computed yet (clips from before
+    /// this field, imports, undo restores): the duplicate check fills it in the first time it
+    /// compares the clip. "" = the clip has no image bytes. See `imageFingerprint(of:)`.
+    var imageFingerprint: String?
 
     @MainActor
     init(
@@ -372,6 +379,12 @@ final class ClipItem {
             ? String(firstName.prefix(maxNameLen)) + "..."
             : firstName
         return name + suffix
+    }
+
+    /// Value stored in `imageFingerprint`: hex SHA-256 of the bytes, "" when there are none.
+    static func imageFingerprint(of data: Data?) -> String {
+        guard let data else { return "" }
+        return SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
     }
 
     @MainActor

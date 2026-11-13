@@ -978,6 +978,9 @@ final class ClipboardManager: ObservableObject {
     }
 
     func findExistingDuplicate(for newItem: ClipItem, in context: ModelContext) -> ClipItem? {
+        if newItem.contentType == .image, newItem.content == "[Image]" {
+            return findDuplicatePasteboardImage(for: newItem, in: context)
+        }
         let content = newItem.content
         let descriptor = FetchDescriptor<ClipItem>(
             predicate: #Predicate<ClipItem> { item in
@@ -991,6 +994,49 @@ final class ClipboardManager: ObservableObject {
 
         guard let matches = try? context.fetch(descriptor) else { return nil }
         return matches.first(where: { self.matchesDuplicateCandidate($0, with: newItem) })
+    }
+
+    /// Every raw clipboard image has the same `content` ("[Image]"), so matching on content
+    /// alone pulls in every image clip in the library, bytes included, on each copy — 1.5k
+    /// images cost ~300MB of peak memory per screenshot on 1.17.0, and malloc kept most of it.
+    /// Narrow by fingerprint instead. Clips without one yet (older than the field, imported,
+    /// restored) are still compared by bytes and get theirs filled in, so that full pass
+    /// happens once; after it a copy loads only the clips holding the same picture.
+    private func findDuplicatePasteboardImage(for newItem: ClipItem, in context: ModelContext) -> ClipItem? {
+        let content = newItem.content
+        let fingerprint: String? = ClipItem.imageFingerprint(of: newItem.imageData)
+        // Saved with the new clip when it isn't a duplicate.
+        newItem.imageFingerprint = fingerprint
+        let descriptor = FetchDescriptor<ClipItem>(
+            predicate: #Predicate<ClipItem> { item in
+                item.content == content
+                    && (item.imageFingerprint == fingerprint || item.imageFingerprint == nil)
+            },
+            sortBy: [
+                SortDescriptor(\.lastUsedAt, order: .reverse),
+                SortDescriptor(\.createdAt, order: .reverse),
+            ]
+        )
+        guard let candidates = try? context.fetch(descriptor) else { return nil }
+
+        var match: ClipItem?
+        var filledFingerprints = false
+        for candidate in candidates {
+            if candidate.imageFingerprint == nil {
+                candidate.imageFingerprint = ClipItem.imageFingerprint(of: candidate.imageData)
+                filledFingerprints = true
+            }
+            // Same fingerprint still compares the bytes: a match is only ever the same picture.
+            if match == nil, matchesDuplicateCandidate(candidate, with: newItem) {
+                match = candidate
+            }
+        }
+        if filledFingerprints {
+            // The fill pass just loaded every unfingerprinted image; hand the freed pages back
+            // once this capture is done with them.
+            DispatchQueue.main.async { ImageCache.shared.reclaimFreedMemory() }
+        }
+        return match
     }
 
     func reuseExistingDuplicate(_ existingItem: ClipItem, with newItem: ClipItem, in context: ModelContext) {

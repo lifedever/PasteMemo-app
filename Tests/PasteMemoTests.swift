@@ -272,6 +272,34 @@ struct PasteMemoTests {
         #expect(ClipboardManager.shared.findExistingDuplicate(for: same, in: context) != nil)
     }
 
+    @Test("Pasteboard image duplicate check fills missing fingerprints, and a fingerprint alone never merges")
+    @MainActor func pasteboardImageFingerprints() throws {
+        let container = try ModelContainer(
+            for: ClipItem.self, SmartGroup.self, AutomationRule.self,
+            configurations: ModelConfiguration(isStoredInMemoryOnly: true)
+        )
+        let context = container.mainContext
+        let first = ClipItem(content: "[Image]", contentType: .image, imageData: Data([1, 1, 1]))
+        let second = ClipItem(content: "[Image]", contentType: .image, imageData: Data([2, 2, 2]))
+        context.insert(first)
+        context.insert(second)
+        try context.save()
+        #expect(first.imageFingerprint == nil)
+
+        // Clips from before the field are compared by bytes once and get their fingerprints.
+        let again = ClipItem(content: "[Image]", contentType: .image, imageData: Data([2, 2, 2]))
+        let matched = ClipboardManager.shared.findExistingDuplicate(for: again, in: context)
+        #expect(matched?.persistentModelID == second.persistentModelID)
+        #expect(first.imageFingerprint == ClipItem.imageFingerprint(of: Data([1, 1, 1])))
+        #expect(second.imageFingerprint == ClipItem.imageFingerprint(of: Data([2, 2, 2])))
+        #expect(again.imageFingerprint == second.imageFingerprint)
+
+        // Same fingerprint, different bytes (a stale fingerprint): not the same picture.
+        first.imageFingerprint = ClipItem.imageFingerprint(of: Data([3, 3, 3]))
+        let third = ClipItem(content: "[Image]", contentType: .image, imageData: Data([3, 3, 3]))
+        #expect(ClipboardManager.shared.findExistingDuplicate(for: third, in: context) == nil)
+    }
+
     @Test("Import merges a clip copied again later instead of adding a second row")
     @MainActor func importMergesSameContent() throws {
         let destContainer = try ModelContainer(
