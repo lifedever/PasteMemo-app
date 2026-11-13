@@ -28,13 +28,26 @@ struct FileAvailabilityTests {
     }
 
     /// The whole point of the type: a TCC-refused read must NOT look like a deleted file.
-    /// `~/Library/Application Support/com.apple.TCC` needs Full Disk Access, which the test
-    /// runner doesn't have — if it ever does, this reports `.available` and the case is moot.
+    /// These need Full Disk Access, which the test runner doesn't have — if it ever does, they
+    /// report `.available` and the case is moot. Not every Mac has every one (macOS 27 has no
+    /// per-user `com.apple.TCC` folder at all), so only paths that exist are checked: `stat`
+    /// either finds them or is refused too, and only a plain ENOENT means "not on this Mac".
     @Test("A TCC-protected path is denied, not missing")
     func tccProtected() {
-        let tcc = NSHomeDirectory() + "/Library/Application Support/com.apple.TCC/TCC.db"
-        let result = FileAvailability.check(tcc)
-        #expect(result != .missing, "TCC denial must be distinguishable from a missing file")
+        let candidates = [
+            "/Library/Application Support/com.apple.TCC/TCC.db",
+            "/Library/Safari/Bookmarks.plist",
+            "/Library/Messages/chat.db",
+            "/Library/Mail",
+        ].map { NSHomeDirectory() + $0 }
+        let present = candidates.filter { path in
+            var info = stat()
+            return stat(path, &info) == 0 || errno != ENOENT
+        }
+        for path in present {
+            #expect(FileAvailability.check(path) != .missing,
+                    "TCC denial must be distinguishable from a missing file: \(path)")
+        }
     }
 
     /// Without `O_NONBLOCK`, opening a FIFO read-only blocks until someone opens the write
