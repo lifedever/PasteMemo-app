@@ -340,10 +340,18 @@ final class ClipboardManager: ObservableObject {
         // bytes via `restorePasteboardSnapshot` is the only way the origin app can decode
         // its own custom payload after PasteMemo hands the clip back. Plain-text /
         // plain-image / plain-file clips skip this to keep the database lean.
-        let hasCustomTypes = pasteboardHasThirdPartyTypes(pasteboard)
-        let snapshot: Data? = (richText.data != nil || hasCustomTypes)
-            ? capturePasteboardSnapshot(from: pasteboard)
-            : nil
+        //
+        // Taken only on the text paths that store it. Every image copy also lists AppKit's
+        // legacy aliases ("Apple PNG pasteboard type", "NeXT TIFF v4.0 pasteboard type"),
+        // which count as custom types here; snapshotting then reads every type, and reading
+        // public.tiff makes AppKit decode the PNG and re-encode it as uncompressed TIFF —
+        // 100–250MB of transient memory per full-screen screenshot, for a snapshot the image
+        // clip never kept.
+        func takeSnapshot() -> Data? {
+            richText.data != nil || pasteboardHasThirdPartyTypes(pasteboard)
+                ? capturePasteboardSnapshot(from: pasteboard)
+                : nil
+        }
 
         let paths = fileURLs.map(\.path)
         // An image an app copied out of its own storage (Photos, WeChat) — keep the image, not
@@ -389,7 +397,7 @@ final class ClipboardManager: ObservableObject {
                 content: content, contentType: detected.type,
                 sourceApp: sourceApp, codeLanguage: detected.language,
                 richTextData: richText.data, richTextType: richText.type,
-                pasteboardSnapshot: snapshot
+                pasteboardSnapshot: takeSnapshot()
             )
         }
 
@@ -415,7 +423,7 @@ final class ClipboardManager: ObservableObject {
             content: content, contentType: detected.type,
             imageData: dataURIImageData,
             sourceApp: sourceApp, codeLanguage: detected.language,
-            pasteboardSnapshot: snapshot
+            pasteboardSnapshot: takeSnapshot()
         )
     }
 
