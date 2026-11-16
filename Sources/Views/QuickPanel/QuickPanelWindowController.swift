@@ -16,7 +16,7 @@ private let DEFAULT_WIDTH: CGFloat = 750
 private let DEFAULT_HEIGHT: CGFloat = 510
 private let MIN_WIDTH: CGFloat = 360
 private let MIN_HEIGHT: CGFloat = 420
-private let PANEL_CORNER_RADIUS: CGFloat = 16
+let PANEL_CORNER_RADIUS: CGFloat = 16
 
 /// 面板染色层的不透明度：盖在 behindWindow 模糊之上，决定背后内容透进来多少。
 /// 取值参照 Raycast：黑底前面板本体跟背景几乎同色，彩色背景前能看到一点光晕。
@@ -79,7 +79,7 @@ private class KeyablePanel: NSPanel {
 /// windowBackgroundColor，使其跟随外观而非背后内容。
 /// 走 updateLayer 而不是一次性写 layer.backgroundColor —— CGColor 是解析过的静态
 /// 颜色，不会自己跟随深浅色切换，直接设一次会把面板永久留在切换前的底色上。
-private class PanelTintView: NSView {
+class PanelTintView: NSView {
     override var wantsUpdateLayer: Bool { true }
 
     override func updateLayer() {
@@ -97,7 +97,7 @@ private class PanelTintView: NSView {
 /// 面板容器：负责圆角裁切和四周的 1px 细线。细线挂在容器自己的 layer 上，CALayer 的
 /// border 画在所有 sublayer 之上，所以它压在模糊、染色和内容的外沿。同样走
 /// updateLayer 跟随深浅色，理由见 PanelTintView。
-private class PanelHostView: NSView {
+class PanelHostView: NSView {
     override var wantsUpdateLayer: Bool { true }
 
     override func updateLayer() {
@@ -124,7 +124,7 @@ private class DragOnlyView: NSView {
 final class QuickPanelWindowController {
     static let shared = QuickPanelWindowController()
 
-    private var panel: NSPanel?
+    private(set) var panel: NSPanel?
     /// 只画投影的透明子窗口，垫在面板下面，随面板移动；尺寸变了要 syncShadow 重画。
     private var shadowPanel: NSPanel?
     /// ⌘K 菜单浮窗要挂成它的子窗口（跟随移动），所以需要对外暴露。

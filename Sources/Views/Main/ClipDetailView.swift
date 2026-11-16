@@ -244,7 +244,7 @@ struct ClipDetailView: View {
     private func saveEdit() {
         // 清空了就不存：空条目粘不出任何东西，也不是用户想要的结果
         guard !editingContent.isEmpty else { return }
-        clipboardManager.applyEditedContent(editingContent, to: item, context: modelContext)
+        clipboardManager.saveEdit(editingContent, to: item, context: modelContext)
         isEditing = false
         textRefreshID = UUID()
     }

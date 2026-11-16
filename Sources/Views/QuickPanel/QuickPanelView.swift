@@ -148,7 +148,6 @@ struct QuickPanelView: View {
     @State private var lastNavigatedID: PersistentIdentifier?
     @State private var selectionAnchor: PersistentIdentifier?
     @State private var showAllShortcuts = false
-    @State private var relaySplitText: String?
     @State private var showCommandPalette = false
     @State private var targetApp: NSRunningApplication?
     @State private var isPanelPinned = false
@@ -180,6 +179,9 @@ struct QuickPanelView: View {
     /// 正在改文字的条目（⌘E / 右键 / ⌘K「编辑」进入）。非 nil 时搜索栏和列表换成编辑框，
     /// 按键监听只拦 Esc / ⌘↩ / ⌘S / ⌘W，其余全交给编辑框。读它一律走 `activeEditingItem`。
     @State private var editingItem: ClipItem?
+    /// 拆分页（和编辑页同一类：占满面板、esc 回列表）。读它一律走 `activeSplitItem`。
+    @State private var splittingItem: ClipItem?
+    @State private var splitSession: SplitSession?
     @State private var editingContent = ""
 
     private var secondaryRow: QuickPanelSecondaryRow {
@@ -292,8 +294,8 @@ struct QuickPanelView: View {
     }
 
     private func handleItemClick(_ id: PersistentIdentifier) {
-        // 编辑时列表藏在编辑框底下，万一有点击漏下去也不响应
-        guard editingItem == nil else { return }
+        // 编辑 / 拆分时列表藏在页面底下，万一有点击漏下去也不响应
+        guard !isOnSecondaryPage else { return }
         userInteractedSinceShow = true
         // 鼠标点选图片 = 直接进入网格焦点级，后续方向键在图片间移动
         if isImageGridActive { isGridFocused = true }
@@ -385,14 +387,24 @@ struct QuickPanelView: View {
                 }
             }
             }
-            .opacity(activeEditingItem == nil ? 1 : 0)
-            .allowsHitTesting(activeEditingItem == nil)
-            .accessibilityHidden(activeEditingItem != nil)
+            .opacity(isOnSecondaryPage ? 0 : 1)
+            .allowsHitTesting(!isOnSecondaryPage)
+            .accessibilityHidden(isOnSecondaryPage)
 
             if let editing = activeEditingItem {
                 VStack(spacing: 0) {
                     editHeader
                     editorBody(for: editing)
+                }
+            } else if activeSplitItem != nil, let session = splitSession {
+                VStack(spacing: 0) {
+                    PageHeader(symbol: "scissors", title: L10n.tr("action.split"))
+                    SplitPageView(
+                        session: session,
+                        fontSize: QuickPanelPreviewFontSize.resolvedPoints(previewFontSizeStored)
+                    )
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 4)
                 }
             }
             } // ZStack: list / editor
@@ -400,7 +412,7 @@ struct QuickPanelView: View {
         }
         .frame(minWidth: 360, minHeight: 420)
         // Floating group suggestions overlay
-        if isShowingSuggestions, activeEditingItem == nil {
+        if isShowingSuggestions, !isOnSecondaryPage {
             VStack(spacing: 0) {
                 Spacer().frame(height: 48)
                 HStack {
@@ -452,9 +464,11 @@ struct QuickPanelView: View {
             suggestionsArmed = false
             userTypedSlash = false
             isIMEComposing = false
-            // 编辑中被关掉（点外面 / ⌘W / 热键）= 放弃这次修改
+            // 编辑 / 拆分中被关掉（点外面 / ⌘W / 热键）= 放弃
             editingItem = nil
             editingContent = ""
+            splittingItem = nil
+            splitSession = nil
         }
         .onReceive(NotificationCenter.default.publisher(for: .quickPanelPinnedResignKey)) { _ in
             // Pinned + user clicked another app: release search focus so the text field
@@ -474,6 +488,8 @@ struct QuickPanelView: View {
             showCommandPalette = false
             editingItem = nil
             editingContent = ""
+            splittingItem = nil
+            splitSession = nil
             searchText = ""
             pill = nil
             let restoredFilter = restoredFilterOnShow()
@@ -599,14 +615,6 @@ struct QuickPanelView: View {
                 selectionAnchor = nil
             }
             lastNavigatedID = firstID
-        }
-        .onChange(of: relaySplitText) {
-            guard let text = relaySplitText else { return }
-            SplitWindowController.shared.show(text: text) { delimiter in
-                guard let parts = RelaySplitter.split(text, by: delimiter) else { return }
-                RelayManager.shared.addToQueue(texts: parts)
-            }
-            relaySplitText = nil
         }
         .localized()
     }
@@ -1339,9 +1347,9 @@ struct QuickPanelView: View {
                 handleItemClick(id)
             },
             onItemRightClick: { id in
-                // 行上的右键靠全局事件监听（不走 SwiftUI 命中测试）：编辑框里右键也会落到
-                // 藏在底下的那一行，不拦就会改选中、带着列表滚动
-                guard editingItem == nil else { return }
+                // 行上的右键靠全局事件监听（不走 SwiftUI 命中测试）：编辑框 / 拆分页里右键
+                // 也会落到藏在底下的那一行，不拦就会改选中、带着列表滚动
+                guard !isOnSecondaryPage else { return }
                 if !selectedItemIDs.contains(id) {
                     selectedItemIDs = [id]
                     lastNavigatedID = id
@@ -1523,11 +1531,12 @@ struct QuickPanelView: View {
             manualRules: manualRulesForPalette(items: isMultiSelected ? selection : currentItem.map { [$0] } ?? []),
             preservedGroupNames: SmartGroupRetention.preservedGroupNames(in: modelContext),
             canEdit: !isPanelPinned,
+            canSplit: !isPanelPinned,
             onAction: { handleCommandAction($0) },
             // 卡片在执行动作之后才调 onDismiss：刚从「编辑」进了编辑框，就别再把焦点抢回搜索框
             onDismiss: {
                 showCommandPalette = false
-                if editingItem == nil { isSearchFocused = true }
+                if !isOnSecondaryPage { isSearchFocused = true }
             },
             embedded: true
         )
@@ -1558,40 +1567,6 @@ struct QuickPanelView: View {
                 content
                     .buttonStyle(.plain)
                     .modifier(HoverHighlight())
-            }
-        }
-    }
-
-    /// macOS 14/15 下图标按钮的 hover 高亮（26 上走 .buttonStyle(.glass)）。
-    /// 刻意只给真正可点的按钮加——footerKey 是纯展示的键位提示，给它加 hover 态
-    /// 会让用户以为能点。
-    private struct HoverHighlight: ViewModifier {
-        @State private var isHovering = false
-
-        func body(content: Content) -> some View {
-            content
-                .background(
-                    RoundedRectangle(cornerRadius: 6)
-                        .fill(Color.primary.opacity(isHovering ? 0.09 : 0))
-                )
-                .animation(.easeOut(duration: 0.12), value: isHovering)
-                .onHover { isHovering = $0 }
-        }
-    }
-
-    /// 玻璃表面。macOS 26 用官方 `.glassEffect()`，旧系统降级到 material + 描边。
-    /// 刻意不再手绘「实底 + 阴影」去模拟玻璃——那套只是长得像，系统一升级就漂移，
-    /// 深浅色和外观切换还全得自己维护。
-    private struct GlassSurface<S: Shape>: ViewModifier {
-        let shape: S
-
-        func body(content: Content) -> some View {
-            if #available(macOS 26.0, *) {
-                content.glassEffect(.regular, in: shape)
-            } else {
-                content
-                    .background(.regularMaterial, in: shape)
-                    .overlay(shape.stroke(.separator, lineWidth: 0.5))
             }
         }
     }
@@ -1643,6 +1618,86 @@ struct QuickPanelView: View {
         Task { @MainActor in isSearchFocused = true }
     }
 
+    // MARK: - Split
+
+    /// 编辑或拆分页开着：列表、搜索、右键都让给页面。
+    private var isOnSecondaryPage: Bool {
+        activeEditingItem != nil || activeSplitItem != nil
+    }
+
+    /// 拆分中、且条目还在（同 `activeEditingItem`）。
+    private var activeSplitItem: ClipItem? {
+        guard let splittingItem, !splittingItem.isGone else { return nil }
+        return splittingItem
+    }
+
+    private func beginSplit(_ item: ClipItem) {
+        guard !isPanelPinned, let source = ClipSplit.source(of: item) else { return }
+        showCommandPalette = false
+        selectItem(item.persistentModelID)
+        splitSession = SplitSession(source: source)
+        splittingItem = item
+        isSearchFocused = false
+        // 搜索框只是藏起来、没拆掉，焦点留在它身上的话空格会打进去
+        Task { @MainActor in QuickPanelWindowController.shared.panel?.makeFirstResponder(nil) }
+    }
+
+    private func endSplit(refocusSearch: Bool) {
+        splittingItem = nil
+        splitSession = nil
+        guard refocusSearch else { return }
+        Task { @MainActor in isSearchFocused = true }
+    }
+
+    /// ⌘↵：拆成记录，回到列表、选中第一段。
+    private func commitSplit() {
+        guard let item = activeSplitItem, let session = splitSession, session.canConfirm else {
+            NSSound.beep()
+            return
+        }
+        let pieces = session.chosenPieces
+        endSplit(refocusSearch: true)
+        let result = ClipSplit.apply(pieces, replacing: item, in: modelContext)
+        // 同合并：新条目要先进列表再选中，否则 onChange(of: store.items) 会把选中挪到第一行
+        ClipItemStore.refreshAllStoresNow()
+        if let first = result.first { selectItem(first.persistentModelID) }
+    }
+
+    /// ⌘R：拆好直接开启接力，原条留在历史里。
+    private func relaySplit() {
+        guard let session = splitSession, !session.isFiles, session.canConfirm else {
+            NSSound.beep()
+            return
+        }
+        let pieces = session.chosenPieces
+        endSplit(refocusSearch: true)
+        RelayManager.shared.addToQueue(texts: pieces)
+    }
+
+    private func handleSplitKeyDown(_ event: NSEvent) -> NSEvent? {
+        guard let session = splitSession else { return event }
+        switch SplitPageKeys.handle(event, session: session) {
+        case .passThrough:
+            let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
+            if event.keyCode == 13, flags == .command { // ⌘W
+                handleDismiss()
+                return nil
+            }
+            return event
+        case .handled:
+            return nil
+        case .confirm:
+            commitSplit()
+            return nil
+        case .relay:
+            relaySplit()
+            return nil
+        case .cancel:
+            endSplit(refocusSearch: true)
+            return nil
+        }
+    }
+
     /// 保存改动；`thenPaste` 时接着走和回车一样的粘贴（自动粘贴关了就是复制、目标是访达
     /// 就存进文件夹）。内容没改时 `applyEditedContent` 什么都不做，粘出去的仍是原格式。
     private func commitEdit(thenPaste: Bool) {
@@ -1655,7 +1710,7 @@ struct QuickPanelView: View {
             NSSound.beep()
             return
         }
-        clipboardManager.applyEditedContent(editingContent, to: item, context: modelContext)
+        clipboardManager.saveEdit(editingContent, to: item, context: modelContext)
         endEdit(refocusSearch: !thenPaste)
         guard thenPaste else { return }
         selectItem(item.persistentModelID)
@@ -1698,20 +1753,7 @@ struct QuickPanelView: View {
 
     /// 和搜索栏同高同边距，进出编辑时下面的内容不跳。
     private var editHeader: some View {
-        HStack(spacing: 10) {
-            Image(systemName: "pencil")
-                .font(.system(size: 18))
-                .foregroundStyle(.tertiary)
-                .frame(width: 22, height: 22)
-            Text(L10n.tr("action.edit"))
-                .font(.system(size: 16))
-                .foregroundStyle(.secondary)
-            Spacer()
-        }
-        .frame(height: 28)
-        .padding(.horizontal, 20)
-        .padding(.top, 22)
-        .padding(.bottom, 14)
+        PageHeader(symbol: "pencil", title: L10n.tr("action.edit"))
     }
 
     private func editorBody(for item: ClipItem) -> some View {
@@ -1759,7 +1801,7 @@ struct QuickPanelView: View {
     private var footerBar: some View {
         VStack(spacing: 8) {
             // Expandable shortcuts panel
-            if showAllShortcuts, activeEditingItem == nil {
+            if showAllShortcuts, !isOnSecondaryPage {
                 WrappingHStack(spacing: 12, lineSpacing: 6, alignment: .trailing) {
                     footerKey("←→", L10n.tr("quick.switchType"))
                     footerKey("↑↓", L10n.tr("quick.navigate"))
@@ -1818,6 +1860,13 @@ struct QuickPanelView: View {
                         let compact = !layoutState.shouldShowPreview
                         if let editing = activeEditingItem {
                             editingFooterKeys(for: editing)
+                        } else if activeSplitItem != nil, let session = splitSession {
+                            SplitFooterKeys(
+                                session: session,
+                                onConfirm: { commitSplit() },
+                                onRelay: { relaySplit() },
+                                onCancel: { endSplit(refocusSearch: true) }
+                            )
                         } else {
                         if isMultiSelected {
                             footerKey("↵", quickPanelAutoPaste ? (isTargetFinder ? L10n.tr("quick.saveToFolder") : L10n.tr("quick.batchPaste")) : L10n.tr("action.copy"))
@@ -1940,32 +1989,13 @@ struct QuickPanelView: View {
     }
 
     private func footerKey(_ key: String, _ label: String) -> some View {
-        HStack(spacing: 4) {
-            // 和 ⌘K 卡片里的键位标签同一套画法：独立圆角小方块 + 细描边
-            Text(key)
-                .font(.system(size: 11, weight: .medium, design: .rounded))
-                .foregroundStyle(.secondary)
-                .padding(.horizontal, 5)
-                .frame(minWidth: 22, minHeight: 22)
-                .background(Color.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: 6))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 6)
-                        .stroke(Color.primary.opacity(0.10), lineWidth: 0.5)
-                )
-            Text(label)
-                .font(.system(size: 11))
-                // 说明文字是主信息，走 primary；键位标记退到 secondary 做层级
-                // （参考 Raycast 底栏：文字近黑、键帽偏灰）。之前 .tertiary 在玻璃上几乎看不清。
-                .foregroundStyle(.primary)
-                .lineLimit(1)
-        }
-        .fixedSize(horizontal: true, vertical: false)
+        FooterKeyLabel(key: key, label: label)
     }
 
     @ViewBuilder
     /// Right-click menu for a history row (AppKit `NSMenu`, see `NativeMenu.swift`).
     private func historyItemMenuItems(item: ClipItem) -> [NativeMenuItem] {
-        guard editingItem == nil else { return [] }
+        guard !isOnSecondaryPage else { return [] }
         let itemID = item.persistentModelID
         var menu: [NativeMenuItem] = []
 
@@ -2001,6 +2031,9 @@ struct QuickPanelView: View {
         if canEdit(item) {
             menu.append(.item(L10n.tr("action.edit")) { beginEdit(item) })
         }
+        if !isPanelPinned, ClipSplit.canSplit(item) {
+            menu.append(.item(L10n.tr("action.split")) { beginSplit(item) })
+        }
         menu.append(.item(item.isPinned ? L10n.tr("action.unpin") : L10n.tr("action.pin")) {
             ActionExecutor.applyMetadata([item.isPinned ? .unpin : .pin], to: [item], context: modelContext)
             selectItem(itemID)
@@ -2032,7 +2065,6 @@ struct QuickPanelView: View {
         menu.append(.separator)
         if !item.content.isEmpty || item.imageData != nil {
             menu.append(.item(L10n.tr("relay.addToQueue")) { RelayManager.shared.addToQueue(clipItems: [item]) })
-            menu.append(.item(L10n.tr("relay.splitAndRelay")) { relaySplitText = item.content })
         }
         menu.append(.separator)
         menu.append(.item(L10n.tr("action.copyDebugInfo")) { copyDebugInfo(for: item) })
@@ -2117,6 +2149,14 @@ struct QuickPanelView: View {
                     endEdit(refocusSearch: true)
                 } else {
                     return handleEditingKeyDown(event)
+                }
+            }
+            if let splitting = splittingItem {
+                // 同上：拆分途中条目没了就退回列表
+                if splitting.isGone {
+                    endSplit(refocusSearch: true)
+                } else {
+                    return handleSplitKeyDown(event)
                 }
             }
 
@@ -2493,10 +2533,8 @@ struct QuickPanelView: View {
         case .addToRelay:
             let items = isMultiSelected ? currentItems : (currentItem.map { [$0] } ?? [])
             RelayManager.shared.addToQueue(clipItems: items)
-        case .splitAndRelay:
-            if let item = currentItem, !item.content.isEmpty {
-                relaySplitText = item.content
-            }
+        case .split:
+            if let item = currentItem { beginSplit(item) }
         case .pin:
             // Toggle lives here in the row; the action itself is a plain set/unset.
             let items = isMultiSelected ? currentItems : (currentItem.map { [$0] } ?? [])
@@ -2886,7 +2924,7 @@ struct QuickPanelView: View {
         let items = filteredItems
         let idsToDelete = Set(itemsToDelete.map(\.persistentModelID))
         let firstIdx = items.firstIndex { idsToDelete.contains($0.persistentModelID) }
-        DeleteUndoCoordinator.shared.scheduleUndoableDelete(items: itemsToDelete, context: modelContext)
+        ClipUndoCoordinator.shared.scheduleUndoableDelete(items: itemsToDelete, context: modelContext)
         let remaining = filteredItems
         if let idx = firstIdx, !remaining.isEmpty {
             let nextIdx = min(idx, remaining.count - 1)
@@ -3326,7 +3364,7 @@ struct QuickPanelView: View {
         let modelCtx = modelContext
         Task { @MainActor in
             try? await Task.sleep(for: .milliseconds(500))
-            DeleteUndoCoordinator.shared.scheduleUndoableDelete(items: [item], context: modelCtx)
+            ClipUndoCoordinator.shared.scheduleUndoableDelete(items: [item], context: modelCtx)
         }
     }
 

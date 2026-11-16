@@ -83,6 +83,7 @@ enum ActionExecutor {
 
         let transforms = actions.filter { $0.kind == .transform }
         var outcome = Outcome()
+        let change = ClipChange(context: context)
 
         ClipItemStore.isBulkOperation = items.count > 1
         defer { ClipItemStore.isBulkOperation = false }
@@ -93,9 +94,10 @@ enum ActionExecutor {
             let processed = item.contentType.isMergeable
                 ? AutomationEngine.executeActions(transforms, on: item.content)
                 : item.content
-            finish(processed, for: item, producedText: false, rule: rule, actions: actions, context: context, outcome: &outcome)
+            finish(processed, for: item, producedText: false, rule: rule, actions: actions,
+                   change: change, outcome: &outcome)
         }
-        conclude(outcome, rule: rule, actions: actions, host: host, context: context)
+        conclude(outcome, change: change, rule: rule, actions: actions, host: host, context: context)
     }
 
     // MARK: - Async (Shortcuts / AI / OCR)
@@ -203,14 +205,16 @@ enum ActionExecutor {
             return
         }
         var outcome = Outcome()
-        finish(current, for: item, producedText: producedText, rule: rule, actions: actions, context: context, outcome: &outcome)
+        let change = ClipChange(context: context)
+        finish(current, for: item, producedText: producedText, rule: rule, actions: actions,
+               change: change, outcome: &outcome)
         if showsToast { ToastCenter.shared.dismiss() }
         if hasAI, outcome.appliedCount == 0 {
             // The model handed the text back as it was: say so instead of going quiet.
             toast(L10n.tr("automation.ai.noChange"), icon: .info)
             return
         }
-        conclude(outcome, rule: rule, actions: actions, host: host, context: context)
+        conclude(outcome, change: change, rule: rule, actions: actions, host: host, context: context)
     }
 
     /// One AI rewrite with the rule's per-action overrides on top of the global
@@ -294,16 +298,21 @@ enum ActionExecutor {
     /// side effects. `producedText` = the text came from OCR of a non-text clip.
     private static func finish(
         _ processed: String, for item: ClipItem, producedText: Bool, rule: AutomationRule,
-        actions: [RuleAction], context: ModelContext, outcome: inout Outcome
+        actions: [RuleAction], change: ClipChange, outcome: inout Outcome
     ) {
         let contentChanged = processed != item.content
         guard contentChanged || rule.outputMode.needsParameter
                 || AutomationEngine.containsSpecialAction(actions) else { return }
         outcome.appliedCount += 1
+        // Before anything touches the clip, so the undo toast can put it back. The rich
+        // text / pasteboard snapshot only change when the text is rewritten or stripped —
+        // otherwise (pin, group…) don't read them in for every selected clip.
+        let rewritesBlobs = (rule.outputMode == .replaceItem && contentChanged) || actions.contains(.stripRichText)
+        change.willModify(item, includingBlobs: rewritesBlobs)
         let target = deliver(processed, contentChanged: contentChanged, producedText: producedText,
-                             from: item, rule: rule, actions: actions, context: context, outcome: &outcome)
+                             from: item, rule: rule, actions: actions, change: change, outcome: &outcome)
         if rule.outputMode == .pasteToFrontmost { outcome.pendingPaste.append(processed) }
-        applyMetadata(actions, to: target, context: context)
+        applyMetadata(actions, to: target, context: change.context)
         collectSideEffects(actions, processed: processed, hasText: producedText || item.contentType.isMergeable,
                            item: item, outcome: &outcome)
     }
@@ -367,7 +376,10 @@ enum ActionExecutor {
             .filter { !$0.isEmpty }
     }
 
-    private static func conclude(_ outcome: Outcome, rule: AutomationRule, actions: [RuleAction], host: ActionHost, context: ModelContext) {
+    private static func conclude(
+        _ outcome: Outcome, change: ClipChange, rule: AutomationRule, actions: [RuleAction],
+        host: ActionHost, context: ModelContext
+    ) {
         ClipItemStore.saveAndNotify(context)
         lastSideEffects = outcome.effects
         guard outcome.appliedCount > 0 else { return }
@@ -392,12 +404,25 @@ enum ActionExecutor {
             toastShown = true
         }
         performSideEffects(outcome, context: context)
+        if performsSideEffects, !outcome.itemsToDelete.isEmpty {
+            change.delete(outcome.itemsToDelete)
+        }
         if !outcome.webhookPayloads.isEmpty {
             sendWebhooks(outcome.webhookPayloads, to: rule.outputParam)
             toastShown = true
         }
-        // The delete brings its own undo toast; anything shown now would replace it.
-        guard outcome.itemsToDelete.isEmpty, !toastShown else { return }
+        // The rule changed the history (rewrote, created, re-pinned, deleted clips): one
+        // undo toast puts all of it back, like every other history change. A rule that
+        // deletes keeps ⌘Z working from the app it pasted into, as paste-and-destroy does.
+        if change.hasChanges {
+            let name = rule.isBuiltIn ? L10n.tr(rule.name) : rule.name
+            ClipUndoCoordinator.shared.register(
+                change, message: L10n.tr("rule.undo.toast", name),
+                undoFromOtherApps: !outcome.itemsToDelete.isEmpty
+            )
+            return
+        }
+        guard !toastShown else { return }
         if let reason = outcome.webhookSkipReason {
             toast(L10n.tr(reason), icon: .info)
         } else if outcome.saveFailed {
@@ -420,9 +445,6 @@ enum ActionExecutor {
         if let item = outcome.previewItem { QuickLookHelper.shared.present(item: item) }
         if !effects.relayTexts.isEmpty { RelayManager.shared.addToQueue(texts: effects.relayTexts) }
         if !outcome.relayItems.isEmpty { RelayManager.shared.addToQueue(clipItems: outcome.relayItems) }
-        if !outcome.itemsToDelete.isEmpty {
-            DeleteUndoCoordinator.shared.scheduleUndoableDelete(items: outcome.itemsToDelete, context: context)
-        }
     }
 
     private static func sendWebhooks(_ payloads: [RuleOutputDelivery.WebhookPayload], to param: String) {
@@ -453,7 +475,7 @@ enum ActionExecutor {
         from item: ClipItem,
         rule: AutomationRule,
         actions: [RuleAction],
-        context: ModelContext,
+        change: ClipChange,
         outcome: inout Outcome
     ) -> ClipItem {
         let hasText = producedText || item.contentType.isMergeable
@@ -470,7 +492,7 @@ enum ActionExecutor {
                 sourceAppBundleID: item.sourceAppBundleID
             )
             newItem.displayTitle = ClipItem.buildTitle(content: processed, contentType: type)
-            context.insert(newItem)
+            change.insert(newItem)
             return newItem
 
         case .replaceItem:

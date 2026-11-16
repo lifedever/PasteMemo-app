@@ -557,12 +557,6 @@
 "relay.split" = "分割";
 "relay.addToQueue" = "リレーキューに追加";
 "relay.splitAndRelay" = "分割してリレー";
-"relay.split.title" = "キューに分割";
-"relay.split.delimiter" = "区切り文字";
-"relay.split.customPlaceholder" = "区切り文字を入力...";
-"relay.split.confirm" = "分割";
-"relay.split.preview" = "%d 件に分割されます";
-"relay.split.noResult" = "区切り文字が見つかりません";
 "relay.delimiter.newline" = "改行";
 "relay.delimiter.comma" = "カンマ (,)";
 "relay.delimiter.chineseComma" = "読点 (、)";
@@ -801,6 +795,7 @@
 "automation.ai.error.cliBadOutput" = "出力に %@ フィールドがありません";
 "automation.builtIn.aiTranslate" = "AI：中国語⇄英語 翻訳";
 "automation.builtIn.aiTidy" = "AI：テキスト整理";
+"automation.builtIn.plainText" = "プレーンテキストに変換";
 "settings.aiService" = "AIサービス";
 "settings.aiService.provider" = "プロバイダ";
 "settings.aiService.preset.custom" = "カスタム";
@@ -1094,6 +1089,7 @@
 "automation.condition.range.max" = "最大";
 "automation.condition.range.any" = "制限なし";
 "automation.condition.isPinned" = "ピン留め済み";
+"automation.condition.hasRichText" = "書式あり";
 "automation.condition.isSensitive" = "機密としてマーク済み";
 "automation.condition.inGroup" = "グループが";
 "automation.condition.inGroup.any" = "いずれかのグループ";
@@ -1164,3 +1160,30 @@
 "storage.custom.title" = "期間を指定";
 "storage.custom.from" = "開始";
 "storage.custom.to" = "終了";
+
+// 拆分 / 撤销
+"action.split" = "分割";
+"split.rule.auto" = "自動";
+"split.rule.line" = "行ごと";
+"split.rule.paragraph" = "段落ごと";
+"split.rule.numbered" = "番号ごと";
+"split.rule.delimiter" = "区切り文字";
+"split.rule.regex" = "正規表現";
+"split.switchRule" = "ルールを切り替え";
+"split.stripNumbering" = "番号を除去";
+"split.delimiter.chineseComma" = "読点（、）";
+"split.delimiter.comma" = "カンマ";
+"split.delimiter.semicolon" = "セミコロン";
+"split.delimiter.pipe" = "縦線";
+"split.delimiter.tab" = "Tab";
+"split.delimiter.custom" = "カスタム";
+"split.regex.placeholder" = "正規表現";
+"split.regex.hint" = "一致した位置で分割、^ $ は行頭・行末に一致";
+"split.regex.invalid" = "正規表現が正しくありません";
+"split.single" = "1 つしかありません";
+"split.tooMany" = "%d 件を超えています";
+"split.confirm" = "%d 件に分割";
+"split.undo.toast" = "%d 件に分割しました";
+"merge.undo.toast" = "%d 件を結合しました";
+"rule.undo.toast" = "「%@」を実行しました";
+"edit.undo.toast" = "保存しました";

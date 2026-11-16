@@ -4,7 +4,6 @@ import SwiftUI
 struct RelayQueueList: View {
     @Bindable var manager: RelayManager
     let previewRule: AutomationRule?
-    @State private var splitTargetIndex: Int?
     @State private var draggingItem: RelayItem?
 
     var body: some View {
@@ -16,12 +15,14 @@ struct RelayQueueList: View {
                 list
             }
         }
-        .onChange(of: splitTargetIndex) {
-            guard let index = splitTargetIndex, index < manager.items.count else { return }
-            SplitWindowController.shared.show(text: manager.items[index].content) { delimiter in
-                _ = manager.splitItem(at: index, by: delimiter)
-            }
-            splitTargetIndex = nil
+    }
+
+    /// The queue item's split page. Tracked by id, not position: the queue can move on
+    /// (a paste, a reorder) while the window is open.
+    private func split(_ item: RelayItem) {
+        let id = item.id
+        SplitWindowController.shared.show(source: .text(item.content)) { pieces in
+            _ = manager.splitItem(id: id, into: pieces)
         }
     }
 
@@ -54,7 +55,7 @@ struct RelayQueueList: View {
                             item: item,
                             previewRule: previewRule,
                             onDelete: { manager.deleteItem(at: index) },
-                            onSplit: { splitTargetIndex = index }
+                            onSplit: { split(item) }
                         )
                         .id(item.id)
                         .contentShape(Rectangle())
@@ -76,8 +77,8 @@ struct RelayQueueList: View {
                                     manager.jumpTo(index: index)
                                 }
                             }
-                            if item.content.count > 1 {
-                                Button(L10n.tr("relay.split")) { splitTargetIndex = index }
+                            if !item.isImage, !item.isFile, item.content.count > 1 {
+                                Button(L10n.tr("relay.split")) { split(item) }
                             }
                             Button(L10n.tr("relay.delete"), role: .destructive) {
                                 manager.deleteItem(at: index)

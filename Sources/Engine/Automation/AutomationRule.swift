@@ -157,6 +157,7 @@ final class AutomationRule {
                 targetApp: targetAppBundleID,
                 isSensitive: item.isSensitive,
                 isPinned: item.isPinned,
+                hasRichText: item.hasRichText,
                 groupName: item.groupName
             )
             guard AutomationEngine.matchesConditions(conditions, logic: conditionLogic, input: input) else { return false }

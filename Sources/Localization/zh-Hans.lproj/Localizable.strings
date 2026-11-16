@@ -563,6 +563,7 @@
 "automation.ai.error.cliBadOutput" = "输出里没有 %@ 字段";
 "automation.builtIn.aiTranslate" = "AI 中英互译";
 "automation.builtIn.aiTidy" = "AI 文字整理";
+"automation.builtIn.plainText" = "转为纯文本";
 "settings.aiService" = "AI 服务";
 "settings.aiService.provider" = "服务商";
 "settings.aiService.preset.custom" = "自定义";
@@ -869,12 +870,6 @@
 "relay.split" = "拆分";
 "relay.addToQueue" = "加入接力队列";
 "relay.splitAndRelay" = "拆分并接力";
-"relay.split.title" = "拆分为队列";
-"relay.split.delimiter" = "分隔符";
-"relay.split.customPlaceholder" = "输入分隔符...";
-"relay.split.confirm" = "拆分";
-"relay.split.preview" = "将拆分为 %d 条";
-"relay.split.noResult" = "未找到分隔符";
 "relay.delimiter.newline" = "换行";
 "relay.delimiter.comma" = "逗号 (,)";
 "relay.delimiter.chineseComma" = "顿号 (\U3001)";
@@ -1042,6 +1037,7 @@
 "automation.condition.range.max" = "最多";
 "automation.condition.range.any" = "不限";
 "automation.condition.isPinned" = "已置顶";
+"automation.condition.hasRichText" = "带格式";
 "automation.condition.isSensitive" = "已标记为敏感";
 "automation.condition.inGroup" = "所在分组是";
 "automation.condition.inGroup.any" = "任意分组";
@@ -1112,3 +1108,30 @@
 "storage.custom.title" = "自定义时间";
 "storage.custom.from" = "开始";
 "storage.custom.to" = "结束";
+
+// 拆分 / 撤销
+"action.split" = "拆分";
+"split.rule.auto" = "自动";
+"split.rule.line" = "按行";
+"split.rule.paragraph" = "按段落";
+"split.rule.numbered" = "按编号";
+"split.rule.delimiter" = "分隔符";
+"split.rule.regex" = "正则";
+"split.switchRule" = "切换规则";
+"split.stripNumbering" = "去掉序号";
+"split.delimiter.chineseComma" = "顿号";
+"split.delimiter.comma" = "逗号";
+"split.delimiter.semicolon" = "分号";
+"split.delimiter.pipe" = "竖线";
+"split.delimiter.tab" = "Tab";
+"split.delimiter.custom" = "自定义";
+"split.regex.placeholder" = "正则表达式";
+"split.regex.hint" = "匹配处断开，^ $ 匹配行首行尾";
+"split.regex.invalid" = "正则有误";
+"split.single" = "只有 1 段";
+"split.tooMany" = "超过 %d 段";
+"split.confirm" = "拆成 %d 条";
+"split.undo.toast" = "已拆成 %d 条";
+"merge.undo.toast" = "已合并 %d 条";
+"rule.undo.toast" = "已执行「%@」";
+"edit.undo.toast" = "已保存";

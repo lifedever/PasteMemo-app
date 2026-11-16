@@ -23,6 +23,7 @@ final class AutomationEngine {
         contentType: ClipContentType,
         sourceApp: String?,
         isSensitive: Bool = false,
+        hasRichText: Bool = false,
         context: ModelContext
     ) -> AutomationResult {
         guard ProManager.AUTOMATION_ENABLED else { return .unchanged }
@@ -39,7 +40,8 @@ final class AutomationEngine {
         var needsConfirmation: (ruleName: String, ruleID: String)?
         // The new clip's state as earlier rules in this pass leave it, so a later
         // rule's "is pinned" / "in group" sees the pin / group an earlier one set.
-        var input = ConditionInput(content: content, contentType: contentType, sourceApp: sourceApp, isSensitive: isSensitive)
+        var input = ConditionInput(content: content, contentType: contentType, sourceApp: sourceApp,
+                                   isSensitive: isSensitive, hasRichText: hasRichText)
 
         for rule in rules {
             let conditions = rule.conditions
@@ -62,6 +64,7 @@ final class AutomationEngine {
                 case .unpin: input.isPinned = false
                 case .markSensitive: input.isSensitive = true
                 case .unmarkSensitive: input.isSensitive = false
+                case .stripRichText: input.hasRichText = false
                 case .assignGroup(let name) where !name.isEmpty: input.groupName = name
                 default: break
                 }

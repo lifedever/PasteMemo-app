@@ -147,6 +147,16 @@ enum BuiltInRules {
             conditions: [.contentType(.text)],
             actions: [.removeBlankLines]
         ),
+        // ⌘K / 右键里手动跑：去掉富文本格式和剪贴板快照，之后粘贴都是纯文本。只在带格式的
+        // 条目上出现，纯文本条目上它什么也做不了。
+        RuleDefinition(
+            name: "automation.builtIn.plainText",
+            enabled: true,
+            sortOrder: 3,
+            triggerMode: .manual,
+            conditions: [.anyText, .hasRichText],
+            actions: [.stripRichText]
+        ),
         // AI presets: manual-only by construction (aiTransform is async + network),
         // off until the user configures a provider and switches them on.
         RuleDefinition(

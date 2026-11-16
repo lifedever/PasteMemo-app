@@ -560,12 +560,6 @@
 "relay.split" = "Разделить";
 "relay.addToQueue" = "Добавить в очередь";
 "relay.splitAndRelay" = "Разделить и эстафета";
-"relay.split.title" = "Разделить в очередь";
-"relay.split.delimiter" = "Разделитель";
-"relay.split.customPlaceholder" = "Введите разделитель...";
-"relay.split.confirm" = "Разделить";
-"relay.split.preview" = "Будет разделено на %d элементов";
-"relay.split.noResult" = "Разделитель не найден";
 "relay.delimiter.newline" = "Перенос строки";
 "relay.delimiter.comma" = "Запятая (,)";
 "relay.delimiter.chineseComma" = "Китайская запятая (、)";
@@ -756,6 +750,7 @@
 "automation.ai.error.cliBadOutput" = "В выводе нет поля %@";
 "automation.builtIn.aiTranslate" = "ИИ: китайский ⇄ английский";
 "automation.builtIn.aiTidy" = "ИИ: привести текст в порядок";
+"automation.builtIn.plainText" = "Преобразовать в обычный текст";
 "settings.aiService" = "ИИ-сервис";
 "settings.aiService.provider" = "Провайдер";
 "settings.aiService.preset.custom" = "Свой";
@@ -1068,6 +1063,7 @@
 "automation.condition.range.max" = "Макс.";
 "automation.condition.range.any" = "Любое";
 "automation.condition.isPinned" = "Закреплено";
+"automation.condition.hasRichText" = "С форматированием";
 "automation.condition.isSensitive" = "Отмечено как конфиденциальное";
 "automation.condition.inGroup" = "Группа";
 "automation.condition.inGroup.any" = "Любая группа";
@@ -1138,3 +1134,30 @@
 "storage.custom.title" = "Свой период";
 "storage.custom.from" = "С";
 "storage.custom.to" = "По";
+
+// 拆分 / 撤销
+"action.split" = "Разделить";
+"split.rule.auto" = "Авто";
+"split.rule.line" = "По строкам";
+"split.rule.paragraph" = "По абзацам";
+"split.rule.numbered" = "По номерам";
+"split.rule.delimiter" = "Разделитель";
+"split.rule.regex" = "Regex";
+"split.switchRule" = "Сменить правило";
+"split.stripNumbering" = "Убрать нумерацию";
+"split.delimiter.chineseComma" = "、";
+"split.delimiter.comma" = "Запятая";
+"split.delimiter.semicolon" = "Точка с запятой";
+"split.delimiter.pipe" = "Вертикальная черта";
+"split.delimiter.tab" = "Tab";
+"split.delimiter.custom" = "Свой";
+"split.regex.placeholder" = "Регулярное выражение";
+"split.regex.hint" = "Режет по каждому совпадению; ^ $ — начало и конец строки";
+"split.regex.invalid" = "Неверное регулярное выражение";
+"split.single" = "Только 1 часть";
+"split.tooMany" = "Больше %d частей";
+"split.confirm" = "Разделить на %d";
+"split.undo.toast" = "Разделено на %d элементов";
+"merge.undo.toast" = "Объединено элементов: %d";
+"rule.undo.toast" = "Выполнено «%@»";
+"edit.undo.toast" = "Сохранено";

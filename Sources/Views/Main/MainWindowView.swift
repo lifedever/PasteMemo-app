@@ -53,7 +53,6 @@ struct MainWindowView: View {
     @State private var keyMonitor: Any?
     @State private var flagsMonitor: Any?
     @State private var scrollTarget: ClipItem.ID?
-    @State private var relaySplitText: String?
     @State private var showCommandPalette = false
     @State private var cachedGroupedItems: [GroupedItem<ClipItem>] = []
     @State private var cachedHistoryRows: [ClipHistoryListBuilder.Row] = []
@@ -307,14 +306,6 @@ struct MainWindowView: View {
             Button(L10n.tr("action.cancel"), role: .cancel) {}
         } message: {
             Text(L10n.tr("action.clearConfirm"))
-        }
-        .onChange(of: relaySplitText) {
-            guard let text = relaySplitText else { return }
-            SplitWindowController.shared.show(text: text) { delimiter in
-                guard let parts = RelaySplitter.split(text, by: delimiter) else { return }
-                RelayManager.shared.addToQueue(texts: parts)
-            }
-            relaySplitText = nil
         }
     }
 
@@ -678,6 +669,9 @@ struct MainWindowView: View {
         if multi, selectedClipItems.allSatisfy({ $0.contentType.isMergeable }) {
             menu.append(.item(L10n.tr("action.merge")) { mergeSelectedItems() })
         }
+        if !multi, ClipSplit.canSplit(item) {
+            menu.append(.item(L10n.tr("action.split")) { beginSplit(item) })
+        }
         if ProManager.AUTOMATION_ENABLED {
             let applicableRules = fetchEnabledAutomationRules()
                 .filter { $0.triggerMode == .manual && $0.matches(item: item) }
@@ -707,7 +701,6 @@ struct MainWindowView: View {
             menu.append(.item(L10n.tr("relay.addToQueue")) { RelayManager.shared.addToQueue(clipItems: selectedClipItems) })
         } else if !item.content.isEmpty || item.imageData != nil {
             menu.append(.item(L10n.tr("relay.addToQueue")) { RelayManager.shared.addToQueue(clipItems: [item]) })
-            menu.append(.item(L10n.tr("relay.splitAndRelay")) { relaySplitText = item.content })
         }
         menu.append(.separator)
         menu.append(.item(L10n.tr("action.delete"), destructive: true) {
@@ -835,6 +828,26 @@ struct MainWindowView: View {
         scrollTarget = targetID
     }
 
+    /// 主窗口没有面板可占，拆分页开在独立的小窗里；规则、预览、按键和快捷面板那页一样。
+    private func beginSplit(_ item: ClipItem) {
+        guard let source = ClipSplit.source(of: item) else { return }
+        let isText = { if case .text = source { return true } else { return false } }()
+        SplitWindowController.shared.show(
+            source: source,
+            onConfirm: { pieces in
+                guard !item.isGone else { return }
+                let result = ClipSplit.apply(pieces, replacing: item, in: modelContext)
+                ClipItemStore.refreshAllStoresNow()
+                guard let first = result.first else { return }
+                let firstID = first.persistentModelID
+                selectedItems = [firstID]
+                navigationCursor = firstID
+                scrollTarget = firstID
+            },
+            onRelay: isText ? { pieces in RelayManager.shared.addToQueue(texts: pieces) } : nil
+        )
+    }
+
     private func mergeSelectedItems() {
         guard let newItem = ClipMerge.mergeTexts(selectedClipItems, in: modelContext) else { return }
         let newID = newItem.persistentModelID
@@ -859,7 +872,7 @@ struct MainWindowView: View {
                 let context = modelContext
                 Task { @MainActor in
                     try? await Task.sleep(for: .milliseconds(500))
-                    DeleteUndoCoordinator.shared.scheduleUndoableDelete(items: [item], context: context)
+                    ClipUndoCoordinator.shared.scheduleUndoableDelete(items: [item], context: context)
                 }
             }
         case .cmdEnter:
@@ -915,8 +928,8 @@ struct MainWindowView: View {
         case .addToRelay:
             let items = selectedItems.count > 1 ? selectedClipItems : [item]
             RelayManager.shared.addToQueue(clipItems: items)
-        case .splitAndRelay:
-            if !item.content.isEmpty { relaySplitText = item.content }
+        case .split:
+            beginSplit(item)
         case .pin:
             // Toggle lives here in the row; the action itself is a plain set/unset.
             let items = selectedItems.count > 1 ? selectedClipItems : [item]
@@ -1161,7 +1174,7 @@ struct MainWindowView: View {
         let firstDeletedIdx = items.firstIndex { idsToDelete.contains($0.persistentModelID) }
 
         let itemsToDelete = items.filter { idsToDelete.contains($0.persistentModelID) }
-        DeleteUndoCoordinator.shared.scheduleUndoableDelete(items: itemsToDelete, context: modelContext)
+        ClipUndoCoordinator.shared.scheduleUndoableDelete(items: itemsToDelete, context: modelContext)
 
         // Select next item after deletion
         let remaining = items.filter { !idsToDelete.contains($0.persistentModelID) }

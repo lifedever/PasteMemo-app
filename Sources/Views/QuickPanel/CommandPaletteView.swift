@@ -32,7 +32,8 @@ enum CommandAction: Hashable {
     case showInFinder
     case copy
     case addToRelay
-    case splitAndRelay
+    /// Opens the split page (quick panel) / split window (main window) — see `ClipSplit`.
+    case split
     case pin(isPinned: Bool)
     case toggleSensitive(isSensitive: Bool)
     /// 改写条目文字（只有快捷面板会放出这一行，见 `CommandPaletteContent.canEdit`）。
@@ -60,7 +61,7 @@ enum CommandAction: Hashable {
         case .showInFinder: "folder"
         case .copy: "doc.on.doc"
         case .addToRelay: "arrow.right.arrow.left"
-        case .splitAndRelay: "scissors"
+        case .split: "scissors"
         case .pin(let pinned): pinned ? "pin.slash" : "pin"
         case .toggleSensitive(let sensitive): sensitive ? "lock.open" : "lock.shield"
         case .edit: "pencil"
@@ -86,7 +87,7 @@ enum CommandAction: Hashable {
         case .showInFinder: L10n.tr("cmd.showInFinder")
         case .copy: L10n.tr("cmd.copy")
         case .addToRelay: L10n.tr("relay.addToQueue")
-        case .splitAndRelay: L10n.tr("relay.splitAndRelay")
+        case .split: L10n.tr("action.split")
         case .pin(let pinned): pinned ? L10n.tr("action.unpin") : L10n.tr("action.pin")
         case .toggleSensitive(let sensitive): sensitive ? L10n.tr("sensitive.unmarkSensitive") : L10n.tr("sensitive.markSensitive")
         case .edit: L10n.tr("action.edit")
@@ -110,7 +111,7 @@ enum CommandAction: Hashable {
         case .showInFinder: "O"
         case .copy: "C"
         case .addToRelay: "R"
-        case .splitAndRelay: "S"
+        case .split: "S"
         case .pin: "T"
         case .toggleSensitive: "H" // hide；`E` 让给了编辑
         case .edit: "E"
@@ -134,7 +135,7 @@ enum CommandAction: Hashable {
         case .showInFinder: 31 // O
         case .copy: 8        // C
         case .addToRelay: 15 // R
-        case .splitAndRelay: 1 // S
+        case .split: 1 // S
         case .pin: 17        // T
         case .toggleSensitive: 4  // H
         case .edit: 14       // E
@@ -159,8 +160,8 @@ enum CommandAction: Hashable {
         case .paste, .pasteAndDestroy, .cmdEnter, .copyColorFormat: 0
         case .openLink, .pasteEntityCode,
              .retryOCR, .pasteOCR, .openInPreview, .showInFinder: 1
-        case .copy, .addToRelay, .splitAndRelay: 2
-        case .edit, .pin, .toggleSensitive, .merge, .delete: 3
+        case .copy, .addToRelay: 2
+        case .edit, .split, .pin, .toggleSensitive, .merge, .delete: 3
         case .runRule: 4
         }
     }
@@ -227,6 +228,8 @@ struct CommandPaletteContent: View {
     var preservedGroupNames: Set<String> = []
     /// 放出「编辑」一行。只有快捷面板传 true——主窗口详情区自带编辑按钮。
     var canEdit: Bool = false
+    /// 放出「拆分」一行。快捷面板置顶时传 false：面板拿不到键盘，拆分页没法操作。
+    var canSplit: Bool = true
     let onAction: (CommandAction) -> Void
     let onDismiss: () -> Void
     /// true：不自带宽度和背景，交给外部容器（快捷面板右下角的玻璃浮层）。
@@ -345,13 +348,13 @@ struct CommandPaletteContent: View {
         }
         list.append(.copy)
         list.append(.addToRelay)
-        if !isMultiSelected, let item, !item.content.isEmpty {
-            list.append(.splitAndRelay)
-        }
         let isPinned = isMultiSelected ? false : (item?.isPinned ?? false)
         let isSensitive = isMultiSelected ? false : (item?.isSensitive ?? false)
         if canEdit, !isMultiSelected, item?.isEditableText == true {
             list.append(.edit)
+        }
+        if canSplit, !isMultiSelected, let item, ClipSplit.canSplit(item) {
+            list.append(.split)
         }
         list.append(.pin(isPinned: isPinned))
         list.append(.toggleSensitive(isSensitive: isSensitive))

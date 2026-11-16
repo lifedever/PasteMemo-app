@@ -8,6 +8,8 @@ import Testing
 @Suite("Merge clips", .serialized)
 @MainActor
 struct ClipMergeTests {
+    init() { ClipUndoCoordinator.showsToast = false }
+
     private func makeContext() throws -> (ModelContext, URL) {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent("merge-\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)

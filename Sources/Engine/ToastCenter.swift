@@ -156,16 +156,15 @@ final class ToastCenter {
 
     // MARK: - ⌘Z shortcut
 
-    /// Install both local and global ⌘Z monitors while a toast with an "⌘Z"
-    /// action hint is on screen. Local fires when PasteMemo has focus and
-    /// consumes the event so the source window doesn't double-undo. Global
-    /// fires when another app has focus and does *not* consume the event,
-    /// which is exactly what we want for paste-and-destroy: the target app's
-    /// native ⌘Z rolls back the paste while our callback restores the history
-    /// entry.
+    /// Install ⌘Z monitors while a toast with an "⌘Z" action hint is on screen.
+    /// Local fires when PasteMemo has focus and consumes the event so the source
+    /// window doesn't double-undo. Global (only when `worksInOtherApps`) fires when
+    /// another app has focus and does *not* consume the event, which is exactly
+    /// what we want for paste-and-destroy: the target app's native ⌘Z rolls back
+    /// the paste while our callback restores the history entry.
     private func refreshUndoShortcut(descriptor: ToastDescriptor) {
         tearDownUndoShortcut()
-        guard let shortcut = descriptor.action?.shortcut, shortcut == "⌘Z" else {
+        guard let action = descriptor.action, action.shortcut == "⌘Z" else {
             return
         }
         undoLocalMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
@@ -174,6 +173,7 @@ final class ToastCenter {
             self.invokeAction()
             return nil
         }
+        guard action.worksInOtherApps else { return }
         undoGlobalMonitor = NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { [weak self] event in
             guard let self else { return }
             guard Self.isCmdZ(event) else { return }

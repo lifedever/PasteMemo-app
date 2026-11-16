@@ -11,6 +11,8 @@ struct ConditionInput {
     var targetApp: String? = nil
     var isSensitive = false
     var isPinned = false
+    /// Carries rich formatting (RTF / HTML) besides its plain text.
+    var hasRichText = false
     var groupName: String? = nil
     var now = Date()
     var calendar = Calendar.current
@@ -33,6 +35,9 @@ indirect enum RuleCondition: Equatable, Sendable {
     case lineCount(min: Int?, max: Int?)
     case isSensitive
     case isPinned
+    /// The clip carries rich formatting (RTF / HTML) besides its plain text — what
+    /// "convert to plain text" has something to remove from.
+    case hasRichText
     /// In the named group; empty name = in any group.
     case inGroup(name: String)
     /// Local time in [start, end) minutes after midnight; wraps past midnight when
@@ -76,6 +81,8 @@ indirect enum RuleCondition: Equatable, Sendable {
             return input.isSensitive
         case .isPinned:
             return input.isPinned
+        case .hasRichText:
+            return input.hasRichText
         case .inGroup(let name):
             guard let group = input.groupName, !group.isEmpty else { return false }
             return name.isEmpty || group == name
@@ -105,7 +112,7 @@ indirect enum RuleCondition: Equatable, Sendable {
     /// leaves them out instead of always reporting "not matched".
     var needsClipContext: Bool {
         switch unwrappedNegation.base {
-        case .sourceApp, .targetApp, .isSensitive, .isPinned, .inGroup: return true
+        case .sourceApp, .targetApp, .isSensitive, .isPinned, .hasRichText, .inGroup: return true
         default: return false
         }
     }
@@ -164,6 +171,8 @@ extension RuleCondition: Codable {
             try container.encode("isSensitive", forKey: .type)
         case .isPinned:
             try container.encode("isPinned", forKey: .type)
+        case .hasRichText:
+            try container.encode("hasRichText", forKey: .type)
         case .inGroup(let name):
             try container.encode("inGroup", forKey: .type)
             try container.encode(name, forKey: .name)
@@ -214,6 +223,8 @@ extension RuleCondition: Codable {
             self = .isSensitive
         case "isPinned":
             self = .isPinned
+        case "hasRichText":
+            self = .hasRichText
         case "inGroup":
             self = .inGroup(name: try container.decode(String.self, forKey: .name))
         case "timeOfDay":

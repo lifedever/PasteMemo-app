@@ -155,14 +155,17 @@ enum ClipMerge {
         item.contentType == .image && item.content == "[Image]"
     }
 
-    /// Insert the merged clip and delete what it replaces. It's sensitive when any original
-    /// was, so merging can't strip that off.
+    /// Insert the merged clip and delete what it replaces, undoable from the toast. It's
+    /// sensitive when any original was, so merging can't strip that off.
     @MainActor
     private static func replace(_ items: [ClipItem], with merged: ClipItem, in context: ModelContext) {
-        context.insert(merged)
-        if items.contains(where: \.isSensitive) {
-            ActionExecutor.applyMetadata([.markSensitive], to: merged, context: context)
+        ClipUndoCoordinator.shared.perform(context: context) { change in
+            change.insert(merged)
+            if items.contains(where: \.isSensitive) {
+                ActionExecutor.applyMetadata([.markSensitive], to: merged, context: context)
+            }
+            change.delete(items)
+            return L10n.tr("merge.undo.toast", items.count)
         }
-        ClipItemStore.deleteAndNotify(items, from: context)
     }
 }

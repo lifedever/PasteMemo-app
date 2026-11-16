@@ -562,6 +562,7 @@
 "automation.ai.error.cliBadOutput" = "No %@ field in the output";
 "automation.builtIn.aiTranslate" = "AI: translate Chinese ⇄ English";
 "automation.builtIn.aiTidy" = "AI: tidy up text";
+"automation.builtIn.plainText" = "Convert to plain text";
 "settings.aiService" = "AI Service";
 "settings.aiService.provider" = "Provider";
 "settings.aiService.preset.custom" = "Custom";
@@ -868,12 +869,6 @@
 "relay.split" = "Split";
 "relay.addToQueue" = "Add to Relay Queue";
 "relay.splitAndRelay" = "Split & Relay";
-"relay.split.title" = "Split into Queue";
-"relay.split.delimiter" = "Delimiter";
-"relay.split.customPlaceholder" = "Enter delimiter...";
-"relay.split.confirm" = "Split";
-"relay.split.preview" = "Will split into %d items";
-"relay.split.noResult" = "Delimiter not found";
 "relay.delimiter.newline" = "Newline";
 "relay.delimiter.comma" = "Comma (,)";
 "relay.delimiter.chineseComma" = "Chinese Comma (\U3001)";
@@ -1042,6 +1037,7 @@
 "automation.condition.range.max" = "Max";
 "automation.condition.range.any" = "Any";
 "automation.condition.isPinned" = "Is pinned";
+"automation.condition.hasRichText" = "Has formatting";
 "automation.condition.isSensitive" = "Is marked sensitive";
 "automation.condition.inGroup" = "Group is";
 "automation.condition.inGroup.any" = "Any group";
@@ -1112,3 +1108,30 @@
 "storage.custom.title" = "Custom Range";
 "storage.custom.from" = "From";
 "storage.custom.to" = "To";
+
+// 拆分 / 撤销
+"action.split" = "Split";
+"split.rule.auto" = "Auto";
+"split.rule.line" = "By line";
+"split.rule.paragraph" = "By paragraph";
+"split.rule.numbered" = "By number";
+"split.rule.delimiter" = "Delimiter";
+"split.rule.regex" = "Regex";
+"split.switchRule" = "Switch rule";
+"split.stripNumbering" = "Remove numbering";
+"split.delimiter.chineseComma" = "、";
+"split.delimiter.comma" = "Comma";
+"split.delimiter.semicolon" = "Semicolon";
+"split.delimiter.pipe" = "Pipe";
+"split.delimiter.tab" = "Tab";
+"split.delimiter.custom" = "Custom";
+"split.regex.placeholder" = "Regular expression";
+"split.regex.hint" = "Splits at each match; ^ $ match line starts and ends";
+"split.regex.invalid" = "Invalid regex";
+"split.single" = "Only 1 piece";
+"split.tooMany" = "More than %d pieces";
+"split.confirm" = "Split into %d";
+"split.undo.toast" = "Split into %d items";
+"merge.undo.toast" = "Merged %d items";
+"rule.undo.toast" = "Applied “%@”";
+"edit.undo.toast" = "Saved";

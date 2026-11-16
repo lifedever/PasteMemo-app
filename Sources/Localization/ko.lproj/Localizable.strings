@@ -536,12 +536,6 @@
 "relay.split" = "분할";
 "relay.addToQueue" = "릴레이 대기열에 추가";
 "relay.splitAndRelay" = "분할 후 릴레이";
-"relay.split.title" = "대기열로 분할";
-"relay.split.delimiter" = "구분자";
-"relay.split.customPlaceholder" = "구분자 입력...";
-"relay.split.confirm" = "분할";
-"relay.split.preview" = "%d개로 분할됩니다";
-"relay.split.noResult" = "구분자를 찾을 수 없습니다";
 "relay.delimiter.newline" = "줄바꿈";
 "relay.delimiter.comma" = "쉼표 (,)";
 "relay.delimiter.chineseComma" = "모점 (、)";
@@ -779,6 +773,7 @@
 "automation.ai.error.cliBadOutput" = "출력에 %@ 필드가 없음";
 "automation.builtIn.aiTranslate" = "AI: 중국어 ⇄ 영어 번역";
 "automation.builtIn.aiTidy" = "AI: 텍스트 정리";
+"automation.builtIn.plainText" = "일반 텍스트로 변환";
 "settings.aiService" = "AI 서비스";
 "settings.aiService.provider" = "제공자";
 "settings.aiService.preset.custom" = "사용자 지정";
@@ -1096,6 +1091,7 @@
 "automation.condition.range.max" = "최대";
 "automation.condition.range.any" = "제한 없음";
 "automation.condition.isPinned" = "고정됨";
+"automation.condition.hasRichText" = "서식 있음";
 "automation.condition.isSensitive" = "민감으로 표시됨";
 "automation.condition.inGroup" = "그룹이";
 "automation.condition.inGroup.any" = "아무 그룹";
@@ -1166,3 +1162,30 @@
 "storage.custom.title" = "기간 지정";
 "storage.custom.from" = "시작";
 "storage.custom.to" = "종료";
+
+// 拆分 / 撤销
+"action.split" = "분할";
+"split.rule.auto" = "자동";
+"split.rule.line" = "줄 단위";
+"split.rule.paragraph" = "문단 단위";
+"split.rule.numbered" = "번호 단위";
+"split.rule.delimiter" = "구분자";
+"split.rule.regex" = "정규식";
+"split.switchRule" = "규칙 전환";
+"split.stripNumbering" = "번호 제거";
+"split.delimiter.chineseComma" = "、";
+"split.delimiter.comma" = "쉼표";
+"split.delimiter.semicolon" = "세미콜론";
+"split.delimiter.pipe" = "세로선";
+"split.delimiter.tab" = "Tab";
+"split.delimiter.custom" = "사용자 지정";
+"split.regex.placeholder" = "정규식";
+"split.regex.hint" = "일치하는 곳에서 나눔, ^ $는 줄의 시작과 끝";
+"split.regex.invalid" = "정규식 오류";
+"split.single" = "1개뿐입니다";
+"split.tooMany" = "%d개를 초과합니다";
+"split.confirm" = "%d개로 분할";
+"split.undo.toast" = "%d개로 분할함";
+"merge.undo.toast" = "%d개를 병합함";
+"rule.undo.toast" = "“%@” 실행함";
+"edit.undo.toast" = "저장됨";

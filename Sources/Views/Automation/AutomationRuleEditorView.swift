@@ -622,6 +622,7 @@ struct AutomationRuleEditorView: View {
                         conditionItem("automation.condition.regexMatch", .regexMatch(pattern: "")),
                         conditionItem("automation.condition.contentLength", .contentLength(min: nil, max: nil)),
                         conditionItem("automation.condition.lineCount", .lineCount(min: nil, max: nil)),
+                        conditionItem("automation.condition.hasRichText", .hasRichText),
                     ]),
                     .submenu(L10n.tr("automation.condition.section.app"), symbol: "app", [
                         conditionItem("automation.condition.sourceApp", .sourceApp(bundleIDs: [])),
@@ -710,6 +711,8 @@ struct AutomationRuleEditorView: View {
             Text(L10n.tr("automation.condition.isPinned"))
         case .isSensitive:
             Text(L10n.tr("automation.condition.isSensitive"))
+        case .hasRichText:
+            Text(L10n.tr("automation.condition.hasRichText"))
         case .inGroup(let name):
             // Same shape as the "move to group" action's picker — no `.fixedSize()`.
             Picker(L10n.tr("automation.condition.inGroup"), selection: Binding(
@@ -1359,6 +1362,8 @@ struct AutomationRuleEditorView: View {
             Text(L10n.tr("automation.condition.isPinned"))
         case .isSensitive:
             Text(L10n.tr("automation.condition.isSensitive"))
+        case .hasRichText:
+            Text(L10n.tr("automation.condition.hasRichText"))
         case .inGroup(let name):
             LabeledContent(L10n.tr("automation.condition.inGroup")) {
                 Text(name.isEmpty ? L10n.tr("automation.condition.inGroup.any") : name)

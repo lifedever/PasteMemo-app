@@ -242,6 +242,7 @@ final class ClipboardManager: ObservableObject {
             contentType: newItem.contentType,
             sourceApp: appInfo.bundleID,
             isSensitive: newItem.isSensitive,
+            hasRichText: newItem.hasRichText,
             context: context
         )
         var captureOutputs: [CaptureOutput] = []
@@ -1233,6 +1234,19 @@ final class ClipboardManager: ObservableObject {
     }
 
     // MARK: - Edit
+
+    /// Save what the user typed in the editor (⌘E in the quick panel, edit in the main
+    /// window), undoable from the toast like every other history change.
+    @discardableResult
+    func saveEdit(_ newContent: String, to item: ClipItem, context: ModelContext) -> Bool {
+        var saved = false
+        ClipUndoCoordinator.shared.perform(context: context) { change in
+            change.willModify(item)
+            saved = applyEditedContent(newContent, to: item, context: context)
+            return saved ? L10n.tr("edit.undo.toast") : nil
+        }
+        return saved
+    }
 
     /// 用户在主窗口 / 快捷面板里改写了条目文字。内容没变（或改成空）时什么都不做、返回 false
     /// ——只是进编辑看一眼就粘贴，不该把富文本格式丢掉。

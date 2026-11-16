@@ -31,7 +31,10 @@ struct ActionExecutorTests {
         return rule
     }
 
-    init() { ActionExecutor.showsToast = false }
+    init() {
+        ActionExecutor.showsToast = false
+        ClipUndoCoordinator.showsToast = false
+    }
 
     // MARK: - Output modes
 

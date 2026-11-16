@@ -142,8 +142,19 @@ struct ToastAction: Equatable {
     /// (e.g. `"⌘Z"`). The shortcut itself is wired up by the caller; this is
     /// purely the visual hint.
     let shortcut: String?
+    /// The ⌘Z shortcut also fires while another app is in front. Only for deletes:
+    /// paste-and-destroy relies on it (the target app's ⌘Z takes the paste back while
+    /// ours restores the clip). Anything else would get reverted by an unrelated ⌘Z
+    /// typed in an editor a few seconds later.
+    let worksInOtherApps: Bool
+
+    init(title: String, shortcut: String?, worksInOtherApps: Bool = false) {
+        self.title = title
+        self.shortcut = shortcut
+        self.worksInOtherApps = worksInOtherApps
+    }
 
     static func == (lhs: ToastAction, rhs: ToastAction) -> Bool {
-        lhs.title == rhs.title && lhs.shortcut == rhs.shortcut
+        lhs.title == rhs.title && lhs.shortcut == rhs.shortcut && lhs.worksInOtherApps == rhs.worksInOtherApps
     }
 }

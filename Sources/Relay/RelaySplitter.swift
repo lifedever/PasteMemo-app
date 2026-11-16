@@ -25,19 +25,11 @@ enum RelayDelimiter: Hashable {
     }
 }
 
+/// Delimiter presets of the「拆分并接力」automation action's editor. Splitting a clip by
+/// hand goes through `ClipSplitter` (the split page).
 enum RelaySplitter {
 
     static let PRESET_DELIMITERS: [RelayDelimiter] = [
         .newline, .comma, .chineseComma,
     ]
-
-    /// Split text by delimiter. Returns nil if delimiter not found or result is single item.
-    static func split(_ text: String, by delimiter: RelayDelimiter) -> [String]? {
-        let parts = text
-            .components(separatedBy: delimiter.value)
-            .map { $0.trimmingCharacters(in: .whitespaces) }
-            .filter { !$0.isEmpty }
-        guard parts.count > 1 else { return nil }
-        return parts
-    }
 }

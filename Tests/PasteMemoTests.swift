@@ -874,57 +874,6 @@ struct PasteMemoTests {
     }
 }
 
-@Suite("RelaySplitter Tests")
-struct RelaySplitterTests {
-    @Test("Split by newline")
-    func splitNewline() {
-        let result = RelaySplitter.split("A\nB\nC", by: .newline)
-        #expect(result == ["A", "B", "C"])
-    }
-
-    @Test("Split by comma")
-    func splitComma() {
-        let result = RelaySplitter.split("张三,李四,王五", by: .comma)
-        #expect(result == ["张三", "李四", "王五"])
-    }
-
-    @Test("Split by Chinese comma")
-    func splitChineseComma() {
-        let result = RelaySplitter.split("张三、李四、王五", by: .chineseComma)
-        #expect(result == ["张三", "李四", "王五"])
-    }
-
-    @Test("Split by custom delimiter")
-    func splitCustom() {
-        let result = RelaySplitter.split("A|B|C", by: .custom("|"))
-        #expect(result == ["A", "B", "C"])
-    }
-
-    @Test("Filter empty strings from consecutive delimiters")
-    func filterEmpty() {
-        let result = RelaySplitter.split("A,,B,,C", by: .comma)
-        #expect(result == ["A", "B", "C"])
-    }
-
-    @Test("Trim whitespace from results")
-    func trimWhitespace() {
-        let result = RelaySplitter.split("A , B , C", by: .comma)
-        #expect(result == ["A", "B", "C"])
-    }
-
-    @Test("Return nil when delimiter not found")
-    func noDelimiter() {
-        let result = RelaySplitter.split("Hello World", by: .comma)
-        #expect(result == nil)
-    }
-
-    @Test("Return nil for single result")
-    func singleResult() {
-        let result = RelaySplitter.split("Hello,", by: .comma)
-        #expect(result == nil)
-    }
-}
-
 @Suite("RelayManager Tests")
 struct RelayManagerTests {
     @Test("Enqueue items")
@@ -1005,14 +954,17 @@ struct RelayManagerTests {
         #expect(manager.items[0].content == "C")
     }
 
-    @Test("Split replaces item with multiple")
+    @Test("Split replaces the item with its pieces, found by id")
     @MainActor func splitItem() {
         let manager = makeManager()
-        manager.enqueue(texts: ["张三,李四,王五"])
-        let success = manager.splitItem(at: 0, by: .comma)
-        #expect(success)
-        #expect(manager.items.count == 3)
-        #expect(manager.items[0].content == "张三")
+        manager.enqueue(texts: ["first", "张三,李四,王五"])
+        let id = manager.items[1].id
+        #expect(manager.splitItem(id: id, into: ["张三", "李四", "王五"]))
+        #expect(manager.items.map(\.content) == ["first", "张三", "李四", "王五"])
+        // Gone from the queue (or one piece only): nothing happens.
+        #expect(!manager.splitItem(id: id, into: ["a", "b"]))
+        #expect(!manager.splitItem(id: manager.items[0].id, into: ["only"]))
+        #expect(manager.items.count == 4)
     }
 
     @Test("Progress string")

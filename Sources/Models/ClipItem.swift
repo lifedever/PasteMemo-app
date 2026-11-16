@@ -448,6 +448,13 @@ extension ClipItem {
     /// clip while a bulk delete saves batch by batch crashed exactly that way.
     var isGone: Bool { isDeleted || modelContext == nil }
 
+    /// 除了纯文本还带着富文本格式（RTF / HTML）。先看 `richTextType`：它不是外部存储，
+    /// 判断时不用把几 MB 的富文本读进来；两者总是一起写一起清，`richTextData` 只兜底
+    /// 少了类型的老条目。
+    var hasRichText: Bool {
+        richTextType != nil || richTextData != nil
+    }
+
     /// 能在主窗口 / 快捷面板里直接改文字的条目：内容本身就是一段字符串的类型。
     /// `data:image/...` 链接除外——它是几 MB 的 base64，没法当文字改。
     var isEditableText: Bool {

@@ -204,8 +204,11 @@ final class RelayManager {
         }
     }
 
-    func splitItem(at index: Int, by delimiter: RelayDelimiter) -> Bool {
-        guard let parts = RelaySplitter.split(items[index].content, by: delimiter) else {
+    /// Replace the queue item `id` with one item per piece, in place. False when the
+    /// item has left the queue meanwhile or there's nothing to split into.
+    @discardableResult
+    func splitItem(id: UUID, into parts: [String]) -> Bool {
+        guard parts.count >= 2, let index = items.firstIndex(where: { $0.id == id }) else {
             return false
         }
         let wasCurrent = items[index].state == .current
