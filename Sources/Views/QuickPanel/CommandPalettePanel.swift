@@ -47,6 +47,19 @@ final class CommandPalettePanel {
     private(set) var anchorRow: CGRect = .zero
     private(set) var anchorList: CGRect = .zero
     private var resignKeyObserver: NSObjectProtocol?
+    /// Clicks outside the card close it, as for any menu: inside the app (the quick panel's
+    /// list, …) via the local monitor, in other apps via the global one.
+    private var localClickMonitor: Any?
+    private var globalClickMonitor: Any?
+    private var closedByClickAt: Date?
+
+    /// The card was just closed by a mouse-down outside it. The footer's ⌘K button checks
+    /// this: its click closes the card on mouse-down, and toggling on mouse-up would open
+    /// it again straight away.
+    var wasJustClosedByClick: Bool {
+        guard let closedByClickAt else { return false }
+        return Date().timeIntervalSince(closedByClickAt) < 0.5
+    }
 
     func updateAnchor(row: CGRect, list: CGRect) {
         anchorRow = row
@@ -120,6 +133,7 @@ final class CommandPalettePanel {
         panel.order(.above, relativeTo: shadowPanel.windowNumber)
         attachContent(hosting, to: panel)
         self.panel = panel
+        installClickMonitors()
 
         QuickPanelWindowController.shared.setPaletteHoldsKey(true)
         if resignKeyObserver == nil {
@@ -212,7 +226,34 @@ final class CommandPalettePanel {
         }
     }
 
+    private func installClickMonitors() {
+        guard localClickMonitor == nil else { return }
+        localClickMonitor = NSEvent.addLocalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] event in
+            guard let self, let panel = self.panel, event.window !== panel else { return event }
+            self.closeForClickOutside()
+            // The click still does what it was for (selects the row it landed on, …)
+            return event
+        }
+        globalClickMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] _ in
+            Task { @MainActor [weak self] in self?.closeForClickOutside() }
+        }
+    }
+
+    private func removeClickMonitors() {
+        if let localClickMonitor { NSEvent.removeMonitor(localClickMonitor) }
+        if let globalClickMonitor { NSEvent.removeMonitor(globalClickMonitor) }
+        localClickMonitor = nil
+        globalClickMonitor = nil
+    }
+
+    private func closeForClickOutside() {
+        guard isVisible, let onDismiss else { return }
+        closedByClickAt = Date()
+        onDismiss()
+    }
+
     func hide() {
+        removeClickMonitors()
         if let resignKeyObserver {
             NotificationCenter.default.removeObserver(resignKeyObserver)
             self.resignKeyObserver = nil

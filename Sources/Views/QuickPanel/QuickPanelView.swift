@@ -1896,6 +1896,9 @@ struct QuickPanelView: View {
                             // 唯一可点的 footerKey：点一下等同按 ⌘K。其余 footerKey
                             // 仍是纯展示，所以 hover 高亮也只给这一个。
                             Button {
+                                // 菜单开着时点它：按下那一刻菜单已因「点了外面」关掉，
+                                // 松开时再 toggle 会立刻又打开
+                                if !showCommandPalette, CommandPalettePanel.shared.wasJustClosedByClick { return }
                                 showCommandPalette.toggle()
                                 if showCommandPalette { isSearchFocused = false }
                             } label: {
@@ -2138,6 +2141,9 @@ struct QuickPanelView: View {
         }
         keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
             guard HotkeyManager.shared.isQuickPanelVisible else { return event }
+            // 面板上开着模态窗（新建分组等）：键全归它。这个监听是整个 App 的，不放行的话
+            // 回车会粘贴面板里选中的条目、Esc 会关面板，而不是确认 / 取消对话框。
+            guard NSApp.modalWindow == nil else { return event }
             userInteractedSinceShow = true
             let hasShift = event.modifierFlags.contains(.shift)
             let hasCmd = event.modifierFlags.contains(.command)
@@ -2896,7 +2902,14 @@ struct QuickPanelView: View {
     }
 
     private func showNewGroupAlert(for items: [ClipItem]) {
-        guard let result = GroupEditorPanel.show() else { return }
+        // 搜索框的焦点状态会去抢 key，弹窗期间先放掉
+        isSearchFocused = false
+        let result = QuickPanelWindowController.shared.runModalAbovePanel {
+            GroupEditorPanel.show()
+        }
+        // 编辑器关掉后键盘回到面板，焦点放回搜索框
+        isSearchFocused = true
+        guard let result else { return }
         let name = result.name
         let descriptor = FetchDescriptor<SmartGroup>(predicate: #Predicate { $0.name == name })
         if let existing = try? modelContext.fetch(descriptor).first {

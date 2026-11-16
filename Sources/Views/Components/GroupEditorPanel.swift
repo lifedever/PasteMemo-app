@@ -33,6 +33,9 @@ final class GroupEditorPanel {
         viewModel.onDismiss = { session.cancel() }
         viewModel.onConfirm = { session.confirm() }
 
+        // Opened from the quick panel or the menu bar, PasteMemo isn't the active app and
+        // the editor can't take the keyboard: typing goes nowhere.
+        NSApp.activate(ignoringOtherApps: true)
         let response = NSApp.runModal(for: panel)
         guard response == .OK else { return nil }
         let resultName = viewModel.name.trimmingCharacters(in: .whitespaces)

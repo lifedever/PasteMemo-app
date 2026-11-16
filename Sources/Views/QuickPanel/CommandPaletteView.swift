@@ -238,6 +238,13 @@ struct CommandPaletteContent: View {
     var embedded: Bool = false
 
     @State private var selectedIndex = 0
+    /// The latest selection change came from the mouse: the list must not scroll under it
+    /// (it used to centre the hovered row, which slid another row under the pointer, which
+    /// took the selection, which scrolled again — rows mid-list were nearly unclickable).
+    @State private var selectionFromHover = false
+    /// Where the pointer was when the keyboard last moved the selection. A row that scrolls
+    /// under a still pointer reports a hover too; only a pointer that moved means "this one".
+    @State private var pointerAtKeyboardMove: CGPoint?
     @State private var keyMonitor: Any?
     @State private var flagsMonitor: Any?
     @State private var isOptionPressed = false
@@ -403,8 +410,13 @@ struct CommandPaletteContent: View {
                     rowsStack.padding(8)
                 }
                 .onChange(of: selectedIndex) { _, newValue in
+                    if selectionFromHover {
+                        selectionFromHover = false
+                        return
+                    }
+                    // Just enough to bring the row into view, like a native list.
                     withAnimation(.easeOut(duration: 0.12)) {
-                        proxy.scrollTo(newValue, anchor: .center)
+                        proxy.scrollTo(newValue)
                     }
                 }
             }
@@ -436,7 +448,7 @@ struct CommandPaletteContent: View {
                 }
                 commandRow(action: action, isSelected: selectedIndex == index, index: index)
                     .onTapGesture { execute(action) }
-                    .onHover { if $0 { selectedIndex = index } }
+                    .onHover { if $0 { hoverSelect(index) } }
                     // scrollTo 的锚点
                     .id(index)
             }
@@ -535,6 +547,22 @@ struct CommandPaletteContent: View {
         onDismiss()
     }
 
+    private func hoverSelect(_ index: Int) {
+        let pointer = NSEvent.mouseLocation
+        if let still = pointerAtKeyboardMove, still == pointer { return }
+        pointerAtKeyboardMove = nil
+        guard selectedIndex != index else { return }
+        selectionFromHover = true
+        selectedIndex = index
+    }
+
+    /// ↑↓ / ⌃P ⌃N, wrapping at both ends.
+    private func moveSelection(by delta: Int) {
+        guard !actions.isEmpty else { return }
+        pointerAtKeyboardMove = NSEvent.mouseLocation
+        selectedIndex = (selectedIndex + delta + actions.count) % actions.count
+    }
+
     private func installKeyMonitor() {
         keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
             let code = Int(event.keyCode)
@@ -544,18 +572,18 @@ struct CommandPaletteContent: View {
             case 40 where event.modifierFlags.contains(.command): dismiss(); return nil // Cmd+K
             case 13 where event.modifierFlags.contains(.command): dismiss(); return nil // Cmd+W
             case 126: // Up
-                selectedIndex = selectedIndex > 0 ? selectedIndex - 1 : actions.count - 1; return nil
+                moveSelection(by: -1); return nil
             case 125: // Down
-                selectedIndex = selectedIndex < actions.count - 1 ? selectedIndex + 1 : 0; return nil
+                moveSelection(by: 1); return nil
             case 35: // P
                 if hasControl {
-                    selectedIndex = selectedIndex > 0 ? selectedIndex - 1 : actions.count - 1
+                    moveSelection(by: -1)
                     return nil
                 }
                 return event
             case 45: // N
                 if hasControl {
-                    selectedIndex = selectedIndex < actions.count - 1 ? selectedIndex + 1 : 0
+                    moveSelection(by: 1)
                     return nil
                 }
                 return event

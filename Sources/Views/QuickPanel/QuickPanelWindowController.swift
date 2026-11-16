@@ -162,7 +162,44 @@ final class QuickPanelWindowController {
             }
         }
     }
+    /// Losing key / the app going inactive / a click elsewhere don't close the panel while
+    /// set — see `runModalAbovePanel`.
     var suppressDismiss = false
+
+    /// Run a modal window opened from the panel (「新建分组」) with the panel kept open
+    /// behind it: the window taking the keyboard would otherwise close the panel as a
+    /// click elsewhere does. The keyboard goes back to the panel afterwards.
+    ///
+    /// The modal can't be raised above the panel: `runModal` puts it at `.modalPanel` (8)
+    /// when the session starts, and the app's activation — which lands a moment later —
+    /// puts it back there again (both measured), under the panel's `.statusBar` (25).
+    /// So for the duration the panel and its shadow window step down below it instead.
+    ///
+    /// The panel also refuses key meanwhile: its search field's FocusState pulls key back
+    /// to the panel as soon as focus moves inside the modal (same reason as pinned mode
+    /// and the ⌘K card), and a modal session doesn't let the user click it back.
+    func runModalAbovePanel<T>(_ body: () -> T) -> T {
+        suppressDismiss = true
+        let keyable = panel as? KeyablePanel
+        let refusedKeyBefore = keyable?.refuseKey ?? false
+        keyable?.refuseKey = true
+        let windows = panel.map { [$0] + ($0.childWindows ?? []) } ?? []
+        let levels = windows.map(\.level)
+        for window in windows { window.level = .floating }
+        let result = body()
+        for (window, level) in zip(windows, levels) { window.level = level }
+        keyable?.refuseKey = refusedKeyBefore
+        if let panel, panel.isVisible {
+            // Pinned: stays non-key, as it was
+            if refusedKeyBefore { panel.orderFront(nil) } else { panel.makeKeyAndOrderFront(nil) }
+        }
+        // The panel's resign-key handling runs in a Task that may only get to run once
+        // the modal loop has ended; keep the flag up until it has.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+            self?.suppressDismiss = false
+        }
+        return result
+    }
     private var snapGuide: SnapGuideWindow?
 
     private var panelWidth: CGFloat {
