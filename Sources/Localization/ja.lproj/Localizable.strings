@@ -195,6 +195,8 @@
 "settings.quickPanelShelfEdge.top" = "画面上部";
 "shelf.card.chars" = "%d 文字";
 "shelf.card.files" = "%d 個のファイル";
+"shelf.peek.open" = "プレビュー";
+"shelf.peek.close" = "閉じる";
 "shelfIntro.title" = "クイックパネルの新スタイル：エッジバー";
 "shelfIntro.subtitle" = "カードが画面の端に横並びで表示され、入力中の位置を避けて現れます。";
 "shelfIntro.avoid.title" = "入力位置を避ける";

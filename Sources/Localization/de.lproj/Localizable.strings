@@ -187,6 +187,8 @@
 "settings.quickPanelShelfEdge.top" = "Bildschirm oben";
 "shelf.card.chars" = "%d Zeichen";
 "shelf.card.files" = "%d Dateien";
+"shelf.peek.open" = "Vorschau";
+"shelf.peek.close" = "Einklappen";
 "shelfIntro.title" = "Neuer Stil für das Schnellpanel: Randleiste";
 "shelfIntro.subtitle" = "Karten reihen sich am Bildschirmrand auf und erscheinen abseits der Stelle, an der du tippst.";
 "shelfIntro.avoid.title" = "Abseits der Eingabe";

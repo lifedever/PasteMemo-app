@@ -187,6 +187,8 @@
 "settings.quickPanelShelfEdge.top" = "화면 상단";
 "shelf.card.chars" = "%d자";
 "shelf.card.files" = "파일 %d개";
+"shelf.peek.open" = "미리보기";
+"shelf.peek.close" = "접기";
 "shelfIntro.title" = "빠른 패널 새 스타일: 가장자리 바";
 "shelfIntro.subtitle" = "카드가 화면 가장자리를 따라 가로로 놓이고, 입력 중인 위치를 피해 나타납니다.";
 "shelfIntro.avoid.title" = "입력 위치 피하기";

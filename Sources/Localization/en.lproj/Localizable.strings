@@ -169,6 +169,8 @@
 "settings.quickPanelShelfEdge.top" = "Screen Top";
 "shelf.card.chars" = "%d chars";
 "shelf.card.files" = "%d files";
+"shelf.peek.open" = "Preview";
+"shelf.peek.close" = "Collapse";
 "shelfIntro.title" = "New Quick Panel Style: Edge Bar";
 "shelfIntro.subtitle" = "Cards line up along the screen edge and appear away from where you’re typing.";
 "shelfIntro.avoid.title" = "Away from Your Typing";

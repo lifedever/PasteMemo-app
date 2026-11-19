@@ -187,6 +187,8 @@
 "settings.quickPanelShelfEdge.top" = "Parte superior de la pantalla";
 "shelf.card.chars" = "%d caracteres";
 "shelf.card.files" = "%d archivos";
+"shelf.peek.open" = "Vista previa";
+"shelf.peek.close" = "Contraer";
 "shelfIntro.title" = "Nuevo estilo del panel rápido: barra de borde";
 "shelfIntro.subtitle" = "Las tarjetas se alinean en el borde de la pantalla y aparecen lejos de donde escribes.";
 "shelfIntro.avoid.title" = "Lejos de la escritura";

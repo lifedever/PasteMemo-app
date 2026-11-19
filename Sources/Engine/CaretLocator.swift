@@ -53,8 +53,10 @@ enum CaretLocator {
         let start = Date()
         let axApp = AXUIElementCreateApplication(pid)
         AXUIElementSetMessagingTimeout(axApp, focusTimeout)
-        guard let focused = copyElement(axApp, kAXFocusedUIElementAttribute),
-              let role = copyString(focused, kAXRoleAttribute),
+        guard let focused = copyElement(axApp, kAXFocusedUIElementAttribute) else { return .empty }
+        // 超时是按元素设的：给应用元素设的那个管不到焦点元素，不设的话 App 卡住时这一步能等好几秒
+        AXUIElementSetMessagingTimeout(focused, focusTimeout)
+        guard let role = copyString(focused, kAXRoleAttribute),
               textInputRoles.contains(role) else { return .empty }
 
         var snapshot = FocusSnapshot(isTextInput: true, caretRect: nil, inputFrame: nil)

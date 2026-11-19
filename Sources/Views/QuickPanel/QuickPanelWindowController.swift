@@ -272,9 +272,11 @@ final class QuickPanelWindowController {
     }
 
     func show(clipboardManager: ClipboardManager, modelContainer: ModelContainer) {
+        // 贴边条正在滑出：这 0.2 秒里的再次按键不处理，滑完再按即可
+        if isSlidingOut { return }
         if let existing = panel, existing.isVisible {
             // 再次按开关热键 = 用户主动关闭，置顶时也要关
-            dismiss(force: true)
+            dismiss(force: true, animated: true)
             return
         }
 
@@ -392,7 +394,7 @@ final class QuickPanelWindowController {
         let isMouseDown = NSEvent.pressedMouseButtons != 0
         let mouseInPanel = panel?.frame.contains(NSEvent.mouseLocation) ?? false
         if isMouseDown, mouseInPanel { return }
-        dismiss()
+        dismiss(animated: true)
     }
 
     private var paletteHoldsKey = false
@@ -415,7 +417,12 @@ final class QuickPanelWindowController {
         }
     }
 
-    func dismiss(force: Bool = false) {
+    /// - Parameter animated: 贴边条滑回所贴的那条边再消失。esc、再按一次快捷键、点外面 / 切走、
+    ///   拖拽完成都用；粘贴路径（`dismissAndPaste`、粘贴并销毁）必须立刻消失，免得面板还在时就发出 ⌘V。
+    func dismiss(force: Bool = false, animated: Bool = false) {
+        // 已经在滑出：点外面会连着触发好几条关闭路径，后面的不再起新动画（新动画会打断旧的，
+        // 旧动画的收尾立刻执行，条就半路突然消失）。不带动画的关闭（粘贴）照常立即执行
+        if animated, isSlidingOut { return }
         if isPinned && !force { return }
         isPinned = false
         removeClickOutsideMonitor()
@@ -432,9 +439,16 @@ final class QuickPanelWindowController {
         // showCommandPalette=false 刷下去、触发 NSPopover.close() 的 ~200ms 关闭动画——粘贴瞬间完成、
         // 浮层还在淡出，就成了"先粘后关"。teardown 时先把子窗口无动画 orderOut，等会触发 close() 时
         // 已无可见内容可动画，浮层和面板一起干脆消失。
-        for child in panel.childWindows ?? [] {
+        // 面板已经不在屏幕上（粘贴后系统又补发一次失去焦点）就不必滑
+        let slideOut = animated && panel.isVisible && presentation == .shelf && isLaunchAnimationEnabled
+        for child in panel.childWindows ?? [] where !(slideOut && child === shadowPanel) {
             child.animationBehavior = .none
             child.orderOut(nil)
+        }
+        if slideOut {
+            slideOutShelf(panel, restoreFocus: force)
+            HotkeyManager.shared.isQuickPanelVisible = false
+            return
         }
         // 投影窗口不在子窗口列表里时（上面的 orderOut 已把它摘掉、或 show 没走完）也要收。
         shadowPanel?.orderOut(nil)
@@ -450,6 +464,59 @@ final class QuickPanelWindowController {
         // dismissAndPaste 自己 activate 目标 App。
         orderOutAvoidingKeyProposal(panel, restoreFocus: force)
         HotkeyManager.shared.isQuickPanelVisible = false
+    }
+
+    /// 贴边条主动关闭时滑回所贴的那条边。投影是子窗口，跟着一起走。
+    /// 先拒绝成为 key、交还焦点，理由同 `orderOutAvoidingKeyProposal`；视图清理状态放到滑完以后，
+    /// 不然滑出途中会看到搜索词、筛选被重置。
+    private func slideOutShelf(_ panel: NSPanel, restoreFocus: Bool) {
+        let keyable = panel as? KeyablePanel
+        keyable?.refuseKey = true
+        if restoreFocus { previousApp?.activate(options: []) }
+        let start = panel.frame
+        let dock = layoutState?.shelfDock ?? .bottom
+        let screenFrame = NSScreen.screens.first { $0.frame.intersects(start) }?.frame ?? start
+        var end = start
+        end.origin.y = dock == .bottom
+            ? screenFrame.minY - start.height - Self.SHELF_SLIDE_OVERSHOOT
+            : screenFrame.maxY + Self.SHELF_SLIDE_OVERSHOOT
+        isSlidingOut = true
+        NSAnimationContext.runAnimationGroup({ ctx in
+            ctx.duration = 0.2
+            // 先慢后快，像被收回边缘
+            ctx.timingFunction = CAMediaTimingFunction(controlPoints: 0.5, 0, 0.75, 0)
+            panel.animator().setFrame(end, display: true)
+        }, completionHandler: { [weak self] in
+            MainActor.assumeIsolated {
+                guard let self else { return }
+                NotificationCenter.default.post(name: .quickPanelWillDismiss, object: nil)
+                panel.contentView?.layoutSubtreeIfNeeded()
+                panel.displayIfNeeded()
+                panel.orderOut(nil)
+                self.shadowPanel?.orderOut(nil)
+                keyable?.refuseKey = self.isPinned
+                self.isSlidingOut = false
+            }
+        })
+    }
+
+    /// 贴边条进编辑 / 拆分页面时临时长高到屏幕可用高度的 58%，退出时收回。
+    /// 贴底时往上长（底边不动），贴顶时往下长（顶边不动）。
+    func setShelfExpanded(_ expanded: Bool) {
+        guard presentation == .shelf, let panel, panel.isVisible, !isSlidingOut, shelfRestingFrame != .zero,
+              let screen = NSScreen.screens.first(where: { $0.frame.intersects(shelfRestingFrame) }) else { return }
+        let height = expanded ? (screen.visibleFrame.height * 0.58).rounded() : ShelfPlacement.height
+        // 以条摆好时的落点为准，不用 panel.frame：刚打开就按 ⌘E 时入场动画还没滑到位，
+        // 按半路的位置算会让条停在屏幕外一截
+        var frame = shelfRestingFrame
+        if layoutState?.shelfDock == .top { frame.origin.y = shelfRestingFrame.maxY - height }
+        frame.size.height = height
+        guard frame != panel.frame else { return }
+        NSAnimationContext.runAnimationGroup { ctx in
+            ctx.duration = 0.25
+            ctx.timingFunction = CAMediaTimingFunction(controlPoints: 0.2, 0.85, 0.25, 1)
+            panel.animator().setFrame(frame, display: true)
+        }
     }
 
     /// macOS 26 (Tahoe) 的窗口协调器（NSWMWindowCoordinator）在 orderOut 一个**可成为
@@ -633,6 +700,10 @@ final class QuickPanelWindowController {
 
     /// 这次显示用的形态
     private(set) var presentation: QuickPanelPresentation = .window
+    /// 贴边条正在滑出（主动关闭的 0.2 秒动画）
+    private var isSlidingOut = false
+    /// 贴边条这次摆好的位置（入场动画的终点）
+    private var shelfRestingFrame: CGRect = .zero
 
     /// 两种形态共用一个窗口：贴边条不能拖动、不能改大小；切回窗口形态时恢复保存的大小。
     private func applyPresentation(_ presentation: QuickPanelPresentation, to panel: NSPanel) {
@@ -685,7 +756,8 @@ final class QuickPanelWindowController {
         guard let screen else { return .bottom }
         let visible = screen.visibleFrame
         let dock = ShelfPlacement.dock(preference: edge, anchor: anchor, visibleFrame: visible)
-        panel.setFrame(ShelfPlacement.frame(dock: dock, height: ShelfPlacement.height, visibleFrame: visible), display: false)
+        shelfRestingFrame = ShelfPlacement.frame(dock: dock, height: ShelfPlacement.height, visibleFrame: visible)
+        panel.setFrame(shelfRestingFrame, display: false)
         syncShadow(to: panel)
         layoutState?.shelfDock = dock
         return dock
@@ -879,7 +951,7 @@ final class QuickPanelWindowController {
             if self.isPinned || self.suppressDismiss { return }
             if let panel = self.panel, panel.frame.contains(NSEvent.mouseLocation) { return }
             Task { @MainActor in
-                self.dismiss()
+                self.dismiss(animated: true)
             }
         }
     }
@@ -902,7 +974,7 @@ final class QuickPanelWindowController {
                 let isMouseDown = NSEvent.pressedMouseButtons != 0
                 let mouseInPanel = self.panel?.frame.contains(NSEvent.mouseLocation) ?? false
                 if isMouseDown, mouseInPanel { return }
-                self.dismiss()
+                self.dismiss(animated: true)
             }
         }
         // Panel lost key (e.g. another window took focus, or Cmd+Tab)

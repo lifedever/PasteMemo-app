@@ -187,6 +187,8 @@
 "settings.quickPanelShelfEdge.top" = "Haut de l’écran";
 "shelf.card.chars" = "%d caractères";
 "shelf.card.files" = "%d fichiers";
+"shelf.peek.open" = "Aperçu";
+"shelf.peek.close" = "Réduire";
 "shelfIntro.title" = "Nouveau style du panneau rapide : barre de bord";
 "shelfIntro.subtitle" = "Les cartes s’alignent le long du bord de l’écran et apparaissent à l’écart de votre saisie.";
 "shelfIntro.avoid.title" = "À l’écart de la saisie";

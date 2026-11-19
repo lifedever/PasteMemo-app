@@ -158,6 +158,8 @@
 "settings.quickPanelShelfEdge.top" = "螢幕頂部";
 "shelf.card.chars" = "%d 字";
 "shelf.card.files" = "%d 個檔案";
+"shelf.peek.open" = "預覽";
+"shelf.peek.close" = "收起";
 "shelfIntro.title" = "快捷面板新樣式：貼邊條";
 "shelfIntro.subtitle" = "卡片沿螢幕邊緣橫向排開，出現時避開正在輸入的位置。";
 "shelfIntro.avoid.title" = "避開輸入位置";

@@ -168,6 +168,8 @@ struct QuickPanelView: View {
     /// 贴边条里按住 ⌘ 稍停，卡片底栏显示 ⌘1–9
     @State private var showsShortcutNumbers = false
     @State private var commandHoldTask: Task<Void, Never>?
+    /// 贴边条的预览浮窗开着：朝屏幕中间的方向键打开，反方向或 esc 收起
+    @State private var showsShelfPeek = false
     @State private var cachedGroupedItems: [GroupedItem<ClipItem>] = []
     @State private var cachedHistoryRows: [ClipHistoryListBuilder.Row] = []
     @State private var cachedHistoryRowIndexByID: [PersistentIdentifier: Int] = [:]
@@ -464,12 +466,13 @@ struct QuickPanelView: View {
                 footerBar
             }
         }
-        // 贴边条的高度是固定的 236，窗口形态的最小尺寸限制不能套给它
+        // 贴边条的高度是固定的 214（编辑时临时长高），窗口形态的最小尺寸限制不能套给它
         .frame(minWidth: layoutState.isShelf ? 0 : 360, minHeight: layoutState.isShelf ? 0 : 420)
         // Floating group suggestions overlay
         if isShowingSuggestions, !isOnSecondaryPage {
             VStack(spacing: 0) {
-                Spacer().frame(height: 48)
+                // 贴边条的顶栏只有 44 高，浮层紧贴在搜索框下面
+                Spacer().frame(height: layoutState.isShelf ? 42 : 48)
                 HStack {
                     groupSuggestions
                         .padding(.vertical, 6)
@@ -481,14 +484,28 @@ struct QuickPanelView: View {
                         .frame(maxWidth: 260)
                     Spacer()
                 }
-                .padding(.horizontal, 16)
+                .padding(.horizontal, layoutState.isShelf ? 12 : 16)
                 Spacer()
             }
             .allowsHitTesting(true)
         }
         } // ZStack
         // 切换选中行不用单独监听：onFocusedRowFrame 每轮都会上报，那里已经会同步。
-        .onChange(of: showCommandPalette) { syncCommandPalettePanel() }
+        .onChange(of: showCommandPalette) {
+            syncCommandPalettePanel()
+            syncShelfPeek()
+        }
+        .onChange(of: showsShelfPeek) { syncShelfPeek() }
+        .onChange(of: lastNavigatedID) { if showsShelfPeek { syncShelfPeek() } }
+        .onChange(of: isOnSecondaryPage) {
+            // 进编辑 / 拆分页面就收起预览：编辑完回到条上时不该自己再弹出来
+            if isOnSecondaryPage { showsShelfPeek = false }
+            // 贴边条进编辑 / 拆分页面时临时长高，退出时收回
+            if layoutState.isShelf {
+                QuickPanelWindowController.shared.setShelfExpanded(isOnSecondaryPage)
+            }
+            syncShelfPeek()
+        }
         .onAppear {
             store.configure(modelContext: modelContext)
             rebuildGroupedItems()
@@ -511,6 +528,8 @@ struct QuickPanelView: View {
             // （20k 条实测每次 ~40-90ms），而设计上的惰性路径（标记
             // needsRefresh、下次打开时 refreshIfNeeded 消费）形同虚设。
             store.isActive = false
+            showsShelfPeek = false
+            ShelfPeekPanel.shared.hide()
             // 关闭前清空 "/" 触发的分组建议及相关状态，避免下次打开首帧闪现
             searchText = ""
             groupSuggestionIndex = -1
@@ -557,6 +576,7 @@ struct QuickPanelView: View {
             endPicking()
             commandHoldTask?.cancel()
             showsShortcutNumbers = false
+            showsShelfPeek = false
             // 拖拽切标签的途中被 Esc / 失焦关掉面板时手势收不到 onEnded，
             // 残留的拖拽位置会让下次打开滑块停在没被选中的标签上、还是鼓大的。
             tabDragX = nil
@@ -770,6 +790,12 @@ struct QuickPanelView: View {
     /// Tallest the `/` suggestion dropdown is allowed to get; beyond this it scrolls.
     private static let suggestionsMaxHeight: CGFloat = 280
 
+    /// 贴边条只有 214 高：浮层收在条里（顶栏下沿到条底留 8pt），放不下的在浮层里滚动
+    private var suggestionsMaxHeight: CGFloat {
+        guard layoutState.isShelf else { return Self.suggestionsMaxHeight }
+        return ShelfPlacement.height - 42 - 8 - 12
+    }
+
     @ViewBuilder
     private var groupSuggestions: some View {
         let groups = currentSuggestionGroups
@@ -827,7 +853,7 @@ struct QuickPanelView: View {
                     )
                 }
                 .hideScrollerTrack()
-                .frame(height: min(suggestionsContentHeight, Self.suggestionsMaxHeight))
+                .frame(height: min(suggestionsContentHeight, suggestionsMaxHeight))
                 .onPreferenceChange(SuggestionsHeightKey.self) { suggestionsContentHeight = $0 }
                 .onChange(of: groupSuggestionIndex) {
                     guard groupSuggestionIndex >= 0 else { return }
@@ -1093,8 +1119,8 @@ struct QuickPanelView: View {
         // 内容区里的原生分段控件拿到的仍是老的扁平样式。
         if #available(macOS 26.0, *) {
             if layoutState.isShelf {
-                // 贴边条：顶栏够宽，标签放得下，不套横向滚动视图。顶栏落在窗口（隐藏的）
-                // 标题栏那一截里，滚动视图会自动给标题栏让出内边距，把胶囊往下推到贴着卡片。
+                // 贴边条：顶栏够宽，标签一般放得下，不套横向滚动视图，胶囊在顶栏里直接居中。
+                // （标签曾经被挤到贴着卡片，原因是外面套的 NonDraggableArea，见 shelfHeader）
                 tabCapsule
             } else {
             // ScrollViewReader + onChange：窄窗口下标签溢出时，无论切换来源
@@ -1525,6 +1551,7 @@ struct QuickPanelView: View {
                 footerKey("↵", quickPanelAutoPaste ? (isTargetFinder ? L10n.tr("quick.saveToFolder") : L10n.tr("quick.batchPaste")) : L10n.tr("action.copy"))
             } else {
                 pasteTargetLabel
+                footerKey(shelfPeekKey(opening: !showsShelfPeek), L10n.tr(showsShelfPeek ? "shelf.peek.close" : "shelf.peek.open"))
             }
             // 点一下等同按 ⌘K，写法同窗口形态底栏
             Button {
@@ -1570,11 +1597,55 @@ struct QuickPanelView: View {
                     listInWindow: strip,
                     style: layoutState.shelfDock == .top ? .belowRow : .aboveRow
                 )
+                ShelfPeekPanel.shared.updateAnchor(cardInWindow: card)
                 if showCommandPalette { syncCommandPalettePanel() }
+                if showsShelfPeek { syncShelfPeek() }
             }
         )
         // 筛选切换时整条重建，回到最左边
         .id(scrollResetToken)
+    }
+
+    /// 预览的是焦点所在的卡片（挑选中焦点和勾选可以不是同一张）
+    private var shelfPeekItem: ClipItem? {
+        guard let id = lastNavigatedID ?? selectedItemIDs.first,
+              let item = cachedItemMap[id], !item.isGone else { return nil }
+        return item
+    }
+
+    /// 打开预览的方向键朝屏幕中间（贴底是 ↑），收起的方向朝屏幕边缘
+    private func shelfPeekKey(opening: Bool) -> String {
+        (layoutState.shelfDock == .bottom) == opening ? "↑" : "↓"
+    }
+
+    /// 让预览浮窗跟上当前状态：⌘K 菜单开着、在编辑 / 拆分页面时让位
+    private func syncShelfPeek() {
+        guard layoutState.isShelf, showsShelfPeek, !showCommandPalette, !isOnSecondaryPage,
+              let item = shelfPeekItem,
+              let window = QuickPanelWindowController.shared.panelWindow, window.isVisible else {
+            ShelfPeekPanel.shared.hide()
+            return
+        }
+        ShelfPeekPanel.shared.show(content: shelfPeekContent(item), parent: window, dock: layoutState.shelfDock)
+    }
+
+    private func shelfPeekContent(_ item: ClipItem) -> some View {
+        VStack(spacing: 0) {
+            QuickPreviewPane(item: item, searchText: searchText)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            Rectangle()
+                .fill(Color.primary.opacity(0.08))
+                .frame(height: 0.5)
+            HStack(spacing: 12) {
+                Spacer()
+                footerKey("↵", primaryFooterLabel(for: item))
+                if canEdit(item) { footerKey("⌘E", L10n.tr("action.edit")) }
+                footerKey("⌘K", L10n.tr("cmd.title"))
+                footerKey(shelfPeekKey(opening: false), L10n.tr("shelf.peek.close"))
+            }
+            .padding(.horizontal, 14)
+            .frame(height: 38)
+        }
     }
 
     /// 卡片拖到别的 App 并被接收：和粘贴一样算用过一次（挪到最前），然后关闭面板；固定时保持打开
@@ -1587,8 +1658,8 @@ struct QuickPanelView: View {
         if let context = alive.first?.modelContext {
             ClipItemStore.saveAndNotifyLastUsed(context)
         }
-        // 用户已经在目标 App 里松手了，不把焦点抢回原来的 App
-        controller.dismiss()
+        // 用户已经在目标 App 里松手了，不把焦点抢回原来的 App；条滑回边缘
+        controller.dismiss(animated: true)
     }
 
     /// 贴边条按空格：没在挑选时，把焦点卡片记为第 1 个；在挑选时，勾选 / 取消焦点卡片
@@ -2537,6 +2608,12 @@ struct QuickPanelView: View {
                     }
                     return nil
                 case 125, 126:
+                    // 朝屏幕中间展开预览：贴底按 ↑、贴顶按 ↓；反方向收起
+                    let towardCenter = (event.keyCode == 126) == (layoutState.shelfDock == .bottom)
+                    showsShelfPeek = towardCenter && shelfPeekItem != nil
+                    return nil
+                case 53 where showsShelfPeek:
+                    showsShelfPeek = false
                     return nil
                 case 49 where searchText.isEmpty && !hasCmd && !hasControl:
                     // 输入法组字时空格是选字，交给输入框

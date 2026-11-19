@@ -354,8 +354,8 @@ final class HotkeyManager: ObservableObject {
 
     func hideQuickPanel() {
         isQuickPanelVisible = false
-        // 用户主动关闭（Esc / 关闭按钮 / 切到主窗口等都走这里），置顶也要关
-        QuickPanelWindowController.shared.dismiss(force: true)
+        // 用户主动关闭（Esc / 关闭按钮 / 切到主窗口等都走这里），置顶也要关；贴边条滑回边缘
+        QuickPanelWindowController.shared.dismiss(force: true, animated: true)
     }
 }
 

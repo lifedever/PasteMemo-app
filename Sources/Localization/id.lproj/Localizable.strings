@@ -159,6 +159,8 @@
 "settings.quickPanelShelfEdge.top" = "Atas layar";
 "shelf.card.chars" = "%d karakter";
 "shelf.card.files" = "%d file";
+"shelf.peek.open" = "Pratinjau";
+"shelf.peek.close" = "Tutup";
 "shelfIntro.title" = "Gaya baru panel cepat: bilah tepi";
 "shelfIntro.subtitle" = "Kartu berjajar di tepi layar dan muncul jauh dari tempat Anda mengetik.";
 "shelfIntro.avoid.title" = "Jauh dari area ketik";

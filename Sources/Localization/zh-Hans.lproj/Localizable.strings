@@ -169,6 +169,8 @@
 "settings.quickPanelShelfEdge.top" = "屏幕顶部";
 "shelf.card.chars" = "%d 字";
 "shelf.card.files" = "%d 个文件";
+"shelf.peek.open" = "预览";
+"shelf.peek.close" = "收起";
 "shelfIntro.title" = "快捷面板新样式：贴边条";
 "shelfIntro.subtitle" = "卡片沿屏幕边缘横向排开，出现时避开正在输入的位置。";
 "shelfIntro.avoid.title" = "避开输入位置";

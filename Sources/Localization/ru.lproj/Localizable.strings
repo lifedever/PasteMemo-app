@@ -159,6 +159,8 @@
 "settings.quickPanelShelfEdge.top" = "Вверху экрана";
 "shelf.card.chars" = "%d симв.";
 "shelf.card.files" = "Файлов: %d";
+"shelf.peek.open" = "Просмотр";
+"shelf.peek.close" = "Свернуть";
 "shelfIntro.title" = "Новый стиль быстрой панели: полоса у края";
 "shelfIntro.subtitle" = "Карточки выстраиваются вдоль края экрана и появляются в стороне от места ввода.";
 "shelfIntro.avoid.title" = "Подальше от ввода";

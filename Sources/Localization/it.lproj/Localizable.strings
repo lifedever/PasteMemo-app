@@ -159,6 +159,8 @@
 "settings.quickPanelShelfEdge.top" = "Parte superiore dello schermo";
 "shelf.card.chars" = "%d caratteri";
 "shelf.card.files" = "%d file";
+"shelf.peek.open" = "Anteprima";
+"shelf.peek.close" = "Comprimi";
 "shelfIntro.title" = "Nuovo stile del pannello rapido: barra sul bordo";
 "shelfIntro.subtitle" = "Le schede si allineano lungo il bordo dello schermo e compaiono lontano da dove scrivi.";
 "shelfIntro.avoid.title" = "Lontano dalla digitazione";
