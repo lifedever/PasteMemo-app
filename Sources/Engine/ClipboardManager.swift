@@ -1542,7 +1542,36 @@ final class ClipboardManager: ObservableObject {
     func writeToPasteboard(_ item: ClipItem, targetApp: NSRunningApplication? = nil) {
         let pasteboard = NSPasteboard.general
         pasteboard.clearContents()
+        fill(pasteboard, with: item, targetApp: targetApp)
+        pasteboard.markAsPasteMemoWrite()
+        lastChangeCount = NSPasteboard.general.changeCount
+        skipRelayMonitorIfActive()
+    }
 
+    /// 贴边条把卡片拖到别的 App 时的拖拽内容：和粘贴走同一套写入规则，拖出去和粘贴出去的
+    /// 内容一致。先写进一个临时私有剪贴板，再把每一项的所有格式原样搬进拖拽项。
+    /// 拖拽开始时还不知道会落到哪个 App，按通用目标处理（不走纯文本 App 的分支）。
+    func pasteboardItemsForDrag(_ items: [ClipItem]) -> [NSPasteboardItem] {
+        var result: [NSPasteboardItem] = []
+        for item in items where !item.isGone {
+            let scratch = NSPasteboard.withUniqueName()
+            scratch.clearContents()
+            fill(scratch, with: item, targetApp: nil)
+            for source in scratch.pasteboardItems ?? [] {
+                let copy = NSPasteboardItem()
+                for type in source.types {
+                    if let data = source.data(forType: type) { copy.setData(data, forType: type) }
+                }
+                if !copy.types.isEmpty { result.append(copy) }
+            }
+            scratch.releaseGlobally()
+        }
+        return result
+    }
+
+    /// 把条目的各种表示写进给定的剪贴板。粘贴（系统剪贴板）和贴边条拖拽（临时剪贴板）共用；
+    /// 标记「PasteMemo 自己写的」、记 changeCount 这些只属于系统剪贴板的事由调用方做。
+    private func fill(_ pasteboard: NSPasteboard, with item: ClipItem, targetApp: NSRunningApplication?) {
         let textOnly = isTextOnlyApp(targetApp)
         let terminal = isTerminalApp(targetApp)
 
@@ -1559,9 +1588,6 @@ final class ClipboardManager: ObservableObject {
         // paste doesn't get hijacked by its private internal clipboard.
         if !textOnly, let snapshot = item.pasteboardSnapshot,
            restorePasteboardSnapshot(snapshot, to: pasteboard) {
-            pasteboard.markAsPasteMemoWrite()
-            lastChangeCount = pasteboard.changeCount
-            skipRelayMonitorIfActive()
             return
         }
 
@@ -1713,9 +1739,6 @@ final class ClipboardManager: ObservableObject {
                 writeRichTextData(rtfData, type: item.richTextType, to: pasteboard)
             }
         }
-        pasteboard.markAsPasteMemoWrite()
-        lastChangeCount = NSPasteboard.general.changeCount
-        skipRelayMonitorIfActive()
     }
 
     func writeFileURLsToPasteboard(_ pasteboard: NSPasteboard, paths: [String]) {

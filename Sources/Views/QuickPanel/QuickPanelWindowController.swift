@@ -49,8 +49,13 @@ let QUICK_PANEL_PREVIEW_BREAKPOINT: CGFloat = 620
 @MainActor
 final class QuickPanelLayoutState: ObservableObject {
     @Published var width: CGFloat
+    /// 这次显示用的形态；show() 时按设置写入，关闭期间改设置下次显示才生效
+    @Published var presentation: QuickPanelPresentation = .window
+    /// 贴边条贴在哪条边，决定预览朝哪个方向展开
+    @Published var shelfDock: ShelfPlacement.Dock = .bottom
     init(width: CGFloat) { self.width = width }
     var shouldShowPreview: Bool { width >= QUICK_PANEL_PREVIEW_BREAKPOINT }
+    var isShelf: Bool { presentation == .shelf }
 }
 private let TOP_INSET_RATIO: CGFloat = 0.15
 private let SIZE_KEY = "quickPanelSize"
@@ -65,6 +70,14 @@ private class KeyablePanel: NSPanel {
 
     override var canBecomeKey: Bool { !refuseKey }
     override var canBecomeMain: Bool { !refuseKey }
+
+    /// 贴边条入场时窗口从屏幕外滑进来。有标题栏的窗口默认会被系统拉回屏幕内（顶边
+    /// 不能越过菜单栏），从顶部滑入时会被卡在菜单栏下沿，所以贴边条形态下放开。
+    var allowsOffscreenFrame = false
+
+    override func constrainFrameRect(_ frameRect: NSRect, to screen: NSScreen?) -> NSRect {
+        allowsOffscreenFrame ? frameRect : super.constrainFrameRect(frameRect, to: screen)
+    }
 
     // borderless + titled 混合 styleMask 下系统不强制 minSize，手动 clamp
     override func setFrame(_ frameRect: NSRect, display flag: Bool) {
@@ -266,8 +279,12 @@ final class QuickPanelWindowController {
         }
 
         previousApp = NSWorkspace.shared.frontmostApplication
+        let presentation = QuickPanelSettings.presentation
+        let shelfEdge = QuickPanelSettings.shelfEdge
         // 必须在下面 makeKey() 之前采样：抢了 key 之后读到的可能已是面板自己的焦点。
-        previousFocusIsTextInput = Self.focusIsTextInput(previousApp)
+        // 光标位置只有贴边条「避开输入位置」用得上，其余情况不多发 AX 请求。
+        let focus = CaretLocator.sample(previousApp, wantsCaret: presentation == .shelf && shelfEdge == .auto)
+        previousFocusIsTextInput = focus.isTextInput
 
         if !isWarmedUp {
             warmUp(clipboardManager: clipboardManager, modelContainer: modelContainer)
@@ -275,7 +292,11 @@ final class QuickPanelWindowController {
 
         guard let panel else { return }
 
-        positionPanel(panel)
+        applyPresentation(presentation, to: panel)
+        let shelfDock: ShelfPlacement.Dock? = presentation == .shelf
+            ? positionShelf(panel, edge: shelfEdge, focus: focus)
+            : nil
+        if shelfDock == nil { positionPanel(panel) }
         // 对子窗口 orderOut 会把它从父窗口上摘掉（dismiss 里就是这么收的），所以每次
         // 显示都要重新挂回去；不挂回去它就成了独立窗口，面板关了它还留着。
         if let shadowPanel {
@@ -294,9 +315,19 @@ final class QuickPanelWindowController {
             layer.removeAnimation(forKey: "showScale")
             layer.transform = CATransform3DIdentity
         }
-        let startAlpha: CGFloat = shouldAnimate ? 0 : 1
+        // 窗口形态淡入；贴边条全程不透明，靠滑动入场
+        let startAlpha: CGFloat = shouldAnimate && shelfDock == nil ? 0 : 1
         panel.alphaValue = startAlpha
         shadowPanel?.alphaValue = startAlpha
+        // 贴边条从所贴那条边的屏幕外面整条滑进来。投影是子窗口，跟着面板一起移动。
+        let shelfTarget = panel.frame
+        if shouldAnimate, let shelfDock {
+            let screenFrame = NSScreen.screens.first { $0.frame.intersects(shelfTarget) }?.frame ?? shelfTarget
+            let startY = shelfDock == .bottom
+                ? screenFrame.minY - shelfTarget.height - Self.SHELF_SLIDE_OVERSHOOT
+                : screenFrame.maxY + Self.SHELF_SLIDE_OVERSHOOT
+            panel.setFrameOrigin(NSPoint(x: shelfTarget.minX, y: startY))
+        }
 
         panel.orderFrontRegardless()
         panel.makeKey()
@@ -304,16 +335,24 @@ final class QuickPanelWindowController {
 
         if shouldAnimate {
             NSAnimationContext.runAnimationGroup { [shadowPanel] ctx in
-                ctx.duration = 0.1
-                ctx.timingFunction = CAMediaTimingFunction(name: .easeOut)
-                panel.animator().alphaValue = 1
-                shadowPanel?.animator().alphaValue = 1
+                if shelfDock != nil {
+                    // 先快后慢，像抽屉被推出来
+                    ctx.duration = 0.32
+                    ctx.timingFunction = CAMediaTimingFunction(controlPoints: 0.16, 1, 0.3, 1)
+                    panel.animator().setFrame(shelfTarget, display: true)
+                } else {
+                    ctx.duration = 0.1
+                    ctx.timingFunction = CAMediaTimingFunction(name: .easeOut)
+                    panel.animator().alphaValue = 1
+                    shadowPanel?.animator().alphaValue = 1
+                }
             }
         }
 
         installClickOutsideMonitor()
         installDeactivationObserver()
-        installMoveObserver()
+        // 贴边条不能拖动，吸附参考线用不上
+        if shelfDock == nil { installMoveObserver() }
         NotificationCenter.default.post(name: .quickPanelDidShow, object: nil)
         UsageTracker.pingIfNeeded(source: .quick)
     }
@@ -328,28 +367,10 @@ final class QuickPanelWindowController {
         previousFocusIsTextInput = Self.focusIsTextInput(previousApp)
     }
 
-    /// 焦点落在这些 AX 角色上时，用户的意图是「往这个框里打字」，而不是操作 App 的主内容区。
-    private static let TEXT_INPUT_AX_ROLES: Set<String> = [
-        kAXTextFieldRole, kAXTextAreaRole, kAXComboBoxRole, "AXSearchField",
-    ]
-
-    /// 采样目标 App 此刻的键盘焦点是不是文本输入控件。
-    ///
-    /// 必须在面板 `makeKey()` **之前**调用。无辅助功能权限、目标 App 不响应 AX、
-    /// 或焦点不在文本控件上时一律返回 false —— 即退回既有行为，不会让粘贴变得更差。
+    /// 采样目标 App 此刻的键盘焦点是不是文本输入控件。必须在面板 `makeKey()` **之前**调用。
+    /// 无辅助功能权限、目标 App 不响应 AX、或焦点不在文本控件上时一律返回 false。
     private static func focusIsTextInput(_ app: NSRunningApplication?) -> Bool {
-        guard let pid = app?.processIdentifier else { return false }
-        let axApp = AXUIElementCreateApplication(pid)
-        // 目标 App 卡住时 AX 查询默认要等好几秒，会把面板弹出一起拖住；限死 200ms。
-        AXUIElementSetMessagingTimeout(axApp, 0.2)
-        var focusedRef: CFTypeRef?
-        guard AXUIElementCopyAttributeValue(axApp, kAXFocusedUIElementAttribute as CFString, &focusedRef) == .success,
-              let focusedRef, CFGetTypeID(focusedRef) == AXUIElementGetTypeID() else { return false }
-        let element = focusedRef as! AXUIElement
-        var roleRef: CFTypeRef?
-        guard AXUIElementCopyAttributeValue(element, kAXRoleAttribute as CFString, &roleRef) == .success,
-              let role = roleRef as? String else { return false }
-        return TEXT_INPUT_AX_ROLES.contains(role)
+        CaretLocator.sample(app, wantsCaret: false).isTextInput
     }
 
     /// - Parameter force: 置顶时，粘贴/复制完成的收尾调用（`force == false`）不关闭面板，
@@ -405,7 +426,8 @@ final class QuickPanelWindowController {
         }
         removeMoveObserver()
         snapGuide?.orderOut(nil)
-        savePosition(panel)
+        // 贴边条的位置每次现算，记下来会覆盖窗口形态的「记住上次位置」
+        if presentation == .window { savePosition(panel) }
         // 命令面板是 SwiftUI `.popover`（NSPopover 子窗口）。下面 layoutSubtreeIfNeeded 会同步把
         // showCommandPalette=false 刷下去、触发 NSPopover.close() 的 ~200ms 关闭动画——粘贴瞬间完成、
         // 浮层还在淡出，就成了"先粘后关"。teardown 时先把子窗口无动画 orderOut，等会触发 close() 时
@@ -591,14 +613,82 @@ final class QuickPanelWindowController {
             Task { @MainActor in
                 guard let panel else { return }
                 let size = panel.frame.size
-                UserDefaults.standard.set(Double(size.width), forKey: "\(SIZE_KEY).width")
-                UserDefaults.standard.set(Double(size.height), forKey: "\(SIZE_KEY).height")
+                // 贴边条的尺寸是按屏幕现算的，存下来会把窗口形态的大小冲掉
+                if self?.presentation == .window {
+                    UserDefaults.standard.set(Double(size.width), forKey: "\(SIZE_KEY).width")
+                    UserDefaults.standard.set(Double(size.height), forKey: "\(SIZE_KEY).height")
+                }
                 state?.width = size.width
                 self?.syncShadow(to: panel)
             }
         }
 
         return panel
+    }
+
+    // MARK: - Presentation
+
+    /// 贴边条入场起点比屏幕边缘再往外多出的距离，免得投影在动画开始那一帧就露出来
+    private static let SHELF_SLIDE_OVERSHOOT: CGFloat = 24
+
+    /// 这次显示用的形态
+    private(set) var presentation: QuickPanelPresentation = .window
+
+    /// 两种形态共用一个窗口：贴边条不能拖动、不能改大小；切回窗口形态时恢复保存的大小。
+    private func applyPresentation(_ presentation: QuickPanelPresentation, to panel: NSPanel) {
+        self.presentation = presentation
+        layoutState?.presentation = presentation
+        switch presentation {
+        case .shelf:
+            (panel as? KeyablePanel)?.allowsOffscreenFrame = true
+            // 贴边条的顶栏整个落在（隐藏的）标题栏那一截里：标题栏会先截走点击，标签点不动，
+            // 按住还能把整条拖走。藏起标题栏、禁止拖动窗口。
+            titlebarContainer(of: panel)?.isHidden = true
+            panel.isMovable = false
+            panel.isMovableByWindowBackground = false
+            panel.styleMask.remove(.resizable)
+            // KeyablePanel.setFrame 会按 minSize 撑高，先放开到条的高度
+            panel.minSize = NSSize(width: MIN_WIDTH, height: ShelfPlacement.height)
+        case .window:
+            (panel as? KeyablePanel)?.allowsOffscreenFrame = false
+            titlebarContainer(of: panel)?.isHidden = false
+            panel.isMovable = true
+            panel.isMovableByWindowBackground = true
+            panel.styleMask.insert(.resizable)
+            panel.minSize = NSSize(width: MIN_WIDTH, height: MIN_HEIGHT)
+            // 上一次是贴边条时，窗口还是条的尺寸
+            let saved = NSSize(width: panelWidth, height: panelHeight)
+            if panel.frame.size != saved {
+                panel.setFrame(NSRect(origin: panel.frame.origin, size: saved), display: false)
+                syncShadow(to: panel)
+            }
+        }
+    }
+
+    /// 标题栏那一层（红绿灯所在的容器）。按钮都藏着，但它照样接住落在窗口顶部那一截的点击。
+    private func titlebarContainer(of panel: NSPanel) -> NSView? {
+        panel.standardWindowButton(.closeButton)?.superview?.superview
+    }
+
+    /// 把贴边条放到所在屏幕的顶边或底边，返回贴的是哪条边。
+    ///
+    /// 屏幕和「贴底会不会挡住输入位置」都按「光标 → 输入框中心」判断；都读不到时用活动
+    /// 窗口所在的屏幕，鼠标在这块屏幕上才拿鼠标位置判断，否则贴底。
+    private func positionShelf(_ panel: NSPanel, edge: QuickPanelShelfEdge, focus: FocusSnapshot) -> ShelfPlacement.Dock {
+        var anchor = focus.anchor
+        var screen = anchor.flatMap { point in NSScreen.screens.first { $0.frame.contains(point) } }
+        if screen == nil {
+            screen = ActiveWindowLocator.activeScreen() ?? NSScreen.screenWithMouse ?? NSScreen.main ?? NSScreen.screens.first
+            let mouse = NSEvent.mouseLocation
+            anchor = screen?.frame.contains(mouse) == true ? mouse : nil
+        }
+        guard let screen else { return .bottom }
+        let visible = screen.visibleFrame
+        let dock = ShelfPlacement.dock(preference: edge, anchor: anchor, visibleFrame: visible)
+        panel.setFrame(ShelfPlacement.frame(dock: dock, height: ShelfPlacement.height, visibleFrame: visible), display: false)
+        syncShadow(to: panel)
+        layoutState?.shelfDock = dock
+        return dock
     }
 
     /// 让投影子窗口跟上面板的大小。位置由 child window 机制自动跟随，只有尺寸变了
@@ -764,7 +854,7 @@ final class QuickPanelWindowController {
         UserDefaults.standard.removeObject(forKey: "\(POSITION_KEY).rx")
         UserDefaults.standard.removeObject(forKey: "\(POSITION_KEY).ry")
         UserDefaults.standard.removeObject(forKey: POSITION_SCREEN_KEY)
-        guard let panel, panel.isVisible else { return }
+        guard let panel, panel.isVisible, presentation == .window else { return }
         positionPanel(panel)
     }
 

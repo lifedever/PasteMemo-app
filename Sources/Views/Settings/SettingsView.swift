@@ -630,6 +630,12 @@ struct QuickPanelPane: View {
     @AppStorage(QuickPanelPositionSettings.modeKey) private var quickPanelPositionMode = QuickPanelPositionMode.screenCenter.rawValue
     @AppStorage(QuickPanelPositionSettings.screenTargetKey) private var quickPanelScreenTarget = QuickPanelScreenTarget.active.rawValue
     @AppStorage(QuickPanelPositionSettings.specifiedScreenIDKey) private var quickPanelSpecifiedScreenID = ""
+    @AppStorage(QuickPanelSettings.presentationKey) private var quickPanelPresentation = QuickPanelPresentation.window.rawValue
+    @AppStorage(QuickPanelSettings.shelfEdgeKey) private var quickPanelShelfEdge = QuickPanelShelfEdge.auto.rawValue
+
+    private var isShelfPresentation: Bool {
+        QuickPanelPresentation(rawValue: quickPanelPresentation) == .shelf
+    }
 
     private var screenOptions: [ScreenOption] { ScreenLocator.options() }
     private var currentPositionMode: QuickPanelPositionMode {
@@ -649,17 +655,32 @@ struct QuickPanelPane: View {
     var body: some View {
         Form {
             Section(L10n.tr("settings.display")) {
+                Picker(L10n.tr("settings.quickPanelPresentation"), selection: $quickPanelPresentation) {
+                    ForEach(QuickPanelPresentation.allCases, id: \.rawValue) { option in
+                        Text(L10n.tr(option.titleKey)).tag(option.rawValue)
+                    }
+                }
+                if isShelfPresentation {
+                    Picker(L10n.tr("settings.quickPanelShelfEdge"), selection: $quickPanelShelfEdge) {
+                        ForEach(QuickPanelShelfEdge.allCases, id: \.rawValue) { option in
+                            Text(L10n.tr(option.titleKey)).tag(option.rawValue)
+                        }
+                    }
+                }
                 Picker(L10n.tr("settings.quickPanelSecondaryRow"), selection: $quickPanelSecondaryRow) {
                     ForEach(QuickPanelSecondaryRow.allCases, id: \.rawValue) { option in
                         Text(L10n.tr(option.titleKey)).tag(option.rawValue)
                     }
                 }
-                Picker(L10n.tr("settings.imageLayout"), selection: $quickPanelImageLayout) {
-                    ForEach(QuickPanelImageLayout.allCases, id: \.rawValue) { option in
-                        Text(L10n.tr(option.titleKey)).tag(option.rawValue)
+                // 贴边条里图片本来就按原比例排成卡片，列表 / 瀑布流的选择对它不起作用
+                if !isShelfPresentation {
+                    Picker(L10n.tr("settings.imageLayout"), selection: $quickPanelImageLayout) {
+                        ForEach(QuickPanelImageLayout.allCases, id: \.rawValue) { option in
+                            Text(L10n.tr(option.titleKey)).tag(option.rawValue)
+                        }
                     }
                 }
-                if QuickPanelImageLayout(rawValue: quickPanelImageLayout) == .grid {
+                if !isShelfPresentation, QuickPanelImageLayout(rawValue: quickPanelImageLayout) == .grid {
                     Picker(L10n.tr("settings.imageGridDensity"), selection: $quickPanelImageGridDensity) {
                         ForEach(QuickPanelImageGridDensity.allCases, id: \.rawValue) { option in
                             Text(L10n.tr(option.titleKey)).tag(option.rawValue)
@@ -671,63 +692,66 @@ struct QuickPanelPane: View {
                         Text(L10n.tr("settings.previewFontSize.points", size)).tag(size)
                     }
                 }
-                HStack {
-                    Text(L10n.tr("settings.quickPanelPosition"))
-                    Spacer()
-                    Menu {
-                        positionMenuItem(
-                            title: L10n.tr(QuickPanelPositionMode.cursor.titleKey),
-                            isSelected: currentPositionMode == .cursor
-                        ) {
-                            selectQuickPanelPosition(.cursor)
-                        }
-
-                        positionMenuItem(
-                            title: L10n.tr(QuickPanelPositionMode.menuBarIcon.titleKey),
-                            isSelected: currentPositionMode == .menuBarIcon
-                        ) {
-                            selectQuickPanelPosition(.menuBarIcon)
-                        }
-
-                        positionMenuItem(
-                            title: L10n.tr(QuickPanelPositionMode.windowCenter.titleKey),
-                            isSelected: currentPositionMode == .windowCenter
-                        ) {
-                            selectQuickPanelPosition(.windowCenter)
-                        }
-
-                        Menu(L10n.tr(QuickPanelPositionMode.screenCenter.titleKey)) {
+                // 贴边条的位置由「贴边条位置」决定
+                if !isShelfPresentation {
+                    HStack {
+                        Text(L10n.tr("settings.quickPanelPosition"))
+                        Spacer()
+                        Menu {
                             positionMenuItem(
-                                title: L10n.tr("settings.quickPanelTargetScreen.active"),
-                                isSelected: currentPositionMode == .screenCenter && currentScreenTarget == .active
+                                title: L10n.tr(QuickPanelPositionMode.cursor.titleKey),
+                                isSelected: currentPositionMode == .cursor
                             ) {
-                                selectQuickPanelPosition(.screenCenter, screenTarget: .active)
+                                selectQuickPanelPosition(.cursor)
                             }
 
-                            ForEach(screenOptions) { screen in
+                            positionMenuItem(
+                                title: L10n.tr(QuickPanelPositionMode.menuBarIcon.titleKey),
+                                isSelected: currentPositionMode == .menuBarIcon
+                            ) {
+                                selectQuickPanelPosition(.menuBarIcon)
+                            }
+
+                            positionMenuItem(
+                                title: L10n.tr(QuickPanelPositionMode.windowCenter.titleKey),
+                                isSelected: currentPositionMode == .windowCenter
+                            ) {
+                                selectQuickPanelPosition(.windowCenter)
+                            }
+
+                            Menu(L10n.tr(QuickPanelPositionMode.screenCenter.titleKey)) {
                                 positionMenuItem(
-                                    title: screen.name,
-                                    isSelected: currentPositionMode == .screenCenter
-                                        && currentScreenTarget == .specified
-                                        && quickPanelSpecifiedScreenID == screen.id
+                                    title: L10n.tr("settings.quickPanelTargetScreen.active"),
+                                    isSelected: currentPositionMode == .screenCenter && currentScreenTarget == .active
                                 ) {
-                                    selectQuickPanelPosition(.screenCenter, screenTarget: .specified, screenID: screen.id)
+                                    selectQuickPanelPosition(.screenCenter, screenTarget: .active)
+                                }
+
+                                ForEach(screenOptions) { screen in
+                                    positionMenuItem(
+                                        title: screen.name,
+                                        isSelected: currentPositionMode == .screenCenter
+                                            && currentScreenTarget == .specified
+                                            && quickPanelSpecifiedScreenID == screen.id
+                                    ) {
+                                        selectQuickPanelPosition(.screenCenter, screenTarget: .specified, screenID: screen.id)
+                                    }
                                 }
                             }
-                        }
 
-                        positionMenuItem(
-                            title: L10n.tr(QuickPanelPositionMode.remembered.titleKey),
-                            isSelected: currentPositionMode == .remembered
-                        ) {
-                            selectQuickPanelPosition(.remembered)
+                            positionMenuItem(
+                                title: L10n.tr(QuickPanelPositionMode.remembered.titleKey),
+                                isSelected: currentPositionMode == .remembered
+                            ) {
+                                selectQuickPanelPosition(.remembered)
+                            }
+                        } label: {
+                            Text(currentPositionTitle)
+                                .foregroundStyle(.primary)
                         }
-                    } label: {
-                        Text(currentPositionTitle)
-                            .foregroundStyle(.primary)
+                        .menuStyle(.borderlessButton)
+                        .fixedSize()
                     }
-                    .menuStyle(.borderlessButton)
-                    .fixedSize()
                 }
 
             }

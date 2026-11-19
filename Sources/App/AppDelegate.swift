@@ -111,6 +111,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
             showAccessibilityPrompt()
         }
+        // 贴边条上线后给老用户弹一次介绍；全新安装的用户走上面的新手引导
+        ShelfIntro.handleLaunch(hasCompletedOnboarding: hasCompletedOnboarding, needsAccessibility: needsAccessibility)
 
         Task {
             await UpdateChecker.shared.checkForUpdates()

@@ -161,6 +161,13 @@ struct QuickPanelView: View {
     /// true = 焦点在图片（←→↑↓ 四向移动，顶行按 ↑ 退回标签级）。
     /// 没有这层状态时，→ 移到「图片」分类的瞬间方向键就被网格吞掉，分类切换"卡死"。
     @State private var isGridFocused = false
+    /// 勾选顺序（两种形态共用）：多选粘贴、合并都按这个顺序，而不是列表顺序
+    @State private var pickOrder: [PersistentIdentifier] = []
+    /// 贴边条的「挑选中」：空格或 ⌘ 点选过以后，←→ 只移动焦点，不动已勾选的条目
+    @State private var isPicking = false
+    /// 贴边条里按住 ⌘ 稍停，卡片底栏显示 ⌘1–9
+    @State private var showsShortcutNumbers = false
+    @State private var commandHoldTask: Task<Void, Never>?
     @State private var cachedGroupedItems: [GroupedItem<ClipItem>] = []
     @State private var cachedHistoryRows: [ClipHistoryListBuilder.Row] = []
     @State private var cachedHistoryRowIndexByID: [PersistentIdentifier: Int] = [:]
@@ -197,7 +204,8 @@ struct QuickPanelView: View {
     /// 仅当：用户开了「瀑布流网格」+ 当前主筛选是「图片」类型 + 有内容时，才用网格替代列表。
     /// 其它任何筛选（全部 / 文本 / 链接 / 分组 …）一律保持原有列表。
     private var isImageGridActive: Bool {
-        QuickPanelImageLayout(rawValue: imageLayoutRaw) == .grid
+        !layoutState.isShelf
+            && QuickPanelImageLayout(rawValue: imageLayoutRaw) == .grid
             && selectedFilter == .type(.image)
             && !displayOrderItems.isEmpty
     }
@@ -237,6 +245,7 @@ struct QuickPanelView: View {
     }
 
     private func selectDefaultHistoryItem() {
+        endPicking()
         if let id = cachedDisplayOrder.first?.persistentModelID {
             selectedItemIDs = [id]
             lastNavigatedID = id
@@ -268,8 +277,31 @@ struct QuickPanelView: View {
 
     private var currentItems: [ClipItem] {
         guard !store.items.isEmpty else { return [] }
-        let ids = selectedItemIDs
-        return cachedDisplayOrder.filter { ids.contains($0.persistentModelID) && !$0.isDeleted && $0.modelContext != nil }
+        return orderedSelectionIDs
+            .compactMap { cachedItemMap[$0] }
+            .filter { !$0.isDeleted && $0.modelContext != nil }
+    }
+
+    /// 选中条目的粘贴顺序：先按勾选的先后，没记录到顺序的（Shift 连选、键盘扩选）按列表顺序排在后面
+    private var orderedSelectionIDs: [PersistentIdentifier] {
+        let picked = pickOrder.filter { selectedItemIDs.contains($0) }
+        let pickedSet = Set(picked)
+        let rest = cachedDisplayOrder.lazy
+            .map(\.persistentModelID)
+            .filter { selectedItemIDs.contains($0) && !pickedSet.contains($0) }
+        return picked + rest
+    }
+
+    /// 多选时某一条是第几个粘贴（从 1 开始）；单选时不显示序号
+    private func pickNumber(for item: ClipItem) -> Int? {
+        guard selectedItemIDs.count > 1 || isPicking else { return nil }
+        return orderedSelectionIDs.firstIndex(of: item.persistentModelID).map { $0 + 1 }
+    }
+
+    /// 结束贴边条的挑选状态，清掉记录的勾选顺序
+    private func endPicking() {
+        isPicking = false
+        pickOrder = []
     }
 
     private var currentItem: ClipItem? {
@@ -288,6 +320,7 @@ struct QuickPanelView: View {
     }
 
     private func selectItem(_ id: PersistentIdentifier) {
+        endPicking()
         selectedItemIDs = [id]
         lastNavigatedID = id
         selectionAnchor = id
@@ -324,14 +357,22 @@ struct QuickPanelView: View {
     }
 
     private func toggleItemInSelection(_ id: PersistentIdentifier) {
+        pickOrder = orderedSelectionIDs
         if selectedItemIDs.contains(id) {
+            pickOrder.removeAll { $0 == id }
             selectedItemIDs.remove(id)
             if selectionAnchor == id {
                 selectionAnchor = lastNavigatedID == id ? nil : lastNavigatedID
             }
         } else {
+            pickOrder.append(id)
             selectedItemIDs.insert(id)
             selectionAnchor = selectionAnchor ?? id
+        }
+        if layoutState.isShelf {
+            isPicking = !selectedItemIDs.isEmpty
+            lastNavigatedID = id
+            if selectedItemIDs.isEmpty { selectItem(id) }
         }
     }
 
@@ -363,6 +404,15 @@ struct QuickPanelView: View {
             // 编辑时列表只藏不拆：拆掉再建会丢滚动位置，退出编辑时列表从顶部重来、
             // 再只滚到「选中行刚好可见」，看着像条目跳了位置。
             VStack(spacing: 0) {
+            if layoutState.isShelf {
+                // 贴边条：一行顶栏 + 横向卡片，没有底栏
+                shelfHeader
+                if filteredItems.isEmpty {
+                    emptyStateView
+                } else {
+                    shelfStrip
+                }
+            } else {
             searchBar
             // 标签条排除背景拖拽：否则点分类标签时窗口跟着微拖「晃动」
             if shouldShowTabBar {
@@ -386,6 +436,7 @@ struct QuickPanelView: View {
                     }
                 }
             }
+            } // 窗口形态
             }
             .opacity(isOnSecondaryPage ? 0 : 1)
             .allowsHitTesting(!isOnSecondaryPage)
@@ -408,9 +459,13 @@ struct QuickPanelView: View {
                 }
             }
             } // ZStack: list / editor
-            footerBar
+            // 贴边条平时没有底栏；编辑 / 拆分页面的按键还在底栏里，进页面时才显示
+            if !layoutState.isShelf || isOnSecondaryPage {
+                footerBar
+            }
         }
-        .frame(minWidth: 360, minHeight: 420)
+        // 贴边条的高度是固定的 236，窗口形态的最小尺寸限制不能套给它
+        .frame(minWidth: layoutState.isShelf ? 0 : 360, minHeight: layoutState.isShelf ? 0 : 420)
         // Floating group suggestions overlay
         if isShowingSuggestions, !isOnSecondaryPage {
             VStack(spacing: 0) {
@@ -499,6 +554,9 @@ struct QuickPanelView: View {
             userTypedSlash = false
             userInteractedSinceShow = false
             isGridFocused = false
+            endPicking()
+            commandHoldTask?.cancel()
+            showsShortcutNumbers = false
             // 拖拽切标签的途中被 Esc / 失焦关掉面板时手势收不到 onEnded，
             // 残留的拖拽位置会让下次打开滑块停在没被选中的标签上、还是鼓大的。
             tabDragX = nil
@@ -970,28 +1028,7 @@ struct QuickPanelView: View {
                 .buttonStyle(.plain)
             }
 
-            Button {
-                isPanelPinned.toggle()
-                QuickPanelWindowController.shared.isPinned = isPanelPinned
-            } label: {
-                Image(systemName: isPanelPinned ? "pin.fill" : "pin")
-                    // 13pt medium：和旁边 12pt medium 的计数数字视觉重量对齐，
-                    // 12pt regular 的线条在同款灰底里显得比数字轻
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundStyle(
-                        isPanelPinned ? AnyShapeStyle(Color.accentColor) : AnyShapeStyle(HierarchicalShapeStyle.tertiary)
-                    )
-                    .frame(width: 28, height: 24)
-                    // 未固定时也给和右侧计数胶囊同样的灰底：两者高度一样、只有
-                    // 一个有底色时 pin 显得孤零零，读不成一组右侧工具
-                    .background(
-                        isPanelPinned ? AnyShapeStyle(Color.accentColor.opacity(0.15)) : AnyShapeStyle(Color.primary.opacity(0.05)),
-                        in: RoundedRectangle(cornerRadius: 5)
-                    )
-                    .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .help((isPanelPinned ? L10n.tr("quickPanel.unpin") : L10n.tr("quickPanel.pin")) + " (⌘T)")
+            pinButton
 
             Text("\(store.totalCount)")
                 .font(.system(size: 12, weight: .medium).monospacedDigit())
@@ -1014,6 +1051,40 @@ struct QuickPanelView: View {
 
     // MARK: - Tabs
 
+    /// 分类标签的玻璃胶囊本体。窗口形态外面套横向滚动视图，贴边条直接放在顶栏里。
+    @available(macOS 26.0, *)
+    private var tabCapsule: some View {
+        GlassEffectContainer(spacing: 6) {
+            HStack(spacing: 2) {
+                ForEach(filterItems, id: \.filter) { item in
+                    tabLabel(item.label, filter: item.filter)
+                        .id(item.filter)
+                }
+            }
+            // 滑块必须在文字**下面**。曾经想学 iOS 26 tab bar「扫过时把底下
+            // 文字透镜放大」，把它 overlay 到文字上——`.regular` 玻璃会模糊
+            // 下方内容，结果是标签的字直接被糊没。iOS 那个效果是 UITabBar
+            // 控件内部实现，`.glassEffect` 这个材质 API 给不了，别再试。
+            // background 和 overlay 一样不参与布局，滑块鼓大不会撑开这一排。
+            .background(alignment: .topLeading) { tabSlider }
+            // 命中测试、滑块定位、手势坐标三者必须同一个原点，
+            // 所以坐标系挂在 HStack 上（overlay 的 topLeading 也是这里）
+            .coordinateSpace(name: TAB_STRIP_COORD_SPACE)
+            .onPreferenceChange(TabFramesPreferenceKey.self) { tabFrames = $0 }
+            .padding(3)
+            // 标签之间的 2pt 缝隙、外圈 3pt padding 都要能接住手指，
+            // 否则横扫过缝隙时滑块会闪断一帧。
+            .contentShape(Rectangle())
+            .gesture(tabDragGesture)
+            // 整排再套一层玻璃做容器：未选中项是 .identity（不渲染玻璃），
+            // 少了这层整排就只剩文字浮在面板上、跟背景糊成一片。两层玻璃都在
+            // 同一个 GlassEffectContainer 里，系统会正确处理嵌套与融合。
+            // 和底栏胶囊、⌘K 卡片统一走 GlassSurface（同一档 .regular），
+            // 三处浮起元素才是同一种材质。滑块靠 tint 跟容器拉开，不靠降容器档位。
+            .modifier(GlassSurface(shape: Capsule()))
+        }
+    }
+
     @ViewBuilder
     private var tabBar: some View {
         // macOS 26 用 Liquid Glass 的自定义控件 API。注意：`.pickerStyle(.segmented)`
@@ -1021,39 +1092,16 @@ struct QuickPanelView: View {
         // sidebar / sheet）自动升级，而快捷面板是 borderless panel、没有 toolbar，
         // 内容区里的原生分段控件拿到的仍是老的扁平样式。
         if #available(macOS 26.0, *) {
+            if layoutState.isShelf {
+                // 贴边条：顶栏够宽，标签放得下，不套横向滚动视图。顶栏落在窗口（隐藏的）
+                // 标题栏那一截里，滚动视图会自动给标题栏让出内边距，把胶囊往下推到贴着卡片。
+                tabCapsule
+            } else {
             // ScrollViewReader + onChange：窄窗口下标签溢出时，无论切换来源
             // （Tab 键、方向键、鼠标点击、`/` 命令）都让选中标签滚入可见区。
             ScrollViewReader { proxy in
                 ScrollView(.horizontal, showsIndicators: false) {
-                    GlassEffectContainer(spacing: 6) {
-                        HStack(spacing: 2) {
-                            ForEach(filterItems, id: \.filter) { item in
-                                tabLabel(item.label, filter: item.filter)
-                                    .id(item.filter)
-                            }
-                        }
-                        // 滑块必须在文字**下面**。曾经想学 iOS 26 tab bar「扫过时把底下
-                        // 文字透镜放大」，把它 overlay 到文字上——`.regular` 玻璃会模糊
-                        // 下方内容，结果是标签的字直接被糊没。iOS 那个效果是 UITabBar
-                        // 控件内部实现，`.glassEffect` 这个材质 API 给不了，别再试。
-                        // background 和 overlay 一样不参与布局，滑块鼓大不会撑开这一排。
-                        .background(alignment: .topLeading) { tabSlider }
-                        // 命中测试、滑块定位、手势坐标三者必须同一个原点，
-                        // 所以坐标系挂在 HStack 上（overlay 的 topLeading 也是这里）
-                        .coordinateSpace(name: TAB_STRIP_COORD_SPACE)
-                        .onPreferenceChange(TabFramesPreferenceKey.self) { tabFrames = $0 }
-                        .padding(3)
-                        // 标签之间的 2pt 缝隙、外圈 3pt padding 都要能接住手指，
-                        // 否则横扫过缝隙时滑块会闪断一帧。
-                        .contentShape(Rectangle())
-                        .gesture(tabDragGesture)
-                        // 整排再套一层玻璃做容器：未选中项是 .identity（不渲染玻璃），
-                        // 少了这层整排就只剩文字浮在面板上、跟背景糊成一片。两层玻璃都在
-                        // 同一个 GlassEffectContainer 里，系统会正确处理嵌套与融合。
-                        // 和底栏胶囊、⌘K 卡片统一走 GlassSurface（同一档 .regular），
-                        // 三处浮起元素才是同一种材质。滑块靠 tint 跟容器拉开，不靠降容器档位。
-                        .modifier(GlassSurface(shape: Capsule()))
-                    }
+                    tabCapsule
                     .padding(.horizontal, 18)
                     // 12 让胶囊悬在搜索行和列表正中间；8 时贴列表太近
                     .padding(.bottom, 12)
@@ -1070,6 +1118,7 @@ struct QuickPanelView: View {
                     // 面板重开恢复上次筛选时，选中标签可能已在可视区外，进场先对齐一次
                     proxy.scrollTo(selectedFilter, anchor: nil)
                 }
+            }
             }
         } else {
             Picker(L10n.tr("filter.types"), selection: $selectedFilter) {
@@ -1369,7 +1418,8 @@ struct QuickPanelView: View {
                     isSelected: isSelected,
                     shortcutIndex: shortcutIndex(for: item),
                     searchText: searchText,
-                    compact: isCompactList
+                    compact: isCompactList,
+                    pickNumber: pickNumber(for: item)
                 )
             },
             headerContent: { group in
@@ -1399,6 +1449,229 @@ struct QuickPanelView: View {
         )
         // 过滤条件切换时需要整棵列表重建，避免旧的 NSTableView 选择/滚动状态残留。
         .id(scrollResetToken)
+    }
+
+    // MARK: - Shelf
+
+    /// 贴边条的单行顶栏：搜索 | 分类标签 | 粘贴目标、⌘K、固定
+    private var shelfHeader: some View {
+        HStack(spacing: 14) {
+            shelfSearchField
+                .frame(width: 240)
+            Group {
+                if shouldShowTabBar {
+                    // 不套 NonDraggableArea：它里面是一层独立的 NSHostingView，不继承根视图的
+                    // ignoresSafeArea。顶栏落在窗口（隐藏的）标题栏那一截里，这层宿主视图会给
+                    // 标题栏让出顶部安全区，把标签挤到下面、贴着卡片。贴边条本来就不能拖动，
+                    // 也用不着它防「点标签时窗口被拖动」。
+                    tabBar
+                } else {
+                    Color.clear
+                }
+            }
+            .frame(maxWidth: .infinity)
+            shelfTrailing
+        }
+        .frame(height: 44)
+        .padding(.horizontal, 12)
+    }
+
+    private var shelfSearchField: some View {
+        HStack(spacing: 7) {
+            Image(systemName: "magnifyingglass")
+                .font(.system(size: 12, weight: .medium))
+                .foregroundStyle(.tertiary)
+            if let pill {
+                pillView(for: pill)
+            }
+            // placeholder 自己画，理由同窗口形态的搜索栏
+            TextField("", text: $searchText)
+                .textFieldStyle(.plain)
+                .font(.system(size: 13))
+                .focused($isSearchFocused)
+                .overlay(alignment: .leading) {
+                    if searchText.isEmpty, !isIMEComposing {
+                        Text(L10n.tr("quick.search"))
+                            .font(.system(size: 13))
+                            .foregroundStyle(Color(nsColor: .placeholderTextColor))
+                            .lineLimit(1)
+                            .allowsHitTesting(false)
+                    }
+                }
+            if !searchText.isEmpty || pill != nil {
+                Button {
+                    searchText = ""
+                    pill = nil
+                    if let id = defaultItem?.persistentModelID { selectItem(id) }
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 12))
+                        .foregroundStyle(.quaternary)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(.horizontal, 10)
+        .frame(height: 30)
+        .background(Color.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: 8))
+    }
+
+    private var shelfTrailing: some View {
+        HStack(spacing: 12) {
+            if selectedItemIDs.count > 1 || isPicking {
+                Text(L10n.tr("quick.multiSelected", selectedItemIDs.count))
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(Color.accentColor)
+                footerKey("↵", quickPanelAutoPaste ? (isTargetFinder ? L10n.tr("quick.saveToFolder") : L10n.tr("quick.batchPaste")) : L10n.tr("action.copy"))
+            } else {
+                pasteTargetLabel
+            }
+            // 点一下等同按 ⌘K，写法同窗口形态底栏
+            Button {
+                if !showCommandPalette, CommandPalettePanel.shared.wasJustClosedByClick { return }
+                showCommandPalette.toggle()
+                if showCommandPalette { isSearchFocused = false }
+            } label: {
+                footerKey("⌘K", L10n.tr("cmd.title"))
+            }
+            .buttonStyle(.plain)
+            .modifier(HoverHighlight())
+            .pointerCursor()
+            pinButton
+        }
+        .fixedSize()
+    }
+
+    private var shelfStrip: some View {
+        ShelfStripView(
+            groups: groupedItems,
+            focusedID: lastNavigatedID ?? selectedItemIDs.first,
+            selectedIDs: selectedItemIDs,
+            pickOrder: isPicking || selectedItemIDs.count > 1 ? orderedSelectionIDs : [],
+            showsShortcutNumbers: showsShortcutNumbers,
+            shortcutIndex: { shortcutIndex(for: $0) },
+            onTap: { handleItemClick($0) },
+            onLoadMore: { store.loadMore() },
+            contextMenu: { historyItemMenuItems(item: $0) },
+            dragEnabled: !isOnSecondaryPage && !isShowingSuggestions,
+            itemsForDrag: { id in
+                // 拖的是勾选过的卡片：带上全部勾选，按勾选顺序；否则只带这一张
+                if (isPicking || selectedItemIDs.count > 1), selectedItemIDs.contains(id) {
+                    return currentItems
+                }
+                return cachedItemMap[id].map { [$0] } ?? []
+            },
+            onDragDelivered: { items in handleShelfDragDelivered(items) },
+            onFocusedCardFrame: { card, strip in
+                // 锚点存在 CommandPalettePanel 里，理由见列表的 onFocusedRowFrame。
+                // 菜单朝屏幕中间展开：贴顶时挂在卡片下面，贴底时挂在上面
+                CommandPalettePanel.shared.updateAnchor(
+                    rowInWindow: card,
+                    listInWindow: strip,
+                    style: layoutState.shelfDock == .top ? .belowRow : .aboveRow
+                )
+                if showCommandPalette { syncCommandPalettePanel() }
+            }
+        )
+        // 筛选切换时整条重建，回到最左边
+        .id(scrollResetToken)
+    }
+
+    /// 卡片拖到别的 App 并被接收：和粘贴一样算用过一次（挪到最前），然后关闭面板；固定时保持打开
+    private func handleShelfDragDelivered(_ items: [ClipItem]) {
+        let controller = QuickPanelWindowController.shared
+        guard !controller.isPinned else { return }
+        let alive = items.filter { !$0.isGone }
+        let now = Date()
+        for item in alive { item.lastUsedAt = now }
+        if let context = alive.first?.modelContext {
+            ClipItemStore.saveAndNotifyLastUsed(context)
+        }
+        // 用户已经在目标 App 里松手了，不把焦点抢回原来的 App
+        controller.dismiss()
+    }
+
+    /// 贴边条按空格：没在挑选时，把焦点卡片记为第 1 个；在挑选时，勾选 / 取消焦点卡片
+    private func shelfTogglePick() {
+        guard let focus = lastNavigatedID ?? selectedItemIDs.first else { return }
+        guard isPicking else {
+            isPicking = true
+            selectedItemIDs = [focus]
+            pickOrder = [focus]
+            return
+        }
+        toggleItemInSelection(focus)
+    }
+
+    /// 贴边条按 ←→：挑选中只移动焦点，已勾选的不动；否则和列表一样单选移动
+    private func shelfMove(_ delta: Int) {
+        guard isPicking else {
+            moveSelection(delta)
+            return
+        }
+        var items = displayOrderItems
+        let cursorID = lastNavigatedID ?? selectedItemIDs.first ?? items.first?.persistentModelID
+        guard let index = items.firstIndex(where: { $0.persistentModelID == cursorID }) else { return }
+        let next = index + delta
+        guard next >= 0 else { return }
+        if next >= items.count {
+            store.loadMore()
+            items = displayOrderItems
+            guard next < items.count else { return }
+        }
+        lastNavigatedID = items[next].persistentModelID
+    }
+
+    /// 粘贴目标：「粘贴到 X」，没开自动粘贴时是「复制到剪贴板」。窗口形态底栏和贴边条顶栏共用
+    @ViewBuilder
+    private var pasteTargetLabel: some View {
+        if !quickPanelAutoPaste {
+            Text(L10n.tr("quick.copyToClipboard"))
+                .font(.system(size: 11, weight: .medium))
+                .foregroundStyle(.secondary)
+        } else if let prevApp = targetApp,
+           let appName = prevApp.localizedName {
+            HStack(spacing: 4) {
+                if let icon = prevApp.icon {
+                    Image(nsImage: icon)
+                        .resizable()
+                        .frame(width: 14, height: 14)
+                }
+                Text(L10n.tr("quick.pasteTo", appName))
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(.secondary)
+            }
+        } else {
+            Text("PasteMemo")
+                .font(.system(size: 11, weight: .medium))
+                .foregroundStyle(.quaternary)
+        }
+    }
+
+    /// 固定面板（⌘T）。窗口形态在搜索栏右侧，贴边条在顶栏最右
+    private var pinButton: some View {
+        Button {
+            isPanelPinned.toggle()
+            QuickPanelWindowController.shared.isPinned = isPanelPinned
+        } label: {
+            Image(systemName: isPanelPinned ? "pin.fill" : "pin")
+                // 13pt medium：和旁边 12pt medium 的计数数字视觉重量对齐，
+                // 12pt regular 的线条在同款灰底里显得比数字轻
+                .font(.system(size: 13, weight: .medium))
+                .foregroundStyle(
+                    isPanelPinned ? AnyShapeStyle(Color.accentColor) : AnyShapeStyle(HierarchicalShapeStyle.tertiary)
+                )
+                .frame(width: 28, height: 24)
+                // 未固定时也给和右侧计数胶囊同样的灰底：两者高度一样、只有
+                // 一个有底色时 pin 显得孤零零，读不成一组右侧工具
+                .background(
+                    isPanelPinned ? AnyShapeStyle(Color.accentColor.opacity(0.15)) : AnyShapeStyle(Color.primary.opacity(0.05)),
+                    in: RoundedRectangle(cornerRadius: 5)
+                )
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .help((isPanelPinned ? L10n.tr("quickPanel.unpin") : L10n.tr("quickPanel.pin")) + " (⌘T)")
     }
 
     // MARK: - Image Grid
@@ -1831,27 +2104,7 @@ struct QuickPanelView: View {
 
             // Main footer bar
             HStack(spacing: 0) {
-                if !quickPanelAutoPaste {
-                    Text(L10n.tr("quick.copyToClipboard"))
-                        .font(.system(size: 11, weight: .medium))
-                        .foregroundStyle(.secondary)
-                } else if let prevApp = targetApp,
-                   let appName = prevApp.localizedName {
-                    HStack(spacing: 4) {
-                        if let icon = prevApp.icon {
-                            Image(nsImage: icon)
-                                .resizable()
-                                .frame(width: 14, height: 14)
-                        }
-                        Text(L10n.tr("quick.pasteTo", appName))
-                            .font(.system(size: 11, weight: .medium))
-                            .foregroundStyle(.secondary)
-                    }
-                } else {
-                    Text("PasteMemo")
-                        .font(.system(size: 11, weight: .medium))
-                        .foregroundStyle(.quaternary)
-                }
+                pasteTargetLabel
                 Spacer()
                 HStack(spacing: 10) {
                     // 底栏动作全部收进一颗玻璃胶囊，直接落在面板玻璃上——底栏本身
@@ -2137,6 +2390,19 @@ struct QuickPanelView: View {
         flagsMonitor = NSEvent.addLocalMonitorForEvents(matching: .flagsChanged) { event in
             guard HotkeyManager.shared.isQuickPanelVisible else { return event }
             OptionKeyMonitor.shared.isOptionPressed = event.modifierFlags.contains(.option)
+            if layoutState.isShelf {
+                // 只按着 ⌘ 停 0.25 秒才显示：⌘K、⌘E 这类快速组合键不会闪一下编号
+                commandHoldTask?.cancel()
+                if event.modifierFlags.intersection(.deviceIndependentFlagsMask) == .command {
+                    commandHoldTask = Task { @MainActor in
+                        try? await Task.sleep(for: .milliseconds(250))
+                        guard !Task.isCancelled else { return }
+                        showsShortcutNumbers = true
+                    }
+                } else {
+                    showsShortcutNumbers = false
+                }
+            }
             return event
         }
         keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
@@ -2145,6 +2411,7 @@ struct QuickPanelView: View {
             // 回车会粘贴面板里选中的条目、Esc 会关面板，而不是确认 / 取消对话框。
             guard NSApp.modalWindow == nil else { return event }
             userInteractedSinceShow = true
+            commandHoldTask?.cancel()
             let hasShift = event.modifierFlags.contains(.shift)
             let hasCmd = event.modifierFlags.contains(.command)
             let hasControl = event.modifierFlags.contains(.control)
@@ -2253,6 +2520,39 @@ struct QuickPanelView: View {
                 handleDismiss()
                 AppAction.shared.openMainWindow?()
                 return nil
+            }
+
+            // 贴边条：←→ 在卡片间移动（分类改用 ⇥ 切）；空格勾选；挑选中 esc 先取消勾选。
+            // ↑↓ 留给朝屏幕中间展开的预览（第 3 批），这里先吃掉，不落到列表的上下移动。
+            if layoutState.isShelf {
+                switch Int(event.keyCode) {
+                case 123, 124:
+                    let delta = event.keyCode == 123 ? -1 : 1
+                    if hasShift {
+                        moveSelection(delta, extendSelection: true)
+                        pickOrder = []
+                        isPicking = selectedItemIDs.count > 1
+                    } else {
+                        shelfMove(delta)
+                    }
+                    return nil
+                case 125, 126:
+                    return nil
+                case 49 where searchText.isEmpty && !hasCmd && !hasControl:
+                    // 输入法组字时空格是选字，交给输入框
+                    if let textView = event.window?.firstResponder as? NSTextView, textView.hasMarkedText() {
+                        return event
+                    }
+                    shelfTogglePick()
+                    return nil
+                case 53 where isPicking:
+                    let focus = lastNavigatedID ?? selectedItemIDs.first
+                    endPicking()
+                    selectedItemIDs = focus.map { [$0] } ?? []
+                    return nil
+                default:
+                    break
+                }
             }
 
             // 图片瀑布流模式的两级焦点：

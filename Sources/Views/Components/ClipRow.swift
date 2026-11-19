@@ -500,17 +500,7 @@ struct ClipRow: View {
     }
 
     private func partialMask(_ text: String) -> String {
-        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        let firstLine = trimmed.components(separatedBy: .newlines).first ?? trimmed
-        let count = firstLine.count
-        switch count {
-        case 0...4:
-            return String(repeating: "•", count: max(count, 1))
-        case 5...6:
-            return String(firstLine.prefix(1)) + String(repeating: "•", count: count - 2) + String(firstLine.suffix(1))
-        default:
-            return String(firstLine.prefix(2)) + "••••" + String(firstLine.suffix(2))
-        }
+        SensitiveTextMask.partial(text)
     }
 
     private var sensitiveThumbnail: some View {
@@ -582,4 +572,21 @@ struct ClipRow: View {
             .background(Color.accentColor, in: Capsule())
     }
 
+}
+
+/// 敏感条目的打码：只露出首行的头尾一两个字。列表行和贴边条卡片共用。
+enum SensitiveTextMask {
+    static func partial(_ text: String) -> String {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        let firstLine = trimmed.components(separatedBy: .newlines).first ?? trimmed
+        let count = firstLine.count
+        switch count {
+        case 0...4:
+            return String(repeating: "•", count: max(count, 1))
+        case 5...6:
+            return String(firstLine.prefix(1)) + String(repeating: "•", count: count - 2) + String(firstLine.suffix(1))
+        default:
+            return String(firstLine.prefix(2)) + "••••" + String(firstLine.suffix(2))
+        }
+    }
 }

@@ -59,6 +59,18 @@ enum QuickPanelSettings {
     static let hiddenTabTypesKey = "quickPanelHiddenTabTypes"
     /// 快捷面板右侧预览区正文（文本 / 代码 / 短信原文等）的字号。
     static let previewFontSizeKey = "quickPanelPreviewFontSize"
+    /// 快捷面板形态：浮动窗口（原有）/ 贴在屏幕边缘的卡片横条，见 `QuickPanelPresentation`
+    static let presentationKey = "quickPanelPresentation"
+    /// 贴边条出现在哪条边，见 `QuickPanelShelfEdge`
+    static let shelfEdgeKey = "quickPanelShelfEdge"
+
+    static var presentation: QuickPanelPresentation {
+        QuickPanelPresentation(rawValue: UserDefaults.standard.string(forKey: presentationKey) ?? "") ?? .window
+    }
+
+    static var shelfEdge: QuickPanelShelfEdge {
+        QuickPanelShelfEdge(rawValue: UserDefaults.standard.string(forKey: shelfEdgeKey) ?? "") ?? .auto
+    }
 
     /// 快捷面板标签栏里可排序那部分的顺序（逗号分隔的 id）。空 = 默认顺序。
     ///
@@ -166,6 +178,34 @@ enum QuickPanelTabItem: Hashable, Identifiable {
 }
 
 /// 选中「图片」类型时的展示方式。仅作用于图片筛选，其它类型始终用列表。
+/// 快捷面板的形态。两种形态共用同一个窗口和视图，只是布局和摆放不同。
+enum QuickPanelPresentation: String, CaseIterable {
+    case window
+    case shelf
+
+    var titleKey: String {
+        switch self {
+        case .window: "settings.quickPanelPresentation.window"
+        case .shelf: "settings.quickPanelPresentation.shelf"
+        }
+    }
+}
+
+/// 贴边条出现在哪条边。`auto` 默认贴底，贴底会挡住正在输入的位置时改贴顶。
+enum QuickPanelShelfEdge: String, CaseIterable {
+    case auto
+    case bottom
+    case top
+
+    var titleKey: String {
+        switch self {
+        case .auto: "settings.quickPanelShelfEdge.auto"
+        case .bottom: "settings.quickPanelShelfEdge.bottom"
+        case .top: "settings.quickPanelShelfEdge.top"
+        }
+    }
+}
+
 enum QuickPanelImageLayout: String, CaseIterable {
     case list
     case grid

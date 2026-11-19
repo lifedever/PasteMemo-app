@@ -61,9 +61,33 @@ final class CommandPalettePanel {
         return Date().timeIntervalSince(closedByClickAt) < 0.5
     }
 
-    func updateAnchor(row: CGRect, list: CGRect) {
+    /// 菜单相对锚点放在哪：列表右侧（窗口形态），或贴边条里选中卡片的下方 / 上方
+    enum AnchorStyle {
+        case besideList
+        /// 贴顶的贴边条：挂在卡片下面
+        case belowRow
+        /// 贴底的贴边条：挂在卡片上面
+        case aboveRow
+    }
+    private(set) var anchorStyle: AnchorStyle = .besideList
+
+    /// 锚点是窗口内坐标时为 true（贴边条），显示时再按父窗口当前位置换算成屏幕坐标
+    private var anchorIsInWindow = false
+
+    func updateAnchor(row: CGRect, list: CGRect, style: AnchorStyle = .besideList) {
         anchorRow = row
         anchorList = list
+        anchorStyle = style
+        anchorIsInWindow = false
+    }
+
+    /// 贴边条用：锚点给窗口内坐标（AppKit，原点左下）。窗口从屏幕外滑进来，布局时换算的
+    /// 屏幕坐标会过期，所以等菜单真要显示时才换算。
+    func updateAnchor(rowInWindow: CGRect, listInWindow: CGRect, style: AnchorStyle) {
+        anchorRow = rowInWindow
+        anchorList = listInWindow
+        anchorStyle = style
+        anchorIsInWindow = true
     }
     private init() {}
 
@@ -77,8 +101,8 @@ final class CommandPalettePanel {
         parent: NSWindow,
         onDismiss: @escaping () -> Void
     ) {
-        let rowOnScreen = anchorRow
-        let listOnScreen = anchorList
+        let rowOnScreen = anchorIsInWindow ? parent.convertToScreen(anchorRow) : anchorRow
+        let listOnScreen = anchorIsInWindow ? parent.convertToScreen(anchorList) : anchorList
         self.onDismiss = onDismiss
 
         // 先量内容本身的高度，窗口必须和卡片一样高：窗口比卡片高出的那截在 key
@@ -305,6 +329,9 @@ final class CommandPalettePanel {
     /// 定位规则：左边缘贴列表右边缘（绝不压住条目），顶部对齐选中行；
     /// 垂直方向优先留在主面板内部、底栏之上，装不下时才放到整块屏幕里去。
     private func frameFor(size: NSSize, rowOnScreen: CGRect, listOnScreen: CGRect, parentFrame: CGRect) -> NSRect {
+        if anchorStyle != .besideList {
+            return frameNextToCard(size: size, card: rowOnScreen)
+        }
         let gap: CGFloat = 8
         let screen = NSScreen.screens.first { $0.frame.intersects(rowOnScreen) }
             ?? NSScreen.main
@@ -340,6 +367,26 @@ final class CommandPalettePanel {
             if y < visible.minY + gap { y = visible.minY + gap }
         }
 
+        return NSRect(x: x, y: y, width: size.width, height: size.height)
+    }
+}
+
+extension CommandPalettePanel {
+    /// 贴边条：菜单左边对齐选中卡片，贴顶时挂在卡片下面、贴底时挂在上面，朝屏幕中间展开。
+    /// 卡片靠近屏幕右边时往左挪，整个菜单留在屏幕里。
+    fileprivate func frameNextToCard(size: NSSize, card: CGRect) -> NSRect {
+        let gap: CGFloat = 8
+        let screen = NSScreen.screens.first { $0.frame.intersects(card) } ?? NSScreen.main
+        let visible = screen?.visibleFrame ?? card
+        let x = min(max(card.minX, visible.minX + gap), visible.maxX - size.width - gap)
+        var y: CGFloat
+        if anchorStyle == .aboveRow {
+            y = card.maxY + gap
+            if y + size.height > visible.maxY - gap { y = visible.maxY - gap - size.height }
+        } else {
+            y = card.minY - gap - size.height
+            if y < visible.minY + gap { y = visible.minY + gap }
+        }
         return NSRect(x: x, y: y, width: size.width, height: size.height)
     }
 }

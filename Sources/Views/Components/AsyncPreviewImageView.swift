@@ -10,6 +10,8 @@ struct AsyncPreviewImageView: View {
     var onDoubleClick: (() -> Void)? = nil
     /// `data` 为 nil 时的磁盘兜底源（多图文件条目没有缩略图字节，读第一张原文件）。
     var fallbackFileURL: URL? = nil
+    /// 贴边条卡片要铺满裁切（宽度按比例算过但有上下限），其余地方保持等比完整显示。
+    var contentMode: ContentMode = .fit
 
     @State private var image: NSImage?
     @State private var thumbnail: NSImage?
@@ -21,13 +23,13 @@ struct AsyncPreviewImageView: View {
                 Image(nsImage: image)
                     .resizable()
                     .interpolation(.high)
-                    .aspectRatio(contentMode: .fit)
+                    .aspectRatio(contentMode: contentMode)
                     .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
             } else if let thumbnail {
                 Image(nsImage: thumbnail)
                     .resizable()
                     .interpolation(.medium)
-                    .aspectRatio(contentMode: .fit)
+                    .aspectRatio(contentMode: contentMode)
                     .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
             } else if data != nil || fallbackFileURL != nil {
                 placeholder
