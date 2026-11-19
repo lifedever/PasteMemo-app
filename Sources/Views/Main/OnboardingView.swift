@@ -26,20 +26,26 @@ struct OnboardingView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            Group {
-                switch currentStep {
-                case 0: welcomeStep
-                case 1: accessibilityStep
-                case 2: privacyAppsStep
-                case 3: preferencesStep
-                case 4: relayIntroStep
-                case 5: aiAgentIntroStep
-                case 6: shortcutStep
-                case 7: analyticsStep
-                default: EmptyView()
+            // 窗口固定高度：装得下时照旧垂直居中，装不下（密码管理器装得多、文案长的语言）就滚动
+            GeometryReader { proxy in
+                ScrollView {
+                    Group {
+                        switch currentStep {
+                        case 0: welcomeStep
+                        case 1: accessibilityStep
+                        case 2: privacyAppsStep
+                        case 3: preferencesStep
+                        case 4: relayIntroStep
+                        case 5: aiAgentIntroStep
+                        case 6: shortcutStep
+                        case 7: analyticsStep
+                        default: EmptyView()
+                        }
+                    }
+                    .frame(maxWidth: .infinity, minHeight: proxy.size.height)
                 }
+                .scrollBounceBehavior(.basedOnSize)
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
 
             Divider()
 

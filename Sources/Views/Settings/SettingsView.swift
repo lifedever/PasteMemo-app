@@ -1264,7 +1264,6 @@ struct AutomationTab: View {
             automationContent
         }
         .formStyle(.grouped)
-        .scrollDisabled(true)
     }
 
     private var automationContent: some View {
@@ -1343,7 +1342,6 @@ struct SponsorTab: View {
             }
         }
         .formStyle(.grouped)
-        .scrollDisabled(true)
     }
 }
 
@@ -1443,6 +1441,5 @@ struct AboutTab: View {
             }
         }
         .formStyle(.grouped)
-        .scrollDisabled(true)
     }
 }
