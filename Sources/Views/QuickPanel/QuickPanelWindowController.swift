@@ -609,9 +609,7 @@ final class QuickPanelWindowController {
         panel.hidesOnDeactivate = false
         panel.titleVisibility = .hidden
         panel.titlebarAppearsTransparent = true
-        panel.standardWindowButton(.closeButton)?.isHidden = true
-        panel.standardWindowButton(.miniaturizeButton)?.isHidden = true
-        panel.standardWindowButton(.zoomButton)?.isHidden = true
+        Self.hideWindowButtons(of: panel)
 
         // Cover the titlebar with a draggable view so clicks there
         // go through isMovableByWindowBackground instead of system titlebar handling
@@ -726,6 +724,8 @@ final class QuickPanelWindowController {
             panel.isMovable = true
             panel.isMovableByWindowBackground = true
             panel.styleMask.insert(.resizable)
+            // 改 styleMask 会让系统重建标题栏按钮，新建的红绿灯是显示状态，得重新藏一次
+            Self.hideWindowButtons(of: panel)
             panel.minSize = NSSize(width: MIN_WIDTH, height: MIN_HEIGHT)
             // 上一次是贴边条时，窗口还是条的尺寸
             let saved = NSSize(width: panelWidth, height: panelHeight)
@@ -733,6 +733,13 @@ final class QuickPanelWindowController {
                 panel.setFrame(NSRect(origin: panel.frame.origin, size: saved), display: false)
                 syncShadow(to: panel)
             }
+        }
+    }
+
+    /// 藏起红绿灯。styleMask 每改一次系统都会重建这三个按钮（默认显示），改完要再调一次。
+    private static func hideWindowButtons(of panel: NSPanel) {
+        for type: NSWindow.ButtonType in [.closeButton, .miniaturizeButton, .zoomButton] {
+            panel.standardWindowButton(type)?.isHidden = true
         }
     }
 
