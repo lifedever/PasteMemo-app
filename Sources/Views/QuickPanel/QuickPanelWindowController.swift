@@ -155,7 +155,6 @@ final class QuickPanelWindowController {
     /// 把内容粘进那个框，而不是在文件夹里生成一个 .txt / 图片文件。只看「目标 App 是不是
     /// Finder」会把这两种意图混为一谈——Finder 搜索框粘贴因此完全失效（只默默建了个文件）。
     private(set) var previousFocusIsTextInput = false
-    private var isWarmedUp = false
     var isPinned = false {
         didSet {
             guard isPinned != oldValue else { return }
@@ -249,28 +248,6 @@ final class QuickPanelWindowController {
 
     private init() {}
 
-    /// Call once at app launch to pre-build the panel off-screen
-    func warmUp(clipboardManager: ClipboardManager, modelContainer: ModelContainer) {
-        guard !isWarmedUp else { return }
-        let panel = buildPanel(clipboardManager: clipboardManager, modelContainer: modelContainer)
-        panel.setFrameOrigin(NSPoint(x: -10000, y: -10000))
-        panel.alphaValue = 0
-        panel.orderFrontRegardless()
-        panel.displayIfNeeded()
-
-        // 把缩放动画的 anchor point 提前设好，show 时就不会再跳
-        if let contentView = panel.contentView {
-            contentView.wantsLayer = true
-            let bounds = contentView.bounds
-            contentView.layer?.anchorPoint = CGPoint(x: 0.5, y: 0.5)
-            contentView.layer?.position = CGPoint(x: bounds.midX, y: bounds.midY)
-        }
-
-        panel.orderOut(nil)
-        self.panel = panel
-        isWarmedUp = true
-    }
-
     func show(clipboardManager: ClipboardManager, modelContainer: ModelContainer) {
         // 贴边条正在滑出：这 0.2 秒里的再次按键不处理，滑完再按即可
         if isSlidingOut { return }
@@ -288,11 +265,8 @@ final class QuickPanelWindowController {
         let focus = CaretLocator.sample(previousApp, wantsCaret: presentation == .shelf && shelfEdge == .auto)
         previousFocusIsTextInput = focus.isTextInput
 
-        if !isWarmedUp {
-            warmUp(clipboardManager: clipboardManager, modelContainer: modelContainer)
-        }
-
-        guard let panel else { return }
+        let panel = self.panel ?? buildPanel(clipboardManager: clipboardManager, modelContainer: modelContainer)
+        self.panel = panel
 
         applyPresentation(presentation, to: panel)
         let shelfDock: ShelfPlacement.Dock? = presentation == .shelf
@@ -655,8 +629,6 @@ final class QuickPanelWindowController {
             hostingView.leadingAnchor.constraint(equalTo: container.leadingAnchor),
             hostingView.trailingAnchor.constraint(equalTo: container.trailingAnchor),
         ])
-        container.layoutSubtreeIfNeeded()
-
         panel.contentView = container
         panel.minSize = NSSize(width: MIN_WIDTH, height: MIN_HEIGHT)
 
@@ -665,8 +637,6 @@ final class QuickPanelWindowController {
         self.shadowPanel = shadowPanel
         syncShadow(to: panel)
 
-        // Save size when resized. warmUp runs once so registering here is safe;
-        // we still track the token so a future rebuild path wouldn't duplicate writes.
         if let previous = resizeObserver {
             NotificationCenter.default.removeObserver(previous)
         }
