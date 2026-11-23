@@ -96,6 +96,43 @@ struct ClipHistoryListBuilderTests {
         #expect(anchor == first.persistentModelID)
     }
 
+    @Test("Adding a second pick also refreshes the row that was already selected")
+    func refreshIncludesStillSelectedRowsWhenSelectionGrows() {
+        // A 已选中，⌘ 点 B：A 的选中态没变，但它要从没号变成 1
+        let affected = ClipHistorySelectionHelper.rowsNeedingRefresh(
+            oldSelection: ["A"],
+            newSelection: ["A", "B"],
+            oldFocus: "A",
+            newFocus: "A",
+            includeFocus: false
+        )
+        #expect(affected == ["A", "B"])
+    }
+
+    @Test("Removing a middle pick refreshes the rows whose number shifts")
+    func refreshIncludesRemainingRowsWhenSelectionShrinks() {
+        let affected = ClipHistorySelectionHelper.rowsNeedingRefresh(
+            oldSelection: ["A", "B", "C"],
+            newSelection: ["B", "C"],
+            oldFocus: nil as String?,
+            newFocus: nil,
+            includeFocus: false
+        )
+        #expect(affected == ["A", "B", "C"])
+    }
+
+    @Test("Focus-only change refreshes just the old and new focused rows")
+    func focusOnlyChangeSkipsUnchangedSelection() {
+        let affected = ClipHistorySelectionHelper.rowsNeedingRefresh(
+            oldSelection: ["A", "B", "C"],
+            newSelection: ["A", "B", "C"],
+            oldFocus: "A",
+            newFocus: "D",
+            includeFocus: true
+        )
+        #expect(affected == ["A", "D"])
+    }
+
     @Test("Pagination helper requests load more only near bottom with remaining pages")
     func paginationRequestsLoadMoreNearBottom() {
         #expect(

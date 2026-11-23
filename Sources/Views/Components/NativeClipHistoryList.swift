@@ -55,6 +55,25 @@ enum ClipHistorySelectionHelper {
         let range = min(anchorIndex, targetIndex)...max(anchorIndex, targetIndex)
         return Set(orderedIDs[range])
     }
+
+    /// 选中 / 焦点变化后要重建哪些行。
+    /// 选中集合变了就把新旧选中都算上，不能只取差集：快捷面板多选时选中行角上标着粘贴顺序号，
+    /// 号码跟着整个选中集合变——从 1 条加到 2 条，原来那条要从没号变成 1；取消中间一条，
+    /// 后面的号要往前挪。这些行自己的选中态没变，只取差集就刷不到。只重建可见行，代价有上限。
+    static func rowsNeedingRefresh<ID: Hashable>(
+        oldSelection: Set<ID>,
+        newSelection: Set<ID>,
+        oldFocus: ID?,
+        newFocus: ID?,
+        includeFocus: Bool
+    ) -> Set<ID> {
+        var affected = oldSelection == newSelection ? [] : oldSelection.union(newSelection)
+        if includeFocus {
+            if let oldFocus { affected.insert(oldFocus) }
+            if let newFocus { affected.insert(newFocus) }
+        }
+        return affected
+    }
 }
 
 enum ClipHistoryPaginationHelper {
@@ -403,11 +422,13 @@ struct NativeClipHistoryList<RowContent: View, HeaderContent: View, PaletteConte
             let paletteChanged = lastShowCommandPalette != parent.showCommandPalette
             guard selectionChanged || focusChanged || paletteChanged else { return }
 
-            var affected = lastSelectedItemIDs.symmetricDifference(parent.selectedItemIDs)
-            if focusChanged || paletteChanged {
-                if let id = lastFocusedItemID { affected.insert(id) }
-                if let id = parent.focusedItemID { affected.insert(id) }
-            }
+            let affected = ClipHistorySelectionHelper.rowsNeedingRefresh(
+                oldSelection: lastSelectedItemIDs,
+                newSelection: parent.selectedItemIDs,
+                oldFocus: lastFocusedItemID,
+                newFocus: parent.focusedItemID,
+                includeFocus: focusChanged || paletteChanged
+            )
 
             lastSelectedItemIDs = parent.selectedItemIDs
             lastFocusedItemID = parent.focusedItemID
