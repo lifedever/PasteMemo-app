@@ -198,6 +198,16 @@ struct AICLIBackendTests {
         }
     }
 
+    /// 不读 stdin 就退出的 CLI：1 MB 的 prompt 写满管道缓冲后必然撞上已关闭的管道。
+    /// 写入以前会触发 SIGPIPE 把整个进程（App 外就是测试进程）直接杀掉。
+    @Test("A CLI that exits without reading stdin doesn't kill us with SIGPIPE")
+    func runStdinToNonReadingCLI() async {
+        let backend = AICLIBackend(config: AICLIConfig(
+            executable: "/usr/bin/true", arguments: "", outputJSONKey: "", timeout: 30))
+        let prompt = String(repeating: "x", count: 1 << 20)
+        await #expect(throws: AIError.emptyResponse) { try await backend.run(prompt: prompt) }
+    }
+
     @Test("Empty output is reported rather than silently pasting nothing")
     func runEmptyOutput() async {
         let backend = AICLIBackend(config: AICLIConfig(

@@ -311,6 +311,10 @@ struct AICLIBackend: Sendable {
 
         if let stdinText, let inPipe {
             let handle = inPipe.fileHandleForWriting
+            // CLI 不读 stdin 就退出时（报错退出、模板写错），往已关闭的管道写会触发
+            // SIGPIPE 直接杀掉进程。App 里 AppDelegate 全局忽略了 SIGPIPE，单元测试里
+            // 没有，偶发把整个测试进程带走（signal 13）。只对这个 fd 关掉，写入改为返回 EPIPE。
+            _ = fcntl(handle.fileDescriptor, F_SETNOSIGPIPE, 1)
             try? handle.write(contentsOf: Data(stdinText.utf8))
             try? handle.close()
         }
