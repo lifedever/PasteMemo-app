@@ -91,7 +91,7 @@
 "settings.general" = "General";
 "settings.nav.back" = "Back";
 "settings.nav.forward" = "Forward";
-"settings.update" = "Update";
+"settings.update" = "Software Update";
 "settings.about" = "About";
 "settings.appearance" = "Appearance";
 "settings.theme" = "Theme";
@@ -424,28 +424,28 @@
 "about.sponsor" = "Support the Author";
 
 /* Update */
-"update.available.title" = "A new version of PasteMemo is available!";
-"update.available.beta.title" = "A new PasteMemo Beta is available";
 "update.beta.warning" = "Beta builds may be unstable. Back up important data before installing.";
-"update.available.message" = "PasteMemo %@ is available — you have %@. Would you like to download it now?";
 "update.skip" = "Skip This Version";
-"update.remind_later" = "Remind Me Later";
 "update.install" = "Install Update";
-"update.downloading" = "Downloading update...";
-"update.ready" = "Ready to install";
 "update.install_restart" = "Install and Restart";
 "update.cancel" = "Cancel";
 "update.check_failed" = "Check for Updates Failed";
-"update.check_failed.hint" = "Unable to fetch the latest version info. Please check your network connection and try again, or download manually from:";
 "update.check_failed.github" = "GitHub Download";
-"update.check_failed.gitee" = "Gitee Download";
-"update.check_failed.cancel" = "Cancel";
-"update.no_updates" = "You're up to date!";
-"update.no_updates.message" = "PasteMemo %@ is the latest version.";
 "update.download_error" = "Download Failed";
 "update.dmg_error" = "Update Failed";
 "update.dmg_error.message" = "The downloaded disk image is corrupted. Please try downloading the update again.";
 "update.download_error.incomplete" = "The download was incomplete or interrupted. Please check your network and try again.";
+"menu.installUpdate" = "Update to %@…";
+"update.notify.available.title" = "PasteMemo %@ is available";
+"update.notify.installed.title" = "Updated to PasteMemo %@";
+"update.check" = "Check for Updates";
+"update.status.checking" = "Checking for updates…";
+"update.status.upToDate" = "PasteMemo is up to date";
+"update.status.currentVersion" = "Current version %@";
+"update.status.lastChecked" = "Last checked %@";
+"update.status.downloaded" = "Downloaded";
+"update.status.downloaded.auto" = "Downloaded. Installs automatically when your Mac is idle.";
+"update.section.notes" = "What's New";
 
 /* Ignored Apps */
 "settings.ignoredApps" = "Ignored Apps";
@@ -923,6 +923,8 @@
 "settings.updateCheckInterval.72h" = "Every 3 days";
 "settings.includeBetaChannel" = "Join Beta Channel";
 "settings.includeBetaChannel.hint" = "Try new features early. May be unstable. Auto-upgrades to stable when ready.";
+"settings.autoInstallUpdates" = "Install updates automatically";
+"settings.autoInstallUpdates.hint" = "Installs in the background while your Mac is idle, then restarts PasteMemo.";
 "analytics.consent.title" = "Usage Statistics";
 "analytics.consent.message" = "Would you like to send anonymous usage statistics to help improve PasteMemo? This includes app version, system language, and macOS version. No personal data is collected. You can change this anytime in Settings → Privacy.";
 "analytics.consent.allow" = "Allow";

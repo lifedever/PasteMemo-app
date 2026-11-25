@@ -69,7 +69,7 @@ struct PasteMemoApp: App {
             }
             CommandGroup(after: .appInfo) {
                 Button(L10n.tr("menu.checkForUpdates")) {
-                    Task { await UpdateChecker.shared.checkForUpdates(userInitiated: true) }
+                    showUpdatePage(check: true)
                 }
                 Divider()
             }
@@ -149,7 +149,8 @@ struct PasteMemoApp: App {
         return menuBarIcon(paused: false, filled: filled)
     }
 
-    static func menuBarIcon(paused: Bool, relay: Bool = false, filled: Bool = false) -> NSImage? {
+    /// - Parameter badge: 右上角挂小圆点（有新版本可装）。
+    static func menuBarIcon(paused: Bool, relay: Bool = false, filled: Bool = false, badge: Bool = false) -> NSImage? {
         let size = NSSize(width: 18, height: 18)
         let image = NSImage(size: size, flipped: true) { rect in
             drawCards(in: rect, filled: filled)
@@ -161,10 +162,33 @@ struct PasteMemoApp: App {
             } else {
                 drawLetterP(in: rect, filled: filled)
             }
+            if badge {
+                drawBadge(in: rect)
+            }
             return true
         }
         image.isTemplate = true
         return image
+    }
+
+    /// 模板图只有单色，圆点和卡片同色；先挖一圈透明再画点，才看得出是独立的点。
+    private static func drawBadge(in rect: NSRect) {
+        let center = NSPoint(x: rect.maxX - 3, y: 3)
+        let gap: CGFloat = 1.3
+        let radius: CGFloat = 2.6
+        let context = NSGraphicsContext.current
+        let savedOp = context?.compositingOperation
+        context?.compositingOperation = .clear
+        NSBezierPath(ovalIn: NSRect(
+            x: center.x - radius - gap, y: center.y - radius - gap,
+            width: (radius + gap) * 2, height: (radius + gap) * 2
+        )).fill()
+        context?.compositingOperation = savedOp ?? .sourceOver
+        NSColor.black.setFill()
+        NSBezierPath(ovalIn: NSRect(
+            x: center.x - radius, y: center.y - radius,
+            width: radius * 2, height: radius * 2
+        )).fill()
     }
 
     private static let cardW: CGFloat = 11.0

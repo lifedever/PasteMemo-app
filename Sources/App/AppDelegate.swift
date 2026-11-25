@@ -114,6 +114,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // 贴边条上线后给老用户弹一次介绍；全新安装的用户走上面的新手引导
         ShelfIntro.handleLaunch(hasCompletedOnboarding: hasCompletedOnboarding, needsAccessibility: needsAccessibility)
 
+        // 后台发现新版本改发系统通知（不再弹窗抢前台），点通知要能打开更新窗口
+        UpdateNotifier.shared.install()
+        UpdateChecker.shared.announceAutoInstallIfNeeded()
         Task {
             await UpdateChecker.shared.checkForUpdates()
             UpdateChecker.shared.startPeriodicChecks()

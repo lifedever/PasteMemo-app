@@ -48,7 +48,7 @@
 "settings.general" = "General";
 "settings.nav.back" = "Atrás";
 "settings.nav.forward" = "Adelante";
-"settings.update" = "Actualización";
+"settings.update" = "Actualización de software";
 "settings.about" = "Acerca de";
 "settings.appearance" = "Apariencia";
 "settings.theme" = "Tema";
@@ -275,28 +275,28 @@
 "help.tip.search" = "Escribe en la búsqueda para encontrar cualquier clip al instante";
 
 /* Update */
-"update.available.title" = "¡Nueva versión de PasteMemo disponible!";
-"update.available.beta.title" = "Nueva beta de PasteMemo disponible";
 "update.beta.warning" = "Las versiones beta pueden ser inestables. Haz una copia de seguridad antes de instalar.";
-"update.available.message" = "PasteMemo %@ está disponible — tienes %@. ¿Descargar ahora?";
 "update.skip" = "Omitir esta versión";
-"update.remind_later" = "Recordar más tarde";
 "update.install" = "Instalar actualización";
-"update.downloading" = "Descargando actualización...";
-"update.ready" = "Listo para instalar";
 "update.install_restart" = "Instalar y reiniciar";
 "update.cancel" = "Cancelar";
 "update.check_failed" = "Error al buscar actualizaciones";
-"update.check_failed.hint" = "No se pudo obtener la información de la última versión. Verifica tu conexión de red e inténtalo de nuevo, o descarga manualmente desde:";
 "update.check_failed.github" = "Descargar en GitHub";
-"update.check_failed.gitee" = "Descargar en Gitee";
-"update.check_failed.cancel" = "Cancelar";
-"update.no_updates" = "¡Estás al día!";
-"update.no_updates.message" = "PasteMemo %@ es la versión más reciente.";
 "update.download_error" = "Error de descarga";
 "update.dmg_error" = "Error de actualización";
 "update.dmg_error.message" = "La imagen de disco descargada está dañada. Intenta descargarla de nuevo.";
 "update.download_error.incomplete" = "La descarga fue incompleta o se interrumpió. Comprueba tu conexión de red e inténtalo de nuevo.";
+"menu.installUpdate" = "Actualizar a %@…";
+"update.notify.available.title" = "PasteMemo %@ está disponible";
+"update.notify.installed.title" = "PasteMemo se actualizó a %@";
+"update.check" = "Buscar actualizaciones";
+"update.status.checking" = "Buscando actualizaciones…";
+"update.status.upToDate" = "PasteMemo está actualizado";
+"update.status.currentVersion" = "Versión actual %@";
+"update.status.lastChecked" = "Última comprobación: %@";
+"update.status.downloaded" = "Descargada";
+"update.status.downloaded.auto" = "Descargada. Se instala automáticamente cuando el Mac está inactivo.";
+"update.section.notes" = "Novedades";
 
 /* About */
 "about.description" = "Gestor de portapapeles inteligente para macOS";
@@ -975,6 +975,8 @@ Usa %@ para pegar uno por uno.";
 "settings.updateCheckInterval.72h" = "Cada 3 días";
 "settings.includeBetaChannel" = "Unirse al canal Beta";
 "settings.includeBetaChannel.hint" = "Prueba nuevas funciones antes. Puede ser inestable. Se actualiza a la versión estable automáticamente.";
+"settings.autoInstallUpdates" = "Instalar actualizaciones automáticamente";
+"settings.autoInstallUpdates.hint" = "Se instalan en segundo plano mientras el Mac está inactivo y luego PasteMemo se reinicia.";
 "detail.ocr" = "Texto reconocido";
 "detail.ocr.copy" = "Copiar texto";
 "detail.ocr.retry" = "Reintentar OCR";

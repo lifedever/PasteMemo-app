@@ -110,6 +110,13 @@ final class StatusBarController: NSObject {
             menu.addItem(.separator())
         }
 
+        // (条件) 有新版本：后台检查不再弹窗，入口放这里（图标上同时挂小圆点）
+        let updater = UpdateChecker.shared
+        if updater.updateAvailable, let version = updater.latestVersion {
+            menu.addItem(makeItem(L10n.tr("menu.installUpdate", version), action: #selector(openUpdate)))
+            menu.addItem(.separator())
+        }
+
         // 打开管理器（带快捷键）
         let mgrItem = makeItem(L10n.tr("menu.manager"), action: #selector(openManager))
         if !HotkeyManager.shared.isManagerCleared && HotkeyManager.shared.isManagerHotkeyGlobalEnabled {
@@ -192,6 +199,10 @@ final class StatusBarController: NSObject {
         AccessibilityMonitor.shared.openAccessibilitySettings()
     }
 
+    @objc private func openUpdate() {
+        showUpdatePage()
+    }
+
     @objc private func openManager() {
         DiagnosticLog.log("CLICK statusbar: openManager")
         AppAction.shared.openMainWindow?()
@@ -236,7 +247,8 @@ final class StatusBarController: NSObject {
         let image = PasteMemoApp.menuBarIcon(
             paused: ClipboardManager.shared.isPaused,
             relay: RelayManager.shared.isActive,
-            filled: filled
+            filled: filled,
+            badge: UpdateChecker.shared.updateAvailable
         )
         statusItem?.button?.image = image
     }
@@ -246,6 +258,15 @@ final class StatusBarController: NSObject {
     private func observeStateChanges() {
         // ClipboardManager 是 ObservableObject —— 直接订阅 objectWillChange。
         ClipboardManager.shared.objectWillChange
+            .sink { [weak self] _ in
+                Task { @MainActor in self?.refreshIcon() }
+            }
+            .store(in: &cancellables)
+
+        // 有新版本时图标挂小圆点。@Published 在 willSet 发出，此时 getter 还是旧值，
+        // 所以延后到下一拍再画（Task 已经是异步的）。
+        UpdateChecker.shared.$updateAvailable
+            .removeDuplicates()
             .sink { [weak self] _ in
                 Task { @MainActor in self?.refreshIcon() }
             }

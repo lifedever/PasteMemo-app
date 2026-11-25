@@ -91,7 +91,7 @@
 "settings.general" = "通用";
 "settings.nav.back" = "后退";
 "settings.nav.forward" = "前进";
-"settings.update" = "更新";
+"settings.update" = "软件更新";
 "settings.about" = "关于";
 "settings.appearance" = "外观";
 "settings.theme" = "主题";
@@ -425,28 +425,28 @@
 "about.sponsor" = "支持作者";
 
 /* Update */
-"update.available.title" = "新版本的 PasteMemo 已经发布";
-"update.available.beta.title" = "PasteMemo Beta 版本可用";
 "update.beta.warning" = "Beta 版本可能不稳定，安装前建议先备份重要数据。";
-"update.available.message" = "PasteMemo %@ 可供下载，您现在的版本是 %@。要现在下载吗？";
 "update.skip" = "跳过这个版本";
-"update.remind_later" = "稍后提醒我";
 "update.install" = "安装更新";
-"update.downloading" = "正在下载更新...";
-"update.ready" = "可以开始安装了";
 "update.install_restart" = "安装并重启应用";
 "update.cancel" = "取消";
 "update.check_failed" = "检查更新失败";
-"update.check_failed.hint" = "无法获取最新版本信息，请检查网络连接后重试，或前往以下页面手动下载：";
 "update.check_failed.github" = "GitHub 下载";
-"update.check_failed.gitee" = "Gitee 下载";
-"update.check_failed.cancel" = "取消";
-"update.no_updates" = "已是最新版本！";
-"update.no_updates.message" = "PasteMemo %@ 是当前最新版本。";
 "update.download_error" = "下载失败";
 "update.dmg_error" = "更新失败";
 "update.dmg_error.message" = "下载的磁盘映像已损坏，请重新下载更新。";
 "update.download_error.incomplete" = "下载不完整或已中断，请检查网络后重试。";
+"menu.installUpdate" = "更新到 %@…";
+"update.notify.available.title" = "发现新版本 %@";
+"update.notify.installed.title" = "已更新到 %@";
+"update.check" = "检查更新";
+"update.status.checking" = "正在检查更新…";
+"update.status.upToDate" = "已是最新版本";
+"update.status.currentVersion" = "当前版本 %@";
+"update.status.lastChecked" = "上次检查：%@";
+"update.status.downloaded" = "已下载好";
+"update.status.downloaded.auto" = "已下载好，电脑闲置时自动安装";
+"update.section.notes" = "更新内容";
 
 /* Ignored Apps */
 "settings.ignoredApps" = "忽略的应用";
@@ -923,6 +923,8 @@
 "settings.updateCheckInterval.72h" = "每 3 天";
 "settings.includeBetaChannel" = "参与 Beta 测试";
 "settings.includeBetaChannel.hint" = "提前体验新功能，可能不稳定。Beta 版稳定后会自动升级到正式版。";
+"settings.autoInstallUpdates" = "自动安装更新";
+"settings.autoInstallUpdates.hint" = "电脑闲置时在后台安装并重启 PasteMemo。";
 "analytics.consent.title" = "使用统计";
 "analytics.consent.message" = "是否发送匿名使用统计以帮助改进 PasteMemo？包括应用版本、系统语言和 macOS 版本，不采集任何个人信息。你可以随时在 设置 → 隐私 中更改。";
 "analytics.consent.allow" = "允许";

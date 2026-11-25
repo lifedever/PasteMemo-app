@@ -83,7 +83,7 @@
 "settings.general" = "Umum";
 "settings.nav.back" = "Kembali";
 "settings.nav.forward" = "Maju";
-"settings.update" = "Pembaruan";
+"settings.update" = "Pembaruan Perangkat Lunak";
 "settings.about" = "Tentang";
 "settings.appearance" = "Tampilan";
 "settings.theme" = "Tema";
@@ -375,28 +375,28 @@
 "about.sponsor" = "Dukung Pengembang";
 
 /* Update */
-"update.available.title" = "Versi baru PasteMemo tersedia!";
-"update.available.beta.title" = "Beta baru PasteMemo tersedia";
 "update.beta.warning" = "Versi beta mungkin tidak stabil. Cadangkan data penting sebelum memasang.";
-"update.available.message" = "PasteMemo %@ tersedia — Anda memiliki %@. Ingin mengunduhnya sekarang?";
 "update.skip" = "Lewati Versi Ini";
-"update.remind_later" = "Ingatkan Nanti";
 "update.install" = "Pasang Pembaruan";
-"update.downloading" = "Mengunduh pembaruan...";
-"update.ready" = "Siap dipasang";
 "update.install_restart" = "Pasang dan Mulai Ulang";
 "update.cancel" = "Batal";
 "update.check_failed" = "Gagal Memeriksa Pembaruan";
-"update.check_failed.hint" = "Tidak dapat mengambil info versi terbaru. Periksa koneksi jaringan Anda dan coba lagi, atau unduh secara manual dari:";
 "update.check_failed.github" = "Unduh dari GitHub";
-"update.check_failed.gitee" = "Unduh dari Gitee";
-"update.check_failed.cancel" = "Batal";
-"update.no_updates" = "Anda sudah menggunakan versi terbaru!";
-"update.no_updates.message" = "PasteMemo %@ adalah versi terbaru.";
 "update.download_error" = "Unduhan Gagal";
 "update.dmg_error" = "Pembaruan Gagal";
 "update.dmg_error.message" = "Image disk yang diunduh rusak. Silakan coba unduh pembaruan lagi.";
 "update.download_error.incomplete" = "Unduhan tidak lengkap atau terputus. Periksa koneksi jaringan Anda dan coba lagi.";
+"menu.installUpdate" = "Perbarui ke %@…";
+"update.notify.available.title" = "PasteMemo %@ tersedia";
+"update.notify.installed.title" = "PasteMemo diperbarui ke %@";
+"update.check" = "Periksa Pembaruan";
+"update.status.checking" = "Memeriksa pembaruan…";
+"update.status.upToDate" = "PasteMemo sudah versi terbaru";
+"update.status.currentVersion" = "Versi saat ini %@";
+"update.status.lastChecked" = "Terakhir diperiksa: %@";
+"update.status.downloaded" = "Sudah diunduh";
+"update.status.downloaded.auto" = "Sudah diunduh. Dipasang otomatis saat Mac tidak digunakan.";
+"update.section.notes" = "Yang Baru";
 
 /* Ignored Apps */
 "settings.ignoredApps" = "Aplikasi yang Diabaikan";
@@ -945,6 +945,8 @@ Gunakan %@ untuk menempel satu per satu.";
 "settings.updateCheckInterval.72h" = "Setiap 3 hari";
 "settings.includeBetaChannel" = "Ikut Saluran Beta";
 "settings.includeBetaChannel.hint" = "Coba fitur baru lebih awal. Mungkin tidak stabil. Otomatis diperbarui ke versi stabil.";
+"settings.autoInstallUpdates" = "Instal pembaruan otomatis";
+"settings.autoInstallUpdates.hint" = "Dipasang di latar belakang saat Mac sedang tidak digunakan, lalu PasteMemo dimulai ulang.";
 "detail.ocr" = "Teks terdeteksi";
 "detail.ocr.copy" = "Salin teks";
 "detail.ocr.retry" = "Coba lagi OCR";

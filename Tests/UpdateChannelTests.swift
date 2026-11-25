@@ -189,7 +189,6 @@ struct LocalizationCompletenessTests {
         let requiredKeys = [
             "settings.includeBetaChannel",
             "settings.includeBetaChannel.hint",
-            "update.available.beta.title",
             "update.beta.warning",
             "update.download_error.incomplete",
         ]

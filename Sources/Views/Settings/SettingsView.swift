@@ -7,6 +7,7 @@ import Carbon
 /// 这里只负责这一栏的内容；宽度和分隔线由那边管。
 struct SettingsSidebar: View {
     @EnvironmentObject private var nav: SettingsNavigationModel
+    @ObservedObject private var updater = UpdateChecker.shared
 
     var body: some View {
         ScrollView {
@@ -50,6 +51,14 @@ struct SettingsSidebar: View {
                 .font(.system(size: 13))
                 .foregroundStyle(isSelected ? Color.white : Color.primary)
             Spacer(minLength: 0)
+            // 有新版本：「软件更新」行尾挂红底「1」，同系统设置「通用」那行的更新角标
+            if category == .update && updater.updateAvailable {
+                Text("1")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .frame(minWidth: 17, minHeight: 17)
+                    .background(Circle().fill(Color.red))
+            }
         }
         .padding(.horizontal, 6)
         .padding(.vertical, 5)
@@ -111,6 +120,7 @@ struct SettingsDetail: View {
         case .automation: AutomationTab()
         case .data: DataPane()
         case .sponsor: SponsorTab()
+        case .update: UpdatePane()
         case .about: AboutTab()
         }
     }
@@ -121,7 +131,7 @@ struct SettingsDetail: View {
 enum SettingsCategory: String, CaseIterable, Identifiable, Hashable {
     case general, appearance, quickPanel, preview
     case shortcuts, privacy, aiAgents, aiService, automation, data
-    case sponsor, about
+    case sponsor, update, about
 
     var id: String { rawValue }
 
@@ -134,7 +144,7 @@ enum SettingsCategory: String, CaseIterable, Identifiable, Hashable {
     static let dataPrivacyGroup: [SettingsCategory] = [.privacy, .data]
 
     /// 应用信息。
-    static let aboutGroup: [SettingsCategory] = [.sponsor, .about]
+    static let aboutGroup: [SettingsCategory] = [.update, .sponsor, .about]
 
     var titleKey: String {
         switch self {
@@ -149,6 +159,7 @@ enum SettingsCategory: String, CaseIterable, Identifiable, Hashable {
         case .automation: return "settings.automation"
         case .data: return "dataPorter.section"
         case .sponsor: return "settings.sponsor"
+        case .update: return "settings.update"
         case .about: return "settings.about"
         }
     }
@@ -166,6 +177,7 @@ enum SettingsCategory: String, CaseIterable, Identifiable, Hashable {
         case .automation: return "gearshape.2"
         case .data: return "externaldrive"
         case .sponsor: return "heart"
+        case .update: return "arrow.down.circle"
         case .about: return "info.circle"
         }
     }
@@ -186,6 +198,7 @@ extension SettingsCategory {
         case .privacy: return .blue
         case .data: return .green
         case .sponsor: return .red
+        case .update: return .cyan
         case .about: return .gray
         }
     }
@@ -1348,11 +1361,6 @@ struct SponsorTab: View {
 // MARK: - About Tab
 
 struct AboutTab: View {
-    @ObservedObject private var updateChecker = UpdateChecker.shared
-    @AppStorage("autoCheckUpdates") private var autoCheckUpdates = true
-    @AppStorage("updateCheckInterval") private var updateCheckInterval = 24
-    @AppStorage("includeBetaChannel") private var includeBetaChannel = false
-
     var body: some View {
         Form {
             Section {
@@ -1378,42 +1386,6 @@ struct AboutTab: View {
                     Spacer()
                     Text(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "—")
                         .foregroundStyle(.secondary)
-                }
-                Button(L10n.tr("menu.checkForUpdates")) {
-                    Task { await updateChecker.checkForUpdates(userInitiated: true) }
-                }
-                .disabled(updateChecker.isChecking)
-                Toggle(L10n.tr("settings.autoCheckUpdates"), isOn: $autoCheckUpdates)
-                    .onChange(of: autoCheckUpdates) {
-                        if autoCheckUpdates {
-                            updateChecker.startPeriodicChecks()
-                        } else {
-                            updateChecker.stopPeriodicChecks()
-                        }
-                    }
-                if autoCheckUpdates {
-                    Picker(L10n.tr("settings.updateCheckInterval"), selection: $updateCheckInterval) {
-                        Text(L10n.tr("settings.updateCheckInterval.6h")).tag(6)
-                        Text(L10n.tr("settings.updateCheckInterval.12h")).tag(12)
-                        Text(L10n.tr("settings.updateCheckInterval.24h")).tag(24)
-                        Text(L10n.tr("settings.updateCheckInterval.72h")).tag(72)
-                    }
-                    .onChange(of: updateCheckInterval) {
-                        updateChecker.startPeriodicChecks()
-                    }
-                }
-                VStack(alignment: .leading, spacing: 4) {
-                    Toggle(L10n.tr("settings.includeBetaChannel"), isOn: $includeBetaChannel)
-                        .onChange(of: includeBetaChannel) {
-                            // Switching channels should give immediate feedback —
-                            // wait-for-next-poll feels broken. Treat as a user-
-                            // initiated check so dev builds also run it.
-                            Task { await updateChecker.checkForUpdates(userInitiated: true) }
-                        }
-                    Text(L10n.tr("settings.includeBetaChannel.hint"))
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
                 }
             }
 

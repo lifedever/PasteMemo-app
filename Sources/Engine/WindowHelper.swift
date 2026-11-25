@@ -54,6 +54,15 @@ func openSettings(category: SettingsCategory) {
 
 @MainActor
 func showSettingsWindowAppKit() {
+    // 窗口已经开着：只拿到前面。不能往下走——下面会新建一个导航模型顶掉
+    // currentSettingsNavigation，而 showController 发现窗口已在就直接返回，新模型随即
+    // 被释放，openSettings(category:) 就跳不到指定页了。
+    if let existing = WindowManager.shared.window(for: "settings"), existing.isVisible,
+       currentSettingsNavigation != nil {
+        existing.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
+        return
+    }
     clearLegacySettingsSidebarWidth()
     let model = SettingsNavigationModel()
     currentSettingsNavigation = model
@@ -144,13 +153,13 @@ func showAccessibilityPrompt() {
     }
 }
 
+/// 设置里的「软件更新」页。更新不再单独弹窗（弹窗会抢前台、盖住全屏游戏），
+/// 菜单「检查更新…」、状态栏「更新到 x…」、点更新通知都到这里。
+/// - Parameter check: 顺手查一次（菜单「检查更新…」、点了过期的通知）
 @MainActor
-func showUpdateWindow(updater: UpdateChecker) {
-    WindowManager.shared.show(
-        id: "update",
-        title: L10n.tr("update.available.title"),
-        size: NSSize(width: 520, height: 460)
-    ) {
-        UpdateDialogView(updater: updater)
+func showUpdatePage(check: Bool = false) {
+    openSettings(category: .update)
+    if check {
+        Task { await UpdateChecker.shared.checkForUpdates(userInitiated: true) }
     }
 }

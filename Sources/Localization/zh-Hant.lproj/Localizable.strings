@@ -82,7 +82,7 @@
 "settings.general" = "一般";
 "settings.nav.back" = "返回";
 "settings.nav.forward" = "前進";
-"settings.update" = "更新";
+"settings.update" = "軟體更新";
 "settings.about" = "關於";
 "settings.appearance" = "外觀";
 "settings.theme" = "主題";
@@ -375,28 +375,28 @@
 "about.sponsor" = "支持作者";
 
 /* Update */
-"update.available.title" = "新版本的 PasteMemo 已經發佈";
-"update.available.beta.title" = "PasteMemo Beta 版本可用";
 "update.beta.warning" = "Beta 版本可能不穩定，安裝前建議先備份重要資料。";
-"update.available.message" = "PasteMemo %@ 可供下載，您目前的版本是 %@。要現在下載嗎？";
 "update.skip" = "跳過這個版本";
-"update.remind_later" = "稍後提醒我";
 "update.install" = "安裝更新";
-"update.downloading" = "正在下載更新...";
-"update.ready" = "可以開始安裝了";
 "update.install_restart" = "安裝並重新啟動應用";
 "update.cancel" = "取消";
 "update.check_failed" = "檢查更新失敗";
-"update.check_failed.hint" = "無法取得最新版本資訊，請檢查網路連線後重試，或前往以下頁面手動下載：";
 "update.check_failed.github" = "GitHub 下載";
-"update.check_failed.gitee" = "Gitee 下載";
-"update.check_failed.cancel" = "取消";
-"update.no_updates" = "已是最新版本！";
-"update.no_updates.message" = "PasteMemo %@ 是目前最新版本。";
 "update.download_error" = "下載失敗";
 "update.dmg_error" = "更新失敗";
 "update.dmg_error.message" = "下載的磁碟映像檔已損毀，請重新下載更新。";
 "update.download_error.incomplete" = "下載不完整或已中斷，請檢查網路後重試。";
+"menu.installUpdate" = "更新到 %@…";
+"update.notify.available.title" = "發現新版本 %@";
+"update.notify.installed.title" = "已更新到 %@";
+"update.check" = "檢查更新";
+"update.status.checking" = "正在檢查更新…";
+"update.status.upToDate" = "已是最新版本";
+"update.status.currentVersion" = "目前版本 %@";
+"update.status.lastChecked" = "上次檢查：%@";
+"update.status.downloaded" = "已下載完成";
+"update.status.downloaded.auto" = "已下載完成，電腦閒置時自動安裝";
+"update.section.notes" = "更新內容";
 
 /* Ignored Apps */
 "settings.ignoredApps" = "忽略的應用程式";
@@ -931,6 +931,8 @@
 "settings.updateCheckInterval.72h" = "每 3 天";
 "settings.includeBetaChannel" = "參與 Beta 測試";
 "settings.includeBetaChannel.hint" = "提前體驗新功能，可能不穩定。Beta 版穩定後會自動升級到正式版。";
+"settings.autoInstallUpdates" = "自動安裝更新";
+"settings.autoInstallUpdates.hint" = "電腦閒置時在背景安裝並重新啟動 PasteMemo。";
 "detail.ocr" = "辨識文字";
 "detail.ocr.copy" = "複製文字";
 "detail.ocr.retry" = "重新辨識";
